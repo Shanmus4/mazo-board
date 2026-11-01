@@ -750,7 +750,13 @@ M.num = function (n, dp) {
   var neg = n < 0, s = Math.abs(n).toFixed(dp || 0), p = s.split('.');
   return (neg && +s !== 0 ? '-' : '') + M.group(p[0]) + (p[1] ? '.' + p[1] : '');
 };
-M.inr = function (n) { return n == null || isNaN(n) ? 'n/a' : (n < 0 ? '-' : '') + 'Rs.\u00a0' + M.num(Math.abs(n)); };   // no-break space keeps "Rs." and the figure together
+/* T814 (1 Nov 2026, "accurate to the decimal"): money shows its paise whenever the amount has them (Rs. 53,628.10, not Rs. 53,628). A round amount stays round (Rs. 14,185). The paise are
+   judged on the amount rounded to 2 decimals, so floating point dust (53628.100000000006) never shows. */
+M.inr = function (n) {
+  if (n == null || isNaN(n)) return 'n/a';
+  var a = Math.round(Math.abs(n) * 100) / 100, paise = Math.round(a * 100) % 100 !== 0;
+  return (n < 0 && a !== 0 ? '-' : '') + 'Rs.\u00a0' + M.num(a, paise ? 2 : 0);
+};   // no-break space keeps "Rs." and the figure together
 M.pct = function (n, dp) {
   if (n == null || isNaN(n)) return 'n/a';
   dp = dp == null ? (Math.abs(n) < 10 ? 2 : 1) : dp;
