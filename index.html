@@ -981,6 +981,137 @@ body.mouse-nav tr:focus,body.mouse-nav summary:focus,body.mouse-nav svg:focus,bo
 td.wrap,th.wrap{min-width:200px;max-width:320px;white-space:normal;overflow-wrap:anywhere}
 .tw{overflow-x:auto}
 
+/* mazo dashboard look: EDITORIAL (T847, 1 Nov 2026: the owner chose option A, "option 1 for sure"). Loads last and wins over every earlier layer.
+   A light warm sidebar, large serif figures, thin rules instead of boxes, quiet tags, a designed dropdown list, the freshness line and Sign out at the bottom left of the sidebar.
+   The three options and their pictures are kept in docs/reports/dashboard-options/. Colours: maroon #5E1204, paper #FBF9F6, sand #F3EEE6, mustard #C8892A. Rules: docs/guides/dashboard-design.md. */
+
+:root{--paper:#FBF9F6;--edge:#E6DED2;--edge2:#D9D0C4;--sand:#F3EEE6;--ink3:#6B6258}
+body{background:var(--paper)}
+
+/* ---------- sidebar: light, warm, one white pill for the page you are on ---------- */
+#rail{background:var(--sand);color:var(--ink);border-right:1px solid var(--edge)}
+.rail-top{padding:var(--sp5) var(--sp5) var(--sp3)}
+.wordmark{color:var(--maroon)}
+.brand-sub{color:var(--ink3);letter-spacing:.02em}
+.rail-close{color:var(--maroon)}
+#nav a{color:#4A433B}
+#nav a .nav-ic{color:#8A7F72}
+#nav a:hover{background:rgba(94,18,4,.06);color:var(--maroon)}
+#nav a:hover .nav-ic{color:var(--maroon)}
+#nav a[aria-current="page"]{background:#fff;color:var(--maroon);font-weight:600;box-shadow:0 1px 2px rgba(42,42,42,.08)}
+#nav a[aria-current="page"] .nav-ic{color:var(--mustard)}
+#rail :focus-visible{outline-color:var(--ring)!important}
+#nav{flex:1}
+
+/* the bottom left of the sidebar: when the data ends, and Sign out */
+.rail-foot2{margin-top:auto;padding:var(--sp3) var(--sp3) var(--sp4);border-top:1px solid var(--edge);display:flex;flex-direction:column;gap:2px}
+.rf-fresh,.rf-signout{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:var(--sp2);min-height:34px;padding:0 var(--sp3);border-radius:var(--rad1);font-size:var(--t12);color:var(--ink3);cursor:pointer;transition:background .15s var(--ease),color .15s var(--ease)}
+.rf-fresh:hover,.rf-signout:hover,.rf-fresh:focus-visible,.rf-signout:focus-visible{background:rgba(94,18,4,.06);color:var(--maroon)}
+.rf-fresh:focus-visible,.rf-signout:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
+.rf-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex:0 0 7px}
+.rail-foot2.stale .rf-dot{background:var(--terra)}
+.rf-signout .ic{width:16px;height:16px;stroke:none;display:block;flex:0 0 16px}
+@media (pointer:coarse){.rf-fresh,.rf-signout{min-height:44px}}
+.fresh,.fresh-foot{display:none!important}
+
+/* ---------- toolbar and page head ---------- */
+#controls{background:var(--paper);border-bottom:1px solid var(--edge)}
+h2{font-size:44px;letter-spacing:-.02em;line-height:1.1}
+.pg-q{font-size:17px;max-width:60ch}
+@media (max-width:900px){h2{font-size:34px}}
+@media (max-width:640px){h2{font-size:28px}}
+
+/* ---------- headline numbers: figures on a rule, no boxes ---------- */
+.kpis,.kpis.rates{background:transparent;border:0;box-shadow:none;border-radius:0;gap:0 32px;border-top:2px solid var(--maroon);border-bottom:1px solid var(--edge);padding:0;overflow:visible}
+.kpis .kpi,.kpi{box-shadow:none;background:transparent;padding:20px 0 18px;border-radius:0}
+.kpi .l{font-size:13px;color:var(--ink3)}
+.kpi .v,.kpi.hero .v,.kpis.rates .v{font-family:Merriweather,Georgia,serif;font-weight:400;color:var(--maroon);font-size:34px;letter-spacing:-.02em}
+.kpi.hero .v{font-size:44px}
+.kpi.hero{background:transparent}
+.kpi.na{background:transparent;border:0;box-shadow:none}
+@media (max-width:640px){.kpis .kpi,.kpi{padding:14px 0}.kpi .v,.kpis.rates .v{font-size:26px}.kpi.hero .v{font-size:34px}.kpis,.kpis.rates{gap:0 20px}}
+
+/* ---------- cards: a thin rule on top, no box ---------- */
+.card{border:0;border-top:1px solid var(--edge2);border-radius:0;box-shadow:none;background:transparent;padding:22px 0 8px}
+.card:hover{box-shadow:none}
+.card .tw{border:0}
+.card.fs{background:var(--paper);padding:0 var(--sp6) var(--sp7)}
+.card>h3{font-size:18px}
+.grid{gap:var(--sp6) var(--sp6)}
+.empty{background:transparent}
+.fcard,.cards13 .fcard{border-radius:var(--rad2)}
+
+/* ---------- sub navigation: underlined words, not a pill ---------- */
+.subnav-row{background:transparent;border-bottom:1px solid var(--edge);border-radius:0;padding:0;gap:24px}
+.subnav a{border-radius:0;padding:0 2px;min-height:40px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.subnav a[aria-current="page"]{background:transparent;box-shadow:none;border-bottom-color:var(--maroon);color:var(--maroon)}
+.subnav a:hover{background:transparent;color:var(--maroon)}
+
+/* ---------- controls ---------- */
+.tbtn,.btn,.dd-btn,input[type=date],.gs-in,.tbl-q{border-radius:6px}
+.seg{border-radius:6px}
+
+/* ---------- THE DROPDOWN: a button that looks like the field, a designed list ---------- */
+select.dd-native{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;overflow:hidden;clip:rect(0 0 0 0)}
+.dd-btn{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:space-between;gap:var(--sp2);width:100%;min-width:0;height:40px;padding:0 var(--sp3);border:1px solid var(--edge2);border-radius:6px;background:#fff;color:var(--ink);font-size:var(--t14);cursor:pointer;transition:border-color .15s var(--ease),box-shadow .15s var(--ease)}
+.dd-btn:hover{border-color:#B7AB9B}
+.dd-btn[aria-expanded="true"]{border-color:var(--maroon);box-shadow:0 0 0 3px rgba(94,18,4,.12)}
+.dd-btn:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+.dd-btn:disabled{opacity:.55;cursor:not-allowed}
+.dd-btn.placeholder .dd-label{color:var(--ink3)}
+.dd-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.dd-chev{width:16px;height:16px;stroke:none;color:var(--ink3);flex:0 0 16px;transition:transform .18s var(--ease)}
+.dd-btn[aria-expanded="true"] .dd-chev{transform:rotate(180deg)}
+.fld .dd-btn,.tsec .dd-btn,.fs-ctl .fld .dd-btn{display:flex}
+.tp-date .dd-btn,.popover .dd-btn{width:100%}
+.dd-list{position:fixed;z-index:120;display:flex;flex-direction:column;background:#fff;border:1px solid var(--edge2);border-radius:var(--rad2);box-shadow:var(--elev2);padding:var(--sp1);animation:popIn .14s var(--ease) both;transform-origin:top left;max-width:min(380px,calc(100vw - 16px))}
+.dd-list.up{transform-origin:bottom left}
+.dd-filter-wrap{padding:var(--sp1) var(--sp1) var(--sp2)}
+.dd-filter{box-sizing:border-box;width:100%;height:36px;border:1px solid var(--edge2);border-radius:var(--rad1);padding:0 var(--sp3);font-size:var(--t14);background:var(--paper);color:var(--ink)}
+.dd-filter:focus{outline:none;border-color:var(--maroon);box-shadow:0 0 0 3px rgba(94,18,4,.12)}
+.dd-body{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:2px}
+.dd-item{display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);min-height:36px;padding:6px var(--sp3);border-radius:var(--rad1);font-size:var(--t14);line-height:1.35;color:var(--ink);cursor:pointer}
+.dd-item.hot{background:var(--sand);color:var(--maroon)}
+.dd-item.on{font-weight:600;color:var(--maroon)}
+.dd-item.off{opacity:.45;cursor:not-allowed}
+.dd-text{min-width:0;overflow-wrap:anywhere}
+.dd-tick{width:16px;height:16px;stroke:none;color:var(--mustard);flex:0 0 16px;opacity:0}
+.dd-item.on .dd-tick{opacity:1}
+.dd-empty{padding:var(--sp4);font-size:var(--t13);color:var(--ink3);text-align:center}
+
+/* ---------- tags: a quiet label with a dot, not a coloured pill ---------- */
+.tag{display:inline-flex;align-items:center;gap:6px;padding:0;border:0;border-radius:0;background:transparent;font-size:var(--t12);font-weight:500;color:var(--ink3);line-height:1.4;white-space:normal}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--mustard);flex:0 0 6px}
+.tag.thin::before{background:var(--mustard)}
+.tag.indic::before{background:var(--teal)}
+.tag.thin,.tag.indic{background:transparent;border:0;color:var(--ink3)}
+
+/* ---------- messages and states ---------- */
+.badge{border-radius:6px}
+#tip{border-radius:var(--rad1);border-color:var(--edge2)}
+.empty{border-radius:var(--rad2)}
+.popover{border-radius:var(--rad2)}
+
+/* ---------- headline numbers: one steady grid, labels on one line, figures on one baseline ---------- */
+.kpis.lead{grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr))}
+.kpis.rates{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kpi{min-width:0}
+.kpi .l{display:flex;align-items:center;gap:var(--sp1);min-height:24px;margin-bottom:var(--sp1)}
+.kpi .l .info-mark{width:20px;height:20px;margin:0}
+.kpi .l .info-mark .ic{width:14px;height:14px}
+.kpi.hero .l{min-height:24px}
+.kpi .v{display:block;min-height:1.15em}
+.kpis .kpi+.kpi{padding-left:0}
+/* an (i) never sits inside a chart legend line: the lines there are self explaining */
+.legend .info-mark{display:none}
+
+/* touch: an (i) mark and a table size cell are easy to hit on a phone or tablet */
+@media (pointer:coarse){
+  .info-mark,.info-mark.term-mark,.info-mark.page-info{width:36px;height:36px}
+  .info-mark .ic{width:18px;height:18px}
+  td button.dimlink{min-width:44px;min-height:44px}
+}
+
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
 #lock[hidden]{display:none}
@@ -1021,6 +1152,7 @@ td.wrap,th.wrap{min-width:200px;max-width:320px;white-space:normal;overflow-wrap
   <symbol id="i-home" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6.5 8 6.5v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></g></symbol>
   <symbol id="i-sales" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 16.5l5.2-5.2 3.6 3.6 7.2-7.7M15.5 7.2h4v4"/></g></symbol>
   <symbol id="i-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c.6-3 3-4.8 5.5-4.8s4.9 1.8 5.5 4.8M16.2 5.2a3 3 0 0 1 0 5.6M17.5 14.9c1.7.6 2.8 2.1 3.2 4.1"/></g></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10M15 8l4 4-4 4M19 12H9.5"/></g></symbol>
   <symbol id="i-growth" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9M12 9l-4.5 4.5M12 9l4.5 4.5M6 5.5h12"/></g></symbol>
   <symbol id="i-megaphone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 0 0 1 1h2l5.5 4V5L7 9H5a1 1 0 0 0-1 1zM16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10"/></g></symbol>
   <symbol id="i-ops" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2zM4.2 7.3L12 11.5l7.8-4.2M12 11.5V21"/></g></symbol>
@@ -1052,6 +1184,7 @@ td.wrap,th.wrap{min-width:200px;max-width:320px;white-space:normal;overflow-wrap
       <button type="button" class="rail-close" id="rail-close" aria-label="Close the page list"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <nav id="nav" aria-label="Pages"></nav>
+    <div id="rail-foot" class="rail-foot2"></div>
   </aside>
   <div id="stage">
     <div id="mobilebar"><svg class="wordmark" viewBox="0 0 430 124" role="img" aria-label="mazo"><use href="#mz-wordmark"/></svg><span class="brand-sub">Business dashboard</span></div>
@@ -2252,7 +2385,7 @@ M.buildControls = function () {
   M.FILTERS.forEach(function (f) { c.f[f[0]] = M.h('select', { id: 'f-' + f[0] }); fbody.appendChild(fld(f[1], 'f-' + f[0], c.f[f[0]])); });
   c.snapWrap = M.h('div', { class: 'fld' });
   c.snap = M.h('select', { id: 'f-snap' });
-  c.snapWrap.appendChild(M.h('label', { for: 'f-snap', text: 'Snapshot of' }));
+  c.snapWrap.appendChild(M.h('label', { for: 'f-snap', text: 'Picture of' }));
   c.snapWrap.appendChild(c.snap);
   c.reset = M.h('button', { type: 'button', class: 'link', id: 'f-reset', text: 'Clear all filters' });
   c.badge = M.h('span', { class: 'badge-n', id: 'filter-n', hidden: true });
@@ -2267,8 +2400,9 @@ M.buildControls = function () {
   c.rail = M.h('button', { type: 'button', class: 'tbtn menu-btn', id: 'menu-btn', 'aria-controls': 'rail', 'aria-expanded': 'false', 'aria-label': 'Open the page list' }, [icon('i-menu'), M.h('span', { class: 'bt', id: 'menu-txt', text: 'Pages' })]);
   c.rail.addEventListener('click', function () { M.railOpen(true); });
   c.search = M.searchBox ? M.searchBox() : null;
-  c.fresh = M.h('span', { class: 'fresh', id: 'fresh', 'data-ux': '1', tabindex: '0' });
-  host.appendChild(M.h('div', { class: 'toolrow' }, [c.rail, c.dateWrap, c.cmpWrap, c.filWrap, c.sum, c.search, c.fresh]));
+  c.fresh = M.h('span', { class: 'fresh', id: 'fresh', 'data-ux': '1' });      /* kept as a hidden text holder: the visible freshness is the small line at the bottom left of the sidebar (M.railFresh) */
+  host.appendChild(M.h('div', { class: 'toolrow' }, [c.rail, c.dateWrap, c.cmpWrap, c.filWrap, c.sum, c.search]));
+  M.railFoot();
   host.appendChild(c.chips);
 
   var f = M.facts();
@@ -2303,10 +2437,30 @@ M.buildControls = function () {
   c.snap.addEventListener('change', function () { M.go({ snap: c.snap.value }); });
   M.FILTERS.forEach(function (fl) { c.f[fl[0]].addEventListener('change', function () { var p = {}; p[fl[0]] = c.f[fl[0]].value; M.go(p); }); });
   c.reset.addEventListener('click', function () { M.go({ collection: '', channel: '', product: '', device: '', size: '' }); });
-  document.addEventListener('click', function (e) { if (M.popClose && !e.target.closest('.tpop')) M.popClose(); });
-  document.addEventListener('focusin', function (e) { if (M.popClose && !e.target.closest('.tpop')) M.popClose(); });
+  document.addEventListener('click', function (e) { if (M.popClose && !e.target.closest('.tpop') && !e.target.closest('.dd-list')) M.popClose(); });
+  document.addEventListener('focusin', function (e) { if (M.popClose && !e.target.closest('.tpop') && !e.target.closest('.dd-list')) M.popClose(); });
 };
 
+/* bottom left of the sidebar: when the data ends (a dot and a short date, the detail in a floating tip) and, on the hosted site, Sign out */
+M.railFoot = function () {
+  var rf = document.getElementById('rail-foot');
+  if (!rf || rf.getAttribute('data-built')) return;
+  rf.setAttribute('data-built', '1');
+  var b = M.h('button', { type: 'button', class: 'rf-fresh', 'data-ux': '1' }, [M.h('i', { class: 'rf-dot', 'aria-hidden': 'true' }), M.h('span', { class: 'rf-text', id: 'rf-text' })]);
+  M.infoBind(b, function () {
+    var first = M.first(), n = M.totalOrders();
+    return 'Data from ' + M.fd(first) + ' to ' + M.fd(M.D.anchor) + '. ' + M.num(n) + ' orders. Saved ' + M.builtText() + '. The newest day is always yesterday: today is not finished yet.';
+  }, 'How fresh is this?');
+  rf.appendChild(b);
+};
+M.syncRailFoot = function () {
+  var t = document.getElementById('rf-text'), rf = document.getElementById('rail-foot');
+  if (!t || !rf) return;
+  t.textContent = 'Data to ' + M.fds(M.D.anchor);
+  var age = Math.round((new Date() - new Date(M.D.anchor + 'T00:00:00')) / 864e5);
+  rf.classList.toggle('stale', age > 2);
+  rf.setAttribute('data-age', String(age));
+};
 M.syncControls = function () {
   var s = M.state, c = M.ctl, r = M.range(), pg = M.PAGES[s.page];
   c.preset.value = s.preset; c.from.value = r.from; c.to.value = r.to; c.cmp.checked = s.cmp === '1'; c.group.value = s.group; c.snap.value = s.snap;
@@ -2335,6 +2489,7 @@ M.syncControls = function () {
   c.dateBtn.title = dateUsed ? M.fd(r.from) + ' to ' + M.fd(r.to) + ' (' + M.num(r.days) + ' days)' : 'This page does not follow the date range';
   /* T817: the long "Data 19 May to 31 Oct. 28 orders. Built ..." block left the sidebar. One quiet line sits at the right of the toolbar; the full detail is on the Data quality page and in the hover title. */
   c.fresh.textContent = (M.D.kind === 'year' ? 'Year ' + M.D.year + ' only. ' : '') + 'Data up to ' + M.fd(M.D.anchor);
+  M.syncRailFoot();
   c.fresh.title = 'Data ' + M.fd(first) + ' to ' + M.fd(M.D.anchor) + '. ' + M.num(nOrders) + ' orders. Built ' + M.builtText() + '.';
   /* filters in force: only the ones this page uses count and show; each is a removable chip */
   var act = M.FILTERS.filter(function (fl) { return s[fl[0]] && pg && pg.uses.indexOf(fl[0]) >= 0; });
@@ -2452,7 +2607,6 @@ M.renderFoot = function () {
   var f = document.getElementById('foot');
   M.clear(f);
   /* T817: the "Data up to" line shows in the toolbar on a wide screen; below that width it is the first line of the footer */
-  f.appendChild(M.h('p', { class: 'small fresh-foot', 'data-ux': '1', text: M.ctl.fresh ? M.ctl.fresh.textContent : '' }));
   f.appendChild(M.h('p', null, [M.h('button', { type: 'button', class: 'link', onclick: function () { window.print(); }, text: 'Print this page' })]));
 };
 
@@ -3195,7 +3349,7 @@ M.FOLDS = {
     { label: 'States and loyalty', hint: 'orders by delivery state, repeat measures', match: [/^States/] },
     { label: 'Baskets and couriers', hint: 'products bought together, parcels and delivery days', match: [/Baskets: products bought together/i] }
   ],
-  gtm: [{ label: 'Lifecycle, email program and abandoned checkouts', hint: 'counts only', match: [/From contact to repeat buyer/i, /Email program in numbers/i] }],
+  gtm: [{ label: 'From first visit to repeat buyer, the email program and checkouts left behind', hint: 'counts only', match: [/From contact to repeat buyer/i, /Email program in numbers/i] }],
   forecast: [
     { label: 'How good were our forecasts', hint: 'past forecasts against real orders', match: [/How good were our forecasts/i] },
     { label: 'Levers and decisions', hint: 'what a change could add, what was decided', match: [/Where a lever could add sales/i] }
@@ -3241,7 +3395,7 @@ M.openFolds = function (el) {
 
 M.ALIAS = {
   overview: 'sales revenue net sales orders profit visits conversion summary home headline average order value',
-  funnel: 'checkout cart add to cart drop off funnel steps bought payment device',
+  funnel: 'shopping steps funnel checkout cart add to cart drop off steps bought payment device leak',
   products: 'product stock inventory verdict sell through views units collection catalogue',
   sizes: 'size stock by size restock reorder lost demand heatmap xs s m l xl xxl next batch',
   customers: 'buyers repeat cohort loyalty customer groups rfm states baskets couriers delivery shipping order time weekday',
@@ -3294,7 +3448,7 @@ M.SRCH_PER = 5;
     f.products.forEach(function (n) { out.push({ type: 'Products', label: n, sub: f.coll[n] || '', hay: norm(n + ' ' + (f.coll[n] || '')), run: { page: 'products', product: n, sel: '' } }); });
     f.collections.forEach(function (n) { out.push({ type: 'Collections', label: n, sub: 'Products page, one collection', hay: norm(n), run: { page: 'products', collection: n } }); });
     f.channels.forEach(function (n) { out.push({ type: 'Channels', label: n, sub: 'Channels page, one source', hay: norm(n), run: { page: 'channels', channel: n } }); });
-    f.devices.forEach(function (n) { out.push({ type: 'Devices', label: n, sub: 'Funnel page, one device', hay: norm(n + ' device'), run: { page: 'funnel', device: n } }); });
+    f.devices.forEach(function (n) { out.push({ type: 'Devices', label: n, sub: 'Shopping steps page, one device', hay: norm(n + ' device'), run: { page: 'funnel', device: n } }); });
     f.sizes.forEach(function (n) { out.push({ type: 'Sizes', label: 'Size ' + n, sub: 'Sizes page, one size', hay: norm('size ' + n), run: { page: 'sizes', size: n } }); });
     out = out.concat(metricIndex());
     if (M.has('search_queries_weekly')) {
@@ -3804,7 +3958,7 @@ M.PAGES.overview.render = function (r) {
 
 /* ================================================================ FUNNEL */
 M.STEPS = [['view_item', 'Viewed a product'], ['add_to_cart', 'Added to cart'], ['begin_checkout', 'Started checkout'], ['add_shipping_info', 'Added shipping details'], ['add_payment_info', 'Added payment details'], ['purchase', 'Bought']];
-M.sp('funnel', 'Funnel', 'Funnel', 'Where do shoppers leave between looking at a product and paying? A step can be bigger than the one before it, because the same person can repeat a step.', ['device'], {});
+M.sp('funnel', 'Shopping steps', 'Shopping steps', 'Where do shoppers leave between looking at a product and paying? A step can be bigger than the one before it, because the same person can repeat a step.', ['device'], {});
 /* the biggest leak in plain words: the step with the lowest share kept from the step before, among steps where the step before is at least as big (a step bigger than the one before is not a leak) */
 M.funnelLeak = function (t) {
   var worst = null;
@@ -3848,7 +4002,7 @@ M.PAGES.funnel.render = function (r) {
   var tot = function (dev) { var o = {}; M.STEPS.forEach(function (st) { o[st[0]] = 0; }); rows.forEach(function (x) { if (dev && x.device !== dev) return; M.STEPS.forEach(function (st) { o[st[0]] += +x[st[0]] || 0; }); }); return o; };
   var cur = tot(s.device || null), sessions = M.total({ tab: 'ga4_funnel_daily', col: 'sessions' }, r.from, r.to);
   var steps = M.STEPS.map(function (st) { return { name: st[1], value: cur[st[0]] }; });
-  if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Only ' + days + ' of these ' + r.days + ' days have funnel data.' }));
+  if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Only ' + days + ' of these ' + r.days + ' days have shopping steps data.' }));
   var kp = M.h('div', { class: 'kpis' });
   var buys = cur.purchase, vi = cur.view_item;
   kp.appendChild(M.kpi({ label: 'Visits', value: M.num(sessions.v), note: s.device ? 'all devices' : '' }));
@@ -3898,7 +4052,7 @@ M.PAGES.funnel.render = function (r) {
   [['source', 'Where they came from', 'Source'], ['product', 'Which product', 'Product']].forEach(function (c) {
     var list = cut(c[0]);
     if (!list.length) return;
-    root.appendChild(M.card('Funnel: ' + c[1].toLowerCase() + ' (last 28 days)', 'Looking, cart, checkout, paid for each ' + c[0] + '. * = fewer than ' + M.MIN_EVENTS + ' people at that step: too few to trust the percentage. These numbers are the nightly picture of the last 28 days and do not follow the date range.', [M.table(leakCols(c[2]), { rows: leakRows(list), sortKey: 'views', empty: 'No ' + c[0] + ' split yet.', limit: 40 })]));
+    root.appendChild(M.card('Shopping steps: ' + c[1].toLowerCase() + ' (last 28 days)', 'Looking, cart, checkout, paid for each ' + c[0] + '. * = fewer than ' + M.MIN_EVENTS + ' people at that step: too few to trust the percentage. These numbers are the nightly picture of the last 28 days and do not follow the date range.', [M.table(leakCols(c[2]), { rows: leakRows(list), sortKey: 'views', empty: 'No ' + c[0] + ' split yet.', limit: 40 })]));
   });
   return root;
 };
@@ -3926,12 +4080,13 @@ M.VERDICT = { 'MAKE MORE': 'green', 'RESTOCK': 'green', 'PUSH': 'amber', 'FIX PA
 M.sp('products', 'Products', 'Products', 'Which pieces get looked at, put in the cart and bought, and which sit in stock? Click a product to see its days.', ['collection', 'product']);
 M.productRows = function (r) {
   var led = {}; M.stateRows('product_ledger').forEach(function (x) { led[x.product] = x; });
+  var rat = {}; M.stateRows('product_ratings').forEach(function (x) { rat[String(x.product_title || '').toLowerCase()] = x; });      /* T851: Judge.me rating per product, matched on the product name */
   var agg = {};
   M.rowsIn('product_daily', r.from, r.to).forEach(function (x) { if (!x.product) return; var o = agg[x.product] || (agg[x.product] = { views: 0, carts: 0, units: 0, revenue: 0 }); o.views += +x.views || 0; o.carts += +x.carts || 0; o.units += +x.units || 0; o.revenue += +x.revenue || 0; });
   var names = {}; Object.keys(led).forEach(function (k) { names[k] = 1; }); Object.keys(agg).forEach(function (k) { names[k] = 1; });
   return Object.keys(names).filter(M.prodOk).map(function (k) {
-    var l = led[k] || {}, a = agg[k] || { views: 0, carts: 0, units: 0, revenue: 0 };
-    return { product: k, collection: l.collection || M.facts().coll[k] || '', views: a.views, carts: a.carts, units: a.units, revenue: a.revenue, stock: l.stock_units, sell: l.sell_through_pct, price: l.price, margin: l.margin_pct, cover: l.weeks_of_cover, verdict: l.verdict || '', reason: l.reason || '', buyRate: a.views ? a.units / a.views * 100 : null, cartRate: a.views ? a.carts / a.views * 100 : null };
+    var l = led[k] || {}, a = agg[k] || { views: 0, carts: 0, units: 0, revenue: 0 }, rt = rat[String(k).toLowerCase()] || null;
+    return { rating: rt && rt.rating !== '' ? +rt.rating : null, reviews: rt ? +rt.reviews || 0 : 0, product: k, collection: l.collection || M.facts().coll[k] || '', views: a.views, carts: a.carts, units: a.units, revenue: a.revenue, stock: l.stock_units, sell: l.sell_through_pct, price: l.price, margin: l.margin_pct, cover: l.weeks_of_cover, verdict: l.verdict || '', reason: l.reason || '', buyRate: a.views ? a.units / a.views * 100 : null, cartRate: a.views ? a.carts / a.views * 100 : null };
   });
 };
 /* ---- Products helpers (T829, 1 Nov 2026): plain verdict words, one product in depth, two products side by side, collections */
@@ -3949,6 +4104,8 @@ M.productCols = function (withRank) {
     { k: 'views', label: 'Views', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'carts', label: 'Added to cart', num: true, fmt: M.num, bar: { color: M.COLORS.mustard } },
     { k: 'units', label: 'Units sold', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue before order codes', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
     { k: 'stock', label: 'In stock', num: true, fmt: M.num, bar: { color: M.COLORS.grey } }, { k: 'sell', label: 'Share sold', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); }, bar: { color: M.COLORS.green, max: 100 } },
+    { k: 'rating', label: 'Rating', tip: 'The average stars shoppers gave, from reviews Judge.me shows on the product page. A star mark means fewer than 5 reviews, too few to trust.', num: true, fmt: function (v, x) { return v == null ? 'no reviews yet' : v.toFixed(1) + ' of 5' + (x.reviews < 5 ? ' *' : ''); } },
+    { k: 'reviews', label: 'Reviews', num: true, fmt: function (v) { return v ? M.num(v) : 'none'; } },
     { k: 'price', label: 'Price', num: true, hidden: true, fmt: function (v) { return v == null ? '' : M.inr(v); } }, { k: 'margin', label: 'Margin', num: true, hidden: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } },
     { k: 'cover', label: 'Weeks of stock left', num: true, hidden: true, fmt: function (v) { return v == null ? 'not available' : M.num(v, v % 1 ? 1 : 0); } },
     { k: 'cartRate', label: 'Views that added to cart', num: true, hidden: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (M.thin(x.views) ? ' *' : ''); } },
@@ -4070,7 +4227,7 @@ M.PAGES.sizes.render = function (r) {
   var s = M.state, root = M.h('div'), mode = M.SMODES.some(function (m) { return m[0] === s.sm; }) ? s.sm : 'sold90';
   var all = M.stateRows('size_product_matrix'), rows = all.filter(function (x) { return M.prodOk(x.product); });
   var snapD = M.snapOf('size_product_matrix');
-  root.appendChild(M.note('Latest picture' + (snapD ? ', ' + M.fd(snapD) : '') + '. This page ignores the dates you picked. For an earlier day use "Snapshot of" under Filters.'));
+  root.appendChild(M.note('Latest picture' + (snapD ? ', ' + M.fd(snapD) : '') + '. This page ignores the dates you picked. For an earlier day use "Picture of" under Filters.'));
   if (!rows.length) { root.appendChild(M.empty('No size data for this selection.')); return root; }
   var seg = M.h('div', { class: 'seg', role: 'group', 'aria-label': 'What the heatmap shows' }, M.SMODES.map(function (m) {
     return M.h('button', { type: 'button', 'aria-pressed': m[0] === mode ? 'true' : 'false', text: m[1], onclick: function () { M.go({ sm: m[0] }); } });
@@ -4285,7 +4442,7 @@ M.PAGES.forecast.render = function () {
       { k: 'flag', label: 'Stock', render: function (x) { return /LOW/.test(x.flag || '') ? M.badge('Running low', 'red') : x.flag ? M.badge('Fine', 'green') : null; }, sort: function (x) { return /LOW/.test(x.flag || '') ? 0 : 1; } }], { rows: so, sortKey: 'days_left_mid', sortDir: 1, empty: 'No size has recent sales, so no run out dates can be worked out.' })]));
   var op = M.stateRows('opportunity_sizing'), dl = M.rows('decision_log');
   root.appendChild(M.grid([
-    M.card('Where a lever could add sales', 'Plain arithmetic on our own numbers: what would a change be worth if it happened. Not a forecast.', [M.table([{ k: 'lever', label: 'Lever', wrap: true }, { k: 'assumption', label: 'Assumption', wrap: true }, { k: 'extra_orders_28d', label: 'Extra orders (28 days)', num: true, fmt: function (v) { return M.num(v, 1); } }, { k: 'extra_revenue_28d', label: 'Extra revenue (28 days)', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } }, { k: 'read', label: 'Read', wrap: true, render: function (x) { return x.read ? M.tag(x.read, 'indic') : null; } }], { rows: op, sortKey: 'extra_revenue_28d', empty: 'No lever table yet.' })]),
+    M.card('Where a lever could add sales', 'Plain arithmetic on our own numbers: what would a change be worth if it happened. Not a forecast.', [M.table([{ k: 'lever', label: 'Lever', wrap: true }, { k: 'assumption', label: 'Assumption', wrap: true }, { k: 'extra_orders_28d', label: 'Extra orders (28 days)', num: true, fmt: function (v) { return M.num(v, 1); } }, { k: 'extra_revenue_28d', label: 'Extra revenue (28 days)', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } }, { k: 'read', label: 'Read', wrap: true, render: function (x) { return x.read ? M.tag(String(x.read).replace(/^indicative:/i, 'A guess:').replace(/purchases in the funnel/i, 'purchases in the shopping steps'), 'indic') : null; } }], { rows: op, sortKey: 'extra_revenue_28d', empty: 'No lever table yet.' })]),
     M.card('Decisions logged', 'What we decided, why, and when to judge it against the numbers.', [M.table([{ k: 'date', label: 'Decided', fmt: M.fd }, { k: 'decision', label: 'Decision', wrap: true }, { k: 'expected_result', label: 'Expected', wrap: true }, { k: 'result', label: 'Result' }], { rows: dl, sortKey: 'date', empty: 'No decisions logged yet.' })])
   ], 'one'));
   return root;
@@ -4311,7 +4468,7 @@ M.PAGES.functions.render = function () {
   var hist = M.rows('function_summary_hist'), by = {};
   hist.forEach(function (x) { if (!x.snapshot_date) return; var o = by[x.snapshot_date] || (by[x.snapshot_date] = { GREEN: 0, AMBER: 0, RED: 0, 'NO DATA': 0 }); o[x.status] = (o[x.status] || 0) + 1; });
   var dates = Object.keys(by).sort(), buckets = dates.map(function (d) { return { from: d, to: d, label: M.fds(d) }; });
-  root.appendChild(M.card('How many jobs are on target, close and need work, night by night', 'One bar per night. ' + (dates.length < 2 ? 'Only ' + dates.length + ' night is stored so far, so there is no trend yet: this fills in as nights pass.' : 'A growing On target block is progress.'), [dates.length ? M.chart('', function (h, w) { M.stackChart(h, w, { buckets: buckets, title: 'Functions by status', h: 200, series: [{ name: 'Green', values: dates.map(function (d) { return by[d].GREEN; }), color: M.COLORS.green }, { name: 'Amber', values: dates.map(function (d) { return by[d].AMBER; }), color: M.COLORS.mustard }, { name: 'Red', values: dates.map(function (d) { return by[d].RED; }), color: M.COLORS.terra }, { name: 'No data', values: dates.map(function (d) { return by[d]['NO DATA']; }), color: M.COLORS.grey }] }); }) : M.empty('No history yet.')]));
+  root.appendChild(M.card('How many jobs are on target, close and need work, night by night', 'One bar per night. ' + (dates.length < 2 ? 'Only ' + dates.length + ' night is stored so far, so there is no trend yet: this fills in as nights pass.' : 'A growing On target block is progress.'), [dates.length ? M.chart('', function (h, w) { M.stackChart(h, w, { buckets: buckets, title: 'Jobs by status', h: 200, series: [{ name: 'On target', values: dates.map(function (d) { return by[d].GREEN; }), color: M.COLORS.green }, { name: 'Close', values: dates.map(function (d) { return by[d].AMBER; }), color: M.COLORS.mustard }, { name: 'Needs work', values: dates.map(function (d) { return by[d].RED; }), color: M.COLORS.terra }, { name: 'No data yet', values: dates.map(function (d) { return by[d]['NO DATA']; }), color: M.COLORS.grey }] }); }) : M.empty('No history yet.')]));
   var tg = M.rows('kpi_targets');
   root.appendChild(M.card('Targets the status is judged against', 'Defaults set by the agent on 29 Oct 2026 until you and Madhu confirm them. Close and Needs work are the lines past which the status changes.', [M.table([{ k: 'kpi', label: 'Measure', wrap: true }, { k: 'target', label: 'Target', num: true }, { k: 'amber', label: 'Close at', num: true }, { k: 'red', label: 'Needs work at', num: true }, { k: 'direction', label: 'Better is', fmt: function (v) { return v === 'up' ? 'higher' : 'lower'; } }, { k: 'lever', label: 'What moves it', wrap: true }], { rows: tg, sortKey: 'kpi', sortDir: 1, empty: 'No targets yet.' })]));
   return root;
@@ -4331,7 +4488,7 @@ M.RATIO_PARTS = {
 };
 /* a stored name in everyday words: capital first letter, no underscores, "pct" as percent, "hist" and "est" spelled out */
 M.niceName = function (n) {
-  var t = String(n).replace(/_hist$/, '').replace(/_/g, ' ').replace(/\bpct\b/g, '(%)').replace(/\best\b/g, 'estimate').replace(/\bga4\b/g, 'website').replace(/\b(\d+)d\b/g, '$1 days').replace(/\bavg\b/g, 'average').replace(/^conversion\b/, 'visits that bought').replace(/\bn\b/g, 'count');
+  var t = String(n).replace(/_hist$/, '').replace(/funnel[ _]device/g, 'steps by device').replace(/funnel/g, 'shopping steps').replace(/_/g, ' ').replace(/\bpct\b/g, '(%)').replace(/\best\b/g, 'estimate').replace(/\bga4\b/g, 'website').replace(/\b(\d+)d\b/g, '$1 days').replace(/\bavg\b/g, 'average').replace(/^conversion\b/, 'visits that bought').replace(/\bn\b/g, 'count');
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 M.histSources = function () {
@@ -4518,6 +4675,17 @@ M.PAGES.quality.render = function () {
   kp.appendChild(M.kpi({ label: 'Checks last run', value: latest ? M.fds(latest) : 'not available', note: latest ? latest.slice(0, 4) : '' })); kp.appendChild(M.kpi({ label: 'Checks passed', value: M.num(today.length - bad.length) + ' of ' + M.num(today.length) }));
   kp.appendChild(M.kpi({ label: 'Updated', value: M.builtText().split(',')[0], note: M.builtText().split(', ')[1] || '' })); kp.appendChild(M.kpi({ label: 'Newest data day', value: M.fds(M.D.anchor), note: M.D.anchor.slice(0, 4) }));
   root.appendChild(kp);
+  /* the raw check names (fresh:bing_daily, holes.facebook_daily, catchup fillable) are written for the machine; the page shows them in words (T848) */
+  var checkName = function (c) {
+    var s = String(c || ''), m;
+    if ((m = /^fresh:(.+)$/.exec(s))) return 'Is ' + M.niceName(m[1]).toLowerCase() + ' recent?';
+    if ((m = /^(?:holes|gaps)[:.](.+)$/.exec(s))) return 'Does ' + M.niceName(m[1]).toLowerCase() + ' have a row for every night?';
+    if (/^catchup/.test(s)) return 'Can the missed nights still be refilled?';
+    if ((m = /^jump:(.+)$/.exec(s))) return 'Did ' + M.niceName(m[1]).toLowerCase() + ' suddenly jump?';
+    if ((m = /^size:(.+)$/.exec(s))) return 'Is the size of ' + M.niceName(m[1]).toLowerCase() + ' sensible?';
+    return s.replace(/[_:.]+/g, ' ');
+  };
+  today.forEach(function (x) { if (!x._shown) { x._shown = true; x.check = checkName(x.check); } });
   root.appendChild(M.card('Nightly checks', 'Is each set of numbers recent, is its size sensible, did any number suddenly jump ten times. Problems come first.', [M.table([{ k: 'check', label: 'Check', wrap: true }, { k: 'target', label: 'Should be', wrap: true }, { k: 'status', label: 'Result', render: function (x) { return x.status === 'OK' ? M.badge('Passed', 'green') : M.badge('Needs a look', 'red'); }, sort: function (x) { return x.status === 'OK' ? 1 : 0; } }, { k: 'detail', label: 'What was found', wrap: true }], { rows: today, sortKey: 'status', sortDir: 1, empty: 'No checks have run yet.', limit: 100 })]));
   /* freshness of every daily tab */
   var today0 = M.D.built.slice(0, 10), fr = M.D.meta.filter(function (m) { return m.last && /_daily$/.test(m.name) && m.name !== 'data_quality_daily'; }).map(function (m) { return { name: m.name, last: m.last, age: M.diff(m.last, today0), rows: m.rows }; });
@@ -4734,10 +4902,10 @@ M.GROW_IDEAS = [
   {"id": "G34", "lever": "search", "idea": "Reddit: comments are hidden, one appeal planned", "status": "parked", "y": 0, "proof": "Comments visible (task list)", "when": "Second appeal 4 Nov", "why": "Reddit and Crunchbase are backlink sources only, never promoted.", "cost": "Free", "who": "Agent", "first": "T635"},
   {"id": "G35", "lever": "search", "idea": "YouTube Shopping: tag our products under the Shorts", "status": "parked", "y": 0, "proof": "Subscribers (Social page)", "when": "At 500 subscribers or 31 Jan 2027", "why": "Needs 500 to 1,000 subscribers. The channel had 15 on 31 Oct.", "cost": "Free", "who": "Agent", "first": "31 Oct 2026, ROADMAP section 4"},
   {"id": "G36", "lever": "search", "idea": "YouTube ad money (monetisation)", "status": "parked", "y": 1, "proof": "Not applicable", "when": "Not planned", "why": "Not a goal for now.", "cost": "Free", "who": "Owner decides", "first": "31 Oct 2026"},
-  {"id": "G37", "lever": "shop", "idea": "Fix the checkout leak: 42 people began checkout and 7 paid", "status": "running", "y": 0, "proof": "Checkout to paid percent (Funnel page)", "when": "Now", "why": "The biggest leak we can fix for free. Shipping is free, so the likely causes are trust at payment, the Razorpay warning, and the form. At 10 points better, about 4 more orders in 28 days (Forecast page, levers).", "cost": "Free", "who": "Agent and owner", "first": "28 Oct 2026, ROADMAP C1, T754"},
-  {"id": "G38", "lever": "shop", "idea": "Resolve the Razorpay warning that a buyer saw while paying", "status": "approved", "y": 0, "proof": "Checkout to paid percent (Funnel page)", "when": "You said go on 2 Nov", "why": "A friend saw a 'suspicious business' warning at payment. This can kill sales at the last step.", "cost": "Free", "who": "Owner gives access, agent sets up", "first": "27 Oct 2026, T707"},
-  {"id": "G39", "lever": "shop", "idea": "Trust near the buy button: delivery date, exchange rule, founder line, reviews", "status": "idea", "y": 1, "proof": "Add to bag to checkout rate (Funnel page)", "when": "After the first deliveries", "why": "New brand with 24 reviews. A page change, so you approve it first.", "cost": "Free", "who": "Agent builds, owner approves", "first": "28 Oct 2026, ROADMAP C4"},
-  {"id": "G40", "lever": "shop", "idea": "Test the product page one change at a time: size guide above the fold, video first, price line", "status": "idea", "y": 1, "proof": "Add to cart rate (Overview and Funnel pages)", "when": "After the design round (T236)", "why": "Add to bag is about 2.7% of product viewers; small fashion shops see 3 to 8%.", "cost": "Free", "who": "Agent builds, owner approves", "first": "28 Oct 2026, ROADMAP C2"},
+  {"id": "G37", "lever": "shop", "idea": "Fix the checkout leak: 42 people began checkout and 7 paid", "status": "running", "y": 0, "proof": "Checkout to paid percent (Shopping steps page)", "when": "Now", "why": "The biggest leak we can fix for free. Shipping is free, so the likely causes are trust at payment, the Razorpay warning, and the form. At 10 points better, about 4 more orders in 28 days (Forecast page, levers).", "cost": "Free", "who": "Agent and owner", "first": "28 Oct 2026, ROADMAP C1, T754"},
+  {"id": "G38", "lever": "shop", "idea": "Resolve the Razorpay warning that a buyer saw while paying", "status": "approved", "y": 0, "proof": "Checkout to paid percent (Shopping steps page)", "when": "You said go on 2 Nov", "why": "A friend saw a 'suspicious business' warning at payment. This can kill sales at the last step.", "cost": "Free", "who": "Owner gives access, agent sets up", "first": "27 Oct 2026, T707"},
+  {"id": "G39", "lever": "shop", "idea": "Trust near the buy button: delivery date, exchange rule, founder line, reviews", "status": "idea", "y": 1, "proof": "Add to bag to checkout rate (Shopping steps page)", "when": "After the first deliveries", "why": "New brand with 24 reviews. A page change, so you approve it first.", "cost": "Free", "who": "Agent builds, owner approves", "first": "28 Oct 2026, ROADMAP C4"},
+  {"id": "G40", "lever": "shop", "idea": "Test the product page one change at a time: size guide above the fold, video first, price line", "status": "idea", "y": 1, "proof": "Add to cart rate (Overview and Shopping steps pages)", "when": "After the design round (T236)", "why": "Add to bag is about 2.7% of product viewers; small fashion shops see 3 to 8%.", "cost": "Free", "who": "Agent builds, owner approves", "first": "28 Oct 2026, ROADMAP C2"},
   {"id": "G41", "lever": "shop", "idea": "Reviews: ask every delivered buyer and show them on the page; 100 by March, 50 written reviews for Google stars", "status": "running", "y": 0, "proof": "Reviews published (History page, Review numbers)", "when": "As deliveries land", "why": "24 reviews published, 4.71 average (Judge.me Free).", "cost": "Free", "who": "Agent (runs by itself)", "first": "ROADMAP R3"},
   {"id": "G42", "lever": "shop", "idea": "Ask buyers for a photo with their review (the Judge.me media reminder is OFF)", "status": "idea", "y": 1, "proof": "Reviews with photos (not tracked yet)", "when": "After the thank you offer is decided", "why": "A buyer's own photo is the best proof for a new brand.", "cost": "Free", "who": "Agent sets up, you approve the email", "first": "1 Nov 2026, growth list"},
   {"id": "G43", "lever": "shop", "idea": "Make the home page fast on a phone", "status": "running", "y": 0, "proof": "Speed numbers (History page)", "when": "Ongoing", "why": "Slow phone loads lose visitors. The loader was reworked on 30 Oct.", "cost": "Free", "who": "Agent", "first": "29 Oct 2026, T772"},
@@ -4751,7 +4919,7 @@ M.GROW_IDEAS = [
   {"id": "G51", "lever": "shop", "idea": "Order small batches and reorder what sells", "status": "idea", "y": 1, "proof": "Reorder plan (Sizes page)", "when": "When Madhu gives the lead time", "why": "Needs the supplier lead time and the smallest batch from Madhu.", "cost": "Stock", "who": "Madhu", "first": "29 Oct 2026, T770"},
   {"id": "G52", "lever": "shop", "idea": "Bundles and 'complete the look'", "status": "parked", "y": 0, "proof": "Products bought together (Customers page)", "when": "When there are more products", "why": "Needs more products first. The basket table shows what is bought together.", "cost": "Free", "who": "Agent", "first": "ROADMAP 1.6"},
   {"id": "G53", "lever": "shop", "idea": "A gift section for Diwali and weddings", "status": "parked", "y": 1, "proof": "Orders in the gift section (Overview page)", "when": "Before the next season", "why": "Seasonal. A shop change, so you approve it first.", "cost": "Free", "who": "Agent builds, owner approves", "first": "ROADMAP 1.6"},
-  {"id": "G54", "lever": "shop", "idea": "More design ideas: reels shown inside the site, a story section on each product page, a WhatsApp chat icon, more photos in the home strip", "status": "idea", "y": 1, "proof": "Add to bag rate and engaged visits (Funnel page)", "when": "When you open a design session", "why": "Held for the design round (T236). Every change is shown to you first.", "cost": "Free", "who": "Agent builds, owner approves", "first": "13 Oct 2026, T236; strip photos added 1 Nov"},
+  {"id": "G54", "lever": "shop", "idea": "More design ideas: reels shown inside the site, a story section on each product page, a WhatsApp chat icon, more photos in the home strip", "status": "idea", "y": 1, "proof": "Add to bag rate and engaged visits (Shopping steps page)", "when": "When you open a design session", "why": "Held for the design round (T236). Every change is shown to you first.", "cost": "Free", "who": "Agent builds, owner approves", "first": "13 Oct 2026, T236; strip photos added 1 Nov"},
   {"id": "G55", "lever": "later", "idea": "Meta retargeting with the Rs. 4,000 credit: Rs. 300 a day for 14 days", "status": "parked", "y": 1, "proof": "Orders from Meta (Channels page)", "when": "When the trigger is met", "why": "Starts when checkout to paid is above 25% and you say yes. Today it is 16.7%.", "cost": "Ad money", "who": "Owner decides", "first": "ROADMAP P1"},
   {"id": "G56", "lever": "later", "idea": "Google Shopping and Performance Max ads, Rs. 300 to 500 a day", "status": "parked", "y": 1, "proof": "Orders from Google ads (Channels page)", "when": "When the trigger is met", "why": "Starts at about 20 orders in 28 days, aiming for Rs. 3 back for each Rs. 1 spent.", "cost": "Ad money", "who": "Owner decides", "first": "ROADMAP P2"},
   {"id": "G57", "lever": "later", "idea": "Paid influencer posts", "status": "parked", "y": 1, "proof": "Orders from creator posts (Channels page)", "when": "After gifting is read", "why": "Only after gifting to creators shows a result.", "cost": "Ad money", "who": "Owner decides", "first": "ROADMAP P4"},
@@ -5137,7 +5305,8 @@ M.followSeries = function (id) {
 M.followers = function (c, r) {
   var ser = M.followSeries(c.id); if (!ser.length) return { now: null, change: null };
   var upto = ser.filter(function (x) { return x.date <= r.to; }), now = upto.length ? upto[upto.length - 1] : null;
-  if (!now) return { now: null, change: null };
+  /* a channel that only gives today's count (Pinterest) has its first picture dated after the newest finished day: use a picture taken up to 3 days later rather than say nothing */
+  if (!now) { var later = ser.filter(function (x) { return M.diff(r.to, x.date) >= 1 && M.diff(r.to, x.date) <= 3; }); if (later.length) return { now: later[0].v, change: null, asOf: later[0].date }; return { now: null, change: null }; }
   var before = ser.filter(function (x) { return x.date < r.from; }), base = before.length ? before[before.length - 1] : ser[0];
   return { now: now.v, change: base && base.date < now.date ? now.v - base.v : null };
 };
@@ -5167,7 +5336,7 @@ M.socialOne = function (root, r, c) {
   var t = M.total({ tab: c.tab, col: c.col }, r.from, r.to), pv = cmp ? M.total({ tab: c.tab, col: c.col }, r.pfrom, r.pto) : { v: null }, cf = M.cmpFor(t.v, pv.v, cmp);
   if (c.roll) kp.appendChild(M.kpi({ label: c.name + ' ' + c.unit, value: 'see the chart', note: 'a running count, not added up' }));
   else kp.appendChild(t.v === null ? M.kpiWhy(c.name + ' ' + c.unit, c.tab, r) : M.kpi({ label: c.name + ' ' + c.unit, value: M.num(t.v), change: cf.change, cmpNote: cf.cmpNote, note: t.days < r.days ? t.days + ' of ' + r.days + ' days have data' : '' }));
-  kp.appendChild(fol.now == null ? M.kpi({ label: 'Followers', na: 'Not recorded', note: 'The channel does not give a follower count we store.' }) : M.kpi({ label: 'Followers', value: M.num(fol.now), note: fol.change == null ? 'newest count' : (fol.change > 0 ? '+' : '') + M.num(fol.change) + ' over these dates' }));
+  kp.appendChild(fol.now == null ? M.kpi({ label: 'Followers', na: 'Not recorded', note: 'The channel does not give a follower count we store.' }) : M.kpi({ label: 'Followers', value: M.num(fol.now), note: fol.change == null ? (fol.asOf ? 'count taken on ' + M.fd(fol.asOf) + ', the first one stored' : 'newest count') : (fol.change > 0 ? '+' : '') + M.num(fol.change) + ' over these dates' }));
   kp.appendChild(M.kpi({ label: 'Posts in these dates', value: M.num(inR.length), note: all.length ? M.num(all.length) + ' posts altogether' : 'no post list for this channel' }));
   var vis = M.total({ tab: 'source_daily', col: 'sessions', pred: M.srcOfChannel(c.id) }, r.from, r.to), ord = M.total({ tab: 'source_daily', col: 'purchases', pred: M.srcOfChannel(c.id) }, r.from, r.to);
   kp.appendChild(vis.v == null ? M.kpiWhy('Visits to the shop from ' + c.name, 'source_daily', r) : M.kpi({ label: 'Visits to the shop from ' + c.name, value: M.num(vis.v), note: M.num(ord.v) + ' orders', change: cmp ? M.cmpFor(vis.v, M.total({ tab: 'source_daily', col: 'sessions', pred: M.srcOfChannel(c.id) }, r.pfrom, r.pto).v, cmp).change : null }));
@@ -5404,7 +5573,15 @@ M.PAGES.email.render = function () {
   if (cr.length) root.appendChild(M.card('Checkouts that were left, by month', 'People who got to checkout and did not pay (each person counted once, with the largest cart). "Money in them" is what they would add up to if they all came back. "Later bought" is how many did.', [M.table([
     { k: 'month', label: 'Month' }, { k: 'abandoned', label: 'People who left', num: true, fmt: M.num, bar: { color: M.COLORS.terra } }, { k: 'money_in_them', label: 'Money in their carts', num: true, fmt: M.inr }, { k: 'agreed_to_marketing', label: 'Agreed to email', num: true, fmt: M.num },
     { k: 'agreed_pct', label: 'Share who agreed', num: true, fmt: function (v) { return M.pct(+v, 0); } }, { k: 'later_bought', label: 'Later bought', num: true, fmt: M.num }], { rows: cr, sortKey: 'month', sortDir: -1, name: 'left checkouts by month', detail: false })]));
-  root.appendChild(M.card('The automatic emails', 'These send by themselves from Shopify Messaging. Opens, clicks and orders per email are only shown inside Shopify (Marketing, Automations): Shopify does not hand them to other tools. Open that screen once a month and note the numbers if you want them here.', [M.table([
+  /* T851 (1 Nov 2026): what Shopify's own Automations screen shows for the last 30 days, read from that page once a week (scripts/email_numbers_read.js). Shopify shows Sent, Click rate and Orders; it shows no opens. */
+  var ea = M.stateRows('email_activity'), latestTaken = ea.reduce(function (a, x) { return x.taken > a ? x.taken : a; }, '');
+  var eaNow = ea.filter(function (x) { return x.taken === latestTaken; });
+  if (eaNow.length) root.appendChild(M.card('How each automatic email did, last 30 days', 'Read from Shopify (Marketing, Automations) on ' + M.fd(latestTaken) + ', once a week. Shopify counts emails sent, the share clicked, and orders that followed. It does not count opens, so none are shown. Fewer than 30 emails is too few to judge a click share.', [M.table([
+    { k: 'automation', label: 'Email', wrap: true }, { k: 'status', label: 'Switched', fmt: function (v) { return v === 'Active' ? 'On' : v === 'Inactive' ? 'Off' : v; } },
+    { k: 'sent_30d', label: 'Sent', num: true, bar: { color: M.COLORS.teal }, fmt: function (v) { return v === '' || v == null ? 'none sent' : M.num(+v); } },
+    { k: 'click_rate_pct', label: 'Clicked', num: true, fmt: function (v, x) { return x.sent_30d === '' || v === '' || v == null ? '' : M.pct(+v, 0) + (+x.sent_30d < 30 ? ' *' : ''); } },
+    { k: 'orders_30d', label: 'Orders after', num: true, fmt: function (v, x) { return x.sent_30d === '' ? '' : M.num(+v || 0); } }], { rows: eaNow, sortKey: 'sent_30d', sortDir: -1, name: 'automatic email results', detail: false })]));
+  root.appendChild(M.card('The automatic emails', 'These send by themselves from Shopify Messaging. Sent, clicks and orders per email are in the card above, read from Shopify once a week; opens are not shown by Shopify at all.', [M.table([
     { k: 'name', label: 'Email', wrap: true }, { k: 'when', label: 'When it sends', wrap: true }, { k: 'trigger', label: 'Starts when' }], { rows: M.EMAILFLOWS.map(function (x) { return { name: x[0], when: x[1], trigger: x[2] }; }), name: 'automatic emails', detail: false, sortKey: null })]));
   if (ew.length > 1) {
     var rows = ew.map(function (x) { return { week: x.week, subscribers: +x.subscribers, new_subscribers: +x.new_subscribers, unsubscribed_total: +x.unsubscribed_total }; });
@@ -5651,8 +5828,8 @@ M.TABLE_WORDS = {
   money_daily: ['Money each day', 'Orders, sales, discounts, GST, cost, estimated fees and profit for every day.', 'Overview'],
   kpi_daily: ['Everything each day', 'One row a day with the main numbers of the shop and every channel side by side.', 'History'],
   shopify_daily: ['Orders each day (from Shopify)', 'Orders, units, sales and new against returning buyers for every day, straight from Shopify.', 'Customers'],
-  ga4_funnel_daily: ['Visits and steps each day', 'Visits, and how many looked at a product, added to cart, started checkout and paid.', 'Funnel'],
-  funnel_device_daily: ['Steps by device each day', 'The same shopping steps for mobile, desktop and tablet.', 'Funnel'],
+  ga4_funnel_daily: ['Visits and steps each day', 'Visits, and how many looked at a product, added to cart, started checkout and paid.', 'Shopping steps'],
+  funnel_device_daily: ['Steps by device each day', 'The same shopping steps for mobile, desktop and tablet.', 'Shopping steps'],
   source_daily: ['Visits by source each day', 'Where visitors came from each day, and what they did.', 'Channels'],
   product_daily: ['Products each day', 'Views, cart adds, units and revenue for each product each day.', 'Products'],
   place_device_daily: ['Cities and devices each day', 'Visits and purchases by city and by device.', 'Customers'],
@@ -5731,7 +5908,7 @@ M.TABLE_WORDS = {
   function_scorecard: ['Team scorecard measures', 'Each measure with its target and result.', 'Team scorecard'],
   function_summary: ['Team scorecard jobs', 'The 13 jobs of the business with a result each.', 'Team scorecard'],
   kpi_targets: ['Targets', 'The line for On target, Close and Needs work for each main number.', 'Team scorecard'],
-  drop_offs: ['Funnel by source and product', 'Where people leave, for each source, device and product.', 'Funnel'],
+  drop_offs: ['Shopping steps by source and product', 'Where people leave, for each source, device and product.', 'Shopping steps'],
   cohorts: ['Do buyers come back, by month', 'Buyers grouped by the month of their first order.', 'Customers'],
   loyalty: ['Coming back', 'Repeat buyers and how long they take.', 'Customers'],
   rfm_groups: ['Customer groups', 'Buyers grouped by how recently, how often and how much they bought.', 'Customers'],
@@ -5857,6 +6034,332 @@ M.PAGES.health.render = function () {
 };
 M.ORDER.push('tables', 'health');
 
+/* mazo dashboard words (T849, owner 1 Nov 2026: "wherever there is a complicated term or jargon, put a tooltip. I do not even know what Funnel means, so I am that dumb").
+   One list of hard words with one plain sentence each. After every page is drawn, M.explainTerms() finds these words in column headings, card titles, headline numbers, legends and tags and
+   adds the small (i) next to them. The (i) is the one floating tip from dashboard_01_ui.js (M.infoMark): it takes no space and never moves the page.
+   To explain a new word: add a line here. Nothing else. A word matches as a whole word, any capital letters. The first match in a heading wins, so put longer phrases first. */
+
+M.TERMS = [
+  /* shopping steps */
+  ['shopping steps', 'The steps a visitor takes before buying: look at a product, add it to the cart, start checkout, add shipping details, add payment details, pay. Each step loses some people.'],
+  ['funnel', 'The steps a visitor takes before buying: look at a product, add it to the cart, start checkout, add shipping details, add payment details, pay. It is called a funnel because each step is narrower than the one before.'],
+  ['biggest leak', 'The step where the most people stop. Fixing the biggest leak usually brings more sales than anything else.'],
+  ['kept', 'Of the people who reached the step before, how many reached this one.'],
+  ['compared with the first step', 'The bar is drawn against the first step, so a short bar means many people dropped out by here.'],
+  /* visits and traffic */
+  ['sessions', 'One visit to the shop. The same person coming back later counts as a new visit.'],
+  ['visits that bought', 'Out of every 100 visits, how many ended in an order. Also called the conversion rate.'],
+  ['conversion', 'Out of every 100 visits, how many ended in an order.'],
+  ['add to cart rate', 'Out of every 100 people who looked at a product, how many added it to the cart.'],
+  ['bounce', 'A visit where the person looked at one page and left without doing anything.'],
+  ['stayed and looked around', 'The share of visits where the person stayed more than 10 seconds, looked at two or more pages, or did something.'],
+  ['engaged', 'The share of visits where the person stayed more than 10 seconds, looked at two or more pages, or did something.'],
+  ['revenue per visit', 'The money earned divided by the number of visits. It shows how well a source turns visitors into money.'],
+  ['direct / none', 'People who typed the address, opened a saved link, or came from an app that hides where it came from.'],
+  ['utm', 'A tag added to a link we share, so we can see which post or bio link a visit came from.'],
+  ['first visit source', 'Where the person came from the very first time they visited.'],
+  ['landing page', 'The first page a visitor saw when they arrived.'],
+  ['first page people saw', 'The first page a visitor saw when they arrived.'],
+  /* social */
+  ['impressions', 'How many times something was shown on a screen. One person can see it more than once.'],
+  ['reach', 'How many different people saw it.'],
+  ['views', 'How many times it was watched or shown.'],
+  ['engagement', 'Likes, comments, saves, shares and clicks. It shows how much people did, not only how many saw it.'],
+  ['saves', 'How many people saved the post to look at later. A strong sign of interest.'],
+  ['link taps', 'How many people tapped the link in the profile.'],
+  ['link clicks', 'How many people clicked a link that goes to the shop.'],
+  ['against a typical post of its channel', 'How this post did compared with the usual post on the same channel. 2.0 times means twice as many people as usual.'],
+  ['typical post', 'The middle post of that channel. Half the posts did better and half did worse.'],
+  ['followers gained', 'New followers minus people who left, over the dates you picked.'],
+  ['shop visits', 'Visits to the shop that came from a tagged link on this channel.'],
+  ['tagged', 'A link that carries a tag, so the visit can be counted against the exact post.'],
+  ['posting rhythm', 'How often posts go out, and how long the quiet stretches are.'],
+  ['what works', 'The average reach of posts, split by topic, format or hour, so you can see which kind does best.'],
+  /* customers */
+  ['repeat rate', 'Out of every 100 buyers, how many bought a second time.'],
+  ['repeat customers', 'Buyers who ordered more than once.'],
+  ['cohort', 'A group of buyers who made their first order in the same month. We follow each group to see who comes back.'],
+  ['customer groups', 'Buyers sorted by how recently they bought, how often, and how much they spent.'],
+  ['champions', 'Buyers who bought more than once, recently, and spent a lot.'],
+  ['loyal', 'Buyers who bought more than once.'],
+  ['promising', 'Buyers with one order in the last 31 to 60 days.'],
+  ['lapsed', 'Buyers whose only order was more than 120 days ago.'],
+  ['average order value', 'The average amount a customer pays for one order.'],
+  ['average order', 'The average amount a customer pays for one order.'],
+  ['lifetime value', 'All the money one customer has spent with us so far.'],
+  ['cost to win a buyer', 'The money spent on ads divided by the number of new buyers. We run no ads yet, so it is empty.'],
+  ['left a checkout', 'People who started to pay and did not finish.'],
+  ['abandoned', 'People who started to pay and did not finish.'],
+  /* money */
+  ['net sales', 'What customers paid for the pieces after discounts, with GST included. Shipping is not part of it.'],
+  ['gross sales', 'The full price of everything sold before discounts.'],
+  ['profit estimate', 'Net sales minus GST, what the pieces cost us, the payment fee, the parcel and the packaging. The fee, parcel and packaging are estimates until Razorpay and Shiprocket are connected.'],
+  ['contribution profit', 'Net sales minus GST, what the pieces cost us, the payment fee, the parcel and the packaging.'],
+  ['gst', 'Goods and Services Tax. It is inside the price the customer pays, and we pass it on to the government, so it is not our money.'],
+  ['break even', 'The number of orders a month we need so that profit covers the fixed costs (Madhu and the Shopify plan).'],
+  ['margin', 'The share of the price left after what the piece costs us.'],
+  ['refunded', 'Money given back to the customer.'],
+  ['payout', 'Money Razorpay sends to the bank account.'],
+  /* products and stock */
+  ['sell-through', 'The share of what we made or bought that has been sold.'],
+  ['share sold', 'The share of what we made or bought that has been sold.'],
+  ['sold 28d', 'Pieces sold in the last 28 days.'],
+  ['days left', 'How many days the stock lasts at the pace it sold over the last 28 days.'],
+  ['verdict', 'Our plain reading of how a product is doing: selling, slow, or not selling.'],
+  ['size curve', 'The share of sales for each size, so the next batch can be planned.'],
+  ['reorder', 'What to make again, and how many, worked out every night from sales and stock.'],
+  ['made to order', 'Made after the order is placed. It takes about 20 days to reach the customer.'],
+  ['ready to ship', 'In stock, and shipped across India in 3 to 7 business days.'],
+  /* data words */
+  ['table', 'A set of numbers kept for the dashboard, one row for each day, product or channel.'],
+  ['snapshot', 'A picture of the numbers on one night.'],
+  ['indicative', 'A guess, not a promise.'],
+  ['too few to read', 'Too few cases to draw a conclusion. One more order can change a percentage a lot.'],
+  ['not tracked', 'We do not measure this, so it is not a zero.'],
+  ['not recorded', 'This number was not saved for that day.'],
+  ['previous period', 'The dates just before the ones you picked, with the same length.'],
+  ['vs before', 'Compared with the dates just before the ones you picked, with the same length.'],
+  ['average position', 'Where the shop shows in Google results. 1 is the top. A lower number is better.'],
+  ['brand search', 'Searches that include mazo or shopmazo.'],
+  ['crm', 'Looking after customers after the first order: email, thank you notes, win back.'],
+  ['rfm', 'Buyers sorted by how recently they bought, how often, and how much they spent.'],
+  ['sku', 'One exact product in one size.'],
+  ['rto', 'A parcel that came back to us undelivered.'],
+  ['ndr', 'A delivery attempt that failed.'],
+  ['utr', 'The bank reference number of a payout.']
+];
+
+/* the matching: a term matches inside a text as a whole word; a text already carrying an (i) is skipped; the title of a card gets at most one extra (i) */
+(function () {
+  var rx = null;
+  M.termFor = function (text) {
+    var t = String(text || '').toLowerCase().replace(/[▲▼]/g, '').replace(/\s+/g, ' ').trim();
+    if (!t || t.length > 80) return null;
+    for (var i = 0; i < M.TERMS.length; i++) {
+      var w = M.TERMS[i][0];
+      var at = t.indexOf(w);
+      if (at < 0) continue;
+      var before = at === 0 ? ' ' : t.charAt(at - 1), after = at + w.length >= t.length ? ' ' : t.charAt(at + w.length);
+      if (/[a-z0-9]/.test(before) || /[a-z0-9]/.test(after)) continue;
+      return { word: w, text: M.TERMS[i][1] };
+    }
+    return null;
+  };
+  var addTo = function (el, anchorSel) {
+    if (!el || el.querySelector('.info-mark') || el.getAttribute('data-term')) return;
+    var raw = (el.getAttribute('data-term-text') || el.textContent), hit = M.termFor(raw);
+    if (!hit) return;
+    el.setAttribute('data-term', hit.word);
+    var tgt = anchorSel ? el.querySelector(anchorSel) || el : el;
+    tgt.appendChild(document.createTextNode(' '));
+    tgt.appendChild(M.infoMark(hit.text, hit.word.charAt(0).toUpperCase() + hit.word.slice(1), 'term-mark'));
+  };
+  /* sort headings are buttons: the mark goes after the button so a click on the mark never sorts */
+  M.explainTerms = function () {
+    var main = document.getElementById('main');
+    if (!main) return;
+    Array.prototype.forEach.call(main.querySelectorAll('th'), function (th) {
+      if (th.querySelector('.info-mark')) return;
+      var b = th.querySelector('button'), label = (b || th).textContent;
+      var hit = M.termFor(label);
+      if (!hit) return;
+      th.appendChild(M.infoMark(hit.text, hit.word.charAt(0).toUpperCase() + hit.word.slice(1), 'term-mark'));
+    });
+    Array.prototype.forEach.call(main.querySelectorAll('.kpi .l'), function (l) { addTo(l); });
+    Array.prototype.forEach.call(main.querySelectorAll('.card > h3 .h3t, .fs-head h2 > span'), function (h) {
+      var h3 = h.parentNode;
+      if (h3.querySelector('.info-mark')) return;       /* a card that already explains itself keeps its own (i) */
+      var hit = M.termFor(h.textContent);
+      if (!hit) return;
+      h.appendChild(document.createTextNode(' '));
+      h.appendChild(M.infoMark(hit.text, hit.word.charAt(0).toUpperCase() + hit.word.slice(1), 'term-mark'));
+    });
+    Array.prototype.forEach.call(main.querySelectorAll('.tag'), function (s) { addTo(s); });
+    Array.prototype.forEach.call(main.querySelectorAll('.seg button'), function (b) { /* a button label keeps its own click: a title is enough */
+      var hit = M.termFor(b.textContent); if (hit && !b.title) b.title = hit.text;
+    });
+  };
+  var base = M.afterRender;
+  M.afterRender = function () { if (base) base(); try { M.explainTerms(); } catch (e) { console.error(e); } };
+  var rf = M.render;
+  M.render = function () { rf(); try { M.explainTerms(); } catch (e) { console.error(e); } };
+})();
+
+/* mazo dashboard dropdown (T847, owner 1 Nov 2026: "make sure the dropdown content is also designed").
+   A browser draws the open list of a <select> itself, in the system style, and a page cannot change it. So every <select> on a laptop gets a designed list instead: a button that looks like the
+   field, and a floating panel with rounded corners, a hover state, a check mark on the chosen line, a filter box when the list is long, arrow keys, Enter, Escape and type to jump.
+   The real <select> stays in the page (hidden, 1px) and is the one source of truth: choosing a line sets it and fires its normal 'change' event, so no other code had to change.
+   On a phone or tablet (a touch screen) nothing is replaced: the system picker is better there. Everything added carries data-ux="1". */
+
+(function () {
+  var open = null, uid = 0;
+  var touch = function () { return window.matchMedia && window.matchMedia('(pointer:coarse)').matches; };
+  var chev = function () { return M.s('svg', { class: 'ic dd-chev', 'aria-hidden': 'true' }, [M.s('use', { href: '#i-chev' })]); };
+  var tick = function () { return M.s('svg', { class: 'ic dd-tick', 'aria-hidden': 'true' }, [M.s('use', { href: '#i-check' })]); };
+
+  var closeList = function (focusBtn) {
+    if (!open) return;
+    var o = open; open = null; M._ddOpen = false;
+    o.list.parentNode && o.list.parentNode.removeChild(o.list);
+    o.btn.setAttribute('aria-expanded', 'false');
+    o.btn.removeAttribute('aria-activedescendant');
+    if (focusBtn) o.btn.focus({ preventScroll: true });
+  };
+  M.ddClose = closeList;
+
+  var labelOf = function (sel) { var o = sel.options[sel.selectedIndex]; return o ? o.text : ''; };
+  var refresh = function (sel) {
+    var b = sel._dd; if (!b) return;
+    b.firstChild.textContent = labelOf(sel) || ' ';
+    b.disabled = sel.disabled;
+    b.classList.toggle('placeholder', !sel.value);
+  };
+
+  var place = function (o) {
+    var r = o.btn.getBoundingClientRect(), l = o.list;
+    l.style.minWidth = Math.max(r.width, 200) + 'px';
+    l.style.maxHeight = '';
+    var h = l.offsetHeight, below = window.innerHeight - r.bottom - 12, above = r.top - 12;
+    var up = h > below && above > below;
+    var maxH = Math.max(160, Math.min(360, up ? above : below));
+    l.style.maxHeight = maxH + 'px';
+    h = Math.min(h, maxH);
+    var left = Math.max(8, Math.min(r.left, window.innerWidth - l.offsetWidth - 8));
+    l.style.left = Math.round(left) + 'px';
+    l.style.top = Math.round(up ? r.top - h - 6 : r.bottom + 6) + 'px';
+    l.classList.toggle('up', up);
+  };
+
+  var openList = function (sel) {
+    var btn = sel._dd;
+    if (!btn || btn.disabled) return;
+    if (open) { var same = open.btn === btn; closeList(false); if (same) return; }
+    if (M.popClose && !btn.closest('.tpop')) M.popClose();
+    var opts = Array.prototype.slice.call(sel.options), id = 'dd' + (++uid);
+    var list = M.h('div', { class: 'dd-list', role: 'listbox', id: id, 'data-ux': '1', 'aria-label': (sel.getAttribute('aria-label') || (sel.id && document.querySelector('label[for="' + sel.id + '"]') ? document.querySelector('label[for="' + sel.id + '"]').textContent : 'Choose')) });
+    var filter = null;
+    if (opts.length > 12) {
+      filter = M.h('input', { type: 'text', class: 'dd-filter', placeholder: 'Type to filter', 'aria-label': 'Filter the list', autocomplete: 'off' });
+      list.appendChild(M.h('div', { class: 'dd-filter-wrap' }, [filter]));
+    }
+    var body = M.h('div', { class: 'dd-body' });
+    list.appendChild(body);
+    var items = [];
+    opts.forEach(function (op, i) {
+      var li = M.h('div', { class: 'dd-item' + (op.selected ? ' on' : ''), role: 'option', id: id + '-' + i, 'aria-selected': op.selected ? 'true' : 'false', 'data-i': String(i) }, [M.h('span', { class: 'dd-text', text: op.text }), tick()]);
+      if (op.disabled) li.classList.add('off');
+      items.push({ el: li, i: i, text: op.text.toLowerCase() });
+      body.appendChild(li);
+    });
+    var empty = M.h('div', { class: 'dd-empty', text: 'Nothing matches', hidden: true });
+    body.appendChild(empty);
+    document.body.appendChild(list);
+    open = { sel: sel, btn: btn, list: list, items: items, cur: Math.max(0, sel.selectedIndex), filter: filter };
+    M._ddOpen = true;
+    btn.setAttribute('aria-expanded', 'true');
+    btn.setAttribute('aria-controls', id);
+    place(open);
+    var vis = function () { return items.filter(function (x) { return !x.el.hidden && !x.el.classList.contains('off'); }); };
+    var mark = function (k) {
+      var v = vis(); if (!v.length) return;
+      k = Math.max(0, Math.min(v.length - 1, k));
+      items.forEach(function (x) { x.el.classList.remove('hot'); });
+      var t = v[k]; t.el.classList.add('hot'); open.cur = t.i; open.hot = k;
+      btn.setAttribute('aria-activedescendant', t.el.id);
+      var bt = body.getBoundingClientRect(), et = t.el.getBoundingClientRect();
+      if (et.top < bt.top) body.scrollTop -= (bt.top - et.top); else if (et.bottom > bt.bottom) body.scrollTop += (et.bottom - bt.bottom);
+    };
+    var choose = function (i) {
+      var op = sel.options[i]; if (!op || op.disabled) return;
+      var changed = sel.selectedIndex !== i;
+      sel.selectedIndex = i;
+      closeList(true);
+      refresh(sel);
+      if (changed) { sel.dispatchEvent(new Event('input', { bubbles: true })); sel.dispatchEvent(new Event('change', { bubbles: true })); }
+    };
+    open.choose = choose; open.mark = mark; open.vis = vis;
+    list.addEventListener('mousedown', function (e) { if (e.target !== filter) e.preventDefault(); });
+    list.addEventListener('click', function (e) { e.stopPropagation(); var it = e.target.closest('.dd-item'); if (it && !it.classList.contains('off')) choose(+it.getAttribute('data-i')); });
+    list.addEventListener('mousemove', function (e) { var it = e.target.closest('.dd-item'); if (!it || it.classList.contains('off')) return; var v = vis(), k = v.findIndex(function (x) { return x.el === it; }); if (k >= 0 && k !== open.hot) { items.forEach(function (x) { x.el.classList.remove('hot'); }); it.classList.add('hot'); open.cur = +it.getAttribute('data-i'); open.hot = k; } });
+    if (filter) {
+      filter.addEventListener('input', function () {
+        var q = filter.value.toLowerCase().trim(), n = 0;
+        items.forEach(function (x) { var show = !q || x.text.indexOf(q) >= 0; x.el.hidden = !show; if (show) n++; });
+        empty.hidden = n > 0; place(open); mark(0);
+      });
+      filter.addEventListener('keydown', function (e) { keyHandler(e); });
+      setTimeout(function () { if (open && open.filter === filter) filter.focus({ preventScroll: true }); }, 0);
+    }
+    var k0 = vis().findIndex(function (x) { return x.i === sel.selectedIndex; });
+    mark(k0 < 0 ? 0 : k0);
+    var cur = list.querySelector('.dd-item.hot'); if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest' });
+  };
+
+  var typed = '', typedAt = 0;
+  var keyHandler = function (e) {
+    if (!open) return;
+    var k = e.key;
+    if (k === 'Escape') { e.preventDefault(); e.stopPropagation(); closeList(true); return; }
+    if (k === 'ArrowDown') { e.preventDefault(); open.mark((open.hot || 0) + 1); return; }
+    if (k === 'ArrowUp') { e.preventDefault(); open.mark((open.hot || 0) - 1); return; }
+    if (k === 'Home') { e.preventDefault(); open.mark(0); return; }
+    if (k === 'End') { e.preventDefault(); open.mark(1e6); return; }
+    if (k === 'Enter' || (k === ' ' && !open.filter)) { e.preventDefault(); open.choose(open.cur); return; }
+    if (k === 'Tab') { closeList(false); return; }
+    if (!open.filter && k.length === 1 && /\S/.test(k)) {      /* type to jump */
+      var now = Date.now(); typed = (now - typedAt > 700 ? '' : typed) + k.toLowerCase(); typedAt = now;
+      var v = open.vis(), hit = v.findIndex(function (x) { return x.text.indexOf(typed) === 0; });
+      if (hit >= 0) open.mark(hit);
+    }
+  };
+
+  M.enhanceSelects = function (root) {
+    if (touch()) return;
+    Array.prototype.forEach.call((root || document).querySelectorAll('select'), function (sel) {
+      if (sel._dd || sel.classList.contains('native')) return;
+      var btn = M.h('button', { type: 'button', class: 'dd-btn', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'data-ux': '1' }, [M.h('span', { class: 'dd-label' }), chev()]);
+      var lab = sel.id ? document.querySelector('label[for="' + sel.id + '"]') : null;
+      if (lab) { if (!lab.id) lab.id = 'ddl' + (++uid); btn.setAttribute('aria-labelledby', lab.id); }
+      else if (sel.getAttribute('aria-label')) btn.setAttribute('aria-label', sel.getAttribute('aria-label'));
+      if (sel.title) btn.title = sel.title;
+      sel.classList.add('dd-native'); sel.tabIndex = -1; sel.setAttribute('aria-hidden', 'true');
+      sel.parentNode.insertBefore(btn, sel.nextSibling);
+      sel._dd = btn; btn._sel = sel;
+      btn.addEventListener('click', function (e) { e.stopPropagation(); openList(sel); });
+      btn.addEventListener('keydown', function (e) {
+        if (open && open.btn === btn) { keyHandler(e); return; }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openList(sel); }
+      });
+      sel.addEventListener('change', function () { refresh(sel); });
+      refresh(sel);
+    });
+  };
+  M.syncDropdowns = function () {
+    Array.prototype.forEach.call(document.querySelectorAll('select.dd-native'), function (sel) { refresh(sel); if (sel._dd) { sel._dd.title = sel.title || ''; } });
+  };
+
+  /* Safari does not focus a button when it is clicked, so after a mouse click the keys go to the page: while a list is open, the keys are taken here whatever has the focus */
+  document.addEventListener('keydown', function (e) {
+    if (!open) return;
+    var t = e.target;
+    if (t === open.btn || (open.filter && t === open.filter)) return;      /* those two have their own handler */
+    if (e.key === 'Tab') { closeList(false); return; }
+    if (['Escape', 'ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter'].indexOf(e.key) >= 0 || (e.key === ' ' && !open.filter) || (!open.filter && e.key.length === 1)) keyHandler(e);
+  }, true);
+  document.addEventListener('mousedown', function (e) { if (open && !e.target.closest('.dd-list') && !e.target.closest('.dd-btn')) closeList(false); }, true);
+  document.addEventListener('scroll', function (e) { if (open && !(e.target && e.target.closest && e.target.closest('.dd-list'))) closeList(false); }, true);
+  window.addEventListener('resize', function () { closeList(false); });
+
+  /* let a click inside the list count as "inside" for the date and filter panels, and let Escape close the list before anything else */
+  var ov = M.overlayOpen;
+  M.overlayOpen = function () { return !!M._ddOpen || (ov ? ov() : false); };
+
+  var rf = M.render;
+  M.render = function () { closeList(false); rf(); M.enhanceSelects(document); M.syncDropdowns(); };
+  var fo = M.fsOpen;
+  if (fo) M.fsOpen = function () { var r = fo.apply(this, arguments); M.enhanceSelects(document.getElementById('fsroot')); M.syncDropdowns(); return r; };
+})();
+
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
    the one file build (docs/reports/dashboard/mazo-dashboard.html) never uses any of this. Plan and design: docs/guides/robust-data-and-hosting-plan.md, scripts/site_crypto.py.
 
@@ -5977,8 +6480,8 @@ M.startHosted = function () {
   document.getElementById('lock').hidden = true;
   document.getElementById('app').hidden = false;
   try { M.init(); } catch (err) { console.error(err); document.getElementById('main').textContent = 'The dashboard could not start: ' + (err && err.message ? err.message : 'error'); }
-  var f = document.getElementById('foot');
-  if (f && !document.getElementById('signout')) f.parentNode.appendChild(M.h('p', { class: 'small signout', id: 'signout' }, [M.h('button', { type: 'button', class: 'link', text: 'Sign out of this device', onclick: M.signOut })]));
+  var rf = document.getElementById('rail-foot');      /* T847: Sign out sits at the bottom left of the sidebar */
+  if (rf && !document.getElementById('signout')) rf.appendChild(M.h('button', { type: 'button', class: 'rf-signout', id: 'signout', title: 'Forget the password on this device', onclick: M.signOut }, [M.s('svg', { class: 'ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#i-out' })]), M.h('span', { text: 'Sign out' })]));
 };
 
 M.unlock = function () {
