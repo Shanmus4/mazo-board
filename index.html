@@ -3225,12 +3225,12 @@ M.PAGES.products.render = function (r) {
   if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Product activity covers ' + days + ' of the ' + r.days + ' days in this range (it starts on ' + M.fd(M.cover('product_daily').first) + ').' }));
   var tv = rows.reduce(function (a, x) { return a + x.views; }, 0), tc = rows.reduce(function (a, x) { return a + x.carts; }, 0), tu = rows.reduce(function (a, x) { return a + x.units; }, 0), trv = rows.reduce(function (a, x) { return a + x.revenue; }, 0), st = rows.reduce(function (a, x) { return a + (x.stock || 0); }, 0);
   var kp = M.h('div', { class: 'kpis' });
-  kp.appendChild(M.kpi({ label: 'Product views', value: M.num(tv) })); kp.appendChild(M.kpi({ label: 'Cart adds', value: M.num(tc), note: tv ? M.pct(tc / tv * 100) + ' of views' : '' })); kp.appendChild(M.kpi({ label: 'Units sold', value: M.num(tu) })); kp.appendChild(M.kpi({ label: 'Revenue', value: M.inr(trv) })); kp.appendChild(M.kpi({ label: 'Pieces in stock now', value: M.num(st) }));
+  kp.appendChild(M.kpi({ label: 'Product views', value: M.num(tv) })); kp.appendChild(M.kpi({ label: 'Cart adds', value: M.num(tc), note: tv ? M.pct(tc / tv * 100) + ' of views' : '' })); kp.appendChild(M.kpi({ label: 'Units sold', value: M.num(tu) })); kp.appendChild(M.kpi({ label: 'Revenue before order codes', value: M.inr(trv), note: 'from Google Analytics item sales; Overview net sales also removes order codes' })); kp.appendChild(M.kpi({ label: 'Pieces in stock now', value: M.num(st) }));
   root.appendChild(kp);
   var cols = [
     { k: 'product', label: 'Product', wrap: true }, { k: 'collection', label: 'Collection' },
     { k: 'views', label: 'Views', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'carts', label: 'Carts', num: true, fmt: M.num, bar: { color: M.COLORS.mustard } },
-    { k: 'units', label: 'Units', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
+    { k: 'units', label: 'Units', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue before order codes', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
     { k: 'stock', label: 'In stock', num: true, fmt: M.num, bar: { color: M.COLORS.grey } }, { k: 'sell', label: 'Sell through', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); }, bar: { color: M.COLORS.green, max: 100 } },
     { k: 'buyRate', label: 'Buy rate', num: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (M.thin(x.views) ? ' *' : ''); } },
     { k: 'verdict', label: 'Verdict', render: function (x) { return x.verdict ? M.badge(x.verdict, M.VERDICT[x.verdict] || 'grey') : null; } }
