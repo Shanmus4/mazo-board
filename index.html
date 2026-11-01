@@ -3890,35 +3890,128 @@ M.productRows = function (r) {
     return { product: k, collection: l.collection || M.facts().coll[k] || '', views: a.views, carts: a.carts, units: a.units, revenue: a.revenue, stock: l.stock_units, sell: l.sell_through_pct, price: l.price, margin: l.margin_pct, cover: l.weeks_of_cover, verdict: l.verdict || '', reason: l.reason || '', buyRate: a.views ? a.units / a.views * 100 : null, cartRate: a.views ? a.carts / a.views * 100 : null };
   });
 };
+/* ---- Products helpers (T829, 1 Nov 2026): plain verdict words, one product in depth, two products side by side, collections */
+M.VERDICT_WORD = { 'MAKE MORE': 'Make more', 'RESTOCK': 'Restock', 'PUSH': 'Push it', 'FIX PAGE': 'Fix the page', 'KEEP': 'Keep', 'WATCH': 'Too early' };
+M.VERDICT_TIP = { 'MAKE MORE': 'Selling faster than it is stocked: make more.', 'RESTOCK': 'Selling and nearly out: restock.', 'PUSH': 'Stock is sitting. Post it, bundle it or test a price.', 'FIX PAGE': 'People look but do not buy: check the page, photos, price and sizes.', 'KEEP': 'Doing fine. Leave it.', 'WATCH': 'Too new or too few views to judge yet.' };
+M.verdictBadge = function (v) {
+  if (!v) return null;
+  var b = M.badge(M.VERDICT_WORD[v] || v, M.VERDICT[v] || 'grey');
+  b.title = M.VERDICT_TIP[v] || '';
+  return b;
+};
+M.productCols = function (withRank) {
+  return [
+    { k: 'product', label: 'Product', wrap: true }, { k: 'collection', label: 'Collection' },
+    { k: 'views', label: 'Views', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'carts', label: 'Added to cart', num: true, fmt: M.num, bar: { color: M.COLORS.mustard } },
+    { k: 'units', label: 'Units sold', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue before order codes', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
+    { k: 'stock', label: 'In stock', num: true, fmt: M.num, bar: { color: M.COLORS.grey } }, { k: 'sell', label: 'Share sold', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); }, bar: { color: M.COLORS.green, max: 100 } },
+    { k: 'price', label: 'Price', num: true, fmt: function (v) { return v == null ? '' : M.inr(v); } }, { k: 'margin', label: 'Margin', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } },
+    { k: 'cover', label: 'Weeks of stock left', num: true, fmt: function (v) { return v == null ? 'n/a' : M.num(v, v % 1 ? 1 : 0); } },
+    { k: 'cartRate', label: 'Views that added to cart', num: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (M.thin(x.views) ? ' *' : ''); } },
+    { k: 'buyRate', label: 'Views that bought', num: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (M.thin(x.views) ? ' *' : ''); } },
+    { k: 'verdict', label: 'What to do', render: function (x) { return M.verdictBadge(x.verdict); }, sort: function (x) { return x.verdict || ''; } }
+  ];
+};
+/* the number that stands out, as one plain sentence */
+M.productStandsOut = function (rows) {
+  var out = [], by = function (k, dir) { return rows.filter(function (x) { return x[k] != null; }).sort(function (a, b) { return (b[k] - a[k]) * dir; })[0]; };
+  var top = by('views', 1), sold = rows.filter(function (x) { return x.units > 0; }).sort(function (a, b) { return b.revenue - a.revenue; })[0];
+  if (top) out.push(top.product + ' gets the most views (' + M.num(top.views) + ')' + (top.units ? '' : ' and has not sold in these dates') + '.');
+  if (sold) out.push(sold.product + ' earned the most (' + M.inr(sold.revenue) + ' from ' + M.num(sold.units) + ' unit' + (sold.units === 1 ? '' : 's') + ').');
+  var idle = rows.filter(function (x) { return (x.stock || 0) >= 10 && x.units === 0; });
+  if (idle.length) out.push(idle.length + ' product' + (idle.length === 1 ? ' has' : 's have') + ' 10 or more pieces in stock and no sale in these dates: ' + idle.slice(0, 3).map(function (x) { return x.product; }).join(', ') + (idle.length > 3 ? ' and more' : '') + '.');
+  return out;
+};
+M.productDetail = function (r, sel) {
+  var box = M.h('div', { class: 'pdetail' });
+  var buckets = M.buckets(r.from, r.to, r.mode), pf = function (c) { return M.series({ tab: 'product_daily', col: c, pred: function (x) { return x.product === sel.product; } }, buckets); };
+  var mini = function (name, col, color) { var v = pf(col); return M.card(name, null, [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: sel.product + ' ' + name, h: 170, series: [{ name: name, values: v, color: color, fmt: col === 'revenue' ? M.inr : M.num }], empty: 'No ' + name.toLowerCase() + ' for this product in these dates.', yfmt: col === 'revenue' ? function (n) { return 'Rs. ' + M.short(n); } : M.short }); })]); };
+  box.appendChild(M.h('h3', { text: sel.product, style: 'margin:1rem 0 .2rem' }));
+  box.appendChild(M.h('p', { class: 'small', text: (sel.verdict ? (M.VERDICT_WORD[sel.verdict] || sel.verdict) + ': ' : '') + sel.reason + (sel.price ? ' Price ' + M.inr(sel.price) + ', margin ' + M.pct(sel.margin, 0) + '.' : '') }));
+  box.appendChild(M.grid([mini('Views', 'views', M.COLORS.teal), mini('Added to cart', 'carts', M.COLORS.mustard), mini('Units sold', 'units', M.COLORS.green), mini('Revenue before order codes', 'revenue', M.COLORS.maroon)], ''));
+  /* stock over time (one line per night since 28 Oct) and the price each night */
+  var sd = M.rows('stock_daily').filter(function (x) { return x.product === sel.product; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+  var ph = M.rows('product_ledger_hist').filter(function (x) { return x.product === sel.product; }).sort(function (a, b) { return a.snapshot_date < b.snapshot_date ? -1 : 1; });
+  var kids = [];
+  if (sd.length >= 2) {
+    var bk = sd.map(function (x) { return { from: x.date, to: x.date, label: M.fds(x.date) }; });
+    kids.push(M.card('Pieces in stock, night by night', 'Stock on hand at the end of each night since ' + M.fd(sd[0].date) + '. This record starts on that day.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: bk, mode: 'day', title: sel.product + ' stock', h: 170, series: [{ name: 'In stock', values: sd.map(function (x) { return +x.units_on_hand || 0; }), color: M.COLORS.grey, fmt: M.num }], empty: 'No stock record.' }); })]));
+  }
+  var prices = ph.map(function (x) { return +x.price; }).filter(function (v) { return v > 0; }), pChanged = prices.length && Math.min.apply(null, prices) !== Math.max.apply(null, prices);
+  kids.push(M.card('Price and margin', 'The price is saved every night. It starts on ' + (ph[0] ? M.fd(ph[0].snapshot_date) : 'the first night') + '; older prices exist only on the orders themselves.', [M.table([
+    { k: 'when', label: 'Night' }, { k: 'price', label: 'Price', num: true, fmt: M.inr }, { k: 'cost', label: 'Cost to make', num: true, fmt: M.inr }, { k: 'margin', label: 'Margin', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } }, { k: 'stock', label: 'In stock', num: true, fmt: M.num }
+  ], { rows: ph.map(function (x) { return { when: M.fd(x.snapshot_date), price: x.price, cost: x.unit_cost, margin: x.margin_pct, stock: x.stock_units }; }).reverse(), empty: 'No price record yet.', limit: 10, noTools: true }), pChanged ? M.note('The price changed during these nights.') : M.h('p', { class: 'small muted', text: 'The price has not changed since the record began.' })]));
+  /* sizes of this product */
+  var sz = M.stateRows('size_product_matrix').filter(function (x) { return x.product === sel.product; });
+  if (sz.length) kids.push(M.card('Sizes of this product', 'Sold in 90 days, in stock now, added to cart and picked in the size chooser in 28 days.', [M.table([
+    { k: 'size', label: 'Size', sort: function (x) { return M.facts().sizeOrder.indexOf(x.size); } }, { k: 'sold_90d', label: 'Sold in 90 days', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'stock', label: 'In stock', num: true, fmt: M.num, bar: { color: M.COLORS.grey } },
+    { k: 'carts_28d', label: 'Added to cart', num: true, fmt: M.num }, { k: 'size_picks_28d', label: 'Picked in the size chooser', num: true, fmt: M.num }, { k: 'unavailable_clicks_28d', label: 'Asked for it when out', num: true, fmt: M.num }
+  ], { rows: sz, sortKey: 'size', sortDir: 1, empty: 'No size record.', noTools: true, detail: false })]));
+  if (kids.length) box.appendChild(M.grid(kids, 'wide'));
+  box.appendChild(M.h('button', { type: 'button', class: 'btn', text: 'Close this product', onclick: function () { M.go({ sel: '' }); } }));
+  return box;
+};
+/* two products side by side: every number in two columns and the better one marked */
+M.productCompare = function (rows) {
+  var names = rows.map(function (x) { return x.product; }), s = M.state;
+  var wrap = M.h('div'), a = names[0], b = names[1] || names[0];
+  var sa = M.h('select', { id: 'cmp-a', 'aria-label': 'First product' }, names.map(function (n) { return M.h('option', { value: n, text: n }); })), sb = M.h('select', { id: 'cmp-b', 'aria-label': 'Second product' }, names.map(function (n) { return M.h('option', { value: n, text: n }); }));
+  sa.value = a; sb.value = b;
+  var out = M.h('div');
+  var METRICS = [['views', 'Views', M.num, 1], ['carts', 'Added to cart', M.num, 1], ['units', 'Units sold', M.num, 1], ['revenue', 'Revenue before order codes', M.inr, 1], ['cartRate', 'Views that added to cart', function (v) { return v == null ? 'n/a' : M.pct(v); }, 1], ['buyRate', 'Views that bought', function (v) { return v == null ? 'n/a' : M.pct(v); }, 1], ['price', 'Price', function (v) { return v == null ? 'n/a' : M.inr(v); }, 0], ['margin', 'Margin', function (v) { return v == null ? 'n/a' : M.pct(v, 0); }, 1], ['stock', 'In stock', M.num, 0], ['sell', 'Share sold', function (v) { return v == null ? 'n/a' : M.pct(v, 0); }, 1], ['cover', 'Weeks of stock left', function (v) { return v == null ? 'n/a' : M.num(v, 1); }, 0]];
+  var draw = function () {
+    M.clear(out);
+    var x = rows.filter(function (q) { return q.product === sa.value; })[0], y = rows.filter(function (q) { return q.product === sb.value; })[0];
+    if (!x || !y) return;
+    var t = M.h('table', { class: 'cmp-table' }, [M.h('thead', null, M.h('tr', null, [M.h('th', { text: 'Number' }), M.h('th', { class: 'n', text: x.product }), M.h('th', { class: 'n', text: y.product })]))]), tb = M.h('tbody');
+    METRICS.forEach(function (m) {
+      var fx = m[2](x[m[0]]), fy = m[2](y[m[0]]), vx = x[m[0]], vy = y[m[0]], bx = '', by = '';
+      if (m[3] && vx != null && vy != null && vx !== vy && x.product !== y.product) { if (vx > vy) bx = 'better'; else by = 'better'; }
+      tb.appendChild(M.h('tr', null, [M.h('td', { text: m[1] }), M.h('td', { class: 'n ' + bx, text: fx }), M.h('td', { class: 'n ' + by, text: fy })]));
+    });
+    t.appendChild(tb);
+    out.appendChild(M.h('div', { class: 'tw' }, t));
+    out.appendChild(M.h('p', { class: 'small muted', text: 'The bolder green number is the higher one. Price, stock and weeks of stock left are not marked, because higher is not better or worse by itself.' }));
+  };
+  sa.addEventListener('change', draw); sb.addEventListener('change', draw);
+  wrap.appendChild(M.h('div', { class: 'seg-row' }, [M.h('div', { class: 'fld' }, [M.h('label', { for: 'cmp-a', text: 'First product' }), sa]), M.h('div', { class: 'fld' }, [M.h('label', { for: 'cmp-b', text: 'Second product' }), sb])]));
+  wrap.appendChild(out); draw();
+  return wrap;
+};
 M.PAGES.products.render = function (r) {
   var s = M.state, root = M.h('div'), rows = M.productRows(r), days = M.daysCovered('product_daily', r.from, r.to);
-  if (!rows.length) { root.appendChild(M.empty('No products match this filter.')); return root; }
+  if (!rows.length) { root.appendChild(M.empty('No products match this filter.', 'Clear the product or collection filter under Filters.')); return root; }
   if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Only ' + days + ' of these ' + r.days + ' days have product data (it starts on ' + M.fd(M.cover('product_daily').first) + ').' }));
   var tv = rows.reduce(function (a, x) { return a + x.views; }, 0), tc = rows.reduce(function (a, x) { return a + x.carts; }, 0), tu = rows.reduce(function (a, x) { return a + x.units; }, 0), trv = rows.reduce(function (a, x) { return a + x.revenue; }, 0), st = rows.reduce(function (a, x) { return a + (x.stock || 0); }, 0);
   var kp = M.h('div', { class: 'kpis' });
-  kp.appendChild(M.kpi({ label: 'Product views', value: M.num(tv) })); kp.appendChild(M.kpi({ label: 'Cart adds', value: M.num(tc), note: tv ? M.pct(tc / tv * 100) + ' of views' : '' })); kp.appendChild(M.kpi({ label: 'Units sold', value: M.num(tu) })); kp.appendChild(M.kpi({ label: 'Revenue before order codes', value: M.inr(trv), note: 'from Google Analytics item sales; Overview net sales also removes order codes' })); kp.appendChild(M.kpi({ label: 'Pieces in stock now', value: M.num(st) }));
+  kp.appendChild(M.kpi({ label: 'Product views', value: M.num(tv) })); kp.appendChild(M.kpi({ label: 'Added to cart', value: M.num(tc), note: tv ? M.pct(tc / tv * 100) + ' of views' : '' })); kp.appendChild(M.kpi({ label: 'Units sold', value: M.num(tu) })); kp.appendChild(M.kpi({ label: 'Revenue before order codes', value: M.inr(trv), note: 'Overview net sales also removes order codes' })); kp.appendChild(M.kpi({ label: 'Pieces in stock now', value: M.num(st) }));
   root.appendChild(kp);
-  var cols = [
-    { k: 'product', label: 'Product', wrap: true }, { k: 'collection', label: 'Collection' },
-    { k: 'views', label: 'Views', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'carts', label: 'Carts', num: true, fmt: M.num, bar: { color: M.COLORS.mustard } },
-    { k: 'units', label: 'Units', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue before order codes', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
-    { k: 'stock', label: 'In stock', num: true, fmt: M.num, bar: { color: M.COLORS.grey } }, { k: 'sell', label: 'Sell through', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); }, bar: { color: M.COLORS.green, max: 100 } },
-    { k: 'buyRate', label: 'Buy rate', num: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (M.thin(x.views) ? ' *' : ''); } },
-    { k: 'verdict', label: 'Verdict', render: function (x) { return x.verdict ? M.badge(x.verdict, M.VERDICT[x.verdict] || 'grey') : null; } }
-  ];
-  var cardTable = M.card('All products', 'Views, carts, units and revenue are for the date range. Stock, share sold and the verdict come from the latest saved picture' + (s.snap ? ' (' + M.fd(M.snapOf('product_ledger')) + ')' : '') + ' and do not change with your dates. * = fewer than ' + M.MIN_EVENTS + ' views: too few to trust the percentage.', [M.table(cols, {
-    rows: rows, sortKey: 'views', limit: 100, onRow: function (x) { M.go({ sel: s.sel === x.product ? '' : x.product }); }, selected: function (x) { return x.product === s.sel; }, empty: 'No products.'
+  M.productStandsOut(rows).forEach(function (t) { root.appendChild(M.h('p', { class: 'fn-leak', text: t })); });
+  var cardTable = M.card('All products', 'Views, cart adds, units and revenue are for the dates you picked. Stock, share sold, price and what to do come from the latest saved picture' + (s.snap ? ' (' + M.fd(M.snapOf('product_ledger')) + ')' : '') + ' and do not change with your dates. * = fewer than ' + M.MIN_EVENTS + ' views: too few to trust the percentage. Click a row to see that product in depth.', [M.table(M.productCols(), {
+    rows: rows, sortKey: 'views', limit: 100, onRow: function (x) { M.go({ sel: s.sel === x.product ? '' : x.product }); }, selected: function (x) { return x.product === s.sel; }, empty: 'No products.', name: 'products'
   })]);
   root.appendChild(cardTable);
   var sel = rows.filter(function (x) { return x.product === s.sel; })[0];
-  if (sel) {
-    var buckets = M.buckets(r.from, r.to, r.mode), pf = function (c) { return M.series({ tab: 'product_daily', col: c, pred: function (x) { return x.product === sel.product; } }, buckets); };
-    var mini = function (name, col, color) { var v = pf(col); return M.card(name, null, [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: sel.product + ' ' + name, h: 170, series: [{ name: name, values: v, color: color, fmt: col === 'revenue' ? M.inr : M.num }], empty: 'No ' + name.toLowerCase() + ' for this product in the range.', yfmt: col === 'revenue' ? function (n) { return 'Rs. ' + M.short(n); } : M.short }); })]); };
-    root.appendChild(M.h('h3', { text: sel.product, style: 'margin:1rem 0 .2rem' }));
-    root.appendChild(M.h('p', { class: 'small', text: (sel.verdict ? sel.verdict + ': ' : '') + sel.reason + (sel.price ? ' Price Rs. ' + M.num(sel.price) + ', margin ' + M.pct(sel.margin, 0) + '.' : '') }));
-    root.appendChild(M.grid([mini('Views', 'views', M.COLORS.teal), mini('Cart adds', 'carts', M.COLORS.mustard), mini('Units sold', 'units', M.COLORS.green)], ''));
-    root.appendChild(M.h('button', { type: 'button', class: 'btn', text: 'Close this product', onclick: function () { M.go({ sel: '' }); } }));
-  } else root.appendChild(M.h('p', { class: 'small muted', text: 'Click a row to see that product day by day.' }));
+  if (sel) root.appendChild(M.productDetail(r, sel));
+  else root.appendChild(M.h('p', { class: 'small muted', text: 'Click a row to see that product day by day, its stock, its price and its sizes.' }));
+  /* collections side by side */
+  var cb = M.stateRows('collection_board').filter(function (x) { return !s.collection || x.collection === s.collection; });
+  if (cb.length) root.appendChild(M.card('Collections side by side', 'Each collection as a whole, from the latest saved picture. Units and revenue are all time. Views and buys are the last 28 days.', [M.table([
+    { k: 'collection', label: 'Collection' }, { k: 'products', label: 'Products', num: true, fmt: M.num }, { k: 'units_sold', label: 'Units sold', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
+    { k: 'profit_est', label: 'Profit estimate', num: true, fmt: M.inr }, { k: 'margin_pct', label: 'Margin', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } }, { k: 'views_28d', label: 'Views, 28 days', num: true, fmt: M.num }, { k: 'buys_28d', label: 'Bought, 28 days', num: true, fmt: M.num },
+    { k: 'buy_rate_pct', label: 'Views that bought', num: true, fmt: function (v) { return v == null ? '' : M.pct(v); } }, { k: 'stock_units', label: 'In stock', num: true, fmt: M.num }, { k: 'stock_value_cost', label: 'Stock at cost', num: true, fmt: M.inr }, { k: 'sell_through_pct', label: 'Share sold', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } }
+  ], { rows: cb, sortKey: 'revenue', empty: 'No collection record yet.', name: 'collections' })]));
+  if (rows.length > 1) root.appendChild(M.card('Compare two products', 'Pick any two and see every number side by side.', [M.productCompare(rows)]));
+  /* stock tied up, night by night */
+  var sdAll = M.rows('stock_daily').filter(function (x) { return M.prodOk(x.product); });
+  if (sdAll.length) {
+    var latestD = sdAll.reduce(function (m, x) { return x.date > m ? x.date : m; }, '');
+    var nights = Array.from(new Set(sdAll.map(function (x) { return x.date; }))).sort();
+    root.appendChild(M.card('Stock on hand, product by product', 'Pieces and their cost on each night since ' + M.fd(nights[0]) + '. "Made to order" pieces are made after the order, so stock is not the limit.', [M.table([
+      { k: 'product', label: 'Product', wrap: true }, { k: 'units_on_hand', label: 'In stock now', num: true, fmt: M.num, bar: { color: M.COLORS.grey } }, { k: 'stock_value_cost', label: 'Stock at cost', num: true, fmt: M.inr },
+      { k: 'units_sold_28d', label: 'Sold, 28 days', num: true, fmt: M.num }, { k: 'weeks_of_cover', label: 'Weeks of stock left', num: true, fmt: function (v) { return v == null ? 'n/a' : M.num(v, 1); } }, { k: 'made_to_order', label: 'Made to order', render: function (x) { return M.h('span', { text: x.made_to_order === 'yes' ? 'Yes' : 'No' }); } }
+    ], { rows: sdAll.filter(function (x) { return x.date === latestD; }), sortKey: 'units_on_hand', empty: 'No stock record.', name: 'stock-on-hand' })]));
+  }
   return root;
 };
 
@@ -4013,8 +4106,8 @@ M.PAGES.customers.render = function (r) {
     M.legend(rsorted.map(function (x, i) { return { name: x.group + ' ' + M.num(x.customers), color: RC[x.group] || M.CAT[i % 6] }; })),
     M.table([{ k: 'group', label: 'Group', sort: function (x) { var i = rfmOrder.indexOf(x.group); return i < 0 ? 99 : i; }, render: function (x) { return M.h('b', { text: x.group }); } },
       { k: 'customers', label: 'Customers', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'share_pct', label: 'Share', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } },
-      { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.teal } }, { k: 'avg_days_since_last_order', label: 'Days since last order (average)', num: true, fmt: function (v) { return v == null ? 'n/a' : M.num(v); } },
-      { k: 'meaning', label: 'Meaning', wrap: true }, { k: 'read', label: 'Read', wrap: true, render: function (x) { return x.read ? M.tag(x.read, /few|under|no repeat/.test(x.read) ? 'thin' : '') : null; } }],
+      { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.teal } }, { k: 'avg_days_since_last_order', label: 'Days since the last order (average)', num: true, fmt: function (v) { return v == null ? 'n/a' : M.num(v); } },
+      { k: 'meaning', label: 'Meaning', wrap: true }, { k: 'read', label: 'What it means', wrap: true, render: function (x) { return x.read ? M.tag(x.read, /few|under|no repeat/.test(x.read) ? 'thin' : '') : null; } }],
       { rows: rfm, sortKey: 'group', sortDir: 1, empty: 'No customer groups yet.', limit: 20 })] : [M.empty('No customer group table yet.')]));
   /* buyer patterns: stacked bars or donut only when 4 or fewer parts */
   var cutsWanted = [['collection', 'Collection'], ['product type', 'Product type'], ['price band', 'Price band'], ['pattern', 'Pattern'], ['size', 'Size'], ['first visit source', 'First visit source'], ['used a discount code', 'Used a discount code'], ['payment', 'Payment'], ['weekday', 'Weekday'], ['state', 'State']];
@@ -4029,6 +4122,7 @@ M.PAGES.customers.render = function (r) {
   });
   root.appendChild(M.h('h3', { text: 'What buyers have in common', style: 'margin:1rem 0 0' }));
   root.appendChild(M.grid(cards));
+  M.customerExtras(root);
   /* weekday x hour */
   var rh = M.stateRows('order_rhythm'), look = {}; rh.forEach(function (x) { look[x.weekday + '|' + x.hour_block] = +x.orders || 0; });
   root.appendChild(M.grid([
@@ -4038,15 +4132,48 @@ M.PAGES.customers.render = function (r) {
   /* states + loyalty + baskets */
   var geo = M.stateRows('geo_board'), cour = M.stateRows('courier_scorecard');
   root.appendChild(M.grid([
-    M.card('States', 'Orders and revenue by delivery state (state level only, never an address). Delivery days are shipped-to-delivered.', [M.table([{ k: 'state', label: 'State' }, { k: 'orders', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.teal } }, { k: 'avg_delivery_days', label: 'Delivery days', num: true, fmt: function (v, x) { return v == null ? '' : M.num(v, 1) + (x.orders < 10 ? ' *' : ''); } }], { rows: geo, sortKey: 'orders', empty: 'No state table yet.' }), M.h('p', { class: 'small muted', text: '* under 10 orders: too few to read the delivery time.' })]),
-    M.card('Loyalty', 'Repeat buying measures.', [M.table([{ k: 'measure', label: 'Measure' }, { k: 'value', label: 'Value', num: true, fmt: function (v) { return v == null ? 'n/a' : M.num(v, v % 1 ? 1 : 0); } }, { k: 'read', label: 'Read', wrap: true }], { rows: M.stateRows('loyalty'), empty: 'No loyalty table yet.' })])
+    M.card('States', 'Orders and revenue by delivery state (state level only, never an address). Delivery days run from shipped to delivered.', [M.table([{ k: 'state', label: 'State' }, { k: 'orders', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.teal } }, { k: 'avg_delivery_days', label: 'Delivery days', num: true, fmt: function (v, x) { return v == null ? '' : M.num(v, 1) + (x.orders < 10 ? ' *' : ''); } }], { rows: geo, sortKey: 'orders', empty: 'No state table yet.' }), M.h('p', { class: 'small muted', text: '* under 10 orders: too few to read the delivery time.' })]),
+    M.card('Coming back', 'How many buyers ordered again, and how long it took.', [M.table([{ k: 'measure', label: 'Measure' }, { k: 'value', label: 'Value', num: true, fmt: function (v) { return v == null ? 'n/a' : M.num(v, v % 1 ? 1 : 0); } }, { k: 'read', label: 'Read', wrap: true }], { rows: M.stateRows('loyalty'), empty: 'No loyalty table yet.' })])
   ], 'wide'));
   var bp = M.stateRows('basket_pairs');
   root.appendChild(M.grid([
     M.card('Baskets: products bought together', 'A number above 1 in the last column means the pair is bought together more often than chance. Only a few orders held two products, so treat every row as a hint, not a fact.', [M.table([{ k: 'product_a', label: 'Product A', wrap: true }, { k: 'product_b', label: 'Product B', wrap: true }, { k: 'orders_together', label: 'Together', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'lift', label: 'Together vs chance', num: true, fmt: function (v) { return v == null ? '' : M.num(v, 2); } }, { k: 'read', label: 'Read', render: function (x) { return x.read ? M.tag(x.read, /few/.test(x.read) ? 'thin' : '') : null; } }], { rows: bp, sortKey: 'orders_together', empty: 'No product pairs yet: no order held two products.' })]),
-    M.card('Couriers', 'Parcels, dispatch and delivery days by carrier and state. Under 10 parcels is too few to read.', [M.table([{ k: 'carrier', label: 'Carrier', wrap: true }, { k: 'state', label: 'State' }, { k: 'parcels', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'avg_delivery_days', label: 'Delivery days', num: true, fmt: function (v) { return v == null ? '' : M.num(v, 1); } }, { k: 'late', label: 'Late', num: true, fmt: M.num }], { rows: cour, sortKey: 'parcels', empty: 'No courier table yet.' })])
+    M.card('Couriers', 'Parcels, days to send and days to deliver, by courier and state. Under 10 parcels is too few to read.', [M.table([{ k: 'carrier', label: 'Carrier', wrap: true }, { k: 'state', label: 'State' }, { k: 'parcels', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'avg_delivery_days', label: 'Delivery days', num: true, fmt: function (v) { return v == null ? '' : M.num(v, 1); } }, { k: 'late', label: 'Late', num: true, fmt: M.num }], { rows: cour, sortKey: 'parcels', empty: 'No courier table yet.' })])
   ], 'wide'));
   return root;
+};
+
+/* ---- more ways to look at customers (T829, 1 Nov 2026): new against coming back over time, where orders go (state bars and cities), the size of an order, how people find the shop, the weekly line */
+M.customerExtras = function (root) {
+  /* 1 new against coming back, week by week (Shopify daily table: new_customers, returning_customers) */
+  var wk = {};
+  M.rows('shopify_daily').forEach(function (x) { if (!x.date) return; var d = M.add(x.date, -((new Date(x.date + 'T00:00:00Z').getUTCDay() + 6) % 7)); var o = wk[d] || (wk[d] = { n: 0, r: 0, o: 0, net: 0 }); o.n += +x.new_customers || 0; o.r += +x.returning_customers || 0; o.o += +x.orders || 0; o.net += +x.net_sales || 0; });
+  var weeks = Object.keys(wk).sort();
+  if (weeks.length >= 2) {
+    var bk = weeks.map(function (d) { return { from: d, to: M.add(d, 6), label: M.fds(d), title: 'Week starting ' + M.fd(d) }; });
+    root.appendChild(M.card('New buyers and buyers coming back, week by week', 'Each bar is a week. Dark = first time buyers. Gold = people who had bought before. A first time buyer counts once, in the week of their first order.', [M.chart('', function (h, w) {
+      M.stackChart(h, w, { buckets: bk, title: 'New and returning buyers', h: 210, series: [{ name: 'First time buyers', values: weeks.map(function (d) { return wk[d].n; }), color: M.COLORS.maroon }, { name: 'Bought before', values: weeks.map(function (d) { return wk[d].r; }), color: M.COLORS.mustard }], empty: 'No orders yet.' });
+    }), M.tableView([{ k: 'w', label: 'Week starting' }, { k: 'n', label: 'First time', num: true }, { k: 'r', label: 'Bought before', num: true }, { k: 'o', label: 'Orders', num: true }, { k: 'net', label: 'Net sales', num: true, fmt: M.inr }], weeks.map(function (d) { return { w: M.fd(d), n: wk[d].n, r: wk[d].r, o: wk[d].o, net: wk[d].net }; }))]));
+  }
+  /* 2 where orders go: states as bars, cities from website visits */
+  var geo = M.stateRows('geo_board').filter(function (x) { return x.state; }), gmax = geo.reduce(function (a, x) { return a + (+x.orders || 0); }, 0);
+  var cities = {};
+  M.rows('place_device_daily').forEach(function (x) { if (x.kind !== 'city' || !x.place || x.place === '(not set)') return; var o = cities[x.place] || (cities[x.place] = { city: x.place, visits: 0, orders: 0 }); o.visits += +x.sessions || 0; o.orders += +x.purchases || 0; });
+  var cityRows = Object.keys(cities).map(function (k) { var o = cities[k]; o.rate = o.visits ? o.orders / o.visits * 100 : null; return o; });
+  var kids = [];
+  if (geo.length) kids.push(M.card('Where orders go', 'Share of orders by delivery state. The bar is that state\'s share of all ' + M.num(gmax) + ' orders.', [M.thinTag(gmax, 'orders'), M.bars(geo.slice().sort(function (a, b) { return (+b.orders || 0) - (+a.orders || 0); }).map(function (x) { return { label: x.state, value: +x.orders || 0, text: M.num(x.orders) + ' (' + M.pct((+x.orders || 0) / (gmax || 1) * 100, 0) + '), ' + M.inr(x.revenue), sub: x.avg_delivery_days != null ? 'Delivered in ' + M.num(x.avg_delivery_days, 1) + ' days on average' : null }; }))]));
+  if (cityRows.length) kids.push(M.card('Cities that visit', 'Where website visits come from, by city, over everything stored. Orders are the purchases Google Analytics matched to that city.', [M.table([{ k: 'city', label: 'City' }, { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'orders', label: 'Orders', num: true, fmt: M.num }, { k: 'rate', label: 'Visits that bought', num: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (x.visits < M.MIN_EVENTS ? ' *' : ''); } }], { rows: cityRows, sortKey: 'visits', limit: 15, empty: 'No city data yet.', name: 'cities' }), M.h('p', { class: 'small muted', text: '* under ' + M.MIN_EVENTS + ' visits: too few to trust the percentage.' })]));
+  if (kids.length) root.appendChild(M.grid(kids, 'wide'));
+  /* 3 how big is an order, and how are orders spread over the weeks */
+  var os = M.rows('order_sources').filter(function (x) { return x.net_sales != null; });
+  if (os.length) {
+    var vals = os.map(function (x) { return +x.net_sales || 0; }).sort(function (a, b) { return a - b; }), bands = [[0, 1000, 'Under Rs. 1,000'], [1000, 2000, 'Rs. 1,000 to 1,999'], [2000, 3000, 'Rs. 2,000 to 2,999'], [3000, 1e12, 'Rs. 3,000 and over']];
+    var med = vals[Math.floor(vals.length / 2)], avg = vals.reduce(function (a, b) { return a + b; }, 0) / vals.length;
+    root.appendChild(M.card('How big is an order?', 'Net sales of each order grouped into bands. Median = the middle order: half are smaller, half are bigger. Average ' + M.inr(Math.round(avg)) + ', median ' + M.inr(med) + '.', [M.thinTag(vals.length, 'orders'), M.bars(bands.map(function (b) { var n = vals.filter(function (v) { return v >= b[0] && v < b[1]; }).length; return { label: b[2], value: n, text: M.num(n) + ' (' + M.pct(n / vals.length * 100, 0) + ')' }; }))]));
+  }
+  /* 4 the repeat buyer line, week by week (customers_weekly) */
+  var cw = M.rows('customers_weekly');
+  if (cw.length) root.appendChild(M.card('Customers, week by week', 'One line a week, kept so a year from now the trend can be read. New customers, buyers who came back, and the share of customers who agreed to email.', [M.table([{ k: 'week', label: 'Week starting', fmt: M.fd }, { k: 'customers_total', label: 'Contacts on file', num: true, fmt: M.num }, { k: 'new_customers', label: 'New buyers', num: true, fmt: M.num }, { k: 'repeat_customers', label: 'Bought again', num: true, fmt: M.num }, { k: 'repeat_rate_pct', label: 'Bought again, share', num: true, fmt: function (v) { return v == null ? 'n/a' : M.pct(v, 0); } }, { k: 'avg_days_to_second_order', label: 'Days to the second order', num: true, fmt: function (v) { return v == null ? 'not yet' : M.num(v); } }, { k: 'avg_order_value', label: 'Average order', num: true, fmt: M.inr }, { k: 'customers_with_email_consent', label: 'Agreed to email', num: true, fmt: M.num }], { rows: cw, sortKey: 'week', empty: 'No weekly line yet.', name: 'customers-weekly' })]));
 };
 
 /* Pages: Forecast and stock, Business functions, History, Data quality. */
@@ -4789,6 +4916,15 @@ M.sampleKpis = function (labels) {
   return box;
 };
 
+/* one quiet line under the headline numbers: when it was last read, and how many sales days now use a real figure instead of a guess (money_daily.cost_basis) */
+M.costBasisLine = function (source) {
+  var st = M.connState(source), rows = M.has('money_daily') ? M.rows('money_daily') : [], sold = rows.filter(function (x) { return +x.orders > 0; }), real = sold.filter(function (x) { return x.cost_basis === 'real'; }).length, part = sold.filter(function (x) { return x.cost_basis === 'partly real'; }).length;
+  var bits = [];
+  if (st.checked) bits.push('Last read ' + st.checked.slice(0, 16).replace(' ', ' at ') + '.');
+  if (sold.length && rows[0] && rows[0].cost_basis !== undefined) bits.push(M.num(real) + ' of ' + M.num(sold.length) + ' sales days use real costs in profit' + (part ? ', ' + M.num(part) + ' partly' : '') + '; the rest still use the guess.');
+  return bits.length ? M.h('p', { class: 'small muted', text: bits.join(' ') }) : null;
+};
+
 /* total of a daily column over the dates picked, with how many days hold a row */
 M.sumCol = function (tab, col, r) { var t = M.total({ tab: tab, col: col }, r.from, r.to); return t; };
 M.ratio = function (a, b, dp) { return b ? M.pct(a / b * 100, dp == null ? 1 : dp) : 'not tracked'; };
@@ -4804,7 +4940,7 @@ M.PAGES.payments.render = function (r) {
         steps: ['Open the Razorpay dashboard and create an API key (Account & Settings, then API Keys).', 'On this Mac, run the one line from the guide and paste the key when it asks. Nothing is shown on screen.', 'That is all. The numbers fill in the next morning, and every past payment is read once.'] }),
       M.previewBox('This is the shape of the page, not real money. Real numbers replace it the morning after you connect.', [M.sampleKpis(['Paid by buyers', 'Razorpay kept', 'Reached the bank', 'Payments that failed']), M.sampleBars(28, 1.2, '#5E1204'), M.sampleRows(['UPI', 'Card', 'Net banking', 'Wallet'])])
     ]));
-    root.appendChild(M.card('What changes in your profit once this is connected', 'Today profit uses a flat guess for the Razorpay fee. After you connect, every day that has a real figure switches to it, and the Data quality page says which days are real and which are still a guess.', [
+    root.appendChild(M.card('What changes in your profit once this is connected', 'Today profit uses a flat guess for the Razorpay fee. After you connect, every day that has a real figure switches to it, and this page says how many days are real and how many are still a guess.', [
       M.h('p', { class: 'small', text: 'Nothing in the past is changed until real figures exist. The profit on the Overview page keeps its current value today.' })]));
     return root;
   }
@@ -4818,6 +4954,7 @@ M.PAGES.payments.render = function (r) {
   kp.appendChild(M.kpi({ label: 'Reached the bank', value: M.inr(net), note: 'after Razorpay\'s charge' }));
   kp.appendChild(M.kpi({ label: 'Payments that failed', value: M.num(fail), note: pays ? M.pct(fail / pays * 100, 1) + ' of ' + M.num(pays) + ' tries' : '' }));
   root.appendChild(kp);
+  var cbl = M.costBasisLine('razorpay'); if (cbl) root.appendChild(cbl);
   /* money by day: bars of money in and a line of what Razorpay kept */
   var buckets = M.buckets(r.from, r.to, r.mode);
   var seriesFor = function (col) { return M.series({ tab: tab, col: col }, buckets); };
@@ -4890,6 +5027,7 @@ M.PAGES.shipping.render = function (r) {
   kp.appendChild(M.kpi({ label: 'Days to deliver', value: avgDays == null ? 'not tracked' : M.num(avgDays, 1), note: 'from pickup to the door, average' }));
   kp.appendChild(M.kpi({ label: 'Came back', value: M.num(rto), note: n ? M.pct(rto / n * 100, 1) + ' of parcels' : '' }));
   root.appendChild(kp);
+  var cbl = M.costBasisLine('shiprocket'); if (cbl) root.appendChild(cbl);
   var buckets = M.buckets(r.from, r.to, r.mode), seriesFor = function (c) { return M.series({ tab: tab, col: c }, buckets); };
   var cnt = seriesFor('shipments'), frS = seriesFor('freight');
   root.appendChild(M.grid([
