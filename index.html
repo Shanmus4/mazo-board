@@ -4529,6 +4529,20 @@ M.PAGES.quality.render = function () {
   if (M.D.dropped.length) notes.push('Columns left out for privacy: ' + M.D.dropped.join(', ') + '.');
   if (M.D.missing.length) notes.push('Tables with no rows yet: ' + M.D.missing.join(', ') + '.');
   notes.push('Cells scrubbed because they looked like an email or phone number: ' + M.num(M.D.scrubbed) + '.');
+  /* T846: which clock each source uses (1 Nov 2026) */
+  var CLOCKS = [
+    { s: 'Shopify orders', c: 'India day', h: 0, n: 'The shop runs on India time.' },
+    { s: 'Google Analytics (visits)', c: 'India day', h: 0, n: 'The Analytics property is set to India time.' },
+    { s: 'Merchant Center (shopping listings)', c: 'India day', h: 0, n: 'The account is set to India time.' },
+    { s: 'Google Search (searches and clicks)', c: 'Pacific day (US west coast)', h: 12.5, n: 'A Google Search day ends at 12:30 pm India time. Since 1 Nov we also keep it hour by hour, so India days can be added up exactly (about the last 10 days).' },
+    { s: 'YouTube numbers', c: 'Pacific day', h: 12.5, n: 'Only a daily total is available, so the clock cannot be moved.' },
+    { s: 'Instagram', c: 'A day ending 12:30 pm India time', h: 12.5, n: 'Meta does not say; this is the best fit to real post times.' },
+    { s: 'Threads', c: 'A day ending 12:30 pm India time', h: 12.5, n: 'Profile views are stored once per bucket.' },
+    { s: 'Pinterest, LinkedIn, Bing', c: 'UTC day', h: 5.5, n: 'A day ends at 5:30 am India time.' },
+    { s: 'Facebook, Judge.me, Mastodon', c: 'The night it was read', h: 0, n: 'A picture of that night, not a full day.' }
+  ];
+  root.appendChild(M.card('Which clock each number uses', 'Different services start and end their day at different hours. Orders and visits use the India day, so they line up. Some services use another clock, so one day of theirs overlaps two India days. This matters only for single days: weekly and monthly totals are barely affected.',
+    [M.table([{ k: 's', label: 'Source', wrap: true }, { k: 'c', label: 'Their day', wrap: true }, { k: 'h', label: 'Hours behind India', num: true, fmt: function (v) { return v ? M.num(v, 1) : 'none'; } }, { k: 'n', label: 'What we do', wrap: true }], { rows: CLOCKS, sortKey: 's', sortDir: 1, empty: 'No data.' })]));
   root.appendChild(M.card('Privacy and build notes', null, notes.map(function (n) { return M.h('p', { class: 'small', text: n }); })));
   return root;
 };
