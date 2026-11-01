@@ -385,6 +385,125 @@ svg.brush{display:block;width:100%;height:auto;margin-top:var(--s2)}
 .fs-fold[open]>summary::after{transform:rotate(-135deg)}
 .fs-fold>.fs-tools{padding:var(--s3) var(--s4) var(--s4)}
 .fs-fold>summary:focus-visible{outline:2px solid var(--maroon);outline-offset:-2px;border-radius:var(--r)}
+
+/* ======== UX round (1 Nov 2026, T807): six item rail, tab strip, search, table tools, detail panel, full screen controls, folds ======== */
+#nav{padding:var(--s4) var(--s3) var(--s5)}
+.toplist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+#nav a{min-height:44px;font-size:var(--fs-md)}
+.subnav{background:var(--paper);padding:var(--s3) var(--s6) 0;border-bottom:1px solid var(--line)}
+.subnav[hidden]{display:none!important}
+.subnav-row{display:flex;gap:var(--s1);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-bottom:-1px}
+.subnav-row::-webkit-scrollbar{display:none}
+.subnav a{flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;padding:0 var(--s4);color:var(--ink2);text-decoration:none;font-size:var(--fs-sm);white-space:nowrap;border-bottom:2px solid transparent;border-radius:var(--r-sm) var(--r-sm) 0 0;transition:color .15s var(--ease),background .15s var(--ease)}
+.subnav a:hover{color:var(--maroon);background:var(--wash)}
+.subnav a[aria-current="page"]{color:var(--maroon);font-weight:600;border-bottom-color:var(--maroon)}
+@media (max-width:1023px){.subnav{padding:var(--s2) var(--s5) 0}}
+@media (max-width:640px){.subnav{padding:var(--s1) var(--s4) 0}}
+/* a calmer page: fewer boxes inside boxes */
+.card{border-color:#EFE9E1}
+.tw{border-color:#EFE9E1}
+.card>.why{font-size:var(--fs-sm)}
+#controls{padding:var(--s2) var(--s6)}
+.toolrow{gap:var(--s2) var(--s3)}
+
+/* search */
+.gsearch{position:relative;flex:1 1 220px;max-width:360px;min-width:180px;margin-left:auto}
+.gs-in{width:100%;height:40px;border:1px solid #D5CBBE;border-radius:var(--r-sm);background:#fff;padding:0 36px 0 38px;font-size:var(--fs-sm);color:var(--ink)}
+.gs-in::-webkit-search-cancel-button{-webkit-appearance:none}
+.gs-in:hover{border-color:#C4B8A9}
+.gs-in:focus{outline:2px solid var(--maroon);outline-offset:1px;border-color:var(--maroon)}
+.gs-ic{position:absolute;left:10px;top:10px;width:20px;height:20px;stroke:none;color:var(--ink2);pointer-events:none}
+.gs-ic use{pointer-events:none}
+.gs-key{position:absolute;right:8px;top:9px;min-width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #D5CBBE;border-radius:5px;color:var(--ink2);font:500 12px/1 var(--sans);background:var(--paper);pointer-events:none}
+.gs-in:focus ~ .gs-key{display:none}
+.gs-panel{position:absolute;top:calc(100% + 6px);right:0;left:auto;width:min(480px,92vw);max-height:min(70vh,520px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:0 2px 6px rgba(42,42,42,.06),0 16px 40px rgba(42,42,42,.16);z-index:60;padding:var(--s2)}
+.gs-panel[hidden]{display:none}
+.gs-list{list-style:none;margin:0;padding:0}
+.sr-h{padding:var(--s3) var(--s3) var(--s1);font-size:var(--fs-xs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.sr-i{display:flex;flex-direction:column;gap:1px;padding:var(--s2) var(--s3);border-radius:var(--r-sm);cursor:pointer;min-height:44px;justify-content:center}
+.sr-i[aria-selected="true"]{background:var(--wash);box-shadow:inset 3px 0 0 var(--maroon)}
+.sr-l{color:var(--ink);font-size:var(--fs-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-s{color:var(--ink2);font-size:var(--fs-xs);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-hint,.sr-try,.sr-more{padding:var(--s2) var(--s3);font-size:var(--fs-sm);color:var(--ink2)}
+.sr-try,.sr-more{font-size:var(--fs-xs)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:640px){.gsearch{flex:1 1 100%;max-width:none;order:9}.gs-panel{position:fixed;left:var(--s3);right:var(--s3);top:auto;bottom:var(--s3);width:auto;max-height:60vh}.gs-key{display:none}}
+.card.found{box-shadow:0 0 0 3px rgba(200,137,42,.55);transition:box-shadow .3s}
+
+/* tables */
+.tblbox{display:flex;flex-direction:column;gap:var(--s2)}
+.tbl-tools{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap}
+.tbl-tools[hidden]{display:none}
+.tbl-q{height:36px;min-width:min(240px,100%);flex:0 1 260px;border:1px solid var(--field);border-radius:var(--r-sm);background:#fff;padding:0 var(--s3);font-size:var(--fs-sm)}
+.tbl-q:focus{outline:2px solid var(--maroon);outline-offset:1px}
+.tblbox:not(.big) .tbl-q{display:none}
+.tblbox:not(.big) .tbl-tools .tbl-n{display:none}
+.tbl-csv{margin-left:auto}
+.tw.tall{max-height:min(70vh,680px);overflow:auto}
+.tw.tall th{z-index:2;box-shadow:0 1px 0 var(--line)}
+td{max-width:380px}
+td.wrap{max-width:none}
+tr.rowdetail:hover td,tr.click:hover td{background:var(--wash)}
+tr.rowdetail:focus-visible,tr.click:focus-visible{outline:2px solid var(--maroon);outline-offset:-2px}
+.tbl-more{padding:var(--s3);margin:0;display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;border-top:1px solid var(--line)}
+button.dimlink{all:unset;box-sizing:border-box;cursor:pointer;color:var(--ink);border-bottom:1px dotted #8f8579;border-radius:2px;max-width:100%;overflow-wrap:anywhere}
+button.dimlink:hover{color:var(--maroon);border-bottom-color:var(--maroon);border-bottom-style:solid}
+button.dimlink:focus-visible{outline:2px solid var(--maroon);outline-offset:2px}
+@media (pointer:coarse){button.dimlink{padding:10px 0;display:inline-block}}
+.hb.dimlink{cursor:pointer;border-radius:var(--r-sm)}
+.hb.dimlink:hover{background:var(--wash)}
+.hb.dimlink:hover .lb{color:var(--maroon);text-decoration:underline;text-underline-offset:3px}
+.has-tip{cursor:pointer}
+g.has-tip:hover circle:nth-child(2){stroke:var(--maroon)}
+td.c.has-tip:hover{outline:2px solid var(--maroon);outline-offset:-2px}
+
+/* folds: secondary detail behind a clear control. A plain divider row, no box, so what is inside keeps the full width of the page */
+.fold{margin:var(--s5) 0 var(--s2);border-top:1px solid var(--line)}
+.fold>summary{cursor:pointer;min-height:52px;display:flex;align-items:baseline;gap:var(--s3);flex-wrap:wrap;align-content:center;padding:var(--s3) 0;list-style:none;color:var(--maroon);font-size:var(--fs-md);font-family:var(--serif);position:relative;padding-right:var(--s6)}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::after{content:"";position:absolute;right:var(--s2);top:50%;width:8px;height:8px;margin-top:-6px;border-right:2px solid var(--maroon);border-bottom:2px solid var(--maroon);transform:rotate(45deg);transition:transform .15s var(--ease)}
+.fold[open]>summary::after{transform:rotate(-135deg);margin-top:-2px}
+.fold>summary:hover{color:#8a2008}
+.fold>summary:focus-visible{outline:2px solid var(--maroon);outline-offset:2px;border-radius:var(--r-sm)}
+.fold-hint{font:400 var(--fs-xs)/1.4 var(--sans);color:var(--ink2)}
+.fold>.grid,.fold>.card{margin-top:var(--s2)}
+
+/* the detail panel */
+.detail{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:#fff;border-left:1px solid var(--line);box-shadow:-12px 0 40px rgba(42,42,42,.16);z-index:90;padding:var(--s5);overflow:auto;display:flex;flex-direction:column;gap:var(--s3)}
+.detail[hidden]{display:none}
+.detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s3)}
+.detail-head h2{font-size:var(--fs-lg);overflow-wrap:anywhere}
+.detail-list{margin:0;display:flex;flex-direction:column}
+.detail-row{display:flex;justify-content:space-between;gap:var(--s4);padding:var(--s2) 0;border-bottom:1px solid #F0EAE2;font-size:var(--fs-sm)}
+.detail-row dt{color:var(--ink2);flex:0 0 42%}
+.detail-row dd{margin:0;text-align:right;color:var(--ink);overflow-wrap:anywhere;min-width:0}
+.detail-acts{display:flex;gap:var(--s2);flex-wrap:wrap;padding-top:var(--s2)}
+@media (max-width:640px){.detail{top:auto;height:auto;max-height:80vh;width:100%;border-left:0;border-top:1px solid var(--line);border-radius:var(--r-lg) var(--r-lg) 0 0;box-shadow:0 -12px 40px rgba(42,42,42,.22)}}
+
+/* full screen controls strip */
+.fs-ctl{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--s3) var(--s4);padding:var(--s3) var(--s4);background:var(--wash);border-radius:var(--r)}
+.fs-ctl .fld{min-width:120px;flex:0 1 170px}
+.fs-ctl .fld select,.fs-ctl .fld input[type=date]{height:40px;border:1px solid var(--field);border-radius:var(--r-sm);background:#fff;padding:0 var(--s2);width:100%;font-size:var(--fs-sm)}
+.card.fs .tblbox{margin-top:var(--s2)}
+.card.fs .tw.tall{max-height:none}
+@media (max-width:640px){.fs-ctl .fld{flex:1 1 44%}}
+body.detail-on #fsroot .card.fs{padding-right:var(--s6)}
+.card.fs .tblbox .tbl-q{display:inline-block!important}
+.card.fs .tblbox .tbl-tools .tbl-n{display:inline!important}
+
+@media (max-width:640px){
+  .tbl-q{height:44px;flex:1 1 100%}
+  .tbl-csv{margin-left:0}
+  .gs-in{height:44px;font-size:16px}
+  .gs-ic{top:12px}
+  .subnav a{min-height:44px}
+  .sr-i{min-height:48px}
+  .tbtn{height:44px}
+  .ibtn{width:40px;height:40px}
+  .fs-ctl .fld select,.fs-ctl .fld input[type=date]{height:44px;font-size:16px}
+}
+@media (pointer:coarse){.tbl-q{height:44px}.btn.sm{height:40px}}
+@media print{.subnav,.gsearch,.tbl-tools,.tbl-more,.detail,.fs-ctl,.fold-hint{display:none!important}.fold>*{display:block!important}.fold>summary{display:block}.fold>summary::after{display:none}}
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
 #lock[hidden]{display:none}
@@ -1038,8 +1157,9 @@ M.tipShow = function (clientX, clientY, title, rows) {
   tipEl.style.top = y + 'px';
 };
 M.tipHide = function () { tipEl = tipEl || document.getElementById('tip'); tipEl.hidden = true; };
-/* bind a mark: fn() -> {title, rows} */
-M.tipFor = function (el, fn) {
+/* bind a mark: fn() -> {title, rows}. UX round (1 Nov 2026): a click or Enter on the mark also opens the same facts as a pinned detail panel (works on touch, stays open), or runs
+   `act.onClick` when the mark means an action (apply a filter). The class has-tip gives the pointer cursor and a hover outline. */
+M.tipFor = function (el, fn, act) {
   var show = function (e) { var d = fn(); if (d) M.tipShow(e.clientX, e.clientY, d.title, d.rows); };
   el.addEventListener('pointerenter', show);
   el.addEventListener('pointermove', show);
@@ -1049,6 +1169,15 @@ M.tipFor = function (el, fn) {
     if (d) M.tipShow(r.left + r.width / 2, r.top + r.height / 2, d.title, d.rows);
   });
   el.addEventListener('blur', M.tipHide);
+  if (el.classList) el.classList.add('has-tip');
+  var open = function (e) {
+    M.tipHide();
+    if (act && act.onClick) { act.onClick(e); return; }
+    var d = fn();
+    if (d && M.detail) M.detail.open({ title: d.title, rows: d.rows, actions: d.actions, opener: el });
+  };
+  el.addEventListener('click', open);
+  el.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target === el) { e.preventDefault(); open(e); } });
 };
 
 /* ---------------------------------------------------------------- table view of any chart's numbers */
@@ -1060,6 +1189,11 @@ M.tableView = function (cols, rows, label) {
     done = true;
     d.appendChild(M.staticTable(cols, rows.slice(0, 500)));
     if (rows.length > 500) d.appendChild(M.h('p', { class: 'small muted', text: 'Showing the first 500 of ' + M.num(rows.length) + ' rows.' }));
+    if (M.tableCsv) {      /* UX round: the same numbers as a CSV file (raw values, a blank cell stays blank) */
+      var b = M.h('button', { type: 'button', class: 'btn sm', 'data-ux': '1' }, [M.icon ? M.icon('i-down') : null, M.h('span', { text: 'Download CSV' })]);
+      b.addEventListener('click', function () { var card = d.closest('.card'), h3 = card && card.querySelector('h3'); M.tableCsv(cols, rows, (h3 && h3.textContent) || 'table'); });
+      d.appendChild(M.h('p', { 'data-ux': '1', style: 'margin:.5rem 0 0' }, b));
+    }
   });
   return d;
 };
@@ -1071,59 +1205,7 @@ M.staticTable = function (cols, rows) {
   return M.h('div', { class: 'tw' }, t);
 };
 
-/* ---------------------------------------------------------------- sortable table with in-cell bars
-   cols: {k,label,num,fmt(v,row),bar:{max,color},render(row)->node, sort(row)->value}   o: {rows, sortKey, sortDir, onRow(row), selected(row), empty, limit} */
-M.table = function (cols, o) {
-  var wrap = M.h('div', { class: 'tw' }), st = { key: o.sortKey || null, dir: o.sortDir || -1 };
-  var col = function (k) { return cols.filter(function (c) { return c.k === k; })[0]; };
-  function val(c, r) { return c.sort ? c.sort(r) : r[c.k]; }
-  function draw() {
-    M.clear(wrap);
-    var rows = (o.rows || []).slice();
-    if (!rows.length) { wrap.appendChild(M.empty(o.empty || 'Nothing to show for this selection.')); return; }
-    if (st.key) {
-      var c = col(st.key);
-      rows.sort(function (a, b) {
-        var x = val(c, a), y = val(c, b);
-        if (x == null && y == null) return 0;
-        if (x == null) return 1;
-        if (y == null) return -1;
-        return (typeof x === 'string' ? x.localeCompare(y) : x - y) * st.dir;
-      });
-    }
-    var maxes = {};
-    cols.forEach(function (c) { if (c.bar) maxes[c.k] = c.bar.max || Math.max.apply(null, rows.map(function (r) { return +val(c, r) || 0; }).concat([0])) || 1; });
-    var head = M.h('tr', null, cols.map(function (c) {
-      var th = M.h('th', { class: c.num ? 'n' : '', scope: 'col', 'aria-sort': st.key === c.k ? (st.dir > 0 ? 'ascending' : 'descending') : 'none' });
-      th.appendChild(M.h('button', { type: 'button', onclick: function () { if (st.key === c.k) st.dir = -st.dir; else { st.key = c.k; st.dir = c.num ? -1 : 1; } draw(); } },
-        [c.label, st.key === c.k ? (st.dir > 0 ? ' ▲' : ' ▼') : '']));
-      return th;
-    }));
-    var tb = M.h('tbody');
-    rows.slice(0, o.limit || 300).forEach(function (r) {
-      var tr = M.h('tr', { class: (o.onRow ? 'click ' : '') + (o.selected && o.selected(r) ? 'sel' : '') });
-      if (o.onRow) { tr.tabIndex = 0; tr.addEventListener('click', function () { o.onRow(r); }); tr.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); o.onRow(r); } }); }
-      cols.forEach(function (c) {
-        var td = M.h('td', { class: (c.num ? 'n ' : '') + (c.wrap ? 'wrap' : '') });
-        if (c.render) { var n = c.render(r); if (n != null) M.kids(td, n); }
-        else {
-          var v = r[c.k], txt = c.fmt ? c.fmt(v, r) : (v == null ? '' : String(v));
-          if (c.bar && v != null) {
-            var w = Math.max(0, Math.min(100, (+val(c, r) || 0) / maxes[c.k] * 100));
-            td.appendChild(M.h('div', { class: 'cellbar' }, [M.s('svg', { viewBox: '0 0 100 10', preserveAspectRatio: 'none', 'aria-hidden': 'true' }, [M.s('rect', { width: 100, height: 10, fill: M.COLORS.grid }), M.s('rect', { width: w, height: 10, fill: c.bar.color || M.COLORS.maroon })]), M.h('span', { text: txt })]));
-          } else td.textContent = txt;
-        }
-        tr.appendChild(td);
-      });
-      tb.appendChild(tr);
-    });
-    wrap.appendChild(M.h('table', null, [M.h('thead', null, head), tb]));
-    if ((o.rows || []).length > (o.limit || 300)) wrap.appendChild(M.h('p', { class: 'small muted', style: 'padding:.4rem .6rem', text: 'Showing the first ' + (o.limit || 300) + ' of ' + M.num(o.rows.length) + ' rows. Sort or narrow the date range to see others.' }));
-  }
-  draw();
-  wrap.redraw = function (rows) { o.rows = rows; draw(); };
-  return wrap;
-};
+/* the sortable table with in-cell bars (M.table) lives in dashboard_09_tables.js: row filter, click a value, row detail, CSV, show more */
 
 /* ---------------------------------------------------------------- horizontal bar rows
    rows: {label, value, text, sub, color, tip:{title,rows}}   o: {max, color} */
@@ -1134,13 +1216,16 @@ M.bars = function (rows, o) {
   var max = o.max || Math.max.apply(null, rows.map(function (r) { return Math.abs(r.value) || 0; }).concat([0])) || 1;
   rows.forEach(function (r) {
     var w = Math.max(0, Math.min(100, Math.abs(r.value || 0) / max * 100));
-    var row = M.h('div', { class: 'hb', role: 'listitem', tabindex: r.tip ? '0' : null, 'aria-label': r.label + ': ' + (r.text != null ? r.text : M.num(r.value)) }, [
+    var kind = r.dim || o.dim, dimOn = kind && M.dimOk && M.dimOk(kind, r.dimValue != null ? r.dimValue : r.label);
+    var tip = r.tip || { title: r.label, rows: [{ k: 'Value', v: r.text != null ? r.text : M.num(r.value) }].concat(r.sub ? [{ k: 'Note', v: r.sub }] : []) };      /* UX round: every bar has a tooltip */
+    var row = M.h('div', { class: 'hb', role: 'listitem', tabindex: '0', 'aria-label': r.label + ': ' + (r.text != null ? r.text : M.num(r.value)) + (dimOn ? '. Press Enter to filter by it.' : '') }, [
       M.h('div', { class: 'lb', text: r.label }),
       M.s('svg', { viewBox: '0 0 100 16', preserveAspectRatio: 'none', 'aria-hidden': 'true' }, [M.s('rect', { y: 3, width: 100, height: 10, fill: M.COLORS.grid }), M.s('rect', { y: 3, width: w, height: 10, fill: r.color || o.color || M.COLORS.maroon })]),
       M.h('div', { class: 'vl', text: r.text != null ? r.text : M.num(r.value) }),
       r.sub ? M.h('div', { class: 'sub2', text: r.sub }) : null
     ]);
-    if (r.tip) M.tipFor(row, function () { return r.tip; });
+    if (dimOn) { row.classList.add('dimlink'); M.tipFor(row, function () { return tip; }, { onClick: function () { M.dimApply(kind, r.dimValue != null ? r.dimValue : r.label); } }); }
+    else M.tipFor(row, function () { return tip; });
     box.appendChild(row);
   });
   return box;
@@ -1204,6 +1289,16 @@ M.kpi = function (o) {
   } else if (o.cmpNote) d.textContent = o.cmpNote + (o.note ? ' (' + o.note + ')' : '');
   if (o.spark && o.spark.values.length > 1 && !o.na) box.appendChild(M.sparkline(o.spark.values, o.spark.color || M.COLORS.maroon, o.label));
   return box;
+};
+
+/* a folded section for secondary detail (UX round): the summary says what is inside, nothing is removed. Charts inside are drawn again when the fold opens (they cannot be measured while closed). */
+M.fold = function (label, kids, o) {
+  o = o || {};
+  var d = M.h('details', { class: 'fold' + (o.cls ? ' ' + o.cls : '') }, [M.h('summary', { 'data-ux': '1' }, [M.h('span', { text: label }), o.hint ? M.h('span', { class: 'fold-hint', text: o.hint }) : null])]);
+  M.kids(d, kids);
+  if (o.open) d.open = true;
+  d.addEventListener('toggle', function () { if (!d.open) return; M.frames.forEach(function (f) { if (f.paint && d.contains(f.wrap)) f.paint(); }); });
+  return d;
 };
 
 /* mazo dashboard charts, hand drawn in SVG. One y axis per chart (no dual axis), axes start at zero, thin marks, tooltips on hover, touch and keyboard. */
@@ -1344,7 +1439,9 @@ M.bubble = function (host, w, o) {
     var gp = M.s('g', { class: 'dot', tabindex: '0', role: 'img', 'aria-label': p.label });
     gp.appendChild(M.s('circle', { cx: cx, cy: cy, r: Math.max(12, r + 4), fill: 'transparent' }));            // 24 px or bigger hit area
     gp.appendChild(M.s('circle', { cx: cx, cy: cy, r: r, fill: p.color || M.COLORS.maroon, 'fill-opacity': 0.82, stroke: '#fff', 'stroke-width': 2 }));
-    M.tipFor(gp, function () { return p.tip; });
+    var dk = p.dim || (o.dim ? { kind: o.dim, value: p.label } : null);      /* UX round: a bubble that names a channel (or product ...) filters by it when clicked */
+    if (dk && M.dimOk && M.dimOk(dk.kind, dk.value)) M.tipFor(gp, function () { return p.tip; }, { onClick: function () { M.dimApply(dk.kind, dk.value); } });
+    else M.tipFor(gp, function () { return p.tip; });
     svg.appendChild(gp);
   });
   /* labels: biggest first; each tries right, left, above, below and is dropped if it would overlap another label, a bubble centre or the axis labels */
@@ -1415,7 +1512,8 @@ M.heat = function (rows, cols, cell, o) {
         /* audit S-24: the label colour used to switch at the half way point (white above, grey ink #2A2A2A below), which left one cell step at 3.58:1. Now black below 0.548 and white
            above it; computed over all 1,001 steps of the colour ramp: the worst label is 4.59:1, none is below 4.5:1 */
         td = M.h('td', { class: 'c', style: 'background:' + M.lerp('#F6EDE4', '#5E1204', Math.pow(tt, 0.85)) + ';color:' + (tt > 0.548 ? '#fff' : '#000'), tabindex: '0', text: x.text != null ? x.text : M.num(x.v) });
-        if (x.tip) M.tipFor(td, function () { return x.tip; });
+        var tip0 = x.tip || { title: r + ', ' + c, rows: [{ k: 'Value', v: x.text != null ? x.text : M.num(x.v) }] };      /* UX round: every cell has a tooltip and opens its detail on click */
+        M.tipFor(td, function () { return tip0; });
       }
       tr.appendChild(td);
     });
@@ -1521,8 +1619,11 @@ M.divBar = function (v, max, unit) {
 
 M.PRESETS = [['yesterday', 'Yesterday'], ['7d', 'Last 7 days'], ['28d', 'Last 28 days'], ['90d', 'Last 90 days'], ['mtd', 'This month'], ['lm', 'Last month'], ['ytd', 'This year'], ['all', 'All time'], ['custom', 'Custom range']];
 M.FILTERS = [['collection', 'Collection'], ['channel', 'Channel'], ['product', 'Product'], ['device', 'Device'], ['size', 'Size']];
-M.GROUPS = [['Money', ['overview', 'funnel', 'forecast']], ['Customers and products', ['customers', 'products', 'sizes', 'gtm']], ['Channels and search', ['channels', 'social', 'search']],
-  ['Operations', ['functions']], ['System', ['history', 'quality']]];
+/* UX round (1 Nov 2026): six top items. Each top item holds a few pages shown as a tab strip (sub nav) above the page. Page ids and the address (#/funnel ...) are unchanged. */
+M.GROUPS = [['Overview', ['overview']], ['Sales', ['funnel', 'products', 'sizes']], ['Customers', ['customers', 'gtm']], ['Marketing', ['channels', 'social', 'search']],
+  ['Operations', ['forecast', 'functions']], ['Data', ['history', 'quality']]];
+M.groupOf = function (id) { for (var i = 0; i < M.GROUPS.length; i++) if (M.GROUPS[i][1].indexOf(id) >= 0) return M.GROUPS[i]; return M.GROUPS[0]; };
+M.lastIn = {};      /* the page last opened in each top item, so clicking a top item returns to it */
 M.ctl = {};
 
 M.builtText = function () {
@@ -1586,7 +1687,8 @@ M.buildControls = function () {
   c.snapInfo = M.h('p', { class: 'toolnote', id: 'toolnote' });
   c.rail = M.h('button', { type: 'button', class: 'tbtn menu-btn', id: 'menu-btn', 'aria-controls': 'rail', 'aria-expanded': 'false', 'aria-label': 'Open the page list' }, [icon('i-menu'), M.h('span', { class: 'bt', id: 'menu-txt', text: 'Pages' })]);
   c.rail.addEventListener('click', function () { M.railOpen(true); });
-  host.appendChild(M.h('div', { class: 'toolrow' }, [c.rail, c.dateWrap, c.cmpWrap, c.filWrap, c.sum]));
+  c.search = M.searchBox ? M.searchBox() : null;
+  host.appendChild(M.h('div', { class: 'toolrow' }, [c.rail, c.dateWrap, c.cmpWrap, c.filWrap, c.sum, c.search]));
   host.appendChild(c.chips);
 
   var f = M.facts();
@@ -1665,26 +1767,43 @@ M.syncControls = function () {
   c.filBtn.classList.toggle('on', act.length > 0);
 };
 
-/* the left rail: pages grouped by job; on a narrow screen it is a drawer opened from the Pages button */
+/* the left rail: six top items; the pages inside the current item are a tab strip above the page (sub nav). On a narrow screen the rail is a drawer opened from the Pages button. */
 M.renderNav = function () {
-  var nav = document.getElementById('nav');
+  var nav = document.getElementById('nav'), cur = M.state.page, grp = M.groupOf(cur);
+  M.lastIn[grp[0]] = cur;
   M.clear(nav);
+  var ul = M.h('ul', { class: 'toplist' });
   M.GROUPS.forEach(function (g) {
-    var items = g[1].filter(function (id) { return M.PAGES[id]; });
-    if (!items.length) return;
-    var sec = M.h('div', { class: 'ng' }, [M.h('p', { class: 'ngt', id: 'ng-' + g[0].replace(/\W+/g, '-').toLowerCase(), text: g[0] })]);
-    var ul = M.h('ul', { 'aria-labelledby': 'ng-' + g[0].replace(/\W+/g, '-').toLowerCase() });
-    items.forEach(function (id) {
-      var p = M.PAGES[id], a = M.h('a', { href: '#/' + id, text: p.nav, 'data-page': id });
-      if (id === M.state.page) a.setAttribute('aria-current', 'page');
-      a.addEventListener('click', function (e) { e.preventDefault(); M.go({ page: id }, true); window.scrollTo(0, 0); M.railOpen(false); });
-      ul.appendChild(M.h('li', null, a));
-    });
-    sec.appendChild(ul);
-    nav.appendChild(sec);
+    var ids = g[1].filter(function (id) { return M.PAGES[id]; });
+    if (!ids.length) return;
+    var target = ids.indexOf(M.lastIn[g[0]]) >= 0 ? M.lastIn[g[0]] : ids[0];
+    var a = M.h('a', { href: '#/' + target, text: g[0], 'data-group': g[0], 'data-page': ids.length === 1 ? ids[0] : null });
+    if (g === grp) a.setAttribute('aria-current', 'page');
+    a.addEventListener('click', function (e) { e.preventDefault(); M.go({ page: target }, true); window.scrollTo(0, 0); M.railOpen(false); });
+    ul.appendChild(M.h('li', null, a));
   });
+  nav.appendChild(ul);
+  M.renderSubnav(grp, cur);
   var mt = document.getElementById('menu-txt');
   if (mt && M.PAGES[M.state.page]) mt.textContent = M.PAGES[M.state.page].nav;
+};
+/* the tab strip of the pages in the current top item; sits between the toolbar and the page, outside the page itself. A top item with one page has no strip. */
+M.renderSubnav = function (grp, cur) {
+  var stage = document.getElementById('stage'), main = document.getElementById('main'), el = document.getElementById('subnav');
+  if (!el) { el = M.h('nav', { id: 'subnav', class: 'subnav', 'data-ux': '1' }); stage.insertBefore(el, main); }
+  M.clear(el);
+  var ids = grp[1].filter(function (id) { return M.PAGES[id]; });
+  el.hidden = ids.length < 2;
+  if (el.hidden) return;
+  el.setAttribute('aria-label', grp[0] + ' pages');
+  var row = M.h('div', { class: 'subnav-row' });
+  ids.forEach(function (id) {
+    var a = M.h('a', { href: '#/' + id, text: M.PAGES[id].nav, 'data-page': id });
+    if (id === cur) a.setAttribute('aria-current', 'page');
+    a.addEventListener('click', function (e) { e.preventDefault(); M.go({ page: id }, true); window.scrollTo(0, 0); });
+    row.appendChild(a);
+  });
+  el.appendChild(row);
 };
 
 M.railOpen = function (open) {
@@ -1862,7 +1981,7 @@ M.registerFrame = function (host, title, spec) {
   if (spec) fr.spec = spec;
   return fr;
 };
-M.frameOfCard = function (card) { var f = null; M.frames.forEach(function (fr) { if (!f && card.contains(fr.wrap)) f = fr; }); return f; };
+M.frameOfCard = function (card) { var f = null; M.frames.forEach(function (fr) { if (!f && card.contains(fr.wrap)) f = fr; }); return f || card._pseudo || null; };
 
 /* the one line under a zoomed chart */
 M.zoomNoteFor = function (fr) {
@@ -1881,11 +2000,15 @@ M.zoomNoteFor = function (fr) {
 (function () {
   var base = M.render;
   M.render = function () {
+    var want = M.state.fs;      /* UX round: the full screen card named in the address survives a redraw (fsClose clears the key, so it is read first) */
     if (M.fsClose) M.fsClose(true);
-    M.frames = []; M.chartKeys = {};
+    M.frames = []; M.chartKeys = {}; M.tables = [];
+    M.state.fs = want;
     base();
+    if (M.shape) M.shape();      /* UX round: secondary detail goes into folds before the chart tools are added */
     if (M.decorate) M.decorate();
-    if (M.state.fs && M.fsOpenKey) M.fsOpenKey(M.state.fs);
+    if (want && M.fsOpenKey) { M.fsOpenKey(want); if (!M.fs) M.state.fs = ''; }
+    if (M.afterRender) M.afterRender();
   };
   var go = M.go;
   M.go = function (patch, push) {
@@ -1917,8 +2040,13 @@ M.decorate = function () {
   Array.prototype.forEach.call(cards, function (card) {
     if (card.querySelector(':scope > .ctools')) return;
     var fr = M.frameOfCard(card);
+    /* UX round (1 Nov 2026): a card that holds a table, bar list, heatmap or stack has no chart frame; it gets a light one, so it can also go full screen */
+    if (!fr && card.querySelector('table, .hb, .stack-row, .tblbox, svg[role=img]')) {
+      fr = card._pseudo = { pseudo: true, host: card, wrap: card, key: null, kind: 'static', big: false, title: '', paint: function () {} };
+      M.keyFor(fr);
+    }
     if (!fr) return;
-    var box = M.h('div', { class: 'ctools' }), fsBtn = M.h('button', { type: 'button', class: 'ibtn', 'aria-label': 'Open this chart in full screen', title: 'Full screen (key F)' }, icon('i-expand'));
+    var box = M.h('div', { class: 'ctools', 'data-ux': '1' }), fsBtn = M.h('button', { type: 'button', class: 'ibtn', 'aria-label': 'Open this card in full screen', title: 'Full screen (key F)' }, icon('i-expand'));
     fsBtn.addEventListener('click', function () { M.fsOpen(fr); });
     box.appendChild(fsBtn);
     var more = M.moreMenu(fr);
@@ -1963,12 +2091,17 @@ M.scopeText = function () {
 };
 M.fsOpenKey = function (key) {
   var fr = M.chartKeys[key];
+  if (!fr && M._fsOrd != null && M._fsOrd >= 0) {      /* a filter changed the card title (and so its key): open the card at the same place on the page */
+    var card = document.querySelectorAll('#main .card')[M._fsOrd];
+    fr = card && M.frameOfCard(card);
+  }
   if (fr) M.fsOpen(fr, true);
 };
 M.fsOpen = function (fr, quiet) {
   if (M.fs) M.fsClose(true);
   var card = fr.host.closest('.card');
   if (!card) return;
+  if (card.parentNode && card.parentNode.id !== 'fsroot') M._fsOrd = Array.prototype.indexOf.call(document.querySelectorAll('#main .card'), card);      /* its place on the page, for reopening after a redraw */
   var root = document.getElementById('fsroot');
   if (!root) { root = M.h('div', { id: 'fsroot', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Chart in full screen' }); document.body.appendChild(root); }
   var ph = M.h('div', { class: 'fs-ph' }); ph.style.height = card.offsetHeight + 'px';
@@ -1983,7 +2116,7 @@ M.fsOpen = function (fr, quiet) {
     M.toolSections.forEach(function (sec) { var n = sec(fr, { inline: true, refresh: fillTools }); if (n) tools.appendChild(n); });
   };
   fillTools(); M.fsTools = fillTools;
-  var bar = M.h('div', { class: 'fs-bar' }, [M.h('div', { class: 'fs-head' }, [M.h('h2', { text: title }), M.h('p', { class: 'fs-scope', text: M.scopeText() })]), close, M.fsToolsBox(tools)]);
+  var bar = M.h('div', { class: 'fs-bar' }, [M.h('div', { class: 'fs-head' }, [M.h('h2', { text: title }), M.h('p', { class: 'fs-scope', text: M.scopeText() })]), close, M.fsControls ? M.fsControls() : null, M.fsToolsBox(tools)]);
   var ct = card.querySelector(':scope > .ctools'); if (ct) { M.fs_ct = ct; ct.parentNode.removeChild(ct); }      // the More menu is replaced by the bar's own controls while full screen is open
   card.insertBefore(bar, card.firstChild);
   card.classList.add('fs');
@@ -1994,8 +2127,8 @@ M.fsOpen = function (fr, quiet) {
   M.fs = { fr: fr, card: card, ph: ph, bar: bar, opener: (document.activeElement && document.activeElement.closest && document.activeElement.closest('#main')) ? document.activeElement : null };
   fr.big = true;
   M.frames.forEach(function (f) { if (card.contains(f.wrap)) { f.big = true; f.paint(); } });
+  if (M.fsFocusBack) M.fsFocusBack(); else close.focus();
   M.state.fs = fr.key; if (!quiet) M.keepHash();
-  close.focus();
 };
 M.fsClose = function (silent) {
   var f = M.fs;
@@ -2016,8 +2149,8 @@ M.fsClose = function (silent) {
   }
 };
 document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape' && M.fs && !M.popClose) { e.preventDefault(); e.stopPropagation(); M.fsClose(); return; }
-  if (e.key === 'Tab' && M.fs) {      /* keep the focus inside the full screen view */
+  if (e.key === 'Escape' && M.fs && !M.popClose && !(M.overlayOpen && M.overlayOpen())) { e.preventDefault(); e.stopPropagation(); M.fsClose(); return; }
+  if (e.key === 'Tab' && M.fs && !(M.overlayOpen && M.overlayOpen())) {      /* keep the focus inside the full screen view */
     var items = M.fs.card.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), summary, [tabindex="0"]');
     var list = Array.prototype.filter.call(items, function (n) { return n.offsetParent !== null; });
     if (!list.length) return;
@@ -2306,7 +2439,11 @@ M.toolSections.push(function (fr, ctx) {
   var btn = function (label, id, fn) { var b = M.h('button', { type: 'button', class: 'btn sm' }, [M.icon(id), M.h('span', { text: label })]); b.addEventListener('click', function () { say.textContent = ''; fn(); }); return b; };
   var row = M.h('div', { class: 'row' });
   var png = btn('Picture (PNG)', 'i-down', function () { say.textContent = 'Making the picture...'; M.pngOf(fr, function (b) { if (!b) { say.textContent = 'This chart cannot be saved as a picture here. Use Data (CSV).'; return; } M.saveBlob(b, M.fileStem(fr) + '.png'); say.textContent = 'Saved ' + M.fileStem(fr) + '.png'; }); });
-  if (fr.kind === 'time' || fr.host.querySelector('svg[role=img]')) row.appendChild(png);
+  if (!fr.pseudo && (fr.kind === 'time' || fr.host.querySelector('svg[role=img]'))) row.appendChild(png);
+  if (fr.pseudo) {      /* UX round: a card without a chart frame saves its table(s) as CSV */
+    var tbs = (M.tables || []).filter(function (tb) { return fr.host.contains(tb) && tb.cols; });
+    tbs.forEach(function (tb, i) { row.appendChild(btn(tbs.length > 1 ? 'Table ' + (i + 1) + ' (CSV)' : 'Data (CSV)', 'i-down', function () { tb.csv(); say.textContent = 'Saved ' + M.num(tb.view().length) + ' rows.'; })); });
+  }
   if (fr.kind === 'time') row.appendChild(btn('Data (CSV)', 'i-down', function () { var s = M.csvOf(fr); if (!s) { say.textContent = 'No data to save.'; return; } M.saveBlob(new Blob(['﻿' + s], { type: 'text/csv;charset=utf-8' }), M.fileStem(fr) + '.csv'); say.textContent = 'Saved ' + M.fileStem(fr) + '.csv'; }));
   row.appendChild(btn('Copy link', 'i-link', function () { M.copyText(M.chartLink(fr), function () { say.textContent = 'Link copied. It reopens this page, range, filters and this chart in full screen.'; }, function () { say.textContent = 'Could not copy. The address bar already holds this view.'; }); }));
   return M.h('div', { class: 'tsec' }, [M.h('span', { class: 'tl', text: 'Save or share' }), row, say]);
@@ -2335,6 +2472,527 @@ M.gapPattern = function (svg) {
   var id = 'gp' + (++M._gid);
   svg.appendChild(M.s('defs', null, [M.s('pattern', { id: id, width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, [M.s('rect', { width: 6, height: 6, fill: '#F6F1EA' }), M.s('line', { x1: 0, y1: 0, x2: 0, y2: 6, stroke: '#CDBFAE', 'stroke-width': 1.5 })])]));
   return 'url(#' + id + ')';
+};
+
+/* mazo dashboard full screen controls (UX round, 1 Nov 2026, T807). A card in full screen gets a compact strip: date range, compare, and the filters the page uses, so the range and
+   filters can be changed WITHOUT leaving full screen. A change runs M.go like the toolbar does; the page is drawn again and the card is reopened in full screen (the key in the
+   address, or its place on the page when a filter changed its title). The focus goes back to the control that was used. Every element carries data-ux="1". */
+
+M.fsControls = function () {
+  var pg = M.PAGES[M.state.page], s = M.state, r = M.range(), f = M.facts();
+  var dateUsed = !pg || pg.dates !== false, usedFilters = M.FILTERS.filter(function (fl) { return pg && pg.uses.indexOf(fl[0]) >= 0; });
+  if (!dateUsed && !usedFilters.length) return null;
+  var box = M.h('div', { class: 'fs-ctl', 'data-ux': '1', role: 'group', 'aria-label': 'Date range and filters for this page' });
+  var fld = function (label, id, ctl) { return M.h('div', { class: 'fld' }, [M.h('label', { for: id, text: label }), ctl]); };
+  var go = function (id, patch) { M._fsRefocus = id; M.go(patch); };
+  if (dateUsed) {
+    var pre = M.h('select', { id: 'fs-preset', 'data-fid': 'fs-preset' }, M.PRESETS.map(function (p) { return M.h('option', { value: p[0], text: p[1] }); }));
+    pre.value = s.preset;
+    pre.addEventListener('change', function () { go('fs-preset', pre.value === 'custom' ? { preset: 'custom', from: r.from, to: r.to } : { preset: pre.value, from: '', to: '' }); });
+    box.appendChild(fld('Date range', 'fs-preset', pre));
+    var from = M.h('input', { type: 'date', id: 'fs-from', 'data-fid': 'fs-from', min: M.first(), max: M.D.anchor, value: r.from }), to = M.h('input', { type: 'date', id: 'fs-to', 'data-fid': 'fs-to', min: M.first(), max: M.D.anchor, value: r.to });
+    var t = null, chg = function (id) { clearTimeout(t); t = setTimeout(function () { if (M.isDate(from.value) && M.isDate(to.value)) go(id, { preset: 'custom', from: from.value, to: to.value }); }, 250); };
+    from.addEventListener('change', function () { chg('fs-from'); }); to.addEventListener('change', function () { chg('fs-to'); });
+    box.appendChild(fld('From', 'fs-from', from)); box.appendChild(fld('To', 'fs-to', to));
+    var cmp = M.h('input', { type: 'checkbox', id: 'fs-cmp', 'data-fid': 'fs-cmp', role: 'switch' });
+    cmp.checked = s.cmp === '1';
+    cmp.addEventListener('change', function () { go('fs-cmp', { cmp: cmp.checked ? '1' : '0' }); });
+    box.appendChild(M.h('label', { class: 'sw', for: 'fs-cmp' }, [cmp, M.h('span', { class: 'swt', 'aria-hidden': 'true' }), M.h('span', { text: 'Compare with the period before' })]));
+  }
+  usedFilters.forEach(function (fl) {
+    var k = fl[0], sel = M.h('select', { id: 'fs-f-' + k, 'data-fid': 'fs-f-' + k });
+    var vals = k === 'collection' ? f.collections : k === 'channel' ? f.channels : k === 'product' ? f.products : k === 'device' ? f.devices : f.sizes;
+    sel.appendChild(M.h('option', { value: '', text: 'All ' + fl[1].toLowerCase() + 's' }));
+    vals.forEach(function (v) { sel.appendChild(M.h('option', { value: v, text: v })); });
+    if (s[k] && vals.indexOf(s[k]) < 0) sel.appendChild(M.h('option', { value: s[k], text: s[k] }));
+    sel.value = s[k];
+    sel.addEventListener('change', function () { var p = {}; p[k] = sel.value; go('fs-f-' + k, p); });
+    box.appendChild(fld(fl[1], 'fs-f-' + k, sel));
+  });
+  return box;
+};
+/* after a redraw the card is open again: the focus returns to the control that was just used, else to Close */
+M.fsFocusBack = function () {
+  var id = M._fsRefocus; M._fsRefocus = null;
+  var card = M.fs && M.fs.card, el = id && card ? card.querySelector('[data-fid="' + id + '"]') : null;
+  if (el) { try { el.focus({ preventScroll: true }); } catch (x) { /* ignore */ } return; }
+  var c = card && card.querySelector('.fs-close'); if (c) c.focus();
+};
+
+/* the search icon (the symbol is added here so the template needs no change) */
+(function () {
+  if (document.getElementById('i-search')) return;
+  var holder = document.querySelector('body > svg[aria-hidden]'), NS = 'http://www.w3.org/2000/svg';
+  if (!holder) return;
+  var sym = document.createElementNS(NS, 'symbol'); sym.setAttribute('id', 'i-search'); sym.setAttribute('viewBox', '0 0 24 24');
+  var g = document.createElementNS(NS, 'g'); ['fill', 'none', 'stroke', 'currentColor', 'stroke-width', '1.6', 'stroke-linecap', 'round', 'stroke-linejoin', 'round'].forEach(function (v, i, a) { if (i % 2 === 0) g.setAttribute(v, a[i + 1]); });
+  var c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', '11'); c.setAttribute('cy', '11'); c.setAttribute('r', '6.5');
+  var p = document.createElementNS(NS, 'path'); p.setAttribute('d', 'M16 16l4.5 4.5');
+  g.appendChild(c); g.appendChild(p); sym.appendChild(g); holder.appendChild(sym);
+})();
+
+/* mazo dashboard information hierarchy (UX round, 1 Nov 2026, T807). Each page keeps its title, its one line and the answer first (the numbers and the main chart or table). Secondary
+   detail (long tables, definitions, history, extra splits) sits in a folded section with a clear name, further down. NOTHING is removed: the same cards, in the same code, are moved
+   into a fold after the page is built (M.shape runs after M.render builds the page and before the chart tools are added). A fold opens by a click, by the address of a full screen
+   chart inside it, or by a search result that points into it. Charts inside a closed fold are drawn again when it opens. */
+
+/* page id -> folds. match: regexes tested against the titles (h3) found inside a top level block of the page; blocks that match are moved, in order, into one fold placed where the first match was */
+M.FOLDS = {
+  funnel: [{ label: 'Drop offs by device, source and product', hint: '28 days, from the Sheet', match: [/Drop offs by device/i] }],
+  sizes: [{ label: 'More on sizes', hint: 'reorder plan, size curve, stock over time', match: [/Reorder plan/i, /Stock by size over time/i] }],
+  customers: [
+    { label: 'What buyers have in common', hint: 'collection, price, size, source, payment, weekday', match: [/What buyers have in common/i, /^Collection/] },
+    { label: 'States and loyalty', hint: 'orders by delivery state, repeat measures', match: [/^States/] },
+    { label: 'Baskets and couriers', hint: 'products bought together, parcels and delivery days', match: [/Baskets: products bought together/i] }
+  ],
+  gtm: [{ label: 'Lifecycle, email program and abandoned checkouts', hint: 'counts only', match: [/From contact to repeat buyer/i, /Email program in numbers/i] }],
+  forecast: [
+    { label: 'How good were our forecasts', hint: 'past forecasts against real orders', match: [/How good were our forecasts/i] },
+    { label: 'Levers and decisions', hint: 'what a change could add, what was decided', match: [/Where a lever could add sales/i] }
+  ],
+  functions: [{ label: 'History and targets', hint: 'night by night counts, the lines each status is judged against', match: [/How many functions are green/i, /Targets the status is judged against/i] }],
+  quality: [
+    { label: 'Every table in the Sheet', hint: 'rows and date span of each', match: [/Every table in the Sheet/i] },
+    { label: 'Privacy and build notes', match: [/Privacy and build notes/i] }
+  ]
+};
+
+M.shape = function () {
+  var main = document.getElementById('main'), spec = M.FOLDS[M.state.page];
+  if (!main || !spec) return;
+  var root = main.lastElementChild;
+  if (!root || root.nodeName !== 'DIV') return;
+  var kids = Array.prototype.slice.call(root.children), pull = [];
+  var titles = function (el) { return el.nodeName === 'H3' ? [el.textContent] : Array.prototype.map.call(el.querySelectorAll('h3'), function (h) { return h.textContent; }); };
+  spec.forEach(function (f) {
+    var picked = [];
+    f.match.forEach(function (rx) {
+      kids.forEach(function (k) { if (picked.indexOf(k) < 0 && pull.indexOf(k) < 0 && titles(k).some(function (t) { return rx.test(t); })) picked.push(k); });
+    });
+    if (!picked.length) return;
+    /* a heading that introduces the next block (customers: "What buyers have in common") stays with that block */
+    picked.slice().forEach(function (k) { var nx = k.nextElementSibling; if (k.nodeName === 'H3' && nx && picked.indexOf(nx) < 0 && pull.indexOf(nx) < 0) picked.push(nx); });
+    picked.sort(function (a, b) { return kids.indexOf(a) - kids.indexOf(b); });
+    var fold = M.fold(f.label, [], { hint: f.hint });
+    root.insertBefore(fold, picked[0]);
+    picked.forEach(function (k) { fold.appendChild(k); pull.push(k); });
+  });
+};
+
+/* open every fold around an element (a search result or a full screen chart points into it) */
+M.openFolds = function (el) {
+  for (var n = el && el.parentNode; n && n !== document.body; n = n.parentNode) if (n.nodeName === 'DETAILS' && !n.open) n.open = true;
+};
+
+/* mazo dashboard universal search (UX round, 1 Nov 2026, T807). A search field in the toolbar (keys / and Cmd or Ctrl + K). It finds pages, products, collections, channels, devices, sizes,
+   every measure and table of the History page, the phrases people typed on Google, and content topics, and goes there with the right filter or measure already set.
+   The index is built from the data at the moment the panel opens (M.facts(), M.rows(), M.D.tabs, M.D.meta, M.has()), never when the script loads, so data that arrives later
+   is found too. All text goes in through textContent. Every element carries data-ux="1". */
+
+M.ALIAS = {
+  overview: 'sales revenue net sales orders profit visits conversion summary home headline average order value',
+  funnel: 'checkout cart add to cart drop off funnel steps bought payment device',
+  products: 'product stock inventory verdict sell through views units collection catalogue',
+  sizes: 'size stock by size restock reorder lost demand heatmap xs s m l xl xxl next batch',
+  customers: 'buyers repeat cohort loyalty customer groups rfm states baskets couriers delivery shipping order time weekday',
+  gtm: 'crm email abandoned checkout recovery lifecycle go to market marketing list scorecard',
+  channels: 'sources traffic utm referral direct medium bubble conversion',
+  social: 'instagram pinterest youtube facebook threads linkedin mastodon posts content reach followers topic format what works',
+  search: 'google seo queries typed trends brand search impressions clicks price position range gaps market keywords',
+  forecast: 'forecast stock out days left next weeks indicative weekly orders',
+  functions: 'business functions rag green amber red targets jobs',
+  history: 'history any measure daily monthly totals weekly totals years table chart over time',
+  quality: 'data quality freshness checks trust privacy build tables sheet'
+};
+M.SRCH_ORDER = ['Pages', 'Products', 'Collections', 'Channels', 'Devices', 'Sizes', 'Measures and tables', 'Google searches', 'Content topics'];
+M.SRCH_PER = 5;
+
+(function () {
+  var inp = null, panel = null, list = null, status = null, items = [], act = -1, idx = null;      /* idx is rebuilt every time the panel opens, never kept between renders: data can arrive later */
+  /* lower case, no accents (so "rose" finds "Rosé"), punctuation as spaces */
+  var norm = function (s) { return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[_\-\/|.]+/g, ' ').replace(/\s+/g, ' ').trim(); };
+
+  /* every measure of every table that the History page can draw (numeric columns of daily, nightly and total tables) */
+  function metricIndex() {
+    var out = [], srcs = M.histSources ? M.histSources() : [];
+    srcs.forEach(function (s) {
+      var t = M.D.tabs[s.id];
+      if (!t || !t.c || !t.r) return;
+      var skip = { key: 1, date: 1, snapshot_date: 1, week: 1, month: 1, profit_read: 1 };
+      t.c.forEach(function (c, j) {
+        if (skip[c] || /(^|_)id$/.test(c)) return;
+        var seen = 0, bad = 0;
+        for (var i = 0; i < t.r.length && i < 60; i++) { var v = t.r[i][j]; if (v == null) continue; seen++; if (typeof v !== 'number') bad++; }
+        if (seen < 1 || bad) return;
+        var label = c.replace(/_/g, ' '), tbl = s.label.replace(/\s*\((daily|every night)\)\s*$/, '');
+        out.push({ type: 'Measures and tables', label: label, sub: tbl, hay: norm(label + ' ' + tbl + ' ' + s.id), boost: s.id === 'kpi_daily' || /^rollup_/.test(s.id) ? 2 : 0, run: { page: 'history', hsrc: s.id, hcol: c, hcol2: '', hent: '*', hagg: '', preset: /^rollup_/.test(s.id) && M.state.preset === '28d' ? 'all' : M.state.preset } });
+      });
+    });
+    return out;
+  }
+  function build() {
+    var out = [], f = M.facts(), seen = {};
+    M.ORDER.forEach(function (id) {
+      var p = M.PAGES[id]; if (!p) return;
+      out.push({ type: 'Pages', label: p.title, sub: p.why ? M.shortWhy(p.why) : '', hay: norm(p.title + ' ' + p.nav + ' ' + (M.ALIAS[id] || '')), boost: 2, run: { page: id } });
+    });
+    f.products.forEach(function (n) { out.push({ type: 'Products', label: n, sub: f.coll[n] || '', hay: norm(n + ' ' + (f.coll[n] || '')), run: { page: 'products', product: n, sel: '' } }); });
+    f.collections.forEach(function (n) { out.push({ type: 'Collections', label: n, sub: 'Products page, one collection', hay: norm(n), run: { page: 'products', collection: n } }); });
+    f.channels.forEach(function (n) { out.push({ type: 'Channels', label: n, sub: 'Channels page, one source', hay: norm(n), run: { page: 'channels', channel: n } }); });
+    f.devices.forEach(function (n) { out.push({ type: 'Devices', label: n, sub: 'Funnel page, one device', hay: norm(n + ' device'), run: { page: 'funnel', device: n } }); });
+    f.sizes.forEach(function (n) { out.push({ type: 'Sizes', label: 'Size ' + n, sub: 'Sizes page, one size', hay: norm('size ' + n), run: { page: 'sizes', size: n } }); });
+    out = out.concat(metricIndex());
+    if (M.has('search_queries_weekly')) {
+      var by = {}; M.rows('search_queries_weekly').forEach(function (x) { if (x.query) by[x.query] = (by[x.query] || 0) + (+x.impressions || 0); });
+      Object.keys(by).forEach(function (q) { out.push({ type: 'Google searches', label: q, sub: M.num(by[q]) + ' times shown', hay: norm(q), run: { page: 'search' }, after: { tableQ: q.toLowerCase(), card: /what people typed/i } }); });
+    }
+    if (M.has('market_signal')) M.rows('market_signal').forEach(function (x) { if (x.phrase && !by_has(out, x.phrase)) out.push({ type: 'Google searches', label: x.phrase, sub: 'Market signal: ' + (x.direction || ''), hay: norm(x.phrase), run: { page: 'search' }, after: { card: /moving toward us/i } }); });
+    function by_has(arr, label) { return arr.some(function (o) { return o.type === 'Google searches' && o.label === label; }); }
+    var topics = {};
+    ['content_patterns'].forEach(function (n) { if (M.has(n)) M.rows(n).forEach(function (x) { if (x.cut === 'topic' && x.value) topics[x.value] = (+x.posts || 0); }); });
+    if (M.has('content_scorecard')) M.rows('content_scorecard').forEach(function (x) { if (x.topic && topics[x.topic] == null) topics[x.topic] = 0; });
+    Object.keys(topics).forEach(function (n) { out.push({ type: 'Content topics', label: n, sub: topics[n] ? M.num(topics[n]) + ' posts' : 'Social and content page', hay: norm(n + ' topic'), run: { page: 'social', ccut: 'topic' }, after: { card: /what works/i } }); });
+    out.forEach(function (o) { var k = o.type + '|' + o.label + '|' + (o.run.hsrc || ''); if (seen[k]) o.dup = true; seen[k] = 1; });
+    return out.filter(function (o) { return !o.dup; });
+  }
+  function find(q) {
+    q = norm(q);
+    if (!idx) idx = build();
+    if (!q) return [];
+    var words = q.split(' ');
+    var hits = [];
+    idx.forEach(function (o) {
+      var ok = words.every(function (w) { return o.hay.indexOf(w) >= 0; });
+      if (!ok) return;
+      var l = norm(o.label), s = (o.boost || 0) + (l === q ? 8 : l.indexOf(q) === 0 ? 5 : l.indexOf(q) > 0 ? 3 : 0) + (words.every(function (w) { return (' ' + l).indexOf(' ' + w) >= 0; }) ? 1 : 0) + (o.type === 'Measures and tables' && !/_hist$/.test(o.run.hsrc || '') ? 1 : 0) - (o.type === 'Measures and tables' && /_hist$/.test(o.run.hsrc || '') ? 2 : 0);
+      hits.push({ o: o, s: s });
+    });
+    hits.sort(function (a, b) { return b.s - a.s || (a.o.label < b.o.label ? -1 : 1); });
+    hits.forEach(function (h) { h.o.score = h.s; });
+    return hits.map(function (h) { return h.o; });
+  }
+
+  function choose(o) {
+    close(true);
+    inp.value = '';
+    if (o.after) M.pending_after = o.after;
+    M.go(o.run, true);
+    window.scrollTo(0, 0);
+    var m = document.getElementById('main'); if (m) m.focus({ preventScroll: true });
+  }
+  /* after the page is drawn: scroll to the card the search result is about, and put the phrase in that table's own "Filter rows" box */
+  M.afterRender = function () {
+    var a = M.pending_after; M.pending_after = null;
+    if (!a) return;
+    var cards = Array.prototype.slice.call(document.querySelectorAll('#main .card')), hit = null;
+    cards.forEach(function (c) { var h = c.querySelector('h3'); if (!hit && h && a.card && a.card.test(h.textContent)) hit = c; });
+    if (!hit) return;
+    if (M.openFolds) M.openFolds(hit);
+    if (a.tableQ) { var tb = M.tables && M.tables.filter(function (t) { return hit.contains(t); })[0]; if (tb && tb.setFilter) tb.setFilter(a.tableQ); }
+    hit.scrollIntoView({ block: 'start' });
+    hit.classList.add('found'); setTimeout(function () { hit.classList.remove('found'); }, 2200);
+  };
+
+  function paint(q) {
+    M.clear(list);
+    items = []; act = -1;
+    var res = find(q);
+    inp.setAttribute('aria-expanded', 'true');
+    if (!q.trim()) {
+      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-hint', 'data-ux': '1' }, 'Type to find a page, product, channel, size, measure, Google search or content topic. Enter opens the first result.'));
+      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-try', 'data-ux': '1' }, 'Try: net sales, instagram, rose, size M, conversion'));
+      status.textContent = '';
+      return;
+    }
+    if (!res.length) {
+      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-hint', 'data-ux': '1' }, 'No match for "' + q.trim() + '".'));
+      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-try', 'data-ux': '1' }, 'Try one word, such as sales, stock, reviews, a product name or a channel. Measures use the same words as the History page.'));
+      status.textContent = 'No match';
+      return;
+    }
+    var shown = 0;
+    /* groups are ordered by their best match (pages get a small lead so a plain word like "stock" lists the pages first); equal scores keep the fixed order */
+    var best = function (type) { var m = -99; res.forEach(function (o) { if (o.type === type && o.score > m) m = o.score; }); return m + (type === 'Pages' ? 5 : 0); };
+    M.SRCH_ORDER.slice().sort(function (a, b) { return best(b) - best(a) || M.SRCH_ORDER.indexOf(a) - M.SRCH_ORDER.indexOf(b); }).forEach(function (type) {
+      var g = res.filter(function (o) { return o.type === type; });
+      if (!g.length) return;
+      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-h', text: type + (g.length > M.SRCH_PER ? ' (' + g.length + ')' : '') }));
+      g.slice(0, M.SRCH_PER).forEach(function (o) {
+        var id = 'sr-' + items.length, li = M.h('li', { role: 'option', id: id, class: 'sr-i', 'aria-selected': 'false' }, [M.h('span', { class: 'sr-l', text: o.label }), o.sub ? M.h('span', { class: 'sr-s', text: o.sub }) : null]);
+        li.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        li.addEventListener('click', function () { choose(o); });
+        li.addEventListener('mousemove', function () { setActive(items.indexOf(li)); });
+        li._o = o; items.push(li); list.appendChild(li); shown++;
+      });
+      if (g.length > M.SRCH_PER) list.appendChild(M.h('li', { role: 'presentation', class: 'sr-more', text: (g.length - M.SRCH_PER) + ' more ' + type.toLowerCase() + '. Type more words to narrow them.' }));
+    });
+    status.textContent = shown + ' result' + (shown === 1 ? '' : 's') + ' shown of ' + res.length;
+    setActive(0);
+  }
+  function setActive(i) {
+    if (act >= 0 && items[act]) items[act].setAttribute('aria-selected', 'false');
+    act = i;
+    if (act >= 0 && items[act]) { items[act].setAttribute('aria-selected', 'true'); inp.setAttribute('aria-activedescendant', items[act].id); items[act].scrollIntoView({ block: 'nearest' }); } else inp.removeAttribute('aria-activedescendant');
+  }
+  function open() { idx = null; if (panel.hidden) { panel.hidden = false; if (M.popClose) M.popClose(); } paint(inp.value); }
+  function close(noFocus) {
+    if (!panel || panel.hidden) return;
+    panel.hidden = true; inp.setAttribute('aria-expanded', 'false'); inp.removeAttribute('aria-activedescendant');
+    if (!noFocus) inp.focus();
+  }
+  M.overlayOpen = function () { return (panel && !panel.hidden) || (M.detail && M.detail.isOpen()); };
+
+  M.searchBox = function () {
+    inp = M.h('input', { type: 'search', id: 'gsearch', class: 'gs-in', placeholder: 'Search the dashboard', role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'gs-list', 'aria-autocomplete': 'list', 'aria-label': 'Search the dashboard. Press slash to focus.', autocomplete: 'off', spellcheck: 'false' });
+    list = M.h('ul', { id: 'gs-list', class: 'gs-list', role: 'listbox', 'aria-label': 'Search results' });
+    status = M.h('p', { class: 'sr-only', role: 'status', 'aria-live': 'polite' });
+    panel = M.h('div', { class: 'gs-panel', hidden: true, 'data-ux': '1' }, [list, status]);
+    var hint = M.h('kbd', { class: 'gs-key', 'aria-hidden': 'true', text: '/' });
+    var wrap = M.h('div', { class: 'gsearch', role: 'search', 'data-ux': '1' }, [M.s('svg', { class: 'ic gs-ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#i-search' })]), inp, hint, panel]);
+    inp.addEventListener('focus', open);
+    inp.addEventListener('input', function () { if (panel.hidden) panel.hidden = false; paint(inp.value); });
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); if (panel.hidden) open(); else if (items.length) setActive((act + 1) % items.length); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); if (items.length) setActive((act - 1 + items.length) % items.length); }
+      else if (e.key === 'Enter') { if (act >= 0 && items[act]) { e.preventDefault(); choose(items[act]._o); } }
+      else if (e.key === 'Escape') { if (!panel.hidden) { e.preventDefault(); e.stopPropagation(); close(false); } else if (inp.value) { inp.value = ''; } else inp.blur(); }
+      else if (e.key === 'Home' && !inp.value) { e.preventDefault(); setActive(0); }
+    });
+    document.addEventListener('mousedown', function (e) { if (!panel.hidden && !e.target.closest('.gsearch')) close(true); }, true);
+    document.addEventListener('focusin', function (e) { if (!panel.hidden && !e.target.closest('.gsearch')) close(true); });
+    return wrap;
+  };
+  document.addEventListener('keydown', function (e) {
+    if (!inp || !inp.isConnected) return;
+    var t = e.target, tag = t && t.tagName, typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable);
+    var k = e.key === 'k' || e.key === 'K';
+    if ((k && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing && !e.metaKey && !e.ctrlKey && !e.altKey)) {
+      if (M.fs || (inp.closest && inp.closest('[inert]'))) return;      /* full screen and open dialogs keep the keyboard */
+      e.preventDefault(); inp.focus(); inp.select();
+    }
+  }, true);
+})();
+
+/* mazo dashboard tables and detail panel (UX round, 1 Nov 2026, T807).
+   M.table: the sortable table with in-cell bars, plus (all new, nothing changes a number):
+     a. "Filter rows" box (shown for tables over 8 rows, and inside full screen for every table),
+     b. sticky header inside a scroller for long tables, row hover, a title on long cells,
+     c. CLICK A VALUE: a product, collection, channel, device or size cell is a button that applies that value as the global filter (or opens the page that can),
+     d. a row opens a detail panel (every field of the row, formatted like its column) unless the page gave the table its own onRow,
+     e. Download CSV (raw numbers, a blank cell stays blank),
+     f. "Show more" instead of silent cut-off.
+   M.detail: the one detail panel (also opened by a click on any chart mark that has a tooltip). M.dimOk / M.dimApply: the click-a-value rules.
+   Every element added here carries data-ux="1" so tests can tell helpers from data. Names are read from M.facts() when a click or a keypress happens, never at load. */
+
+/* ---------------------------------------------------------------- click a value: which columns are dimensions, and what a click does */
+M.DIMKEY = { topic: 'topic', product: 'product', product_a: 'product', product_b: 'product', collection: 'collection', source: 'channel', source_medium: 'channel', channel: 'channel', device: 'device', size: 'size' };
+M.DIMHOME = { product: 'products', collection: 'products', channel: 'channels', device: 'funnel', size: 'sizes' };
+M.DIMNAME = { topic: 'topic', product: 'product', collection: 'collection', channel: 'channel', device: 'device', size: 'size' };
+M.dimList = function (kind) {
+  if (kind === 'topic') return M.state.page === 'social' ? M.topicList() : null;
+  var f = M.facts();
+  return kind === 'product' ? f.products : kind === 'collection' ? f.collections : kind === 'channel' ? f.channels : kind === 'device' ? f.devices : kind === 'size' ? f.sizes : null;
+};
+M.dimOk = function (kind, value) {
+  if (value == null || value === '') return false;
+  var l = M.dimList(kind), v = String(value);
+  if (!l) return false;
+  if (l.indexOf(v) >= 0) return true;
+  /* the social page matches its own channel ids (instagram, pinterest ...) in the channel filter */
+  return kind === 'channel' && M.state.page === 'social' && !!M.CH && M.CH.some(function (c) { return c.id === v; });
+};
+/* post topics (Social page): a click puts the topic in the "Posts in this range" table's own filter box and scrolls to it */
+M.topicList = function () { var s = {}; M.rows('content_scorecard').forEach(function (x) { if (x.topic) s[x.topic] = 1; }); return Object.keys(s); };      /* read at the moment of use, never kept: rows can arrive between renders */
+M.topicApply = function (v) {
+  var card = Array.prototype.filter.call(document.querySelectorAll('#main .card'), function (c) { var h = c.querySelector('h3'); return h && /Posts in this range/i.test(h.textContent); })[0];
+  var tbs = card && (M.tables || []).filter(function (tb) { return card.contains(tb) && tb.setFilter; });
+  if (!tbs || !tbs.length) return;
+  tbs.forEach(function (tb) { tb.setFilter(v); });
+  card.scrollIntoView({ block: 'start' });
+};
+M.dimHere = function (kind) { if (kind === 'topic') return true; var pg = M.PAGES[M.state.page]; return !!(pg && pg.uses.indexOf(kind) >= 0); };
+M.dimApply = function (kind, value) {
+  if (kind === 'topic') { M.topicApply(String(value)); return; }
+  var p = {}; p[kind] = String(value);
+  if (!M.dimHere(kind)) p.page = M.DIMHOME[kind];
+  M.go(p, true);
+  if (p.page) window.scrollTo(0, 0);
+};
+M.dimTitle = function (kind, value) {
+  if (kind === 'topic') return 'Show only the posts about ' + value + ' (fills the filter box of the posts table)';
+  return M.dimHere(kind) ? 'Show only ' + value + ' (sets the ' + M.DIMNAME[kind] + ' filter)' : 'Open ' + M.PAGES[M.DIMHOME[kind]].nav + ' for ' + value;
+};
+M.dimBtn = function (kind, value, text) {
+  var b = M.h('button', { type: 'button', class: 'dimlink', title: M.dimTitle(kind, value) }, text == null ? String(value) : text);
+  b.addEventListener('click', function (e) { e.stopPropagation(); M.tipHide(); M.dimApply(kind, value); });
+  return b;
+};
+
+/* ---------------------------------------------------------------- the detail panel (a row, a chart mark, a heatmap cell): label and value pairs, with optional action buttons */
+(function () {
+  var el = null, opener = null, lastFocus = null;
+  function build() {
+    el = M.h('aside', { id: 'detail', class: 'detail', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'detail-title', 'data-ux': '1', hidden: true });
+    document.body.appendChild(el);
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); M.detail.close(); return; }
+      if (e.key !== 'Tab') return;
+      var f = Array.prototype.filter.call(el.querySelectorAll('button, a[href], input, select'), function (n) { return !n.disabled && n.offsetParent !== null; });
+      if (!f.length) return;
+      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+    });
+  }
+  M.detail = {
+    isOpen: function () { return !!el && !el.hidden; },
+    open: function (o) {
+      if (!el) build();
+      M.clear(el);
+      lastFocus = o.opener || document.activeElement;
+      var close = M.h('button', { type: 'button', class: 'ibtn', 'aria-label': 'Close the detail panel', title: 'Close (Esc)' }, M.icon ? M.icon('i-x') : 'x');
+      close.addEventListener('click', function () { M.detail.close(); });
+      el.appendChild(M.h('div', { class: 'detail-head' }, [M.h('h2', { id: 'detail-title', text: o.title || 'Detail' }), close]));
+      if (o.sub) el.appendChild(M.h('p', { class: 'small muted', text: o.sub }));
+      var dl = M.h('dl', { class: 'detail-list' });
+      (o.rows || []).forEach(function (r) { dl.appendChild(M.h('div', { class: 'detail-row' }, [M.h('dt', { text: r.k }), M.h('dd', { text: r.v == null || r.v === '' ? 'n/a' : String(r.v) })])); });
+      el.appendChild(dl);
+      if (o.actions && o.actions.length) {
+        var box = M.h('div', { class: 'detail-acts' });
+        o.actions.forEach(function (a) { var b = M.h('button', { type: 'button', class: 'btn sm', text: a.label }); b.addEventListener('click', function () { M.detail.close(true); a.run(); }); box.appendChild(b); });
+        el.appendChild(box);
+      }
+      el.hidden = false;
+      document.body.classList.add('detail-on');
+      close.focus();
+    },
+    close: function (noFocus) {
+      if (!el || el.hidden) return;
+      el.hidden = true; document.body.classList.remove('detail-on');
+      if (!noFocus && lastFocus && document.contains(lastFocus) && lastFocus.focus) { try { lastFocus.focus({ preventScroll: true }); } catch (x) { /* element gone */ } }
+      lastFocus = null;
+    }
+  };
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && M.detail.isOpen()) { e.preventDefault(); e.stopPropagation(); M.detail.close(); } }, true);
+  /* the panel closes when the page is drawn again (a new page, range or filter) unless a full screen chart is being reopened */
+  document.addEventListener('mousedown', function (e) { if (el && !el.hidden && !e.target.closest('#detail') && !e.target.closest('.has-tip, .detail-open, tr.rowdetail')) M.detail.close(true); }, true);
+})();
+
+/* ---------------------------------------------------------------- CSV of a table */
+M.tableCsv = function (cols, rows, name) {
+  var head = cols.map(function (c) { return M.csvCell(c.label); }).join(',');
+  var body = rows.map(function (r) { return cols.map(function (c) { return M.csvCell(r[c.k]); }).join(','); });
+  var text = '﻿' + [head].concat(body).join('\r\n') + '\r\n';
+  M.saveBlob(new Blob([text], { type: 'text/csv;charset=utf-8' }), 'mazo-' + M.slug(name || 'table') + '-' + (M.D.anchor || '').replace(/-/g, '') + '.csv');
+};
+
+/* ---------------------------------------------------------------- the table
+   cols: {k,label,num,fmt(v,row),bar:{max,color},render(row)->node, sort(row)->value, wrap, dim:'product'|false|function(row)->{kind,value}}
+   o: {rows, sortKey, sortDir, onRow(row), selected(row), empty, limit, name, detail:false, noTools:true}
+   Returns a box; box.redraw(rows) draws it again with other rows; box.view() gives the rows as displayed (filtered and sorted, before "show more"). */
+M.table = function (cols, o) {
+  var box = M.h('div', { class: 'tblbox' }), wrap = M.h('div', { class: 'tw' }), st = { key: o.sortKey || null, dir: o.sortDir || -1, q: '', shown: o.limit || 300 }, step = o.limit || 300;
+  var tools = null, qIn = null, cnt = null, strs = null, view = [];
+  var col = function (k) { return cols.filter(function (c) { return c.k === k; })[0]; };
+  function val(c, r) { return c.sort ? c.sort(r) : r[c.k]; }
+  function text(c, r) { var v = r[c.k]; return c.fmt ? c.fmt(v, r) : (v == null ? '' : String(v)); }
+  function dimOf(c, r) {
+    if (c.dim === false || c.render) return null;
+    /* a table whose rows already do something (Products: show that product's days) keeps its first column as the row's name; the other dimension columns are links */
+    var auto = M.DIMKEY[c.k] && (!o.onRow || cols.indexOf(c) > 0);
+    var d = typeof c.dim === 'function' ? c.dim(r) : c.dim ? { kind: c.dim, value: r[c.k] } : (auto ? { kind: M.DIMKEY[c.k], value: r[c.k] } : null);
+    return d && M.dimOk(d.kind, d.value) ? d : null;
+  }
+  function extras(r) { return Object.keys(r).filter(function (k) { return k !== 'key' && !col(k) && r[k] != null && r[k] !== '' && typeof r[k] !== 'object'; }); }
+  function detail(r, opener) {
+    var rowsOut = cols.map(function (c) { var t; try { t = c.render && c.fmt == null && r[c.k] == null ? (c.render(r) || {}).textContent : text(c, r); } catch (x) { t = String(r[c.k]); } return { k: c.label, v: t }; });
+    extras(r).forEach(function (k) { rowsOut.push({ k: k.replace(/_/g, ' '), v: r[k] }); });
+    var acts = [];
+    cols.forEach(function (c) { var d = dimOf(c, r); if (d) acts.push({ label: M.dimHere(d.kind) ? 'Show only ' + d.value : 'Open ' + M.PAGES[M.DIMHOME[d.kind]].nav + ' for ' + d.value, run: function () { M.dimApply(d.kind, d.value); } }); });
+    var first = cols[0] ? text(cols[0], r) : 'Row';
+    M.detail.open({ title: first || 'Row', rows: rowsOut, actions: acts, opener: opener });
+  }
+  function rowStr(r) {
+    return cols.map(function (c) { return text(c, r); }).join(' ').toLowerCase() + ' ' + cols.map(function (c) { var v = r[c.k]; return v == null ? '' : String(v); }).join(' ').toLowerCase();
+  }
+  function buildTools() {
+    qIn = M.h('input', { type: 'search', class: 'tbl-q', placeholder: 'Filter rows', 'aria-label': 'Filter the rows of this table', autocomplete: 'off' });
+    cnt = M.h('span', { class: 'tbl-n small muted', 'aria-live': 'polite' });
+    var csv = M.h('button', { type: 'button', class: 'btn sm tbl-csv', title: 'Download every row of this table, in this order, as a CSV file' }, [M.icon ? M.icon('i-down') : null, M.h('span', { text: 'Download CSV' })]);
+    csv.addEventListener('click', function () { var card = box.closest ? box.closest('.card') : null, h3 = card && card.querySelector('h3'); M.tableCsv(cols, view, o.name || (h3 && h3.textContent) || 'table'); });
+    qIn.addEventListener('input', function () { st.q = qIn.value.trim().toLowerCase(); st.shown = step; draw(); });
+    qIn.addEventListener('keydown', function (e) { if (e.key === 'Escape' && qIn.value) { e.preventDefault(); e.stopPropagation(); qIn.value = ''; st.q = ''; draw(); } });
+    tools = M.h('div', { class: 'tbl-tools', 'data-ux': '1' }, [qIn, cnt, csv]);
+    box.insertBefore(tools, wrap);
+  }
+  function draw() {
+    M.clear(wrap);
+    var all = o.rows || [], rows = all.slice();
+    if (!all.length) { wrap.appendChild(M.empty(o.empty || 'Nothing to show for this selection.')); view = []; if (tools) tools.hidden = true; box.className = 'tblbox'; return; }
+    box.classList.toggle('big', all.length > 8);
+    if (tools) tools.hidden = false;
+    if (st.q) { if (!strs || strs.length !== all.length || strs.src !== all) { strs = all.map(rowStr); strs.src = all; } rows = all.filter(function (r, i) { return strs[i].indexOf(st.q) >= 0; }); }
+    if (st.key) {
+      var c = col(st.key);
+      rows.sort(function (a, b) {
+        var x = val(c, a), y = val(c, b);
+        if (x == null && y == null) return 0;
+        if (x == null) return 1;
+        if (y == null) return -1;
+        return (typeof x === 'string' ? x.localeCompare(y) : x - y) * st.dir;
+      });
+    }
+    view = rows;
+    if (cnt) cnt.textContent = st.q ? M.num(rows.length) + ' of ' + M.num(all.length) + ' rows' : M.num(all.length) + ' rows';
+    if (!rows.length) { wrap.appendChild(M.empty('No row matches "' + st.q + '".', 'Clear the filter box to see every row again.')); return; }
+    var maxes = {};      /* bar scales come from ALL rows, so a bar does not change length while you type in the filter box */
+    cols.forEach(function (c) { if (c.bar) maxes[c.k] = c.bar.max || Math.max.apply(null, all.map(function (r) { return +val(c, r) || 0; }).concat([0])) || 1; });
+    var head = M.h('tr', null, cols.map(function (c) {
+      var th = M.h('th', { class: c.num ? 'n' : '', scope: 'col', 'aria-sort': st.key === c.k ? (st.dir > 0 ? 'ascending' : 'descending') : 'none' });
+      th.appendChild(M.h('button', { type: 'button', onclick: function () { if (st.key === c.k) st.dir = -st.dir; else { st.key = c.k; st.dir = c.num ? -1 : 1; } draw(); } },
+        [c.label, st.key === c.k ? (st.dir > 0 ? ' ▲' : ' ▼') : '']));
+      return th;
+    }));
+    var tb = M.h('tbody'), canDetail = !o.onRow && o.detail !== false && (cols.length >= 4 || rows.some(function (r) { return extras(r).length; }));
+    rows.slice(0, st.shown).forEach(function (r) {
+      var tr = M.h('tr', { class: (o.onRow ? 'click ' : canDetail ? 'click rowdetail ' : '') + (o.selected && o.selected(r) ? 'sel' : '') });
+      if (o.onRow || canDetail) {
+        var go = function () { if (o.onRow) o.onRow(r); else detail(r, tr); };
+        tr.tabIndex = 0; tr.addEventListener('click', function (e) { if (e.target.closest('a, .dimlink')) return; go(); });
+        tr.addEventListener('keydown', function (e) { if (e.target === tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); go(); } });
+        if (canDetail) tr.title = 'Click for the full detail of this row';
+      }
+      cols.forEach(function (c) {
+        var td = M.h('td', { class: (c.num ? 'n ' : '') + (c.wrap ? 'wrap' : '') });
+        if (c.render) { var n = c.render(r); if (n != null) M.kids(td, n); }
+        else {
+          var v = r[c.k], txt = text(c, r), d = dimOf(c, r);
+          if (c.bar && v != null) {
+            var w = Math.max(0, Math.min(100, (+val(c, r) || 0) / maxes[c.k] * 100));
+            td.appendChild(M.h('div', { class: 'cellbar' }, [M.s('svg', { viewBox: '0 0 100 10', preserveAspectRatio: 'none', 'aria-hidden': 'true' }, [M.s('rect', { width: 100, height: 10, fill: M.COLORS.grid }), M.s('rect', { width: w, height: 10, fill: c.bar.color || M.COLORS.maroon })]), M.h('span', { text: txt })]));
+          } else if (d) td.appendChild(M.dimBtn(d.kind, d.value, txt));
+          else { td.textContent = txt; if (!c.wrap && txt.length > 28) td.title = txt; }
+        }
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    wrap.appendChild(M.h('table', null, [M.h('thead', null, head), tb]));
+    wrap.classList.toggle('tall', rows.length > 14);
+    if (rows.length > st.shown) {
+      var more = M.h('button', { type: 'button', class: 'btn sm', text: 'Show ' + M.num(Math.min(step, rows.length - st.shown)) + ' more' }), left = rows.length - st.shown;
+      more.addEventListener('click', function () { st.shown += step; draw(); });
+      wrap.appendChild(M.h('p', { class: 'tbl-more small muted', 'data-ux': '1' }, ['Showing ' + M.num(st.shown) + ' of ' + M.num(rows.length) + ' rows (' + M.num(left) + ' not shown). ', more]));
+    }
+  }
+  box.appendChild(wrap);
+  if (!o.noTools) buildTools();
+  draw();
+  box.redraw = function (rows) { o.rows = rows; strs = null; draw(); };
+  box.view = function () { return view; };
+  box.cols = cols;
+  box.csv = function () { var card = box.closest ? box.closest('.card') : null, h3 = card && card.querySelector('h3'); M.tableCsv(cols, view, o.name || (h3 && h3.textContent) || 'table'); };
+  box.setFilter = function (q) { if (!qIn) return; qIn.value = q; st.q = String(q).trim().toLowerCase(); st.shown = step; draw(); };
+  (M.tables = M.tables || []).push(box);
+  return box;
 };
 
 /* Pages: Overview, Funnel, Channels. Every page is {nav, title, why, uses (filters that change it), dates, snap, render(range)}. */
@@ -2526,7 +3184,7 @@ M.PAGES.channels.render = function (r) {
     return { label: x.source, x: x.visits, y: x.conv, r: x.revenue || 0.01, color: thin ? M.COLORS.grey : M.COLORS.maroon, tip: { title: x.source, rows: [{ k: 'Visits', v: M.num(x.visits) }, { k: 'Conversion', v: M.pct(x.conv) }, { k: 'Orders', v: M.num(x.orders) }, { k: 'Revenue', v: M.inr(x.revenue) }, { k: 'Read', v: x.read }] } };
   });
   root.appendChild(M.grid([M.card('Visits against conversion', 'Right means more visits, higher means more of them buy. Bigger bubbles earned more. Grey bubbles have fewer than ' + M.MIN_EVENTS + ' visits: too few to read, so their height is luck as much as anything.', [
-    M.chart('', function (h, w) { M.bubble(h, w, { points: pts, title: 'Channels', xlabel: 'Visits', ylabel: 'Visits that bought, percent', yfmt: function (v) { return M.pct(v, v < 1 || v % 1 ? 1 : 0); }, labelTop: 8, h: w < 520 ? 300 : 340, legend: [{ name: 'Maybe enough visits to read (30 or more)', color: M.COLORS.maroon }, { name: 'Too few visits to read', color: M.COLORS.grey }] }); }),
+    M.chart('', function (h, w) { M.bubble(h, w, { dim: 'channel', points: pts, title: 'Channels', xlabel: 'Visits', ylabel: 'Visits that bought, percent', yfmt: function (v) { return M.pct(v, v < 1 || v % 1 ? 1 : 0); }, labelTop: 8, h: w < 520 ? 300 : 340, legend: [{ name: 'Maybe enough visits to read (30 or more)', color: M.COLORS.maroon }, { name: 'Too few visits to read', color: M.COLORS.grey }] }); }),
     M.tableView([{ k: 'source', label: 'Channel' }, { k: 'visits', label: 'Visits', num: true, fmt: M.num }, { k: 'conv', label: 'Conversion', num: true, fmt: function (v) { return M.pct(v); } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr }], rows)
   ], 'one')], 'one'));
   var cols = [
@@ -2626,7 +3284,7 @@ M.PAGES.sizes.render = function (r) {
   var heat = M.heat(products, sizes, function (p, z) {
     var x = lookup[p + '|' + z]; if (!x) return { v: null, text: 'not made' };
     var v = M.sizeVal(x, mode);
-    return { v: v, text: M.num(v), tip: { title: p + ', size ' + z, rows: [{ k: 'Sold, 90 days', v: M.num(x.sold_90d) }, { k: 'Sold, all time', v: M.num(x.sold_all) }, { k: 'In stock', v: M.num(x.stock) }, { k: 'Cart adds, 28 days', v: M.num(x.carts_28d) }, { k: 'Size picks, 28 days', v: M.num(x.size_picks_28d) }, { k: 'Clicks on a sold out size', v: M.num(x.unavailable_clicks_28d) }, { k: 'Read', v: x.read || '' }] } };
+    return { v: v, text: M.num(v), tip: { title: p + ', size ' + z, actions: [{ label: 'Show only ' + p, run: function () { M.dimApply('product', p); } }, { label: 'Show only size ' + z, run: function () { M.dimApply('size', z); } }], rows: [{ k: 'Sold, 90 days', v: M.num(x.sold_90d) }, { k: 'Sold, all time', v: M.num(x.sold_all) }, { k: 'In stock', v: M.num(x.stock) }, { k: 'Cart adds, 28 days', v: M.num(x.carts_28d) }, { k: 'Size picks, 28 days', v: M.num(x.size_picks_28d) }, { k: 'Clicks on a sold out size', v: M.num(x.unavailable_clicks_28d) }, { k: 'Read', v: x.read || '' }] } };
   }, { rowHead: 'Product', legendText: 'Darker means more. Hatched cells are sizes this product does not come in.' });
   root.appendChild(M.card('Product by size', 'Switch what the colours show. Hover or focus a cell for the full detail.', [M.h('div', { class: 'row-ctl' }, seg), M.thin(events) ? M.thinTag(events, 'sales, carts and size picks together') : null, heat, mode === 'picks' || mode === 'lost' ? M.h('p', { class: 'small muted', text: 'Size picks are recorded from 29 Oct 2026, so this view fills slowly. Lost demand = a size with no stock that someone picked, clicked or added to the cart in 28 days.' }) : null,
     M.tableView([{ k: 'product', label: 'Product' }, { k: 'size', label: 'Size' }, { k: 'stock', label: 'Stock', num: true }, { k: 'sold_90d', label: 'Sold 90d', num: true }, { k: 'carts_28d', label: 'Carts 28d', num: true }, { k: 'size_picks_28d', label: 'Picks 28d', num: true }, { k: 'read', label: 'Read' }], rows)].filter(Boolean)));
@@ -2761,7 +3419,7 @@ M.PAGES.social.render = function (r) {
   var cs = M.stateRows('content_scorecard').filter(function (x) { return x.date && x.date >= r.from && x.date <= r.to && (!s.channel || chs.some(function (c) { return c.id === x.channel; })); });
   var withReach = cs.filter(function (x) { return x.reach_or_views != null; }).sort(function (a, b) { return (b.reach_or_views || 0) - (a.reach_or_views || 0); });
   var settled = withReach.filter(function (x) { return x.date <= M.add(M.D.anchor, -2); });   // posts of the last two days are still collecting views
-  var cols = [{ k: 'channel', label: 'Channel' }, { k: 'date', label: 'Posted', fmt: M.fd }, { k: 'format', label: 'Format' }, { k: 'topic', label: 'Topic', wrap: true }, { k: 'reach_or_views', label: 'Reach or views', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'likes', label: 'Likes', num: true, fmt: M.num }, { k: 'saves', label: 'Saves', num: true, fmt: M.num }, { k: 'link_clicks_ga4', label: 'Link clicks (GA4)', num: true, fmt: M.num }, { k: 'orders_ga4', label: 'Orders (GA4)', num: true, fmt: M.num }];
+  var cols = [{ k: 'channel', label: 'Channel' }, { k: 'date', label: 'Posted', fmt: M.fd }, { k: 'format', label: 'Format' }, { k: 'topic', label: 'Topic', wrap: true, dim: 'topic' }, { k: 'reach_or_views', label: 'Reach or views', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'likes', label: 'Likes', num: true, fmt: M.num }, { k: 'saves', label: 'Saves', num: true, fmt: M.num }, { k: 'link_clicks_ga4', label: 'Link clicks (GA4)', num: true, fmt: M.num }, { k: 'orders_ga4', label: 'Orders (GA4)', num: true, fmt: M.num }];
   root.appendChild(M.card('Posts in this range', M.num(cs.length) + ' posts in the date range. Top ten and bottom ten by reach or views. Reach and views are different counts on different channels, so compare within a channel. Posts from the last two days are still collecting views.', [
     M.thinTag(cs.length, 'posts', 5),
     M.h('h3', { text: 'Top ten', style: 'font-size:.95rem;margin:.4rem 0' }), M.table(cols, { rows: withReach.slice(0, 10), sortKey: 'reach_or_views', empty: 'No posts in this range.', limit: 10 }),
@@ -2770,7 +3428,7 @@ M.PAGES.social.render = function (r) {
   /* patterns */
   var cut = ['topic', 'format', 'hour block', 'channel'].indexOf(s.ccut) >= 0 ? s.ccut : 'topic', seg = M.h('div', { class: 'seg', role: 'group', 'aria-label': 'Pattern to show' }, [['topic', 'Topic'], ['format', 'Format'], ['hour block', 'Hour (IST)'], ['channel', 'Channel']].map(function (m) { return M.h('button', { type: 'button', 'aria-pressed': m[0] === cut ? 'true' : 'false', text: m[1], onclick: function () { M.go({ ccut: m[0] }); } }); }));
   var pat = M.cuts('content_patterns', cut).sort(function (a, b) { return (+b.avg_reach_or_views || 0) - (+a.avg_reach_or_views || 0); });
-  root.appendChild(M.card('What works: average reach by ' + cut, 'Average reach or views per post, over all posts the nightly job has seen (not the date range). Averages of fewer than 5 posts are marked.', [M.h('div', { class: 'row-ctl' }, seg), M.bars(pat.map(function (x) { return { label: x.value + ' (' + M.num(x.posts) + ' posts)', value: +x.avg_reach_or_views || 0, text: M.num(x.avg_reach_or_views) + ' avg, ' + M.num(x.avg_likes, 1) + ' likes', sub: M.thin(x.posts, 5) ? 'too few posts to read (under 5)' : null, color: M.thin(x.posts, 5) ? M.COLORS.grey : M.COLORS.maroon, tip: { title: x.value, rows: [{ k: 'Posts', v: M.num(x.posts) }, { k: 'Average reach or views', v: M.num(x.avg_reach_or_views) }, { k: 'Average likes', v: M.num(x.avg_likes, 1) }] } }; }), { empty: 'No pattern table yet.' }), M.h('p', { class: 'small muted', text: 'Grey bars have fewer than 5 posts. Threads and YouTube posts are counted in views, Instagram in reach, so "channel" and "format" differ partly because of what is counted.' })]));
+  root.appendChild(M.card('What works: average reach by ' + cut, 'Average reach or views per post, over all posts the nightly job has seen (not the date range). Averages of fewer than 5 posts are marked.', [M.h('div', { class: 'row-ctl' }, seg), M.bars(pat.map(function (x) { return { label: x.value + ' (' + M.num(x.posts) + ' posts)', dim: cut === 'topic' ? 'topic' : (cut === 'channel' ? 'channel' : null), dimValue: x.value, value: +x.avg_reach_or_views || 0, text: M.num(x.avg_reach_or_views) + ' avg, ' + M.num(x.avg_likes, 1) + ' likes', sub: M.thin(x.posts, 5) ? 'too few posts to read (under 5)' : null, color: M.thin(x.posts, 5) ? M.COLORS.grey : M.COLORS.maroon, tip: { title: x.value, rows: [{ k: 'Posts', v: M.num(x.posts) }, { k: 'Average reach or views', v: M.num(x.avg_reach_or_views) }, { k: 'Average likes', v: M.num(x.avg_likes, 1) }] } }; }), { empty: 'No pattern table yet.' }), M.h('p', { class: 'small muted', text: 'Grey bars have fewer than 5 posts. Threads and YouTube posts are counted in views, Instagram in reach, so "channel" and "format" differ partly because of what is counted.' })]));
   return root;
 };
 
@@ -2945,16 +3603,17 @@ M.nz = function (v) {      // null (no value stored) shown as 0 in the bars, exa
 
 M.sp('history', 'History', 'History', 'Pick any measure and see it across all the days stored, so a number from a year ago is always one click away. Choose "All time" in the date range to see every stored day.', [], { snap: false });
 M.yearsCard = function () {
-  /* T807: every year available, with the file that holds its full daily detail */
-  var ys = M.D.years || [], win = M.D.win;
+  /* T807 (1 Nov 2026, one dashboard for life): there are no per year files any more. This card says what is stored for each year; the days themselves are loaded by month when a date range needs them. */
+  var ys = M.D.years || [];
   if (!ys.length) return null;
-  var rows = ys.map(function (y) {
-    var here = M.D.kind === 'year' ? String(M.D.year) === String(y.year) : (!win || (M.D.anchor && String(y.year) === M.D.anchor.slice(0, 4)));
-    return { year: String(y.year), what: y.closed ? 'closed year' : 'current year', file: y.file, here: here };
+  var F = M.D.files || { d: [] }, c = M.cover('money_daily'), rows = ys.map(function (y) {
+    var months = (F.d || []).filter(function (m) { return m.slice(0, 4) === String(y.year); }).length;
+    return { year: String(y.year), months: months, from: c.first && c.first.slice(0, 4) <= String(y.year) ? (c.first.slice(0, 4) === String(y.year) ? c.first : String(y.year) + '-01-01') : null,
+             to: c.last && c.last.slice(0, 4) >= String(y.year) ? (c.last.slice(0, 4) === String(y.year) ? c.last : String(y.year) + '-12-31') : null };
   });
-  return M.card('Every year, with its file', win ? 'This file shows days from ' + M.fd(win.from) + '. Older months are here as monthly totals; every day of a year is in that year\'s file, saved in the same folder.' : 'This is the full detail of one year.', [M.table([
-    { k: 'year', label: 'Year' }, { k: 'what', label: 'Status' },
-    { k: 'file', label: 'File with every day', render: function (x) { return x.here && M.D.kind === 'year' ? 'This file' : M.h('a', { href: x.file, text: x.file }); } }], { rows: rows, sortKey: 'year', sortDir: -1, empty: 'No years yet.' })]);
+  return M.card('What is stored, year by year', 'Every day of every year stays in this one dashboard. Pick any dates in the date menu and the months you need are opened for you.', [M.table([
+    { k: 'year', label: 'Year' }, { k: 'from', label: 'First day of sales data', fmt: function (v) { return v ? M.fd(v) : ''; } }, { k: 'to', label: 'Last day', fmt: function (v) { return v ? M.fd(v) : ''; } },
+    { k: 'months', label: 'Months of daily tables', num: true, fmt: M.num }], { rows: rows, sortKey: 'year', sortDir: -1, empty: 'No years yet.' })]);
 };
 M.PAGES.history.render = function (r) {
   var s = M.state, root = M.h('div'), srcs = M.histSources(), src = srcs.some(function (x) { return x.id === s.hsrc; }) ? s.hsrc : 'kpi_daily';
@@ -3164,6 +3823,8 @@ M.needFor = function () {
     if (src === 'threads_posts_daily' || src === 'youtube_videos_daily') wide.forEach(function (m) { if (has(F.p, m)) want.push('p-' + m); });
   }
   if (s.page === 'functions') (F.h.function_summary_hist || []).forEach(function (m) { want.push('h-function_summary_hist-' + m); });
+  /* M.snapOf / M.stateRows name the night a state table's picture is from by looking at its history twin: the newest month of every twin is loaded (a few KB each) */
+  Object.keys(F.h).forEach(function (tbl) { var ms = F.h[tbl]; if (ms && ms.length) want.push('h-' + tbl + '-' + ms[ms.length - 1]); });
   if (s.snap) {
     var sm = s.snap.slice(0, 7), pm = M.add(sm + '-01', -1).slice(0, 7);
     Object.keys(F.h).forEach(function (t) { [pm, sm].forEach(function (m) { if (has(F.h[t], m)) want.push('h-' + t + '-' + m); }); });
