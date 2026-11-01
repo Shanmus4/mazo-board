@@ -1815,21 +1815,10 @@ M.railOpen = function (open) {
 
 /* skip links and in page jumps must stop below the sticky toolbar, whatever its height is at this width */
 /* T807: when the chosen range reaches before the daily window of this file, the page switches to months and says where the daily detail is */
-M.yearFiles = function (from, to) {
-  var W = M.D.win && M.D.win.from, out = [], top = W && to > W ? W : to;
-  (M.D.years || []).forEach(function (y) { if (String(y.year) >= from.slice(0, 4) && String(y.year) <= top.slice(0, 4)) out.push(y); });
-  return out;
-};
+M.yearFiles = function () { return []; };      /* 1 Nov 2026: there are no per year files any more (one dashboard for life) */
 M.coarseNote = function (r) {
   if (!r.coarse) return null;
-  var W = M.D.win.from, ys = M.yearFiles(r.from, r.to), kids = ['Daily detail before ' + M.fd(W) + ' is in '];
-  if (!ys.length) kids.push('the yearly files, saved in the same folder as this one');
-  ys.forEach(function (y, i) {
-    if (i) kids.push(i === ys.length - 1 ? ' and ' : ', ');
-    kids.push(M.h('a', { href: y.file, text: y.file, title: 'Opens the dashboard for ' + y.year + ' with every day. It sits in the same folder as this file.' }));
-  });
-  kids.push('. This range is shown by month.');
-  return M.h('p', { class: 'quiet', role: 'note' }, kids);
+  return M.h('p', { class: 'quiet', role: 'note' }, 'Daily detail before ' + M.fd(M.D.win.from) + ' is kept as months in this copy. The hosted dashboard (the web address in the README) opens every day of every year. This range is shown by month.');
 };
 
 M.syncScrollPad = function () {
@@ -2286,12 +2275,12 @@ M.toolSections.push(function (fr, ctx) {
   [['', 'Automatic'], ['day', 'Days'], ['week', 'Weeks'], ['month', 'Months']].forEach(function (p) {
     var on = (v.steps || '') === p[0];
     var locked = fr.coarse && (p[0] === 'day' || p[0] === 'week');
-    var b = M.h('button', { type: 'button', 'aria-pressed': on ? 'true' : 'false', text: p[1], disabled: locked || null, title: locked ? 'Days before ' + M.fd(M.D.win.from) + ' are kept as months in this file; the year files hold every day' : p[0] === '' ? 'Follows the page: ' + auto + 's' : 'Show one bar per ' + p[0] });
+    var b = M.h('button', { type: 'button', 'aria-pressed': on ? 'true' : 'false', text: p[1], disabled: locked || null, title: locked ? 'Days before ' + M.fd(M.D.win.from) + ' are kept as months in this copy; the hosted dashboard holds every day' : p[0] === '' ? 'Follows the page: ' + auto + 's' : 'Show one bar per ' + p[0] });
     b.addEventListener('click', function () { M.setView(fr.key, { steps: p[0] }); fr.paint(); ctx.refresh(); if (fr.big && M.fsTools) M.fsTools(); });
     seg.appendChild(b);
   });
   var kids = [M.h('span', { class: 'tl', text: 'Steps' }), seg];
-  if (fr.coarse) kids.push(M.h('span', { class: 'small muted', text: 'Days before ' + M.fd(M.D.win.from) + ' are kept as months here. Every day is in the year files.' }));
+  if (fr.coarse) kids.push(M.h('span', { class: 'small muted', text: 'Days before ' + M.fd(M.D.win.from) + ' are kept as months in this copy. The hosted dashboard has every day.' }));
   else if (fr.eff && fr.eff.mode !== auto && !v.steps) kids.push(M.h('span', { class: 'small muted', text: 'Shown by ' + fr.eff.mode + ' because of the zoom.' }));
   return M.h('div', { class: 'tsec' }, kids);
 });
