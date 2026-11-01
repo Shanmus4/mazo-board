@@ -729,6 +729,110 @@ body:has(main[aria-busy="true"])::before{content:"";position:fixed;left:0;right:
 @media (forced-colors:active){.kpi,.card,.tw,.popover{border:1px solid CanvasText}}
 @media print{.fresh,.pop-head,.pop-done,.empty .btn{display:none!important}.kpi,.card{box-shadow:none}}
 
+/* mazo dashboard polish layer (T817 round 2, 1 Nov 2026 afternoon). Loads after dashboard_20_design.css and wins. What it does, in plain words:
+   1. The Pages button is only for narrow screens. On a wide screen the sidebar is already there, and the button used to open a dark overlay over it (the "nothing happens, only a black overlay" fault).
+   2. No focus border after a mouse click (blue on charts, brown on tables). Keyboard users still get a clear ring.
+   3. Fewer boxes: the headline numbers are one scoreboard panel with hairlines, tables sit flush inside their card, notes are quiet text, card explanations sit behind a small (i).
+   4. Basic motion, all on transform and opacity, all off for people who ask the system for less motion: page content rises in, bars grow from the baseline, lines draw, panels ease in. */
+
+/* ---------- 1. the Pages button is for narrow screens only ---------- */
+.menu-btn{display:none}
+@media (max-width:1023px){.menu-btn{display:inline-flex}}
+
+/* ---------- 2. focus: a ring for the keyboard, nothing after a click ---------- */
+:focus:not(:focus-visible){outline:none!important}
+.cb svg:focus-visible,svg[role=img]:focus-visible{outline:2px solid var(--ring);outline-offset:3px;border-radius:12px}
+tr.rowdetail:focus-visible,tr.click:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
+.gs-in:focus,.tbl-q:focus,select:focus-visible,input:focus-visible{outline:none;border-color:var(--maroon);box-shadow:0 0 0 3px rgba(94,18,4,.14)}
+td.c.has-tip:hover{outline:none;box-shadow:inset 0 0 0 1.5px rgba(94,18,4,.45)}
+
+/* ---------- 3a. headline numbers: one scoreboard, hairlines between the figures ---------- */
+.kpis{gap:0;background:#fff;border:1px solid var(--edge);border-radius:var(--rad3);overflow:hidden;box-shadow:var(--elev1)}
+.kpis .kpi,.kpi{border:0;border-radius:0;box-shadow:0 0 0 .5px var(--edge);background:transparent}
+.kpis.rates{margin-top:var(--sp3)}
+.kpis .kpi.na,.kpi.na{background:#FDFBF8;border:0;box-shadow:0 0 0 .5px var(--edge)}
+.kpi .vs[title]{cursor:help;text-decoration:underline dotted #B7AB9B;text-underline-offset:3px}
+.kpi.hero{background:linear-gradient(180deg,#fff 0,#FDFAF6 100%)}
+
+/* ---------- 3b. cards: flush tables, the explanation behind a small (i) ---------- */
+.card .tw{border:0;border-radius:0;border-top:1px solid var(--edge)}
+.card>h3{display:flex;align-items:center;gap:var(--sp2);flex-wrap:wrap;min-height:28px}
+.card-info{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;color:var(--ink2);cursor:pointer;transition:background .15s var(--ease),color .15s var(--ease)}
+.card-info:hover,.card-info[aria-expanded="true"]{background:var(--wash);color:var(--maroon)}
+.card-info .ic{width:18px;height:18px;stroke:none;display:block}
+.card-info:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.why.fold-why{display:none;margin:var(--sp1) 0 var(--sp4);padding:var(--sp3) var(--sp4);background:var(--wash);border-radius:var(--rad2);color:var(--ink);max-width:72ch}
+.why.fold-why.open,.card.fs .why.fold-why{display:block}
+.card.fs .why.fold-why{background:transparent;padding:0;margin:0 0 var(--sp4);color:var(--ink2);max-width:none}
+@media print{.why.fold-why{display:block}.card-info{display:none}}
+.tbl-details summary{text-decoration:none;display:inline-flex;align-items:center;gap:var(--sp2);min-height:36px;padding:0 var(--sp3);border-radius:var(--rad1);color:var(--maroon);font-weight:500}
+.tbl-details summary:hover{background:var(--wash)}
+.tbl-details summary::before{content:"";width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s var(--ease)}
+.tbl-details[open]>summary::before{transform:rotate(45deg)}
+.tbl-details summary::-webkit-details-marker{display:none}
+
+/* ---------- 3c. notes: quiet text with a small mark, a banner only when something needs attention ---------- */
+.note{background:transparent;border:0;padding:0;margin:var(--sp3) 0;font-size:var(--t13);line-height:1.5;color:var(--ink2);max-width:80ch;display:flex;gap:var(--sp2)}
+.note::before{content:"";flex:0 0 16px;height:16px;margin-top:2px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23595959' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M12 11v5M12 8v.01'/%3E%3C/svg%3E") center/16px no-repeat}
+.note.warn{background:#FAECE5;border:1px solid #E9C6B7;border-radius:var(--rad2);padding:var(--sp3) var(--sp4);color:#5B2410;max-width:none}
+.note.warn::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239A4220' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4l9 16H3zM12 10v4.5M12 17.5v.01'/%3E%3C/svg%3E")}
+
+/* ---------- chart ground: a clear baseline so nothing floats ---------- */
+svg .ax{stroke:#CFC6BA}
+.fc-zone{fill:#EEF4F5}
+.fc-stem{stroke:#3A7F8C;stroke-width:1.5;stroke-dasharray:1.5 3;opacity:.7}
+.fc-lab{font-size:11px;font-weight:600;fill:#2C6672}
+.ev-key{display:flex;flex-wrap:wrap;gap:var(--sp1) var(--sp3);margin:0;font-size:var(--t12);color:var(--ink2)}
+.ev-key span{display:inline-flex;align-items:center;gap:6px}
+.ev-key svg{width:12px;height:12px;overflow:visible}
+
+/* ---------- 4. motion: transform and opacity only ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes barUp{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes drawLine{to{stroke-dashoffset:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes fsIn{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+body.anim .pg-head{animation:rise .32s var(--ease) both}
+body.anim main>div>*,body.anim main>div .grid>.card,body.anim main .kpis{animation:rise .4s var(--ease) both}
+body.anim main>div>*:nth-child(1){animation-delay:.04s}
+body.anim main>div>*:nth-child(2){animation-delay:.08s}
+body.anim main>div>*:nth-child(3){animation-delay:.12s}
+body.anim main>div>*:nth-child(4){animation-delay:.16s}
+body.anim main>div>*:nth-child(5){animation-delay:.2s}
+body.anim main>div>*:nth-child(n+6){animation-delay:.24s}
+body.anim main>div .grid>.card:nth-child(2){animation-delay:.1s}
+body.anim main>div .grid>.card:nth-child(3){animation-delay:.16s}
+body.anim main>div .grid>.card:nth-child(n+4){animation-delay:.22s}
+body.anim .cb svg .bar{transform-box:fill-box;transform-origin:50% 100%;animation:barUp .5s var(--ease) both;animation-delay:calc(var(--d,0) * 1ms + 140ms)}
+body.anim .cb svg path.ln-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:drawLine .9s var(--ease) .25s forwards}
+.popover:not([hidden]),.gs-panel:not([hidden]){animation:popIn .14s var(--ease) both}
+.card.fs{animation:fsIn .18s var(--ease) both}
+.detail:not([hidden]){animation:fadeIn .16s var(--ease) both}
+#nav a,.subnav a,.tbtn,.btn,.ibtn,.seg button,.chip,.kpi,.card{transition:background-color .15s var(--ease),border-color .15s var(--ease),color .15s var(--ease),box-shadow .2s var(--ease)}
+.card:hover{box-shadow:0 1px 2px rgba(42,42,42,.05),0 8px 24px rgba(42,42,42,.06)}
+#nav a:active,.btn:active,.tbtn:active,.ibtn:active{transform:scale(.98)}
+@media (prefers-reduced-motion:reduce){body.anim *{animation:none!important}.cb svg path.ln-draw{stroke-dasharray:none;stroke-dashoffset:0}}
+
+/* ---------- full screen tools: one clear panel ---------- */
+.card.fs .fs-tools{grid-template-columns:repeat(auto-fit,minmax(200px,max-content))}
+.tsec .tl{text-transform:none;letter-spacing:0;font-size:var(--t13);font-weight:600;color:var(--ink)}
+.tsec .hint{font-size:var(--t12);color:var(--ink2);margin:0}
+
+/* mazo dashboard post links (T822, 1 Nov 2026): the Post and Link columns of the social posts tables and the "not tracked" wording. Small on purpose; the look of tables, buttons and
+   the focus ring comes from the shared files. */
+.postcap{display:block;width:24ch;max-width:24ch;line-height:1.35}
+.postcard th,.postcard td{padding-left:8px;padding-right:8px}
+.postcard .cellbar svg{width:48px}
+.postcard td:not(.wrap){white-space:nowrap}
+.postcard td:not(.wrap) button.dimlink{white-space:nowrap;overflow-wrap:normal;word-break:normal}
+.postlink{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;color:var(--maroon);text-decoration:none}
+.postlink .ic{width:16px;height:16px;flex:0 0 16px;stroke:none;display:block}
+.postlink:hover{background:var(--wash,#F4EFE9)}
+.untracked{color:var(--ink2);font-size:var(--t13,13px);white-space:nowrap}
+.untracked[title]{cursor:help}
+@media (pointer:coarse){.postlink{width:44px;height:44px}}
+
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
 #lock[hidden]{display:none}
@@ -769,6 +873,7 @@ body:has(main[aria-busy="true"])::before{content:"";position:fixed;left:0;right:
   <symbol id="i-home" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6.5 8 6.5v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></g></symbol>
   <symbol id="i-sales" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 16.5l5.2-5.2 3.6 3.6 7.2-7.7M15.5 7.2h4v4"/></g></symbol>
   <symbol id="i-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c.6-3 3-4.8 5.5-4.8s4.9 1.8 5.5 4.8M16.2 5.2a3 3 0 0 1 0 5.6M17.5 14.9c1.7.6 2.8 2.1 3.2 4.1"/></g></symbol>
+  <symbol id="i-growth" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V9M12 9l-4.5 4.5M12 9l4.5 4.5M6 5.5h12"/></g></symbol>
   <symbol id="i-megaphone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 0 0 1 1h2l5.5 4V5L7 9H5a1 1 0 0 0-1 1zM16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10"/></g></symbol>
   <symbol id="i-ops" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2zM4.2 7.3L12 11.5l7.8-4.2M12 11.5V21"/></g></symbol>
   <symbol id="i-data" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.66 3.58 3 8 3s8-1.34 8-3V6M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/></g></symbol>
@@ -1019,8 +1124,8 @@ M.niceTop = function (max) {   // an axis top that splits into 4 round steps
 };
 M.cmpFor = function (cur, prev, cmp) {   // {change, cmpNote} for a scorecard compared with the previous period
   if (!cmp) return { change: null, cmpNote: '' };
-  if (prev === null) return { change: null, cmpNote: 'no data for the previous period' };
-  if (prev === 0) return { change: null, cmpNote: 'previous period: 0' };
+  if (prev === null) return { change: null, cmpNote: 'nothing to compare with' };
+  if (prev === 0) return { change: null, cmpNote: 'was 0 before' };
   return { change: M.change(cur, prev), cmpNote: '' };
 };
 M.ma = function (v, k) {
@@ -1341,7 +1446,17 @@ M.empty = function (text, hint) {
 M.note = function (text, warn) { return M.h('p', { class: 'note' + (warn ? ' warn' : ''), text: text }); };
 M.tag = function (text, cls) { return M.h('span', { class: 'tag' + (cls ? ' ' + cls : ''), text: text }); };
 M.card = function (title, why, kids, cls) {
-  return M.h('section', { class: 'card' + (cls ? ' ' + cls : '') }, [title ? M.h('h3', { text: title }) : null, why ? M.h('p', { class: 'why' + (String(why).length > 150 ? ' long' : ''), text: why }) : null].concat(kids || []));
+  /* 1 Nov 2026 (owner: "stop putting hint lines everywhere"): the explanation of a card sits behind a small (i) next to its title. It is one click away, never printed above every chart. */
+  var h3 = title ? M.h('h3', null, [M.h('span', { class: 'h3t', text: title })]) : null, p = null;
+  if (why) {
+    p = M.h('p', { class: 'why fold-why', text: why });
+    if (h3) {
+      var b = M.h('button', { type: 'button', class: 'card-info', 'aria-expanded': 'false', 'aria-label': 'About this card', title: 'What is this?' }, [M.s('svg', { class: 'ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#i-info' })])]);
+      b.addEventListener('click', function () { var o = p.classList.toggle('open'); b.setAttribute('aria-expanded', o ? 'true' : 'false'); });
+      h3.appendChild(b);
+    } else p.classList.add('open');
+  }
+  return M.h('section', { class: 'card' + (cls ? ' ' + cls : '') }, [h3, p].concat(kids || []));
 };
 M.grid = function (kids, cls) { return M.h('div', { class: 'grid' + (cls ? ' ' + cls : '') }, kids); };
 M.legend = function (items) {
@@ -1536,7 +1651,7 @@ M.kpi = function (o) {
     var up = o.change > 0.5, down = o.change < -0.5, good = o.goodUp === false ? down : up, bad = o.goodUp === false ? up : down;
     d.appendChild(M.h('span', { class: 'chip-d ' + (good ? 'up' : bad ? 'down' : 'flat'), text: (up ? '▲ ' : down ? '▼ ' : '▬ ') + M.pct(Math.abs(o.change), 1) }));
     d.appendChild(document.createTextNode(' '));
-    d.appendChild(M.h('span', { class: 'vs', text: 'vs previous period' }));
+    d.appendChild(M.h('span', { class: 'vs', text: 'vs before', title: M.compareNote || 'Compared with the period just before the one you picked' }));
   } else if (o.cmpNote) d.appendChild(M.h('span', { class: 'vs', text: o.cmpNote }));
   if (d.firstChild) box.appendChild(d);
   if (o.note) box.appendChild(M.h('div', { class: 'ctx', text: o.note }));
@@ -1568,7 +1683,8 @@ M.bigH = function (host, H) { var fr = host && host._frame; return fr && fr.big 
 /* ---------------------------------------------------------------- time chart: bars and/or lines on one axis, optional previous-period dashed line */
 M.timeChart = function (host, w, o) {
   o = M.applyView ? M.applyView(host, o) : o;      /* this chart's own zoom, steps and compare (dashboard_06_view.js); untouched when no tool was used */
-  var H = M.bigH(host, o.h || 220), L = 46, R = 10, T = 10, B = 26, pw = w - L - R, ph = H - T - B, n = o.buckets.length;
+  var evLane = M.eventsIn && M.eventsIn(o).length ? 18 : 0;      /* events get their own lane above the plot */
+  var H = M.bigH(host, o.h || 220) + evLane, L = 46, R = 10, T = 10 + evLane, B = 26, pw = w - L - R, ph = H - T - B, n = o.buckets.length;
   var all = [], bars = o.series.filter(function (s) { return s.type !== 'line'; }), lines = o.series.filter(function (s) { return s.type === 'line'; });
   o.series.forEach(function (s) { all = all.concat(s.values); });
   if (o.prev) all = all.concat(o.prev.values);
@@ -1591,20 +1707,20 @@ M.timeChart = function (host, w, o) {
       var v = s.values[i];
       if (!v) continue;
       var x = X(i) - bw / 2 + si * sub, y0 = Y(0), y1 = Y(v), top = Math.min(y0, y1), hh = Math.max(1, Math.abs(y0 - y1));
-      svg.appendChild(M.s('rect', { x: x.toFixed(1), y: top.toFixed(1), width: Math.max(1, sub - (sub > 5 ? 1.5 : 0)).toFixed(1), height: hh.toFixed(1), fill: s.color, rx: sub > 6 ? 2 : 0 }));
+      svg.appendChild(M.s('rect', { x: x.toFixed(1), y: top.toFixed(1), width: Math.max(1, sub - (sub > 5 ? 1.5 : 0)).toFixed(1), height: hh.toFixed(1), fill: s.color, rx: sub > 6 ? 2 : 0, class: n <= 120 ? 'bar' : null, style: n <= 120 ? '--d:' + Math.min(600, Math.round(i * 600 / n)) : null }));
     }
   });
   var path = function (vals, i0) { var d = '', pen = false; for (var i = i0 || 0; i < Math.min(n, vals.length); i++) { if (vals[i] == null) { pen = false; continue; } d += (pen ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(vals[i]).toFixed(1); pen = true; } return d; };
   if (o.prev) svg.appendChild(M.s('path', { d: path(o.prev.values), fill: 'none', stroke: M.COLORS.grey, 'stroke-width': 2, 'stroke-dasharray': '5 4', 'stroke-linejoin': 'round' }));
   var mv = function (s) { return M.gapMask(G, o.series.indexOf(s), s.values); };
-  lines.forEach(function (s) { svg.appendChild(M.s('path', { d: path(mv(s)), fill: 'none', stroke: s.color, 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' })); });
+  lines.forEach(function (s) { svg.appendChild(M.s('path', { d: path(mv(s)), fill: 'none', stroke: s.color, 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', pathLength: 1, class: 'ln-draw' })); });
   if (n <= 45) lines.forEach(function (s) { mv(s).forEach(function (v, i) { if (v != null && n <= 31) svg.appendChild(M.s('circle', { cx: X(i), cy: Y(v), r: 3, fill: s.color, stroke: '#fff', 'stroke-width': 2 })); }); });
   var yrs = o.buckets[0].from.slice(0, 4) !== o.buckets[n - 1].from.slice(0, 4), step = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / 78))));
   for (var t = 0; t < n; t += step) {
     var lab = o.buckets[t].label; if (yrs && o.mode !== 'month') lab += " '" + o.buckets[t].from.slice(2, 4);
     svg.appendChild(M.s('text', { x: X(t), y: H - 8, 'text-anchor': t === 0 ? 'start' : 'middle' }, lab));
   }
-  if (M.drawEvents) M.drawEvents(svg, host, o, { X: X, T: T, ph: ph, L: L, pw: pw, w: w, n: n });      /* dated markers (data/dashboard_events.json), unless switched off */
+  if (M.drawEvents) M.drawEvents(svg, host, o, { X: X, T: T - evLane, ph: ph + evLane, L: L, pw: pw, w: w, n: n });      /* dated markers (data/dashboard_events.json), unless switched off */
   var hair = M.s('line', { y1: T, y2: T + ph, stroke: M.COLORS.ink, 'stroke-width': 1, 'stroke-dasharray': '2 3', visibility: 'hidden' });
   svg.appendChild(hair);
   if (host._frame) host._frame.cross = { show: function (from, to) { var j = -1; for (var q = 0; q < n; q++) if (o.buckets[q].to >= from) { j = q; break; } if (j < 0 || o.buckets[j].from > to) { hair.setAttribute('visibility', 'hidden'); return; } hair.setAttribute('x1', X(j)); hair.setAttribute('x2', X(j)); hair.setAttribute('visibility', 'visible'); }, hide: function () { hair.setAttribute('visibility', 'hidden'); } };
@@ -1835,9 +1951,17 @@ M.forecastChart = function (host, w, rows) {
   var ymax = M.nice(top), X = function (i) { return L + (i + 0.5) / n * pw; }, Y = function (v) { return T + ph - v / ymax * ph; }, bw = Math.max(4, Math.min(40, pw / n * 0.6));
   var svg = M.s('svg', { viewBox: '0 0 ' + w + ' ' + H, role: 'img', 'aria-label': 'Weekly orders: actual weeks as bars, forecast weeks as an indicative range. The numbers are in the table below.' });
   for (var g = 0; g <= 4; g++) { var gy = Y(ymax * g / 4); svg.appendChild(M.s('line', { x1: L, x2: w - R, y1: gy, y2: gy, class: g === 0 ? 'ax' : 'gl' })); svg.appendChild(M.s('text', { x: L - 6, y: gy + 4, 'text-anchor': 'end' }, M.short(ymax * g / 4))); }
+  var fi = -1; rows.forEach(function (r, i) { if (fi < 0 && r.actual == null && r.low != null) fi = i; });
+  if (fi > 0) {      /* the weeks ahead sit on a light zone, named, so the boxes read as "what might happen" and rest on the ground line */
+    var zx = X(fi) - pw / n / 2;
+    svg.appendChild(M.s('rect', { x: zx.toFixed(1), y: T, width: (L + pw - zx).toFixed(1), height: ph, class: 'fc-zone', 'aria-hidden': 'true' }));
+    svg.appendChild(M.s('text', { x: (zx + 8).toFixed(1), y: T + 14, class: 'fc-lab' }, 'Next weeks (a guess)'));
+  }
+  svg.appendChild(M.s('line', { x1: L, x2: w - R, y1: Y(0), y2: Y(0), stroke: '#8F8579', 'stroke-width': 1.5 }));
   rows.forEach(function (r, i) {
     var gp = M.s('g', { tabindex: '0', class: 'mk', role: 'img', 'aria-label': 'Week of ' + M.fd(r.week) });
-    if (r.actual != null) gp.appendChild(M.s('rect', { x: (X(i) - bw / 2).toFixed(1), y: Y(r.actual).toFixed(1), width: bw.toFixed(1), height: Math.max(1, Y(0) - Y(r.actual)).toFixed(1), fill: M.COLORS.maroon, rx: 2 }));
+    if (r.low != null && r.high != null) gp.appendChild(M.s('line', { x1: X(i), x2: X(i), y1: Y(r.low), y2: Y(0), class: 'fc-stem' }));
+    if (r.actual != null) gp.appendChild(M.s('rect', { x: (X(i) - bw / 2).toFixed(1), y: Y(r.actual).toFixed(1), width: bw.toFixed(1), height: Math.max(1, Y(0) - Y(r.actual)).toFixed(1), fill: M.COLORS.maroon, rx: 2, class: 'bar', style: '--d:' + (i * 40) }));
     if (r.low != null && r.high != null) {
       gp.appendChild(M.s('rect', { x: (X(i) - bw / 2).toFixed(1), y: Y(r.high).toFixed(1), width: bw.toFixed(1), height: Math.max(2, Y(r.low) - Y(r.high)).toFixed(1), fill: M.COLORS.teal, 'fill-opacity': 0.22, stroke: M.COLORS.teal, 'stroke-width': 1.5, 'stroke-dasharray': '4 3', rx: 2 }));
       gp.appendChild(M.s('line', { x1: X(i) - bw / 2 - 3, x2: X(i) + bw / 2 + 3, y1: Y(r.mid), y2: Y(r.mid), stroke: M.COLORS.teal, 'stroke-width': 3 }));
@@ -1846,15 +1970,15 @@ M.forecastChart = function (host, w, rows) {
     M.tipFor(gp, function () {
       var t = [{ k: 'Week starting', v: M.fd(r.week) }];
       if (r.actual != null) t.push({ k: 'Orders (actual)', v: M.num(r.actual) }, { k: 'Revenue', v: M.inr(r.revenue || 0) });
-      if (r.low != null) t.push({ k: 'Indicative low / middle / high', v: M.num(r.low, 1) + ' / ' + M.num(r.mid, 1) + ' / ' + M.num(r.high, 1) });
-      return { title: r.low != null && r.actual == null ? 'Forecast (indicative)' : 'Actual', rows: t };
+      if (r.low != null) t.push({ k: 'Guess: low / middle / high', v: M.num(r.low, 1) + ' / ' + M.num(r.mid, 1) + ' / ' + M.num(r.high, 1) });
+      return { title: r.low != null && r.actual == null ? 'Guess for this week' : 'Orders that week', rows: t };
     });
     svg.appendChild(gp);
   });
   var step = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / 70))));
   for (var t = 0; t < n; t += step) svg.appendChild(M.s('text', { x: X(t), y: H - 10, 'text-anchor': t === 0 ? 'start' : 'middle' }, M.fds(rows[t].week)));
   host.appendChild(svg);
-  host.appendChild(M.legend([{ name: 'Orders (actual)', color: M.COLORS.maroon }, { name: 'Indicative low to high range', color: M.COLORS.teal }]));
+  host.appendChild(M.legend([{ name: 'Orders (actual)', color: M.COLORS.maroon }, { name: 'Likely range (low to high), a guess', color: M.COLORS.teal }]));
 };
 
 /* a bar left or right of a centre line (gap between stock share and sales share) */
@@ -1872,8 +1996,8 @@ M.divBar = function (v, max, unit) {
 M.PRESETS = [['yesterday', 'Yesterday'], ['7d', 'Last 7 days'], ['28d', 'Last 28 days'], ['90d', 'Last 90 days'], ['mtd', 'This month'], ['lm', 'Last month'], ['ytd', 'This year'], ['all', 'All time'], ['custom', 'Custom range']];
 M.FILTERS = [['collection', 'Collection'], ['channel', 'Channel'], ['product', 'Product'], ['device', 'Device'], ['size', 'Size']];
 /* UX round (1 Nov 2026): six top items. Each top item holds a few pages shown as a tab strip (sub nav) above the page. Page ids and the address (#/funnel ...) are unchanged. */
-M.NAVICON = { Overview: 'i-home', Sales: 'i-sales', Customers: 'i-users', Marketing: 'i-megaphone', Operations: 'i-ops', Data: 'i-data' };
-M.GROUPS = [['Overview', ['overview']], ['Sales', ['funnel', 'products', 'sizes']], ['Customers', ['customers', 'gtm']], ['Marketing', ['channels', 'social', 'search']],
+M.NAVICON = { Overview: 'i-home', Sales: 'i-sales', Customers: 'i-users', Marketing: 'i-megaphone', Growth: 'i-growth', Operations: 'i-ops', Data: 'i-data' };
+M.GROUPS = [['Overview', ['overview']], ['Sales', ['funnel', 'products', 'sizes']], ['Customers', ['customers']], ['Marketing', ['channels', 'social', 'search']], ['Growth', ['gtm']],
   ['Operations', ['forecast', 'functions']], ['Data', ['history', 'quality']]];
 M.groupOf = function (id) { for (var i = 0; i < M.GROUPS.length; i++) if (M.GROUPS[i][1].indexOf(id) >= 0) return M.GROUPS[i]; return M.GROUPS[0]; };
 M.lastIn = {};      /* the page last opened in each top item, so clicking a top item returns to it */
@@ -1926,7 +2050,7 @@ M.buildControls = function () {
   c.to = M.h('input', { type: 'date', id: 'f-to', min: M.first(), max: M.D.anchor });
   c.year = M.h('select', { id: 'f-year' }, [M.h('option', { value: '', text: 'Pick a year' })].concat((M.D.years || []).map(function (y) { return M.h('option', { value: String(y.year), text: String(y.year) }); })));
   c.cmp = M.h('input', { type: 'checkbox', id: 'f-cmp', role: 'switch' });
-  c.group = M.h('select', { id: 'f-group' }, [['auto', 'Automatic'], ['day', 'Days'], ['week', 'Weeks'], ['month', 'Months']].map(function (p) { return M.h('option', { value: p[0], text: p[1] }); }));
+  c.group = M.h('select', { id: 'f-group' }, [['auto', 'Auto'], ['day', 'Day'], ['week', 'Week'], ['month', 'Month']].map(function (p) { return M.h('option', { value: p[0], text: p[1] }); }));
   c.line = M.h('p', { class: 'range-line', id: 'range-line' });
   c.sum = M.h('span', { class: 'ctl-sum', id: 'ctl-sum' });
 
@@ -1934,7 +2058,7 @@ M.buildControls = function () {
   c.dateTxt = M.h('span', { class: 'bt', id: 'date-txt' });
   c.dateBtn = M.h('button', { type: 'button', class: 'tbtn', id: 'date-btn', 'aria-expanded': 'false', 'aria-haspopup': 'dialog', 'aria-controls': 'date-pop' }, [icon('i-cal'), c.dateTxt, icon('i-chev', 'chev')]);
   c.datePop = M.h('div', { class: 'popover', id: 'date-pop', role: 'dialog', 'aria-label': 'Date range', hidden: true }, [
-    fld('Date range', 'f-preset', c.preset), fld('Year', 'f-year', c.year), M.h('div', { class: 'two' }, [fld('From', 'f-from', c.from), fld('To', 'f-to', c.to)]), fld('Chart steps', 'f-group', c.group), c.line]);
+    fld('Date range', 'f-preset', c.preset), fld('Year', 'f-year', c.year), M.h('div', { class: 'two' }, [fld('From', 'f-from', c.from), fld('To', 'f-to', c.to)]), fld('One bar is a', 'f-group', c.group), c.line]);
   c.datePop.insertBefore(M.h('div', { class: 'pop-head', 'data-ux': '1', text: 'Pick dates' }), c.datePop.firstChild);
   c.datePop.appendChild(M.popDone(M.pop(c.dateBtn, c.datePop)));
   c.dateWrap = M.h('div', { class: 'tpop tp-date' }, [c.dateBtn, c.datePop]);
@@ -1994,6 +2118,7 @@ M.buildControls = function () {
   c.from.addEventListener('change', dateChange); c.to.addEventListener('change', dateChange);
   c.from.addEventListener('input', dateChange); c.to.addEventListener('input', dateChange);
   c.cmp.addEventListener('change', function () { M.go({ cmp: c.cmp.checked ? '1' : '0' }); });
+  c.cmpWrap.title = 'Compare with the dates just before the ones you picked';
   c.group.addEventListener('change', function () { M.go({ group: c.group.value }); });
   c.snap.addEventListener('change', function () { M.go({ snap: c.snap.value }); });
   M.FILTERS.forEach(function (fl) { c.f[fl[0]].addEventListener('change', function () { var p = {}; p[fl[0]] = c.f[fl[0]].value; M.go(p); }); });
@@ -2020,6 +2145,7 @@ M.syncControls = function () {
   c.year.value = s.preset === 'custom' && /^(\d{4})-01-01$/.test(r.from) && r.to === r.from.slice(0, 4) + '-12-31' ? r.from.slice(0, 4) : '';
   [c.preset, c.from, c.to, c.group, c.year].forEach(function (el) { if (el.parentNode) el.parentNode.classList.toggle('ignored', !dateUsed); });      // audit S-22
   c.cmpWrap.classList.toggle('ignored', !dateUsed);
+  if (M.compareNote) c.cmpWrap.title = M.compareNote;
   c.dateWrap.classList.toggle('ignored', !dateUsed);
   c.filWrap.classList.toggle('ignored', !(nUsed || (pg && pg.snap)));
   c.snapWrap.classList.toggle('ignored', !(pg && pg.snap));      // audit S-22: the table picture selector only on pages that use it
@@ -2124,6 +2250,7 @@ M.render = function () {
   M.syncControls();
   M.renderNav();
   M.tipHide();
+  document.body.classList.toggle('anim', M._lastPage !== s.page); M._lastPage = s.page;      /* page content rises in and bars grow only when the page changes */
   M.clear(main);
   M.pending = [];
   try {
@@ -2146,8 +2273,7 @@ M.renderFoot = function () {
   M.clear(f);
   /* T817: the "Data up to" line shows in the toolbar on a wide screen; below that width it is the first line of the footer */
   f.appendChild(M.h('p', { class: 'small fresh-foot', 'data-ux': '1', text: M.ctl.fresh ? M.ctl.fresh.textContent : '' }));
-  f.appendChild(M.h('p', null, ['A snapshot built from the mazo data Sheet, not a live page. Money is a management estimate, not accounts. Instagram content is Madhu\'s: only numbers are shown here. ',
-    M.h('button', { type: 'button', class: 'link', onclick: function () { window.print(); }, text: 'Print this page' })]));
+  f.appendChild(M.h('p', null, [M.h('button', { type: 'button', class: 'link', onclick: function () { window.print(); }, text: 'Print this page' })]));
 };
 
 M.init = function () {
@@ -2315,7 +2441,7 @@ M.decorate = function () {
       M.keyFor(fr);
     }
     if (!fr) return;
-    var box = M.h('div', { class: 'ctools', 'data-ux': '1' }), fsBtn = M.h('button', { type: 'button', class: 'ibtn', 'aria-label': 'Open this card in full screen', title: 'Full screen (key F)' }, icon('i-expand'));
+    var box = M.h('div', { class: 'ctools', 'data-ux': '1' }), fsBtn = M.h('button', { type: 'button', class: 'ibtn', 'aria-label': 'Open this card in full screen', title: 'Full screen' }, icon('i-expand'));
     fsBtn.addEventListener('click', function () { M.fsOpen(fr); });
     box.appendChild(fsBtn);
     var more = M.moreMenu(fr);
@@ -2327,13 +2453,13 @@ M.decorate = function () {
 
 M.moreMenu = function (fr) {
   var wrap = M.h('div', { class: 'tpop' });
-  var btn = M.h('button', { type: 'button', class: 'ibtn', 'aria-label': 'More tools for this chart', title: 'More tools', 'aria-expanded': 'false', 'aria-haspopup': 'dialog' }, icon('i-more'));
-  var panel = M.h('div', { class: 'popover pop-right ctool-pop', role: 'dialog', 'aria-label': 'Chart tools', hidden: true });
+  var btn = M.h('button', { type: 'button', class: 'ibtn', 'aria-label': 'Options for this chart', title: 'Options', 'aria-expanded': 'false', 'aria-haspopup': 'dialog' }, icon('i-more'));
+  var panel = M.h('div', { class: 'popover pop-right ctool-pop', role: 'dialog', 'aria-label': 'Chart options', hidden: true });
   var fill = function () {
     M.clear(panel);
     var any = false;
     M.toolSections.forEach(function (sec) { var n = sec(fr, { inline: false, refresh: fill }); if (n) { panel.appendChild(n); any = true; } });
-    if (!any) panel.appendChild(M.h('p', { class: 'small muted', text: 'No more tools for this chart.' }));
+    if (!any) panel.appendChild(M.h('p', { class: 'tsec-hint', text: 'Nothing to adjust on this chart.' }));
   };
   fill();
   /* pressing on a non-focusable part of the menu (a switch track, a label) would move the keyboard focus to the page and make the shell close the menu before the click lands; keep the focus where it is */
@@ -2351,7 +2477,7 @@ M.fs = null;
 /* on a phone the tools fold into one line ("Chart tools") so the chart gets the screen; on a laptop they sit open under the title */
 M.fsToolsBox = function (tools) {
   if (window.innerWidth > 640) return tools;
-  var d = M.h('details', { class: 'fs-fold' }, [M.h('summary', { text: 'Chart tools: zoom, steps, compare, save' }), tools]);
+  var d = M.h('details', { class: 'fs-fold' }, [M.h('summary', { text: 'Chart options' }), tools]);
   return d;
 };
 M.scopeText = function () {
@@ -2543,12 +2669,17 @@ M.drawBrush = function (host, fr, w) {
 M.toolSections.push(function (fr, ctx) {
   if (fr.kind !== 'time' || !fr.key) return null;
   var o0 = fr.spec0, from0 = o0.buckets[0].from, to0 = o0.buckets[o0.buckets.length - 1].to, z = fr.zoom;
-  var f = M.h('input', { type: 'date', 'aria-label': 'Zoom from', min: from0, max: to0, value: z ? z.from : from0 }), t = M.h('input', { type: 'date', 'aria-label': 'Zoom to', min: from0, max: to0, value: z ? z.to : to0 });
+  if (ctx.inline) {      /* full screen: the strip above sets the dates; here only a way back after a drag-zoom */
+    if (!z) return null;
+    return M.h('div', { class: 'tsec' }, [M.h('span', { class: 'tl', text: 'Dates shown' }), M.h('span', { class: 'tsec-hint', text: M.fd(z.from) + ' to ' + M.fd(z.to) }),
+      M.h('button', { type: 'button', class: 'link', text: 'Show all dates', onclick: function () { M.zoomReset(fr); ctx.refresh(); } })]);
+  }
+  var f = M.h('input', { type: 'date', 'aria-label': 'Show from', min: from0, max: to0, value: z ? z.from : from0 }), t = M.h('input', { type: 'date', 'aria-label': 'Show until', min: from0, max: to0, value: z ? z.to : to0 });
   var apply = function () { if (M.isDate(f.value) && M.isDate(t.value)) { M.zoomTo(fr, f.value, t.value); ctx.refresh(); } };
   f.addEventListener('change', apply); t.addEventListener('change', apply);
-  var kids = [M.h('span', { class: 'tl', text: 'Zoom' }), M.h('div', { class: 'two' }, [f, t])];
-  var hint = M.h('span', { class: 'small muted', text: 'Or drag across the chart. Keyboard: Shift and the arrow keys, then Enter.' });
-  var reset = M.h('button', { type: 'button', class: 'link', text: 'Reset zoom', onclick: function () { M.zoomReset(fr); ctx.refresh(); } });
+  var kids = [M.h('span', { class: 'tl', text: 'Dates shown' }), M.h('div', { class: 'two' }, [f, t])];
+  var hint = M.h('span', { class: 'tsec-hint', text: 'You can also drag across the chart.' });
+  var reset = M.h('button', { type: 'button', class: 'link', text: 'Show all dates', onclick: function () { M.zoomReset(fr); ctx.refresh(); } });
   reset.hidden = !z;
   return M.h('div', { class: 'tsec' }, kids.concat([ctx.inline ? null : hint, reset]));
 });
@@ -2557,23 +2688,25 @@ M.toolSections.push(function (fr, ctx) {
 M.toolSections.push(function (fr, ctx) {
   if (fr.kind !== 'time' || !fr.key || !fr.canSteps) return null;
   var v = M.view(fr.key), cur = fr.eff ? fr.eff.mode : fr.spec0.mode, auto = fr.spec0.mode;
-  var seg = M.h('div', { class: 'seg', role: 'group', 'aria-label': 'Steps for this chart' });
-  [['', 'Automatic'], ['day', 'Days'], ['week', 'Weeks'], ['month', 'Months']].forEach(function (p) {
+  var seg = M.h('div', { class: 'seg', role: 'group', 'aria-label': 'Group the bars of this chart by' });
+  [['', 'Auto'], ['day', 'Day'], ['week', 'Week'], ['month', 'Month']].forEach(function (p) {
     var on = (v.steps || '') === p[0];
     var locked = fr.coarse && (p[0] === 'day' || p[0] === 'week');
-    var b = M.h('button', { type: 'button', 'aria-pressed': on ? 'true' : 'false', text: p[1], disabled: locked || null, title: locked ? 'Days before ' + M.fd(M.D.win.from) + ' are kept as months in this copy; the hosted dashboard holds every day' : p[0] === '' ? 'Follows the page: ' + auto + 's' : 'Show one bar per ' + p[0] });
+    var b = M.h('button', { type: 'button', 'aria-pressed': on ? 'true' : 'false', text: p[1], disabled: locked || null, title: locked ? 'Older days are kept as whole months' : p[0] === '' ? 'Picks the best grouping for these dates (now: by ' + auto + ')' : 'One bar per ' + p[0] });
     b.addEventListener('click', function () { M.setView(fr.key, { steps: p[0] }); fr.paint(); ctx.refresh(); if (fr.big && M.fsTools) M.fsTools(); });
     seg.appendChild(b);
   });
-  var kids = [M.h('span', { class: 'tl', text: 'Steps' }), seg];
-  if (fr.coarse) kids.push(M.h('span', { class: 'small muted', text: 'Days before ' + M.fd(M.D.win.from) + ' are kept as months in this copy. The hosted dashboard has every day.' }));
-  else if (fr.eff && fr.eff.mode !== auto && !v.steps) kids.push(M.h('span', { class: 'small muted', text: 'Shown by ' + fr.eff.mode + ' because of the zoom.' }));
+  var kids = [M.h('span', { class: 'tl', text: 'One bar is a' }), seg];
+  if (fr.coarse) kids.push(M.h('span', { class: 'tsec-hint', text: 'Dates before ' + M.fd(M.D.win.from) + ' are shown by month.' }));
+  else if (fr.eff && fr.eff.mode !== auto && !v.steps) kids.push(M.h('span', { class: 'tsec-hint', text: 'Shown by ' + fr.eff.mode + ' because you zoomed in.' }));
   return M.h('div', { class: 'tsec' }, kids);
 });
 M.toolSections.push(function (fr, ctx) {
   if (fr.kind !== 'time' || !fr.key || !fr.canSteps) return null;
+  var pgx = M.PAGES[M.state.page];
+  if (ctx.inline && (!pgx || pgx.dates !== false)) return null;      /* in full screen the strip above already has the Compare switch: one switch, not two */
   var on = !!(fr.eff && fr.eff.prev), id = 'cmp-' + fr.key + (ctx.inline ? '-fs' : '');
-  if (!fr.canCompare && !on) return M.h('div', { class: 'tsec' }, [M.h('span', { class: 'tl', text: 'Compare' }), M.h('span', { class: 'small muted', text: 'No earlier period of this length is stored.' })]);
+  if (!fr.canCompare && !on) return M.h('div', { class: 'tsec' }, [M.h('span', { class: 'tl', text: 'Compare' }), M.h('span', { class: 'tsec-hint', text: 'No earlier dates are stored for this length.' })]);
   var box = M.h('input', { type: 'checkbox', id: id, role: 'switch' });
   box.checked = on;
   box.addEventListener('change', function () { M.setView(fr.key, { cmp: box.checked ? '1' : '0' }); fr.paint(); ctx.refresh(); if (fr.big && M.fsTools) M.fsTools(); });
@@ -2585,6 +2718,17 @@ M.toolSections.push(function (fr, ctx) {
 M.EVC = { sale: M.COLORS.mustard, launch: M.COLORS.green, shipping: M.COLORS.teal, site: M.COLORS.terra, channel: M.COLORS.grey };
 M.EVSHAPE = { sale: 'M0 -4l4 4-4 4-4-4z', launch: 'M0 -4l4 7h-8z', shipping: 'M-4 -3h8v6h-8z', site: 'M0 0m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0', channel: 'M-4 0h8M0 -4v8' };
 M.eventsOn = function () { return M.state.ev !== '0'; };
+/* the key under the events switch: only the kinds that are inside the dates shown, each with its own mark */
+M.EVNAME = { sale: 'Sale', launch: 'Launch', shipping: 'Shipping', site: 'Site change', channel: 'Channel' };
+M.evKey = function (o) {
+  var kinds = {}; M.eventsIn(o).forEach(function (x) { kinds[x.e.kind || 'channel'] = 1; });
+  var box = M.h('div', { class: 'ev-key', role: 'list' });
+  Object.keys(kinds).forEach(function (k) {
+    var col = M.EVC[k] || M.COLORS.grey;
+    box.appendChild(M.h('span', { role: 'listitem' }, [M.s('svg', { viewBox: '-6 -6 12 12', 'aria-hidden': 'true' }, [M.s('path', { d: M.EVSHAPE[k] || M.EVSHAPE.channel, fill: k === 'channel' ? 'none' : col, stroke: col, 'stroke-width': 1.5 })]), M.EVNAME[k] || k]));
+  });
+  return box;
+};
 M.eventsIn = function (o) {
   if (!M.eventsOn() || !M.D.events || !o.buckets.length) return [];
   var from = o.buckets[0].from, to = o.buckets[o.buckets.length - 1].to, out = [];
@@ -2608,13 +2752,19 @@ M.drawEvents = function (svg, host, o, g) {
     svg.appendChild(gp);
   });
   /* the first labels are written next to the markers when there is room; the rest are in the tooltip and in the list under the chart */
-  var drawn = 0;
-  evs.forEach(function (x) {
-    var cx = g.X(x.i); if (cx - last < 96 || cx > g.L + g.pw - 40 || drawn >= 3) return;
-    last = cx; drawn++;
-    var room = Math.floor((g.L + g.pw - cx - 14) / 5.6), lab = x.e.label.length > room ? x.e.label.slice(0, Math.max(0, room - 1)) + '…' : x.e.label;      /* never past the chart's right edge */
+  /* T823 (1 Nov 2026): events now arrive by themselves, so a wide range holds many. The room goes to the important kinds first (launch, sale, shipping, site), then posts that took off; a label is written only where
+     it keeps 96px from the others already written. */
+  var drawn = 0, wrote = [], rank = { launch: 0, sale: 0, shipping: 1, site: 1, channel: 2 };
+  evs.slice().sort(function (a, b) { return (rank[a.e.kind] != null ? rank[a.e.kind] : 3) - (rank[b.e.kind] != null ? rank[b.e.kind] : 3) || a.i - b.i; }).forEach(function (x) {
+    if (drawn >= 3) return;
+    var cx = g.X(x.i), right = Math.floor((g.L + g.pw - cx - 14) / 5.6), left = Math.floor((cx - g.L - 14) / 5.6), full = x.e.label.length;
+    var onLeft = right < Math.min(full, 14) && left > right;        /* near the right edge the words go to the left of the line, so the newest events can be named too */
+    var room = onLeft ? left : right, lab = full > room ? x.e.label.slice(0, Math.max(0, room - 1)) + '…' : x.e.label;      /* never past the chart's edge */
     if (room < 6) return;
-    svg.appendChild(M.s('text', { x: cx + 7, y: g.T + 9, 'text-anchor': 'start', style: 'font-size:11px;fill:#2A2A2A;paint-order:stroke;stroke:#fff;stroke-width:3px' }, lab));
+    var x0 = onLeft ? cx - 7 - lab.length * 5.6 : cx + 7, x1 = onLeft ? cx - 7 : cx + 7 + lab.length * 5.6;
+    if (wrote.some(function (w) { return x0 < w[1] + 8 && x1 > w[0] - 8; })) return;
+    wrote.push([x0, x1]); drawn++;
+    svg.appendChild(M.s('text', { x: onLeft ? cx - 7 : cx + 7, y: g.T + 9, 'text-anchor': onLeft ? 'end' : 'start', style: 'font-size:11px;fill:#2A2A2A;paint-order:stroke;stroke:#fff;stroke-width:3px' }, lab));
   });
 };
 /* the list under a chart, and the switch for all charts (state ev=0 turns the markers off) */
@@ -2624,8 +2774,8 @@ M.toolSections.push(function (fr, ctx) {
   box.checked = M.eventsOn();
   box.addEventListener('change', function () { M.go({ ev: box.checked ? '1' : '0' }); });
   var n = M.eventsIn(fr.eff || fr.spec0).length;
-  var kids = [M.h('label', { class: 'sw', for: id }, [box, M.h('span', { class: 'swt', 'aria-hidden': 'true' }), M.h('span', { text: 'Show events (sale, launches, shipping)' })])];
-  if (M.eventsOn()) kids.push(M.h('span', { class: 'small muted', text: n ? n + ' event' + (n === 1 ? '' : 's') + ' in the dates shown. Marker shapes: diamond = sale, triangle = launch, square = shipping, circle = site change.' : 'No event falls in the dates shown.' }));
+  var kids = [M.h('label', { class: 'sw', for: id }, [box, M.h('span', { class: 'swt', 'aria-hidden': 'true' }), M.h('span', { text: 'Show events' })])];
+  if (M.eventsOn()) kids.push(n ? M.evKey(fr.eff || fr.spec0) : M.h('span', { class: 'tsec-hint', text: 'No events in these dates.' }));
   return M.h('div', { class: 'tsec' }, kids);
 });
 
@@ -2713,13 +2863,13 @@ M.toolSections.push(function (fr, ctx) {
   var say = M.h('span', { class: 'small muted', role: 'status', 'aria-live': 'polite' });
   var btn = function (label, id, fn) { var b = M.h('button', { type: 'button', class: 'btn sm' }, [M.icon(id), M.h('span', { text: label })]); b.addEventListener('click', function () { say.textContent = ''; fn(); }); return b; };
   var row = M.h('div', { class: 'row' });
-  var png = btn('Picture (PNG)', 'i-down', function () { say.textContent = 'Making the picture...'; M.pngOf(fr, function (b) { if (!b) { say.textContent = 'This chart cannot be saved as a picture here. Use Data (CSV).'; return; } M.saveBlob(b, M.fileStem(fr) + '.png'); say.textContent = 'Saved ' + M.fileStem(fr) + '.png'; }); });
+  var png = btn('Save picture', 'i-down', function () { say.textContent = 'Making the picture...'; M.pngOf(fr, function (b) { if (!b) { say.textContent = 'This chart cannot be saved as a picture here. Use Data (CSV).'; return; } M.saveBlob(b, M.fileStem(fr) + '.png'); say.textContent = 'Saved ' + M.fileStem(fr) + '.png'; }); });
   if (!fr.pseudo && (fr.kind === 'time' || fr.host.querySelector('svg[role=img]'))) row.appendChild(png);
   if (fr.pseudo) {      /* UX round: a card without a chart frame saves its table(s) as CSV */
     var tbs = (M.tables || []).filter(function (tb) { return fr.host.contains(tb) && tb.cols; });
-    tbs.forEach(function (tb, i) { row.appendChild(btn(tbs.length > 1 ? 'Table ' + (i + 1) + ' (CSV)' : 'Data (CSV)', 'i-down', function () { tb.csv(); say.textContent = 'Saved ' + M.num(tb.view().length) + ' rows.'; })); });
+    tbs.forEach(function (tb, i) { row.appendChild(btn(tbs.length > 1 ? 'Save table ' + (i + 1) + ' (CSV)' : 'Save data (CSV)', 'i-down', function () { tb.csv(); say.textContent = 'Saved ' + M.num(tb.view().length) + ' rows.'; })); });
   }
-  if (fr.kind === 'time') row.appendChild(btn('Data (CSV)', 'i-down', function () { var s = M.csvOf(fr); if (!s) { say.textContent = 'No data to save.'; return; } M.saveBlob(new Blob(['﻿' + s], { type: 'text/csv;charset=utf-8' }), M.fileStem(fr) + '.csv'); say.textContent = 'Saved ' + M.fileStem(fr) + '.csv'; }));
+  if (fr.kind === 'time') row.appendChild(btn('Save data (CSV)', 'i-down', function () { var s = M.csvOf(fr); if (!s) { say.textContent = 'No data to save.'; return; } M.saveBlob(new Blob(['﻿' + s], { type: 'text/csv;charset=utf-8' }), M.fileStem(fr) + '.csv'); say.textContent = 'Saved ' + M.fileStem(fr) + '.csv'; }));
   row.appendChild(btn('Copy link', 'i-link', function () { M.copyText(M.chartLink(fr), function () { say.textContent = 'Link copied. It reopens this page, range, filters and this chart in full screen.'; }, function () { say.textContent = 'Could not copy. The address bar already holds this view.'; }); }));
   return M.h('div', { class: 'tsec' }, [M.h('span', { class: 'tl', text: 'Save or share' }), row, say]);
 });
@@ -2816,7 +2966,7 @@ M.fsControls = function () {
     box.appendChild(fld('From', 'fs-from', from)); box.appendChild(fld('To', 'fs-to', to));
     var cmp = M.h('input', { type: 'checkbox', id: 'fs-cmp', 'data-fid': 'fs-cmp', role: 'switch' });
     cmp.checked = s.cmp === '1';
-    cmp.addEventListener('change', function () { go('fs-cmp', { cmp: cmp.checked ? '1' : '0' }); });
+    cmp.addEventListener('change', function () { if (M.fs && M.fs.fr && M.fs.fr.key) M.setView(M.fs.fr.key, { cmp: '' }); go('fs-cmp', { cmp: cmp.checked ? '1' : '0' }); });
     box.appendChild(M.h('label', { class: 'sw', for: 'fs-cmp' }, [cmp, M.h('span', { class: 'swt', 'aria-hidden': 'true' }), M.h('span', { text: 'Compare with the period before' })]));
   }
   usedFilters.forEach(function (fl) {
@@ -2915,12 +3065,12 @@ M.ALIAS = {
   products: 'product stock inventory verdict sell through views units collection catalogue',
   sizes: 'size stock by size restock reorder lost demand heatmap xs s m l xl xxl next batch',
   customers: 'buyers repeat cohort loyalty customer groups rfm states baskets couriers delivery shipping order time weekday',
-  gtm: 'crm email abandoned checkout recovery lifecycle go to market marketing list scorecard',
+  gtm: 'growth ideas grow crm email abandoned checkout recovery lifecycle go to market marketing list scorecard second order offer instagram repeat buyers',
   channels: 'sources traffic utm referral direct medium bubble conversion',
   social: 'instagram pinterest youtube facebook threads linkedin mastodon posts content reach followers topic format what works',
   search: 'google seo queries typed trends brand search impressions clicks price position range gaps market keywords',
   forecast: 'forecast stock out days left next weeks indicative weekly orders',
-  functions: 'business functions rag green amber red targets jobs',
+  functions: 'team scorecard business functions rag green amber red targets jobs',
   history: 'history any measure daily monthly totals weekly totals years table chart over time',
   quality: 'data quality freshness checks trust privacy build tables sheet'
 };
@@ -3372,7 +3522,7 @@ M.defSeries = function (d, buckets) {
 M.defCov = function (d, r) {
   if (!d.num) return '';
   var days = M.daysCovered(d.num.tab, r.from, r.to);
-  return days < r.days ? 'data for ' + days + ' of ' + r.days + ' days' : '';
+  return days < r.days ? days + ' of ' + r.days + ' days have data' : '';
 };
 M.prevBuckets = function (buckets, r) {
   /* T807: a range kept by month moves back by whole months; any other range moves back by its own length in days */
@@ -3394,7 +3544,7 @@ M.sp('overview', 'Overview', 'Overview', 'How much did we sell, how many people 
 M.PAGES.overview.render = function (r) {
   var bs = M.basis(), D = M.defs(bs.b), buckets = M.buckets(r.from, r.to, r.mode), root = M.h('div'), cmp = M.cmpOn(r), pb = cmp ? M.prevBuckets(buckets, r) : null;
   if (bs.note) root.appendChild(M.note(bs.note, true));
-  var cb = M.cmpBlurb(r); if (cb) root.appendChild(M.h('p', { class: 'small muted', text: cb }));
+  M.compareNote = M.cmpBlurb(r);      /* the compare dates sit behind the Compare switch (its hover text), not in a line on the page */
   var kp = M.h('div', { class: 'kpis lead' }), kp2 = M.h('div', { class: 'kpis rates' }), kn = 0;
   /* first screen (T807): one headline (net sales and its change), three supporting tiles, then the three rates */
   var put = function (box) {
@@ -3409,7 +3559,7 @@ M.PAGES.overview.render = function (r) {
     if (cur === null) { var nd = d.den || d.num, why = M.noDataWhy(nd.tab, r); put({ label: d.label, na: why.first && r.to < why.first ? 'Starts ' + M.fds(why.first) : 'No data', note: why.text, noData: why }); return; }
     var isPct = d.key === 'conv' || d.key === 'atc', chv = ch;
     if (isPct && cmp && cur != null && prev != null) chv = prev === 0 ? null : (cur - prev) / prev * 100;
-    put({ label: d.label, value: d.fmt(cur), change: chv, cmpNote: cmp ? (prev === null ? 'no data for the previous period' : prev === 0 ? 'previous period: 0' : '') : '', note: cov, spark: { values: M.defSeries(d, buckets), color: M.COLORS.maroon } });
+    put({ label: d.label, value: d.fmt(cur), change: chv, cmpNote: cmp ? (prev === null ? 'nothing to compare with' : prev === 0 ? 'was 0 before' : '') : '', note: cov, spark: { values: M.defSeries(d, buckets), color: M.COLORS.maroon } });
   });
   root.appendChild(kp);
   if (kp2.children.length) root.appendChild(kp2);
@@ -3417,7 +3567,7 @@ M.PAGES.overview.render = function (r) {
   var mk = function (d, color, lineColor) {
     var vals = M.defSeries(d, buckets), k = r.mode === 'day' ? 7 : 3, pv = cmp ? M.defSeries(d, pb) : null;
     var host = M.chart('', function (h, w) {
-      M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: d.label, yfmt: d.key === 'sales' || d.key === 'profit' ? function (v) { return 'Rs. ' + M.short(v); } : M.short, series: [{ name: d.label + ' per ' + r.mode, values: vals, color: color, fmt: d.fmt }, { name: k + ' step average', values: M.ma(vals, k), color: lineColor, type: 'line', fmt: function (v) { return d.fmt(Math.round(v * 10) / 10); } }], prev: pv ? { values: pv } : null, emptyNode: function () { return M.emptyWhy((d.den || d.num).tab, r); }, empty: 'No ' + d.label.toLowerCase() + ' in this range yet.' });
+      M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: d.label, yfmt: d.key === 'sales' || d.key === 'profit' ? function (v) { return 'Rs. ' + M.short(v); } : M.short, series: [{ name: d.label + ' per ' + r.mode, values: vals, color: color, fmt: d.fmt }, { name: k + ' ' + r.mode + ' average', values: M.ma(vals, k), color: lineColor, type: 'line', fmt: function (v) { return d.fmt(Math.round(v * 10) / 10); } }], prev: pv ? { values: pv } : null, emptyNode: function () { return M.emptyWhy((d.den || d.num).tab, r); }, empty: 'No ' + d.label.toLowerCase() + ' in this range yet.' });
     });
     return M.card(d.label + ' by ' + r.mode, 'Each bar is one ' + r.mode + '. The line is the average of the last ' + k + ' ' + r.mode + 's, so one quiet ' + r.mode + ' is not read as a trend.', [host, M.tableView([{ k: 'label', label: 'Period' }, { k: 'v', label: d.label, num: true, fmt: function (v) { return d.fmt(v); } }], buckets.map(function (b, i) { return { label: b.label, v: vals[i] }; }))]);
   };
@@ -3432,9 +3582,8 @@ M.PAGES.overview.render = function (r) {
     var sum = function (c) { var t = M.total({ tab: 'money_daily', col: c }, r.from, r.to); return t.v || 0; };
     var g = sum('gross_sales'), disc = sum('discounts'), gst = sum('gst_included'), cost = sum('product_cost'), fee = sum('est_payment_fee'), parcel = sum('est_parcel_cost'), pack = sum('est_packaging'), prof = sum('contribution_profit');
     var wf = M.chart('', function (h, w) { M.waterfall(h, w, [{ label: 'Gross sales', value: g, kind: 'total' }, { label: 'Discounts', value: disc, kind: 'minus' }, { label: 'GST included', value: gst, kind: 'minus' }, { label: 'Product cost', value: cost, kind: 'minus' }, { label: 'Payment fee (est.)', value: fee, kind: 'minus' }, { label: 'Parcel cost (est.)', value: parcel, kind: 'minus' }, { label: 'Packaging (est.)', value: pack, kind: 'minus' }, { label: 'Profit estimate', value: prof, kind: 'total', color: M.COLORS.green }]); });
-    root.appendChild(M.grid([M.card('Where the money goes', 'From what customers were charged to what is left. Payment fee, parcel and packaging are estimates, so profit is a good guide, not accounts.',
-      [g ? wf : M.empty('No sales in this range, so there is nothing to split.'), M.tableView([{ k: 'a', label: 'Step' }, { k: 'b', label: 'Amount', num: true, fmt: M.inr }], [{ a: 'Gross sales', b: g }, { a: 'Discounts', b: -disc }, { a: 'GST included', b: -gst }, { a: 'Product cost', b: -cost }, { a: 'Payment fee (est.)', b: -fee }, { a: 'Parcel cost (est.)', b: -parcel }, { a: 'Packaging (est.)', b: -pack }, { a: 'Profit estimate', b: prof }])]),
-      M.card('Read this with care', 'What the numbers can and cannot tell you yet.', [M.h('p', { class: 'small', text: 'There are only ' + M.num(M.totalOrders()) + ' orders so far, so one order moves a percentage a lot. Where a number rests on fewer than ' + M.MIN_EVENTS + ' cases it is marked "too few to read". Sales are counted from ' + M.fd(M.cover('money_daily').first) + ' and visits from ' + M.fd(M.cover('ga4_funnel_daily').first) + ', so a long range shows visits for part of the time only.' })])], 'wide'));
+    root.appendChild(M.grid([M.card('Where the money goes', 'From what customers were charged to what is left. Payment fee, parcel and packaging are estimates, so profit is a good guide, not accounts. There are only ' + M.num(M.totalOrders()) + ' orders so far, so one order moves a percentage a lot. Sales are counted from ' + M.fd(M.cover('money_daily').first) + ' and visits from ' + M.fd(M.cover('ga4_funnel_daily').first) + ', so a long range shows visits for part of the time only.',
+      [g ? wf : M.empty('No sales in this range, so there is nothing to split.'), M.tableView([{ k: 'a', label: 'Step' }, { k: 'b', label: 'Amount', num: true, fmt: M.inr }], [{ a: 'Gross sales', b: g }, { a: 'Discounts', b: -disc }, { a: 'GST included', b: -gst }, { a: 'Product cost', b: -cost }, { a: 'Payment fee (est.)', b: -fee }, { a: 'Parcel cost (est.)', b: -parcel }, { a: 'Packaging (est.)', b: -pack }, { a: 'Profit estimate', b: prof }])])], 'wide'));
   }
   return root;
 };
@@ -3448,7 +3597,7 @@ M.PAGES.funnel.render = function (r) {
   var tot = function (dev) { var o = {}; M.STEPS.forEach(function (st) { o[st[0]] = 0; }); rows.forEach(function (x) { if (dev && x.device !== dev) return; M.STEPS.forEach(function (st) { o[st[0]] += +x[st[0]] || 0; }); }); return o; };
   var cur = tot(s.device || null), sessions = M.total({ tab: 'ga4_funnel_daily', col: 'sessions' }, r.from, r.to);
   var steps = M.STEPS.map(function (st) { return { name: st[1], value: cur[st[0]] }; });
-  if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Funnel data covers ' + days + ' of the ' + r.days + ' days in this range.' }));
+  if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Only ' + days + ' of these ' + r.days + ' days have funnel data.' }));
   var kp = M.h('div', { class: 'kpis' });
   var buys = cur.purchase, vi = cur.view_item;
   kp.appendChild(M.kpi({ label: 'Visits', value: M.num(sessions.v), note: s.device ? 'all devices' : '' }));
@@ -3499,7 +3648,7 @@ M.channelRows = function (r) {
 M.PAGES.channels.render = function (r) {
   var root = M.h('div'), rows = M.channelRows(r), days = M.daysCovered('source_daily', r.from, r.to);
   if (!rows.length) { root.appendChild(M.emptyWhy('source_daily', r)); return root; }
-  if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Channel data covers ' + days + ' of the ' + r.days + ' days in this range.' }));
+  if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Only ' + days + ' of these ' + r.days + ' days have channel data.' }));
   var tv = rows.reduce(function (s, x) { return s + x.visits; }, 0), to = rows.reduce(function (s, x) { return s + x.orders; }, 0), tr = rows.reduce(function (s, x) { return s + x.revenue; }, 0);
   var kp = M.h('div', { class: 'kpis' });
   kp.appendChild(M.kpi({ label: 'Visits', value: M.num(tv) })); kp.appendChild(M.kpi({ label: 'Orders', value: M.num(to) })); kp.appendChild(M.kpi({ label: 'Revenue', value: M.inr(tr) })); kp.appendChild(M.kpi({ label: 'Channels with visits', value: M.num(rows.length) }));
@@ -3557,7 +3706,7 @@ M.productRows = function (r) {
 M.PAGES.products.render = function (r) {
   var s = M.state, root = M.h('div'), rows = M.productRows(r), days = M.daysCovered('product_daily', r.from, r.to);
   if (!rows.length) { root.appendChild(M.empty('No products match this filter.')); return root; }
-  if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Product activity covers ' + days + ' of the ' + r.days + ' days in this range (it starts on ' + M.fd(M.cover('product_daily').first) + ').' }));
+  if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Only ' + days + ' of these ' + r.days + ' days have product data (it starts on ' + M.fd(M.cover('product_daily').first) + ').' }));
   var tv = rows.reduce(function (a, x) { return a + x.views; }, 0), tc = rows.reduce(function (a, x) { return a + x.carts; }, 0), tu = rows.reduce(function (a, x) { return a + x.units; }, 0), trv = rows.reduce(function (a, x) { return a + x.revenue; }, 0), st = rows.reduce(function (a, x) { return a + (x.stock || 0); }, 0);
   var kp = M.h('div', { class: 'kpis' });
   kp.appendChild(M.kpi({ label: 'Product views', value: M.num(tv) })); kp.appendChild(M.kpi({ label: 'Cart adds', value: M.num(tc), note: tv ? M.pct(tc / tv * 100) + ' of views' : '' })); kp.appendChild(M.kpi({ label: 'Units sold', value: M.num(tu) })); kp.appendChild(M.kpi({ label: 'Revenue before order codes', value: M.inr(trv), note: 'from Google Analytics item sales; Overview net sales also removes order codes' })); kp.appendChild(M.kpi({ label: 'Pieces in stock now', value: M.num(st) }));
@@ -3570,7 +3719,7 @@ M.PAGES.products.render = function (r) {
     { k: 'buyRate', label: 'Buy rate', num: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (M.thin(x.views) ? ' *' : ''); } },
     { k: 'verdict', label: 'Verdict', render: function (x) { return x.verdict ? M.badge(x.verdict, M.VERDICT[x.verdict] || 'grey') : null; } }
   ];
-  var cardTable = M.card('All products', 'Views, carts, units and revenue are for the date range. Stock, share sold and the verdict come from the latest saved snapshot' + (s.snap ? ' (' + M.fd(M.snapOf('product_ledger')) + ')' : '') + ' and do not change with your dates. * = fewer than ' + M.MIN_EVENTS + ' views: too few to trust the percentage.', [M.table(cols, {
+  var cardTable = M.card('All products', 'Views, carts, units and revenue are for the date range. Stock, share sold and the verdict come from the latest saved picture' + (s.snap ? ' (' + M.fd(M.snapOf('product_ledger')) + ')' : '') + ' and do not change with your dates. * = fewer than ' + M.MIN_EVENTS + ' views: too few to trust the percentage.', [M.table(cols, {
     rows: rows, sortKey: 'views', limit: 100, onRow: function (x) { M.go({ sel: s.sel === x.product ? '' : x.product }); }, selected: function (x) { return x.product === s.sel; }, empty: 'No products.'
   })]);
   root.appendChild(cardTable);
@@ -3597,7 +3746,7 @@ M.PAGES.sizes.render = function (r) {
   var s = M.state, root = M.h('div'), mode = M.SMODES.some(function (m) { return m[0] === s.sm; }) ? s.sm : 'sold90';
   var all = M.stateRows('size_product_matrix'), rows = all.filter(function (x) { return M.prodOk(x.product); });
   var snapD = M.snapOf('size_product_matrix');
-  root.appendChild(M.note('This page shows the latest saved snapshot' + (snapD ? ' (' + M.fd(snapD) + ')' : '') + ' and does not follow the dates you picked; the sales and cart counts inside it cover their own time window (named on each switch). To see an earlier day, use "Snapshot of" in the top bar.'));
+  root.appendChild(M.note('Latest picture' + (snapD ? ', ' + M.fd(snapD) : '') + '. This page ignores the dates you picked. For an earlier day use "Snapshot of" under Filters.'));
   if (!rows.length) { root.appendChild(M.empty('No size data for this selection.')); return root; }
   var seg = M.h('div', { class: 'seg', role: 'group', 'aria-label': 'What the heatmap shows' }, M.SMODES.map(function (m) {
     return M.h('button', { type: 'button', 'aria-pressed': m[0] === mode ? 'true' : 'false', text: m[1], onclick: function () { M.go({ sm: m[0] }); } });
@@ -3654,7 +3803,7 @@ M.cuts = function (name, cut) { return M.stateRows(name).filter(function (x) { r
 M.sp('customers', 'Customers', 'Customers', 'Who buys, what they buy, when, and do they come back? Only counts are kept here: no names, emails, phones or addresses.', [], { dates: false, snap: true });
 M.PAGES.customers.render = function (r) {
   var s = M.state, root = M.h('div'), orders = M.totalOrders(), op = M.stateRows('buyer_patterns');
-  root.appendChild(M.note('This page shows the latest saved snapshot of all orders so far (' + M.num(orders) + ' orders), not the dates you picked. ' + (orders < M.MIN_EVENTS ? 'That is under ' + M.MIN_EVENTS + ' orders, so every split below has too few orders to show a pattern. They are here so the answer is ready when orders grow.' : '')));
+  root.appendChild(M.note('All ' + M.num(orders) + ' orders so far, whatever dates you picked.' + (orders < M.MIN_EVENTS ? ' With under ' + M.MIN_EVENTS + ' orders no split below shows a real pattern yet.' : '')));
   var kp = M.h('div', { class: 'kpis' }), ly = {}; M.stateRows('loyalty').forEach(function (x) { ly[x.measure] = x; });
   var lv = function (k) { return ly[k] && ly[k].value != null ? ly[k].value : null; };
   kp.appendChild(M.kpi({ label: 'Orders so far', value: M.num(orders) })); kp.appendChild(M.kpi({ label: 'Customers who ordered', value: lv('customers who ordered') != null ? M.num(lv('customers who ordered')) : 'n/a', note: 'the base for the repeat rate' })); kp.appendChild(M.kpi({ label: 'Contacts on file', value: lv('contacts on file') != null ? M.num(lv('contacts on file')) : 'n/a', note: 'everyone in Shopify, most never ordered' }));
@@ -3714,12 +3863,61 @@ M.PAGES.customers.render = function (r) {
 };
 
 /* ================================================================ SOCIAL AND CONTENT */
+/* T822 (1 Nov 2026): which post is this row? The Sheet tab post_links holds, for every row of content_scorecard (same key), the address of the post, the first words of its
+   caption and link_tracking (counted / counted on the Instagram post / not tracked). Only addresses on our own channels are opened (https and a host from the list below). */
+M.POSTHOSTS = /(^|\.)(instagram\.com|threads\.(com|net)|youtube\.com|youtu\.be|pinterest\.[a-z.]+|facebook\.com|linkedin\.com|mastodon\.social)$/;
+M.safePostUrl = function (u) {
+  if (typeof u !== 'string' || u.slice(0, 8) !== 'https://') return '';
+  try { var x = new URL(u); return x.protocol === 'https:' && !x.username && !x.password && M.POSTHOSTS.test(x.hostname) ? x.href : ''; } catch (e) { return ''; }
+};
+M.postRows = function () {
+  var by = {};
+  M.rows('post_links').forEach(function (p) { by[p.key] = p; });
+  return M.stateRows('content_scorecard').map(function (x) {
+    var p = by[x.key], o = {};
+    Object.keys(x).forEach(function (k) { o[k] = x[k]; });
+    if (p) {
+      o.caption = p.caption; o.post_url = M.safePostUrl(p.post_url); o.link_tracking = p.link_tracking;
+      /* a post with no tagged link has no count: blank, not 0 (the table and the CSV file both say so) */
+      if (p.link_tracking === 'not tracked' || p.link_tracking === 'counted on the Instagram post') { o.link_clicks_ga4 = null; o.orders_ga4 = null; }
+    }
+    return o;
+  });
+};
+M.TRACKWHY = {
+  'not tracked': 'No link with this post\'s own tag exists, so its shop visits cannot be counted. This is not a 0.',
+  'counted on the Instagram post': 'This copy has a tagged link, but its visits are added to the Instagram post it was made from.'
+};
+M.trackText = function (field, r) {
+  if (r.link_tracking === 'not tracked') return 'not tracked';
+  if (r.link_tracking === 'counted on the Instagram post') return 'on the Instagram post';
+  return r[field] == null ? '' : M.num(r[field]);
+};
+M.trackCol = function (field, label) {
+  return { k: field, label: label, num: true, fmt: function (v, r) { return M.trackText(field, r); },
+    render: function (r) {
+      var t = M.trackText(field, r);
+      if (r.link_tracking === 'not tracked' || r.link_tracking === 'counted on the Instagram post') return M.h('span', { class: 'untracked', title: M.TRACKWHY[r.link_tracking], text: t });
+      return document.createTextNode(t);
+    } };
+};
+M.POSTCOL = { k: 'caption', label: 'Post', wrap: true, fmt: function (v) { return v || ''; },
+  render: function (r) {
+    if (!r.caption) return M.h('span', { class: 'untracked', title: 'No caption is stored for this post', text: 'no caption stored' });
+    return M.h('span', { class: 'postcap', title: r.caption, text: r.caption.length > 60 ? r.caption.slice(0, 59).replace(/\s+$/, '') + '...' : r.caption });
+  } };
+M.POSTLINK = { k: 'post_url', label: 'Link', fmt: function (v) { return M.safePostUrl(v); },
+  render: function (r) {
+    var u = M.safePostUrl(r.post_url);
+    if (!u) return M.h('span', { class: 'untracked', title: 'No address is stored for this post', text: 'n/a' });
+    return M.h('a', { class: 'postlink', href: u, target: '_blank', rel: 'noopener noreferrer', title: 'Open this post in a new tab', 'aria-label': 'Open this ' + (r.channel || '') + ' post in a new tab' }, [M.icon ? M.icon('i-link') : null]);
+  } };
 M.CH = [
   { id: 'instagram', name: 'Instagram', tab: 'instagram_daily', col: 'reach', unit: 'reach', color: M.COLORS.maroon },
   { id: 'pinterest', name: 'Pinterest', tab: 'pinterest_daily', col: 'impressions', unit: 'impressions', color: M.COLORS.mustard },
   { id: 'youtube', name: 'YouTube', tab: 'youtube_analytics_daily', col: 'views', unit: 'views', color: M.COLORS.teal },
   { id: 'threads', name: 'Threads', tab: 'threads_daily', col: 'profile_views', unit: 'profile views', color: M.COLORS.grey },
-  { id: 'facebook', name: 'Facebook', tab: 'facebook_daily', col: 'reactions_last_7_days', unit: 'reactions in the last 7 days (a rolling count, not per day)', color: M.COLORS.green, roll: true },
+  { id: 'facebook', name: 'Facebook', tab: 'facebook_daily', col: 'reactions_last_7_days', unit: 'reactions in the last 7 days (counted again each day, not new each day)', color: M.COLORS.green, roll: true },
   { id: 'linkedin', name: 'LinkedIn', tab: 'linkedin_daily', col: 'impressions', unit: 'impressions', color: M.COLORS.terra },
   { id: 'mastodon', name: 'Mastodon', tab: 'mastodon_daily', col: 'posts', unit: 'posts so far', color: M.COLORS.grey, roll: true }
 ];
@@ -3737,19 +3935,30 @@ M.PAGES.social.render = function (r) {
   root.appendChild(kp);
   chs.forEach(function (c) {
     var v = M.series({ tab: c.tab, col: c.col }, buckets), cov = M.cover(c.tab);
-    cards.push(M.card(c.name + ' ' + c.unit, (c.roll ? 'A snapshot taken each day of a rolling 7 day count, so bars are not added up. ' : 'Per ' + r.mode + '. ') + 'Records start ' + M.fd(cov.first) + '.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: c.name, h: 190, series: [{ name: c.name, values: v, color: c.color }], emptyNode: function () { return M.emptyWhy(c.tab, r); }, empty: 'No ' + c.name + ' numbers in this range.' }); })]));
+    cards.push(M.card(c.name + ' ' + c.unit, (c.roll ? 'Each bar is the count for the 7 days up to that day, so bars overlap and must not be added up. ' : 'Per ' + r.mode + '. ') + 'Records start ' + M.fd(cov.first) + '.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: c.name, h: 190, series: [{ name: c.name, values: v, color: c.color }], emptyNode: function () { return M.emptyWhy(c.tab, r); }, empty: 'No ' + c.name + ' numbers in this range.' }); })]));
   });
   root.appendChild(M.grid(cards, 'wide'));
   /* content scorecard */
-  var cs = M.stateRows('content_scorecard').filter(function (x) { return x.date && x.date >= r.from && x.date <= r.to && (!s.channel || chs.some(function (c) { return c.id === x.channel; })); });
+  var cs = M.postRows().filter(function (x) { return x.date && x.date >= r.from && x.date <= r.to && (!s.channel || chs.some(function (c) { return c.id === x.channel; })); });
   var withReach = cs.filter(function (x) { return x.reach_or_views != null; }).sort(function (a, b) { return (b.reach_or_views || 0) - (a.reach_or_views || 0); });
   var settled = withReach.filter(function (x) { return x.date <= M.add(M.D.anchor, -2); });   // posts of the last two days are still collecting views
-  var cols = [{ k: 'channel', label: 'Channel' }, { k: 'date', label: 'Posted', fmt: M.fd }, { k: 'format', label: 'Format' }, { k: 'topic', label: 'Topic', wrap: true, dim: 'topic' }, { k: 'reach_or_views', label: 'Reach or views', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'likes', label: 'Likes', num: true, fmt: M.num }, { k: 'saves', label: 'Saves', num: true, fmt: M.num }, { k: 'link_clicks_ga4', label: 'Link clicks (website)', num: true, fmt: M.num }, { k: 'orders_ga4', label: 'Orders (website)', num: true, fmt: M.num }];
-  root.appendChild(M.card('Posts in this range', M.num(cs.length) + ' posts in the date range. Top ten and bottom ten by reach or views. Reach and views are different counts on different channels, so compare within a channel. Posts from the last two days are still collecting views.', [
+  var cols = [M.POSTCOL, M.POSTLINK, { k: 'channel', label: 'Channel' }, { k: 'date', label: 'Posted', fmt: M.fd }, { k: 'format', label: 'Format' }, { k: 'topic', label: 'Topic', wrap: true, dim: 'topic' }, { k: 'reach_or_views', label: 'Reach or views', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'likes', label: 'Likes', num: true, fmt: M.num }, { k: 'saves', label: 'Saves', num: true, fmt: M.num }, M.trackCol('link_clicks_ga4', 'Shop visits'), M.trackCol('orders_ga4', 'Shop orders')];
+  root.appendChild(M.card('Posts in this range', M.num(cs.length) + ' posts in the date range. Top ten and bottom ten by reach or views. Reach and views are different counts on different channels, so compare within a channel. Posts from the last two days are still collecting views. Shop visits and orders are counted only when a link with this post\'s own tag exists. An Instagram post cannot hold a clickable link, so its visits are the ones that came through the same reel on YouTube, Pinterest, Facebook or Threads. Everything else says "not tracked", which is not the same as 0: 0 means a tagged link exists and nobody used it.', [
     M.thinTag(cs.length, 'posts', 5),
     M.h('h3', { text: 'Top ten', style: 'font-size:.95rem;margin:.4rem 0' }), M.table(cols, { rows: withReach.slice(0, 10), sortKey: 'reach_or_views', empty: 'No posts in this range.', limit: 10 }),
     M.h('h3', { text: 'Bottom ten (posts older than two days)', style: 'font-size:.95rem;margin:.8rem 0 .4rem' }), M.table(cols, { rows: settled.slice(-10).reverse(), sortKey: 'reach_or_views', sortDir: 1, empty: 'No posts in this range.', limit: 10 })
-  ].filter(Boolean)));
+  ].filter(Boolean), 'postcard'));
+  /* LinkedIn posts (T822): the company page's own post list, newest numbers per post. The address is built from the post's id, which LinkedIn opens as the post. */
+  if ((!s.channel || chs.some(function (c) { return c.id === 'linkedin'; })) && M.has('linkedin_posts_daily')) {
+    var lastLi = {};
+    M.rows('linkedin_posts_daily').forEach(function (x) { if (x.post_id && (!lastLi[x.post_id] || x.date > lastLi[x.post_id].date)) lastLi[x.post_id] = x; });
+    var li = Object.keys(lastLi).map(function (k) { return lastLi[k]; }).filter(function (x) { return x.published && x.published >= r.from && x.published <= r.to; }).map(function (x) {
+      return { caption: x.first_words, post_url: /^urn:li:(share|ugcPost):\d+$/.test(x.post_id) ? 'https://www.linkedin.com/feed/update/' + x.post_id + '/' : '', channel: 'linkedin', published: x.published, impressions: x.impressions, unique_impressions: x.unique_impressions, clicks: x.clicks, likes: x.likes, comments: x.comments, reposts: x.reposts };
+    }).sort(function (a, b) { return (b.impressions || 0) - (a.impressions || 0); });
+    root.appendChild(M.card('LinkedIn posts in this range', li.length ? M.num(li.length) + ' company page posts published in the dates above, newest numbers from LinkedIn. Clicks are all clicks on the post as LinkedIn counts them (not only visits to the shop).' : 'No company page post was published in these dates.', [
+      M.table([M.POSTCOL, M.POSTLINK, { k: 'published', label: 'Posted', fmt: M.fd }, { k: 'impressions', label: 'Seen', num: true, fmt: M.num, bar: { color: M.COLORS.terra } }, { k: 'unique_impressions', label: 'Seen by people', num: true, fmt: M.num }, { k: 'clicks', label: 'Clicks on the post', num: true, fmt: M.num }, { k: 'likes', label: 'Likes', num: true, fmt: M.num }, { k: 'comments', label: 'Comments', num: true, fmt: M.num }, { k: 'reposts', label: 'Reposts', num: true, fmt: M.num }],
+        { rows: li, sortKey: 'impressions', empty: 'No LinkedIn post in this range.', limit: 10, name: 'linkedin posts' })], 'postcard'));
+  }
   /* patterns */
   var cut = ['topic', 'format', 'hour block', 'channel'].indexOf(s.ccut) >= 0 ? s.ccut : 'topic', seg = M.h('div', { class: 'seg', role: 'group', 'aria-label': 'Pattern to show' }, [['topic', 'Topic'], ['format', 'Format'], ['hour block', 'Hour (IST)'], ['channel', 'Channel']].map(function (m) { return M.h('button', { type: 'button', 'aria-pressed': m[0] === cut ? 'true' : 'false', text: m[1], onclick: function () { M.go({ ccut: m[0] }); } }); }));
   var pat = M.cuts('content_patterns', cut).sort(function (a, b) { return (+b.avg_reach_or_views || 0) - (+a.avg_reach_or_views || 0); });
@@ -3768,7 +3977,7 @@ M.PAGES.search.render = function (r) {
     kp.appendChild(t.v === null ? M.kpiWhy(c[0], 'brand_search_daily', r) : M.kpi({ label: c[0], value: M.num(t.v), change: cf.change, cmpNote: cf.cmpNote, spark: { values: M.series(part, buckets), color: c[2] }, note: t.days < r.days ? 'data for ' + t.days + ' of ' + r.days + ' days' : '' }));
   });
   root.appendChild(kp);
-  root.appendChild(M.note('"Brand" means searches that include mazo or shopmazo. Google reports search numbers 2 to 3 days late, and only counts them when there are enough searches, so a day of 0 can mean "too few to count".'));
+  root.appendChild(M.note('Brand searches are searches with mazo or shopmazo in them. Google reports 2 to 3 days late, so the last days can look empty.'));
   var bi = M.series({ tab: 'brand_search_daily', col: 'brand_impressions' }, buckets), bc = M.series({ tab: 'brand_search_daily', col: 'brand_clicks' }, buckets), ni = M.series({ tab: 'brand_search_daily', col: 'nonbrand_impressions' }, buckets);
   cards.push(M.card('Brand searches over time', 'Bars: times mazo showed up in a search for the brand. The line is the average of the last few periods.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Brand search impressions', series: [{ name: 'Brand impressions', values: bi, color: M.COLORS.maroon }, { name: 'Average', values: M.ma(bi, r.mode === 'day' ? 7 : 3), color: M.COLORS.mustard, type: 'line', fmt: function (v) { return M.num(v, 1); } }], prev: cmp ? { values: M.series({ tab: 'brand_search_daily', col: 'brand_impressions' }, M.prevBuckets(buckets, r)) } : null, emptyNode: function () { return M.emptyWhy('brand_search_daily', r); }, empty: 'No brand search numbers in this range.' }); })]));
   cards.push(M.card('Other searches over time', 'Searches that do not name mazo but still showed one of our pages.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Other search impressions', series: [{ name: 'Other impressions', values: ni, color: M.COLORS.teal }], emptyNode: function () { return M.emptyWhy('brand_search_daily', r); }, empty: 'No numbers in this range.' }); })]));
@@ -3798,21 +4007,21 @@ M.PAGES.search.render = function (r) {
 /* Pages: Forecast and stock, Business functions, History, Data quality. */
 
 /* ================================================================ FORECAST AND STOCK */
-M.sp('forecast', 'Forecast and stock', 'Forecast and stock', 'How many orders might next weeks bring, and which sizes will run out? Forecasts here are indicative, a trend of the last weeks, never a promise.', ['product', 'collection', 'size'], { dates: false, snap: true });
+M.sp('forecast', 'Forecast and stock', 'Forecast and stock', 'How many orders might next weeks bring, and which sizes will run out? These are guesses from the last few weeks, never a promise.', ['product', 'collection', 'size'], { dates: false, snap: true });
 M.PAGES.forecast.render = function () {
   var s = M.state, root = M.h('div'), fw = M.stateRows('forecast_weekly');
   var rows = fw.map(function (x) { return { week: x.week, actual: x.orders_actual, revenue: x.revenue_actual, low: x.orders_low, mid: x.orders_mid, high: x.orders_high, note: x.note }; }).sort(function (a, b) { return a.week < b.week ? -1 : 1; });
   var act = rows.filter(function (x) { return x.actual != null; }), fut = rows.filter(function (x) { return x.actual == null && x.mid != null; });
   var tot = act.reduce(function (a, x) { return a + (x.actual || 0); }, 0);
-  root.appendChild(M.note('Indicative only. The forecast is the average of the last 4 weeks plus the trend, with a band of one standard deviation of the last 8 weeks. With ' + M.num(tot) + ' orders over ' + act.length + ' weeks it is small numbers: the band is wide on purpose. A proper seasonal model needs a year of data.', true));
+  root.appendChild(M.note('A guess, not a promise. It follows the last 4 weeks. With only ' + M.num(tot) + ' orders in ' + act.length + ' weeks the range is wide on purpose.'));
   var kp = M.h('div', { class: 'kpis' });
   if (fut.length) {
     var sm = function (k) { return fut.reduce(function (a, x) { return a + (x[k] || 0); }, 0); };
-    kp.appendChild(M.kpi({ label: 'Orders, next ' + fut.length + ' weeks (indicative)', value: M.num(sm('mid'), 1), note: 'range ' + M.num(sm('low'), 1) + ' to ' + M.num(sm('high'), 1) }));
+    kp.appendChild(M.kpi({ label: 'Orders expected in the next ' + fut.length + ' weeks (a guess)', value: M.num(sm('mid'), 1), note: 'range ' + M.num(sm('low'), 1) + ' to ' + M.num(sm('high'), 1) }));
   }
-  kp.appendChild(M.kpi({ label: 'Orders, last 4 weeks (actual)', value: M.num(act.slice(-4).reduce(function (a, x) { return a + (x.actual || 0); }, 0)) }));
+  kp.appendChild(M.kpi({ label: 'Orders in the last 4 weeks', value: M.num(act.slice(-4).reduce(function (a, x) { return a + (x.actual || 0); }, 0)) }));
   root.appendChild(kp);
-  root.appendChild(M.card('Weekly orders: actual and indicative range', 'Solid bars are weeks that happened. Dashed boxes are the indicative low to high range for weeks ahead; the thick line is the middle. Weeks start on Monday.', [rows.length ? M.chart('', function (h, w) { M.forecastChart(h, w, rows); }) : M.empty('No weekly series yet.'), M.tag('indicative', 'indic'), M.tableView([{ k: 'week', label: 'Week starting', fmt: M.fd }, { k: 'actual', label: 'Orders (actual)', num: true }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr }, { k: 'low', label: 'Low', num: true }, { k: 'mid', label: 'Middle', num: true }, { k: 'high', label: 'High', num: true }, { k: 'note', label: 'Note' }], rows)]));
+  root.appendChild(M.card('Orders each week, and the next weeks', 'Solid bars are weeks that happened. Dashed boxes are a guess for the weeks ahead, from low to high; the thick line is the middle. Weeks start on Monday.', [rows.length ? M.chart('', function (h, w) { M.forecastChart(h, w, rows); }) : M.empty('No weekly series yet.'), M.tableView([{ k: 'week', label: 'Week starting', fmt: M.fd }, { k: 'actual', label: 'Orders (actual)', num: true }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr }, { k: 'low', label: 'Low', num: true }, { k: 'mid', label: 'Middle', num: true }, { k: 'high', label: 'High', num: true }, { k: 'note', label: 'Note' }], rows)]));
   /* forecast error: every past forecast against what really happened */
   var fe = M.stateRows('forecast_error').filter(function (x) { return x.week && x.week !== 'none' && x.actual_orders != null; });
   var feRead = M.stateRows('forecast_error').map(function (x) { return x.read; }).filter(function (t) { return t && !/^forecast was|^close/.test(t); })[0];
@@ -3827,7 +4036,7 @@ M.PAGES.forecast.render = function () {
   var so = M.stateRows('stockout_forecast').filter(function (x) { return M.prodOk(x.product) && (!s.size || x.size === s.size); });
   var low = so.filter(function (x) { return /LOW/.test(x.flag || ''); });
   root.appendChild(M.card('When a size runs out', 'Days left = stock divided by how fast it sold in the last 28 days ("normal pace"), and at double that speed ("fast pace"). Under 21 days is marked LOW. There are very few sales so far, so treat the days as a rough guess.', [
-    M.tag('indicative', 'indic'), low.length ? M.note(M.num(low.length) + ' size(s) flagged LOW: ' + low.map(function (x) { return x.product + ' ' + x.size; }).join(', ') + '.', true) : M.h('p', { class: 'small', text: 'No size is under 21 days at its current pace.' }),
+    low.length ? M.note(M.num(low.length) + ' size(s) flagged LOW: ' + low.map(function (x) { return x.product + ' ' + x.size; }).join(', ') + '.', true) : M.h('p', { class: 'small', text: 'No size is under 21 days at its current pace.' }),
     M.table([{ k: 'product', label: 'Product', wrap: true }, { k: 'size', label: 'Size' }, { k: 'stock', label: 'In stock', num: true, fmt: M.num }, { k: 'sold_28d', label: 'Sold 28d', num: true, fmt: M.num }, { k: 'days_left_mid', label: 'Days left (middle pace)', num: true, fmt: M.num, bar: { color: M.COLORS.teal, max: 120 } }, { k: 'days_left_fast', label: 'Days left (fast pace)', num: true, fmt: M.num, bar: { color: M.COLORS.terra, max: 120 } },
       { k: 'flag', label: 'Flag', render: function (x) { return /LOW/.test(x.flag || '') ? M.badge('LOW', 'red') : x.flag ? M.badge('OK', 'green') : null; }, sort: function (x) { return /LOW/.test(x.flag || '') ? 0 : 1; } }], { rows: so, sortKey: 'days_left_mid', sortDir: 1, empty: 'No size has recent sales, so no run out dates can be worked out.' })]));
   var op = M.stateRows('opportunity_sizing'), dl = M.rows('decision_log');
@@ -3839,7 +4048,7 @@ M.PAGES.forecast.render = function () {
 };
 
 /* ================================================================ BUSINESS FUNCTIONS */
-M.sp('functions', 'Business functions', 'Business functions', 'The 13 jobs a business like this has to do, each green, amber or red from a few measures. Shapes carry the status as well as colour.', [], { dates: false, snap: true });
+M.sp('functions', 'Team scorecard', 'Team scorecard', 'The 13 jobs a business like this has to do, each green, amber or red from a few measures. Shapes carry the status as well as colour.', [], { dates: false, snap: true });
 M.PAGES.functions.render = function () {
   var root = M.h('div'), sum = M.stateRows('function_summary'), sc = M.stateRows('function_scorecard');
   var cnt = { GREEN: 0, AMBER: 0, RED: 0, 'NO DATA': 0 }; sum.forEach(function (x) { cnt[x.status] = (cnt[x.status] || 0) + 1; });
@@ -4071,16 +4280,118 @@ M.PAGES.quality.render = function () {
   return root;
 };
 
-/* Page: Go to market and CRM (T779, 30 Oct 2026). Reads channel_groups, lifecycle_board, checkout_recovery, email_program, gtm_scorecard. Counts only. */
+/* Page: Growth (T824, 1 Nov 2026; before that "Go to market and CRM", T779). The page id stays gtm and so does the address.
+   It answers two questions: what should we do next to grow, and is it working. Top: six places growth can come from, each with today's number and the count of ideas for it.
+   Then every growth idea (the list is dashboard_15_growth_ideas.js, the same list as docs/guides/growth-ideas.md), then the six checks and the tables that were here before.
+   Reads channel_groups, lifecycle_board, checkout_recovery, email_program, gtm_scorecard, loyalty, instagram_daily, brand_search_daily, ga4_funnel_daily, money_daily. Counts only. */
 
-M.sp('gtm', 'Go to market and CRM', 'Go to market and CRM', 'Which channels earn, how people move from stranger to repeat buyer, and what the email list and abandoned checkouts are worth. Counts only: nobody is named.', [], { dates: false, snap: true });
+M.sp('gtm', 'Growth', 'Growth', 'What should we do next to grow, and is it working? The six places growth can come from, every idea we have, and the numbers that show whether it is working.', [], { dates: false, snap: true });
+
+/* the last 28 days up to the newest day we hold; this page does not follow the date picker */
+M.growWin = function () { var to = M.D.anchor; return { from: M.add(to, -27), to: to }; };
+M.growSum = function (tab, col) { var w = M.growWin(); if (!M.has(tab)) return null; return M.total({ tab: tab, col: col }, w.from, w.to).v; };
+M.growRow = function (tab, key, val) { var r = M.stateRows(tab).filter(function (x) { return x[key] === val; }); return r.length ? r[0] : null; };
+
+M.growTiles = function () {
+  var ideas = M.GROW_IDEAS || [], tiles = [], cnt = function (l) { var a = ideas.filter(function (x) { return x.lever === l; }); return { n: a.length, run: a.filter(function (x) { return x.status === 'running'; }).length }; };
+  var cg = function (name) { return M.growRow('channel_groups', 'channel_group', name); };
+  var ly = function (m) { return M.growRow('loyalty', 'measure', m); }, ep = function (m) { return M.growRow('email_program', 'measure', m); };
+  var cr = M.stateRows('checkout_recovery'), crN = cr.reduce(function (a, x) { return a + (+x.abandoned || 0); }, 0), crMoney = cr.reduce(function (a, x) { return a + (+x.money_in_them || 0); }, 0);
+  /* 1 buyers who come back */
+  var rep = ly('repeat customers'), buy = ly('customers who ordered');
+  tiles.push({ lever: 'back', o: rep && buy ? { label: 'Buyers who come back', value: M.num(+rep.value) + ' of ' + M.num(+buy.value), note: 'buyers have ordered a second time' } : { label: 'Buyers who come back', na: 'No data yet', note: 'The repeat buyer numbers have not been saved yet.' } });
+  /* 2 email list and left checkouts */
+  var sub = ep('subscribers'), agreed = ep('buyers who agreed to email'), reach = ep('abandoned checkouts we can email');
+  tiles.push({ lever: 'email', o: sub ? { label: 'Email list and left checkouts', value: M.num(+sub.value), note: 'subscribers. ' + (agreed && buy ? M.num(+agreed.value) + ' of ' + M.num(+buy.value) + ' buyers agreed to email. ' : '') + (crN ? M.num(crN) + ' people left a checkout with ' + M.inr(crMoney) + ' in their carts' + (reach ? '; ' + M.num(+reach.value) + ' can be emailed.' : '.') : '') } : { label: 'Email list and left checkouts', na: 'No data yet', note: 'The email numbers have not been saved yet.' } });
+  /* 3 Instagram */
+  var igReach = M.growSum('instagram_daily', 'reach'), igTaps = M.growSum('instagram_daily', 'profile_link_taps'), ig = cg('Instagram');
+  tiles.push({ lever: 'insta', o: igReach != null ? { label: 'Instagram', value: M.num(igReach), note: 'people reached in 28 days. ' + (igTaps != null ? M.num(igTaps) + ' profile link taps. ' : '') + (ig ? M.num(ig.visits_28d) + ' visits and ' + M.num(ig.orders_28d) + ' orders came from Instagram.' : '') } : { label: 'Instagram', na: 'No data yet', note: 'Instagram numbers have not been saved yet.' } });
+  /* 4 search, AI answers, press */
+  var bc = M.growSum('brand_search_daily', 'brand_clicks'), nc = M.growSum('brand_search_daily', 'nonbrand_clicks'), ac = M.growSum('brand_search_daily', 'anonymous_clicks'), gs = cg('Google search'), ai = cg('AI assistants');
+  var clicks = bc == null ? null : bc + (nc || 0) + (ac || 0);
+  tiles.push({ lever: 'search', o: clicks != null ? { label: 'Search, AI answers and press', value: M.num(clicks), note: 'Google clicks in 28 days; ' + M.num(nc || 0) + ' came from words other than mazo. ' + (gs ? M.num(gs.orders_28d) + ' orders from Google search. ' : '') + (ai ? M.num(ai.visits_28d) + ' visits from AI assistants.' : '') } : { label: 'Search, AI answers and press', na: 'No data yet', note: 'Google search numbers have not been saved yet.' } });
+  /* 5 the shop */
+  var cb = M.growSum('ga4_funnel_daily', 'begin_checkout'), pu = M.growSum('ga4_funnel_daily', 'purchase'), vi = M.growSum('ga4_funnel_daily', 'view_item'), ad = M.growSum('ga4_funnel_daily', 'add_to_cart');
+  tiles.push({ lever: 'shop', o: cb ? { label: 'The shop: buying steps and trust', value: M.pct((pu || 0) / cb * 100, 1), note: 'of people who began checkout paid: ' + M.num(pu || 0) + ' of ' + M.num(cb) + '.' + (vi ? ' ' + M.pct(ad / vi * 100, 1) + ' of product viewers add to bag.' : '') } : { label: 'The shop: buying steps and trust', na: 'No data yet', note: 'Visit numbers have not been saved yet.' } });
+  /* 6 later: ads, partners, events */
+  var od = M.growSum('money_daily', 'orders');
+  tiles.push({ lever: 'later', o: od != null ? { label: 'Ads, partners and events (later)', value: M.num(od), note: 'orders in 28 days. No ads run today. Google ads start near 20 orders in 28 days; Meta ads start when more than 25% of checkouts are paid, and only on your yes.' } : { label: 'Ads, partners and events (later)', na: 'No data yet', note: 'Order numbers have not been saved yet.' } });
+  tiles.forEach(function (t) { var c = cnt(t.lever); t.n = c.n; t.run = c.run; });
+  return tiles;
+};
+
+M.growStatus = { idea: ['Idea', 'amber'], approved: ['Approved', 'teal'], running: ['Running', 'green'], parked: ['Parked', 'grey'] };
+M.growViews = [
+  ['all', 'All ideas', function () { return true; }],
+  ['ready', 'Ready to start', function (x) { return (x.status === 'idea' || x.status === 'approved') && !x.y; }],
+  ['yes', 'Need your yes', function (x) { return !!x.y; }],
+  ['running', 'Running', function (x) { return x.status === 'running'; }],
+  ['parked', 'Parked', function (x) { return x.status === 'parked'; }]
+];
+M.growIdeasCard = function () {
+  var ideas = M.GROW_IDEAS || [], lv = {}, st = { view: 'all', lever: '' };
+  (M.GROW_LEVERS || []).forEach(function (l) { lv[l[0]] = l[1]; });
+  var rowsOf = function () {
+    var pred = M.growViews.filter(function (v) { return v[0] === st.view; })[0][2];
+    return ideas.filter(function (x) { return pred(x) && (!st.lever || x.lever === st.lever); }).map(function (x) {
+      var o = { id: x.id, idea: x.idea, area: lv[x.lever] || x.lever, status: x.status, needs: x.y ? 'Needs your yes' : '', when: x.when, proof: x.proof };
+      o['why (numbers as written)'] = x.why; o.cost = x.cost; o['who does it'] = x.who; o['first said'] = x.first;
+      return o;
+    });
+  };
+  var cols = [
+    { k: 'id', label: 'ID', sort: function (r) { return +r.id.slice(1); } },
+    { k: 'idea', label: 'Idea', wrap: true },
+    { k: 'status', label: 'Status', render: function (r) { var s = M.growStatus[r.status] || [r.status, 'grey']; return M.badge(s[0], s[1]); }, sort: function (r) { return { running: 0, approved: 1, idea: 2, parked: 3 }[r.status]; } },
+    { k: 'needs', label: 'Your yes', render: function (r) { return r.needs ? M.tag(r.needs, 'thin') : null; }, sort: function (r) { return r.needs ? 0 : 1; } },
+    { k: 'area', label: 'Area', wrap: true },
+    { k: 'when', label: 'When', wrap: true },
+    { k: 'proof', label: 'How we will know it worked', wrap: true }
+  ];
+  var tbl = M.table(cols, { rows: rowsOf(), sortKey: 'id', sortDir: 1, empty: 'No idea matches this view.', limit: 100, name: 'growth ideas' });
+  var redraw = function () { tbl.redraw(rowsOf()); sync(); };
+  var seg = M.h('div', { class: 'seg', role: 'group', 'aria-label': 'Which ideas to show' });
+  var btns = M.growViews.map(function (v) {
+    var n = ideas.filter(function (x) { return v[2](x) && (!st.lever || x.lever === st.lever); }).length, b = M.h('button', { type: 'button', 'aria-pressed': v[0] === st.view ? 'true' : 'false', 'data-view': v[0], text: v[1] + ' ' + n });
+    b.addEventListener('click', function () { st.view = v[0]; redraw(); });
+    seg.appendChild(b); return b;
+  });
+  var sel = M.h('select', { id: 'grow-area' }, [M.h('option', { value: '', text: 'All areas' })].concat((M.GROW_LEVERS || []).map(function (l) { return M.h('option', { value: l[0], text: l[1] }); })));
+  sel.addEventListener('change', function () { st.lever = sel.value; redraw(); });
+  var sync = function () {
+    M.growViews.forEach(function (v, i) {
+      var n = ideas.filter(function (x) { return v[2](x) && (!st.lever || x.lever === st.lever); }).length;
+      btns[i].textContent = v[1] + ' ' + n; btns[i].setAttribute('aria-pressed', v[0] === st.view ? 'true' : 'false');
+    });
+    sel.value = st.lever;
+  };
+  var ctl = M.h('div', { class: 'row-ctl', 'data-ux': '1' }, [M.h('div', { class: 'fld' }, [M.h('label', { text: 'Show' }), seg]), M.h('div', { class: 'fld' }, [M.h('label', { for: 'grow-area', text: 'Area' }), sel])]);
+  var card = M.card('Every growth idea', 'Idea = written down, not started. Running = already live. Parked = waiting for a date, a trigger or your word. Click a row to see why, what it costs and who does it.', [ctl, tbl]);
+  card.id = 'grow-ideas';
+  card.showArea = function (l) { st.lever = l; st.view = 'all'; redraw(); card.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
+  return card;
+};
+
 M.PAGES.gtm.render = function () {
   var root = M.h('div'), sc = M.stateRows('gtm_scorecard'), cg = M.stateRows('channel_groups'), lc = M.stateRows('lifecycle_board'), cr = M.stateRows('checkout_recovery'), ep = M.stateRows('email_program');
   var orders = M.totalOrders();
-  root.appendChild(M.note('This page shows the latest saved snapshot of the last 28 days and of all customers so far, not the dates you picked above. ' + (orders < M.MIN_EVENTS ? 'With ' + M.num(orders) + ' orders in all, every split is a hint only, not proof.' : ''), orders < M.MIN_EVENTS));
+  /* the ideas card first, so the tiles can point at it */
+  var ideasCard = M.growIdeasCard();
+  var tiles = M.h('div', { class: 'kpis', style: 'grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))' });
+  M.growTiles().forEach(function (t) {
+    var box = M.kpi(t.o);
+    if (t.n) {
+      var go = M.h('button', { type: 'button', class: 'link', text: 'See the ' + t.n + ' ideas' + (t.run ? ' (' + t.run + ' running)' : '') });
+      go.addEventListener('click', function () { ideasCard.showArea(t.lever); });
+      box.appendChild(M.h('div', { class: 'ctx', style: 'margin-top:.5rem' }, go));
+    }
+    tiles.appendChild(box);
+  });
+  root.appendChild(M.card('Where growth can come from', 'Six places growth can come from, with the last 28 days next to each.', [M.thinTag(orders, 'orders'), tiles]));
+  root.appendChild(ideasCard);
   /* the scorecard: one line per question */
   var KIND = { GREEN: 'green', AMBER: 'amber', RED: 'red', 'NO DATA': 'grey', info: 'grey' };
-  root.appendChild(M.card('Six questions a go to market review asks', 'Each line is a question, the answer from our own numbers, and the next step. Status is green, amber or red against a simple rule.', [
+  root.appendChild(M.card('Six checks: is growth working?', 'Each line is a question, the answer from our own numbers, and the next step. Status is green, amber or red against a simple rule.', [
     M.table([{ k: 'question', label: 'Question', wrap: true }, { k: 'answer', label: 'Answer', wrap: true },
       { k: 'status', label: 'Status', render: function (x) { return x.status === 'info' ? null : M.badge(String(x.status), KIND[x.status] || 'grey'); }, sort: function (x) { return { RED: 0, AMBER: 1, GREEN: 2 }[x.status] != null ? { RED: 0, AMBER: 1, GREEN: 2 }[x.status] : 3; } },
       { k: 'next_step', label: 'Next step', wrap: true }], { rows: sc, sortKey: 'status', sortDir: 1, empty: 'No scorecard yet.' })]));
@@ -4115,6 +4426,74 @@ M.PAGES.gtm.render = function () {
   ], 'one'));
   return root;
 };
+
+/* mazo dashboard, Growth page data (T824, 1 Nov 2026): the ideas list. The same list is docs/guides/growth-ideas.md; change both together. The why text holds numbers as they were on 1 Nov 2026;
+   the live numbers are on the page (dashboard_14_page_gtm.js). Status: idea, approved, running, parked. y = needs the owner's yes (money, discount, sends to customers, changes the shop). */
+M.GROW_LEVERS = [["back", "Buyers who come back"], ["email", "Email list and left checkouts"], ["insta", "Instagram"], ["search", "Search, AI answers and press"], ["shop", "The shop: buying steps, trust and range"], ["later", "Partners, events and paid (later)"]];
+M.GROW_IDEAS = [
+  {"id": "G1", "lever": "back", "idea": "Thank you offer for a second order, for buyers who agreed to email (Rs. 150 off, 10% off, or a small gift)", "status": "idea", "y": 1, "proof": "Buyers who ordered twice (Growth and Customers pages)", "when": "After the Diwali sale ends on 30 Nov; you choose on 1 Dec", "why": "0 of 28 buyers came back, and a buyer who returns is the cheapest sale. Profit is about Rs. 1,003 an order, so Rs. 150 off is about 15% of it. Customers and Growth pages.", "cost": "A small discount on one order, taken from profit", "who": "Owner chooses, agent builds", "first": "30 Oct 2026 (T786), growth plan section 4, ROADMAP R2"},
+  {"id": "G2", "lever": "email", "idea": "Grow the email list without a pop up: one line under the order confirmation asking for email consent; keep the ticked checkout box and the footer sign up", "status": "idea", "y": 1, "proof": "Subscribers and the share of buyers who agreed (Growth page)", "when": "Now", "why": "45 subscribers. 10 of 28 buyers did not agree, so they can never get a win back email. Growth page.", "cost": "Free", "who": "Agent writes, you approve the words", "first": "30 Oct 2026, growth plan G2"},
+  {"id": "G3", "lever": "email", "idea": "Read what the recovery emails earn: reminders after 2 hours, 34 hours and a plain note from Madhu after 48 hours, plus the browse and cart emails", "status": "running", "y": 0, "proof": "People who later bought, by month (Growth page, left checkouts)", "when": "13 Nov, then every month", "why": "21 people left a checkout with Rs. 45,705 in their carts, and only 4 of them can be emailed. Growth page, people who left a checkout.", "cost": "Free", "who": "Agent reads, Madhu answers replies", "first": "30 Oct 2026, growth plan G3, ROADMAP C5"},
+  {"id": "G4", "lever": "search", "idea": "One guide a week on Tuesday, written for words people search", "status": "running", "y": 0, "proof": "Google clicks and non brand clicks (Search page)", "when": "Every Tuesday", "why": "Google search brings 163 visits and YouTube 111, and neither has brought an order yet. Guides lead and products follow. Growth page, where visits and orders come from.", "cost": "Free", "who": "Agent", "first": "28 Oct 2026, ROADMAP T3"},
+  {"id": "G5", "lever": "back", "idea": "Ask a few buyers why they bought and what almost stopped them (a 5 minute message to 5 buyers, 3 questions, no names saved)", "status": "idea", "y": 0, "proof": "Answers saved in the buyer notes tab of the Sheet (not shown on the dashboard yet)", "when": "This week", "why": "We do not know why people buy. 28 buyers, and the buyer notes list in the Sheet is empty.", "cost": "Free (Madhu's time)", "who": "Madhu", "first": "30 Oct 2026, growth plan G5, T770"},
+  {"id": "G6", "lever": "back", "idea": "Emails after a purchase: thank you (day 1), something to wear with it (day 14), win back (60 days without an order), regulars note (third order)", "status": "running", "y": 0, "proof": "Buyers who ordered twice, days to the second order (Customers page)", "when": "Read on 13 Nov, then every month", "why": "All four are built and live. Only buyers who agreed to email get them: 18 of 28. Growth page, contact to repeat buyer.", "cost": "Free", "who": "Agent (built, runs by itself)", "first": "Oct 2026, email flows guide, ROADMAP R1"},
+  {"id": "G7", "lever": "back", "idea": "Refer a friend: a reward for a buyer whose friend orders", "status": "idea", "y": 1, "proof": "Orders that come from referral links (Channels page)", "when": "Not before the thank you offer is decided", "why": "Not built. The Judge.me coupons and referrals switch is OFF on purpose.", "cost": "A reward on each referred order", "who": "Owner decides", "first": "1 Nov 2026, growth list"},
+  {"id": "G8", "lever": "back", "idea": "Birthday email", "status": "parked", "y": 1, "proof": "Orders from the birthday email (not tracked)", "when": "When a birthday is captured at sign up", "why": "Built but switched OFF on 4 Oct: no form asks for a birthday, so it sends nothing.", "cost": "Free to send; a small gift is the owner's call", "who": "Owner decides", "first": "4 Oct 2026, email flows guide"},
+  {"id": "G9", "lever": "email", "idea": "Welcome series for new subscribers: 4 emails over a week, no discount", "status": "running", "y": 0, "proof": "Subscribers who bought (Growth page, contact to repeat buyer)", "when": "Read on 13 Nov", "why": "Built and live. 48 contacts on file have never bought; this is the email meant for them.", "cost": "Free", "who": "Agent (built, runs by itself)", "first": "3 Oct 2026, email flows guide"},
+  {"id": "G10", "lever": "email", "idea": "Email sign up pop up with an offer", "status": "parked", "y": 1, "proof": "Subscribers (Growth page)", "when": "Only if you approve an offer", "why": "Needs a discount. You said leave it off, and on 30 Oct no pop up for now.", "cost": "A discount", "who": "Owner decides", "first": "22 Oct 2026 (T536), ROADMAP P3"},
+  {"id": "G11", "lever": "email", "idea": "10 percent sign up offer on Meta", "status": "parked", "y": 1, "proof": "Orders from Meta (Channels page)", "when": "Only if you ask", "why": "You allowed it, then judged it not needed.", "cost": "A discount", "who": "Owner decides", "first": "T51, closed as not needed"},
+  {"id": "G12", "lever": "email", "idea": "WhatsApp or text messages to buyers who opted in", "status": "parked", "y": 1, "proof": "Opt ins counted (Growth page)", "when": "Only if you ask", "why": "6 people opted in. Nothing is sent; they are only counted. Shiprocket order updates on WhatsApp stay ON.", "cost": "Not free at scale; cost to be checked first", "who": "Owner decides", "first": "29 Oct 2026, go to market plan section 4"},
+  {"id": "G13", "lever": "email", "idea": "Back in stock 'Notify me' and pre order", "status": "parked", "y": 1, "proof": "Sign ups for the notice (not tracked)", "when": "Only if you ask", "why": "Madhu manages stock by hand, so these could promise stock that is not there.", "cost": "Free (Shopify's own mail)", "who": "Owner decides", "first": "T116, ROADMAP section 2"},
+  {"id": "G14", "lever": "insta", "idea": "Find out why Instagram shows 2 profile link taps for 93,300 people reached", "status": "idea", "y": 0, "proof": "Link taps next to Instagram visits (Social and Channels pages)", "when": "Now", "why": "Google Analytics counts 879 visits from Instagram in the same 28 days, so the tap count is probably under reported. We do not know yet.", "cost": "Free", "who": "Agent", "first": "1 Nov 2026, this review"},
+  {"id": "G15", "lever": "insta", "idea": "Do more of what already sells: Instagram is the one channel that earns", "status": "idea", "y": 0, "proof": "Orders from Instagram (Growth and Channels pages)", "when": "Ongoing", "why": "Instagram brought 879 visits and 5 of the 7 web orders in 28 days. Doubling the best source (the bio link) is worth about 3 more orders in 28 days (Forecast page, levers).", "cost": "Free", "who": "Madhu (content), agent (numbers)", "first": "29 Oct 2026, opportunity sizing; ROADMAP T1"},
+  {"id": "G16", "lever": "insta", "idea": "A product led reel once a week with the product link in the first line of the caption, and Stories with the sale countdown", "status": "idea", "y": 0, "proof": "Link clicks and orders per post (Social page)", "when": "Ongoing", "why": "Our best channel. Madhu decides what to post; the agent only reads the numbers.", "cost": "Free", "who": "Madhu", "first": "28 Oct 2026, ROADMAP T1"},
+  {"id": "G17", "lever": "insta", "idea": "Tag every reel link so a sale can be traced to the reel that caused it", "status": "running", "y": 0, "proof": "Posts with a link and their orders (Social page)", "when": "Ongoing", "why": "Link clicks and orders are known for only some posts.", "cost": "Free", "who": "Agent", "first": "29 Oct 2026, business plan 2.7.7"},
+  {"id": "G18", "lever": "insta", "idea": "Gift pieces to 3 to 5 small creators in Bangalore and Chennai, no fee", "status": "idea", "y": 1, "proof": "Visits and orders from creator posts (Channels page)", "when": "After 30 Nov", "why": "A creator's post brings people who trust the poster.", "cost": "The pieces gifted", "who": "Madhu and owner", "first": "28 Oct 2026, ROADMAP T1"},
+  {"id": "G19", "lever": "insta", "idea": "A bio link that goes straight to the product or collection from the post ('shop the reel' page)", "status": "idea", "y": 1, "proof": "Add to bag rate from Instagram (Channels page)", "when": "Test with the next reels", "why": "Only 28% of home page visitors were engaged on 28 Oct, and most Instagram visitors land on the home page and leave. The bio link rule says home page, so this needs your decision.", "cost": "Free", "who": "Owner decides", "first": "28 Oct 2026, ROADMAP C3"},
+  {"id": "G20", "lever": "insta", "idea": "Instagram product tags and the Meta shop", "status": "parked", "y": 0, "proof": "Eligibility status (weekly report)", "when": "The day Meta opens it", "why": "Meta says we are not eligible in India yet. Checked every week.", "cost": "Free", "who": "Agent checks weekly", "first": "T317, ROADMAP section 2"},
+  {"id": "G21", "lever": "insta", "idea": "Read each week which topic, format and hour reach most (numbers only)", "status": "running", "y": 0, "proof": "Average reach by topic (Social page)", "when": "Every Saturday", "why": "The 'What works' table on the Social page averages reach by topic, format, hour and channel.", "cost": "Free", "who": "Agent", "first": "29 Oct 2026, analysis plan"},
+  {"id": "G22", "lever": "search", "idea": "Write for phrases that are rising where we do not show up yet (for example embroidered skirt)", "status": "idea", "y": 0, "proof": "Search clicks for that phrase (Search page)", "when": "Next guides", "why": "The Search and market page lists rising phrases where we have no impressions.", "cost": "Free", "who": "Agent", "first": "29 Oct 2026, market signal"},
+  {"id": "G23", "lever": "search", "idea": "Press pitches to fashion editors and roundup writers each week, for free coverage only", "status": "running", "y": 0, "proof": "Links won and replies (links count is in the Sheet, not on the dashboard yet)", "when": "Reply check 4 Nov", "why": "AI tools copy from pages that list brands. Sent on 1 Nov: The Nod, The Hindu, Cosmopolitan India.", "cost": "Free", "who": "Agent", "first": "28 Oct 2026, ROADMAP 1.2b, T524"},
+  {"id": "G24", "lever": "search", "idea": "Qwoted: answer journalists' requests as an expert", "status": "running", "y": 0, "proof": "Requests answered and links won (task list)", "when": "Check 3 Nov", "why": "Free route to quotes in articles. One week trial.", "cost": "Free", "who": "Agent", "first": "27 Oct 2026, T524"},
+  {"id": "G25", "lever": "search", "idea": "Listings, directories and guest posts: Crunchbase, Trustpilot, From The Labels, D2C Bazaar, ScoutLoft, Women in Business India, fashion blogs", "status": "running", "y": 0, "proof": "Referral visits and links (Channels page)", "when": "Ongoing", "why": "Every real link helps Google, Bing and the AI tools trust the brand.", "cost": "Free", "who": "Agent and Madhu", "first": "T442, T514, communities guide"},
+  {"id": "G26", "lever": "search", "idea": "Fix Bing and AI search: submit the site, win 20 real links, keep the Knowledge Base current", "status": "running", "y": 0, "proof": "Visits from AI assistants (Growth and Channels pages)", "when": "Every Thursday", "why": "AI assistants sent 17 visits in 28 days. ChatGPT and Copilot lean on Bing, which knew 0 links to us on 28 Oct.", "cost": "Free", "who": "Agent", "first": "28 Oct 2026, ROADMAP 1.2b"},
+  {"id": "G27", "lever": "search", "idea": "A 'Best of' page for each collection that names the product, price, fabric and delivery in plain sentences", "status": "idea", "y": 0, "proof": "Visits from AI assistants; named in the weekly AI check", "when": "After the guide queue", "why": "AI tools answer shopper questions from pages like this.", "cost": "Free", "who": "Agent", "first": "28 Oct 2026, ROADMAP 1.2b step 3"},
+  {"id": "G28", "lever": "search", "idea": "ChatGPT product file (waiting for OpenAI to approve it)", "status": "parked", "y": 0, "proof": "Visits from AI assistants (Growth page)", "when": "When OpenAI approves", "why": "The file is rebuilt by script; the upload is Madhu's.", "cost": "Free", "who": "Madhu", "first": "T457, ROADMAP section 2"},
+  {"id": "G29", "lever": "search", "idea": "Google Shopping free listings", "status": "running", "y": 0, "proof": "Google shop listing clicks (Search page)", "when": "Close when it passes 200 a month", "why": "Feed approved for all 50 items, but Google rarely shows us yet: 39 impressions and 0 clicks in 90 days. It waits for sales history and reviews.", "cost": "Free", "who": "Agent", "first": "T613, T528"},
+  {"id": "G30", "lever": "search", "idea": "YouTube Shorts: every Instagram reel also goes up as a Short", "status": "running", "y": 0, "proof": "YouTube views and orders from YouTube (Social and Channels pages)", "when": "Ongoing", "why": "YouTube had 39,307 views in 28 days but 111 visits and 0 orders.", "cost": "Free", "who": "Agent", "first": "28 Oct 2026, ROADMAP T2"},
+  {"id": "G31", "lever": "search", "idea": "Pinterest pins and reel pins: slow, but searchable for months", "status": "running", "y": 0, "proof": "Pinterest impressions and clicks (Social page)", "when": "Ongoing", "why": "14,838 impressions and 4 visits in 28 days.", "cost": "Free", "who": "Agent", "first": "28 Oct 2026, ROADMAP T2"},
+  {"id": "G32", "lever": "search", "idea": "Daily posts on Threads, Facebook, LinkedIn and Mastodon, plus one community post a day on Threads", "status": "running", "y": 0, "proof": "Reach per channel (Social page)", "when": "Every night", "why": "Cheap and automatic. 41 visits from Facebook and Threads and 34 from LinkedIn in 28 days.", "cost": "Free", "who": "Agent", "first": "14 Oct 2026, posting plan"},
+  {"id": "G33", "lever": "search", "idea": "Communities and groups: Bangalore women's groups and founder communities", "status": "running", "y": 0, "proof": "Views of group posts (Social page)", "when": "Ongoing", "why": "Five Facebook groups hold our post for an admin. Posts are made as Madhu's profile.", "cost": "Free", "who": "Agent and Madhu", "first": "31 Oct 2026, communities guide"},
+  {"id": "G34", "lever": "search", "idea": "Reddit: comments are hidden, one appeal planned", "status": "parked", "y": 0, "proof": "Comments visible (task list)", "when": "Second appeal 4 Nov", "why": "Reddit and Crunchbase are backlink sources only, never promoted.", "cost": "Free", "who": "Agent", "first": "T635"},
+  {"id": "G35", "lever": "search", "idea": "YouTube Shopping: tag our products under the Shorts", "status": "parked", "y": 0, "proof": "Subscribers (Social page)", "when": "At 500 subscribers or 31 Jan 2027", "why": "Needs 500 to 1,000 subscribers. The channel had 15 on 31 Oct.", "cost": "Free", "who": "Agent", "first": "31 Oct 2026, ROADMAP section 4"},
+  {"id": "G36", "lever": "search", "idea": "YouTube ad money (monetisation)", "status": "parked", "y": 1, "proof": "Not applicable", "when": "Not planned", "why": "Not a goal for now.", "cost": "Free", "who": "Owner decides", "first": "31 Oct 2026"},
+  {"id": "G37", "lever": "shop", "idea": "Fix the checkout leak: 42 people began checkout and 7 paid", "status": "running", "y": 0, "proof": "Checkout to paid percent (Funnel page)", "when": "Now", "why": "The biggest leak we can fix for free. Shipping is free, so the likely causes are trust at payment, the Razorpay warning, and the form. At 10 points better, about 4 more orders in 28 days (Forecast page, levers).", "cost": "Free", "who": "Agent and owner", "first": "28 Oct 2026, ROADMAP C1, T754"},
+  {"id": "G38", "lever": "shop", "idea": "Resolve the Razorpay warning that a buyer saw while paying", "status": "approved", "y": 0, "proof": "Checkout to paid percent (Funnel page)", "when": "You said go on 2 Nov", "why": "A friend saw a 'suspicious business' warning at payment. This can kill sales at the last step.", "cost": "Free", "who": "Owner gives access, agent sets up", "first": "27 Oct 2026, T707"},
+  {"id": "G39", "lever": "shop", "idea": "Trust near the buy button: delivery date, exchange rule, founder line, reviews", "status": "idea", "y": 1, "proof": "Add to bag to checkout rate (Funnel page)", "when": "After the first deliveries", "why": "New brand with 24 reviews. A page change, so you approve it first.", "cost": "Free", "who": "Agent builds, owner approves", "first": "28 Oct 2026, ROADMAP C4"},
+  {"id": "G40", "lever": "shop", "idea": "Test the product page one change at a time: size guide above the fold, video first, price line", "status": "idea", "y": 1, "proof": "Add to cart rate (Overview and Funnel pages)", "when": "After the design round (T236)", "why": "Add to bag is about 2.7% of product viewers; small fashion shops see 3 to 8%.", "cost": "Free", "who": "Agent builds, owner approves", "first": "28 Oct 2026, ROADMAP C2"},
+  {"id": "G41", "lever": "shop", "idea": "Reviews: ask every delivered buyer and show them on the page; 100 by March, 50 written reviews for Google stars", "status": "running", "y": 0, "proof": "Reviews published (History page, Review numbers)", "when": "As deliveries land", "why": "24 reviews published, 4.71 average (Judge.me Free).", "cost": "Free", "who": "Agent (runs by itself)", "first": "ROADMAP R3"},
+  {"id": "G42", "lever": "shop", "idea": "Ask buyers for a photo with their review (the Judge.me media reminder is OFF)", "status": "idea", "y": 1, "proof": "Reviews with photos (not tracked yet)", "when": "After the thank you offer is decided", "why": "A buyer's own photo is the best proof for a new brand.", "cost": "Free", "who": "Agent sets up, you approve the email", "first": "1 Nov 2026, growth list"},
+  {"id": "G43", "lever": "shop", "idea": "Make the home page fast on a phone", "status": "running", "y": 0, "proof": "Speed numbers (History page)", "when": "Ongoing", "why": "Slow phone loads lose visitors. The loader was reworked on 30 Oct.", "cost": "Free", "who": "Agent", "first": "29 Oct 2026, T772"},
+  {"id": "G44", "lever": "shop", "idea": "Answer the size question before it is asked", "status": "idea", "y": 0, "proof": "Size questions and exchanges (Sizes page; exchange reasons need Madhu's tags)", "when": "Ongoing", "why": "Madhu hears about 2 to 3 size questions a week. The size guide and the cm and inch switch are built.", "cost": "Free", "who": "Madhu and agent", "first": "31 Oct 2026, meeting with Madhu"},
+  {"id": "G45", "lever": "shop", "idea": "Ready to ship pieces: Mirchi and Tamasha arrive in 3 to 7 days, Express Rs. 120", "status": "running", "y": 0, "proof": "Orders per product (Products page)", "when": "Temporary; review on 30 Nov", "why": "Made to order pieces take about 20 days. Compare how the two sell.", "cost": "Free", "who": "Agent", "first": "28 Oct 2026, T721"},
+  {"id": "G46", "lever": "shop", "idea": "Diwali sale, 30% off until 30 Nov", "status": "running", "y": 0, "proof": "Orders on the sale days (Overview page)", "when": "Ends 30 Nov", "why": "Running now; it ends on 30 Nov.", "cost": "Margin given away", "who": "Agent (switch)", "first": "22 Oct 2026"},
+  {"id": "G47", "lever": "shop", "idea": "Madras Theory prices after the sale", "status": "parked", "y": 1, "proof": "Net sales and orders after 30 Nov (Overview page)", "when": "Decide by 28 Nov", "why": "Jig Jig stays at its pay prices; Madras Theory returns to its earlier prices unless you change the plan.", "cost": "Money", "who": "Owner decides", "first": "T567"},
+  {"id": "G48", "lever": "shop", "idea": "Test a higher price where we sit far below the market: dresses are 40% under the sample median", "status": "idea", "y": 1, "proof": "Orders and net sales per product after the change (Products page)", "when": "After the sale", "why": "The Search and market page compares our middle price with 3 competitor shops that lean premium. A small sample.", "cost": "None, but it changes prices", "who": "Owner decides", "first": "29 Oct 2026, price position"},
+  {"id": "G49", "lever": "shop", "idea": "Fill range gaps: co-ord sets (147 items on the market, none of ours)", "status": "idea", "y": 1, "proof": "Range gaps (Search page)", "when": "When Madhu can plan a batch", "why": "Tops, skirts and dresses are covered.", "cost": "New stock", "who": "Madhu and owner", "first": "29 Oct 2026, range gaps"},
+  {"id": "G50", "lever": "shop", "idea": "Collection 3: a new fabric story", "status": "parked", "y": 1, "proof": "Orders per collection (Products page)", "when": "When ready", "why": "Announced when ready.", "cost": "New stock", "who": "Madhu and owner", "first": "ROADMAP 1.6"},
+  {"id": "G51", "lever": "shop", "idea": "Order small batches and reorder what sells", "status": "idea", "y": 1, "proof": "Reorder plan (Sizes page)", "when": "When Madhu gives the lead time", "why": "Needs the supplier lead time and the smallest batch from Madhu.", "cost": "Stock", "who": "Madhu", "first": "29 Oct 2026, T770"},
+  {"id": "G52", "lever": "shop", "idea": "Bundles and 'complete the look'", "status": "parked", "y": 0, "proof": "Products bought together (Customers page)", "when": "When there are more products", "why": "Needs more products first. The basket table shows what is bought together.", "cost": "Free", "who": "Agent", "first": "ROADMAP 1.6"},
+  {"id": "G53", "lever": "shop", "idea": "A gift section for Diwali and weddings", "status": "parked", "y": 1, "proof": "Orders in the gift section (Overview page)", "when": "Before the next season", "why": "Seasonal. A shop change, so you approve it first.", "cost": "Free", "who": "Agent builds, owner approves", "first": "ROADMAP 1.6"},
+  {"id": "G54", "lever": "shop", "idea": "More design ideas: reels shown inside the site, a story section on each product page, a WhatsApp chat icon, more photos in the home strip", "status": "idea", "y": 1, "proof": "Add to bag rate and engaged visits (Funnel page)", "when": "When you open a design session", "why": "Held for the design round (T236). Every change is shown to you first.", "cost": "Free", "who": "Agent builds, owner approves", "first": "13 Oct 2026, T236; strip photos added 1 Nov"},
+  {"id": "G55", "lever": "later", "idea": "Meta retargeting with the Rs. 4,000 credit: Rs. 300 a day for 14 days", "status": "parked", "y": 1, "proof": "Orders from Meta (Channels page)", "when": "When the trigger is met", "why": "Starts when checkout to paid is above 25% and you say yes. Today it is 16.7%.", "cost": "Ad money", "who": "Owner decides", "first": "ROADMAP P1"},
+  {"id": "G56", "lever": "later", "idea": "Google Shopping and Performance Max ads, Rs. 300 to 500 a day", "status": "parked", "y": 1, "proof": "Orders from Google ads (Channels page)", "when": "When the trigger is met", "why": "Starts at about 20 orders in 28 days, aiming for Rs. 3 back for each Rs. 1 spent.", "cost": "Ad money", "who": "Owner decides", "first": "ROADMAP P2"},
+  {"id": "G57", "lever": "later", "idea": "Paid influencer posts", "status": "parked", "y": 1, "proof": "Orders from creator posts (Channels page)", "when": "After gifting is read", "why": "Only after gifting to creators shows a result.", "cost": "Ad money", "who": "Owner decides", "first": "ROADMAP P4"},
+  {"id": "G58", "lever": "later", "idea": "Flea market weekend", "status": "parked", "y": 1, "proof": "Sign ups and orders that weekend", "when": "A clear yes and a date", "why": "A paid event with a QR code and a sign up sheet.", "cost": "A stall fee", "who": "Owner decides", "first": "T119, ROADMAP section 2"},
+  {"id": "G59", "lever": "later", "idea": "Wholesale or stockists", "status": "parked", "y": 1, "proof": "Wholesale orders (not tracked)", "when": "When there is capacity", "why": "Needs capacity to make more.", "cost": "Stock", "who": "Owner and Madhu", "first": "ROADMAP 1.6"},
+  {"id": "G60", "lever": "later", "idea": "Marketplaces such as Myntra", "status": "parked", "y": 1, "proof": "Marketplace orders (not tracked)", "when": "Only if you ask", "why": "You said no to Myntra.", "cost": "Fees and stock", "who": "Owner decides", "first": "T120"},
+  {"id": "G61", "lever": "later", "idea": "Shipping abroad on request", "status": "parked", "y": 1, "proof": "Orders outside India (Customers page, states)", "when": "When enquiries come", "why": "Done by hand today. Opening it fully means rates, rules and tax checks.", "cost": "Shipping costs", "who": "Owner decides", "first": "Store facts; change triggers"},
+  {"id": "G62", "lever": "later", "idea": "Pinterest Verified Merchant Program", "status": "parked", "y": 0, "proof": "Pinterest clicks (Social page)", "when": "When Pinterest opens it and the account is 3 months old", "why": "Pinterest has not opened it in India.", "cost": "Free", "who": "Agent", "first": "ROADMAP section 4"},
+];
 
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
    the one file build (docs/reports/dashboard/mazo-dashboard.html) never uses any of this. Plan and design: docs/guides/robust-data-and-hosting-plan.md, scripts/site_crypto.py.
