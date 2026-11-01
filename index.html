@@ -504,6 +504,231 @@ body.detail-on #fsroot .card.fs{padding-right:var(--s6)}
 }
 @media (pointer:coarse){.tbl-q{height:44px}.btn.sm{height:40px}}
 @media print{.subnav,.gsearch,.tbl-tools,.tbl-more,.detail,.fs-ctl,.fold-hint{display:none!important}.fold>*{display:block!important}.fold>summary{display:block}.fold>summary::after{display:none}}
+
+/* mazo dashboard design layer (T817, 1 Nov 2026). Loads after dashboard.css and wins over it. Rules, in plain words (the long version is docs/guides/dashboard-design.md):
+   1. One set of sizes: spacing 4/8/12/16/24/32, type 12/13/14/16/20/28/36, radius 8/12/16, one soft shadow for cards and one for floating panels.
+   2. Every button, select and field is 40px high (44px on a touch screen) with the icon and the label on the same centre line and equal padding left and right.
+   3. A floating panel (date, filters, chart tools) is never clipped and never under the sidebar: it is placed by the page script inside the space beside the sidebar, and on a narrow screen it is a sheet from the bottom.
+   4. Figures are tabular, headline cards carry a number, its change and one plain line, nothing that is only decoration.
+   5. The mustard focus ring is #B07414 (3.9:1 on white; the brand mustard #C8892A is 2.97:1 and too faint for an outline). */
+:root{
+  --sp1:4px; --sp2:8px; --sp3:12px; --sp4:16px; --sp5:24px; --sp6:32px;
+  --rad1:8px; --rad2:12px; --rad3:16px;
+  --t12:12px; --t13:13px; --t14:14px; --t16:16px; --t20:20px; --t28:28px; --t36:36px;
+  --edge:#ECE5DC; --edge2:#D9D0C4; --ring:#B07414;
+  --elev1:0 1px 2px rgba(42,42,42,.05);
+  --elev2:0 2px 6px rgba(42,42,42,.06),0 16px 40px rgba(42,42,42,.14);
+  --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23595959' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E");
+  --cal:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23595959' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='5' width='17' height='15' rx='3'/%3E%3Cpath d='M8 3.5v3M16 3.5v3M3.5 10h17'/%3E%3C/svg%3E");
+}
+body{font-size:var(--t14);font-variant-numeric:tabular-nums}
+:focus-visible{outline-color:var(--ring)!important}
+#rail :focus-visible{outline-color:var(--cream)!important}
+svg{flex-shrink:0}
+
+/* ---------- buttons: icon and label on one centre line ---------- */
+.tbtn,.btn,.btn.sm,.seg button,.menu-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--sp2);min-height:40px;height:40px;padding:0 var(--sp4);line-height:1;white-space:nowrap;font-size:var(--t14);font-weight:500;letter-spacing:0}
+.tbtn svg,.btn svg,.ibtn svg,.info svg,.chip svg,.link svg{display:block}
+.tbtn{justify-content:flex-start;padding:0 var(--sp3)}
+.tbtn .ic,.btn .ic{width:18px;height:18px;flex:0 0 18px;stroke:none}
+.tbtn .chev{width:16px;height:16px;flex-basis:16px;margin-left:var(--sp1)}
+.tbtn .bt{line-height:1.2}
+.btn{border:1px solid var(--edge2);background:#fff;color:var(--ink);border-radius:var(--rad1)}
+.btn .ic{color:var(--maroon);stroke:none}
+.btn:hover{background:var(--wash);border-color:#C4B8A9}
+.btn.on{background:var(--maroon);border-color:var(--maroon);color:#fff}
+.btn.on .ic{color:#fff}
+.btn.sm{padding:0 var(--sp3)}
+.btn.sm .ic{width:18px;height:18px}
+.tbtn{border-color:var(--edge2)}
+.seg{border-color:var(--edge2);border-radius:var(--rad1)}
+.seg button{border-radius:0;min-height:40px;padding:0 var(--sp4)}
+.ibtn{border-radius:var(--rad1);width:40px;height:40px}
+.card.has-tools>h3{padding-right:100px}
+.ctools{top:var(--sp3);right:var(--sp3)}
+.ibtn .ic{width:20px;height:20px;display:block}
+.info{display:inline-flex;align-items:center;justify-content:center}
+.chip{box-sizing:border-box;border-color:var(--edge2);line-height:1}
+.chip .ic{display:block}
+.badge-n{line-height:1}
+.fs-close{padding:0 var(--sp4) 0 var(--sp3)}
+
+/* ---------- fields: one height, one arrow, text never touches the arrow ---------- */
+select,.fld select,.tsec select,.fs-ctl .fld select{-webkit-appearance:none;appearance:none;height:40px;border:1px solid var(--edge2);border-radius:var(--rad1);background-color:#fff;background-image:var(--chev);background-repeat:no-repeat;background-position:right var(--sp3) center;background-size:16px 16px;padding:0 40px 0 var(--sp3);font-size:var(--t14);color:var(--ink);text-overflow:ellipsis;cursor:pointer}
+select:hover,input[type=date]:hover,.tbl-q:hover{border-color:#B7AB9B}
+select:disabled{opacity:.55;cursor:not-allowed}
+input[type=date],.fld input[type=date],.tsec input[type=date],.fs-ctl .fld input[type=date]{height:40px;border:1px solid var(--edge2);border-radius:var(--rad1);background-color:#fff;padding:0 var(--sp3);font-size:var(--t14);color:var(--ink);min-width:0}
+@supports selector(::-webkit-calendar-picker-indicator){
+  input[type=date]{position:relative;background-image:var(--cal);background-repeat:no-repeat;background-position:right var(--sp3) center;background-size:16px 16px;padding-right:40px}
+  input[type=date]::-webkit-calendar-picker-indicator{position:absolute;right:0;top:0;width:40px;height:100%;opacity:0;cursor:pointer}
+}
+select:focus-visible,input:focus-visible{outline:2px solid var(--ring);outline-offset:1px;border-color:var(--maroon)}
+.tbl-q,.gs-in{height:40px;border:1px solid var(--edge2);border-radius:var(--rad1);font-size:var(--t14)}
+.fld label,.tsec .tl{font-size:var(--t12);font-weight:600;color:var(--ink2);letter-spacing:.02em}
+.tsec .tl{text-transform:uppercase;letter-spacing:.05em}
+.gs-ic{top:10px;left:12px;width:18px;height:18px;display:block}
+.gs-in{padding:0 40px 0 38px}
+.gs-key{top:9px;right:10px;height:22px;border-radius:6px;background:#fff}
+
+/* ---------- sidebar: wordmark, six items with an icon each, selection by fill and weight ---------- */
+.rail-top{padding:var(--sp5) var(--sp5) var(--sp4)}
+.brand-sub{font-size:var(--t12);color:#E3D6CC;letter-spacing:.03em}
+#nav{padding:var(--sp2) var(--sp3) var(--sp5)}
+.toplist{gap:var(--sp1)}
+#nav a{display:flex;align-items:center;gap:var(--sp3);min-height:40px;padding:0 var(--sp3);border-radius:10px;font-size:var(--t14);font-weight:500;color:#EBDDD2;position:relative}
+#nav a .nav-ic{width:20px;height:20px;flex:0 0 20px;stroke:none;color:#D4BCAC;display:block;transition:color .15s var(--ease)}
+#nav a:hover{background:rgba(240,237,231,.08);color:#fff}
+#nav a:hover .nav-ic{color:#fff}
+#nav a[aria-current="page"]{background:rgba(240,237,231,.15);color:#fff;font-weight:600}
+#nav a[aria-current="page"]::before{content:none;display:none}
+#nav a[aria-current="page"] .nav-ic{color:var(--mustard)}
+@media (pointer:coarse){#nav a{min-height:44px}}
+
+/* ---------- toolbar: one clean row ---------- */
+#controls{background:var(--paper);-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom:1px solid var(--edge);padding:var(--sp3) var(--sp6)}
+.toolrow{gap:var(--sp2) var(--sp3);align-items:center}
+.sw{min-height:40px;font-size:var(--t14)}
+.gsearch{margin-left:auto}
+.sw-short{display:none}
+.fresh{display:none;font-size:var(--t12);color:var(--ink2);white-space:nowrap;margin-left:var(--sp2);border-radius:4px}
+@media (min-width:1340px){.fresh{display:inline-block}.fresh-foot{display:none}}
+.fresh-foot{display:block;margin:0 0 var(--sp1)}
+#foot{padding-top:var(--sp4);border-top:1px solid var(--edge);margin-top:var(--sp5);max-width:none}
+#foot p{margin:var(--sp1) 0;font-size:var(--t12);line-height:1.6}
+
+/* ---------- floating panels: placed by script, a sheet from the bottom on narrow screens ---------- */
+.popover{border:1px solid var(--edge);border-radius:var(--rad3);box-shadow:var(--elev2);padding:var(--sp4) var(--sp4) var(--sp4);gap:var(--sp3)}
+.pop-head,.pop-done{display:none}
+.pop-done{align-items:center;justify-content:center;width:100%;min-height:44px;margin-top:var(--sp1);border:0;border-radius:999px;background:var(--maroon);color:var(--cream);font:600 var(--t14)/1 var(--sans);cursor:pointer}
+.pop-done:hover{background:#7A1A06}
+.pop-foot{align-items:center;justify-content:space-between;gap:var(--sp3);padding-top:var(--sp2);border-top:1px solid var(--edge);margin-top:var(--sp1)}
+body.pop-open::after{content:none}
+@media (max-width:900px){
+  .popover,.pop-right,.ctool-pop{position:fixed!important;left:var(--sp3)!important;right:var(--sp3)!important;bottom:var(--sp3)!important;top:auto!important;width:auto!important;max-height:min(78vh,600px);overflow-y:auto;border-radius:var(--rad3);z-index:60;box-shadow:0 -8px 40px rgba(42,42,42,.28)}
+  .pop-head{display:block;position:relative;padding:var(--sp3) 0 var(--sp1);font:600 var(--t16)/1.3 var(--sans);color:var(--ink);text-align:left}
+  .pop-head::before{content:"";position:absolute;left:50%;top:-4px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--edge2)}
+  .pop-done{display:inline-flex}
+  body.pop-open::after{content:"";position:fixed;inset:0;background:rgba(42,42,42,.4);z-index:29}
+}
+
+/* ---------- the page: title, one line, cards ---------- */
+main{padding:var(--sp6) var(--sp6) 48px}
+#subnav:not([hidden])+main{padding-top:var(--sp5)}
+h2{font-size:var(--t28);line-height:1.25}
+.pg-head{margin-bottom:var(--sp5)}
+.pg-q{font-size:var(--t16);color:var(--ink2)}
+.card{border:1px solid var(--edge);border-radius:var(--rad3);padding:var(--sp5);box-shadow:var(--elev1)}
+.card>h3{font-size:var(--t16);line-height:1.35;margin-bottom:var(--sp1)}
+.card>.why,.card .why{font-size:var(--t14);color:var(--ink2);margin-bottom:var(--sp4)}
+.grid{gap:var(--sp5)}
+.note{border-radius:var(--rad2)}
+
+/* ---------- the tab strip under the toolbar: a calm segmented control ---------- */
+.subnav{background:transparent;border-bottom:0;padding:var(--sp4) var(--sp6) 0}
+.subnav-row{display:inline-flex;max-width:100%;gap:2px;padding:4px;margin:0;background:#EFE8DF;border-radius:var(--rad2)}
+.subnav a{min-height:36px;padding:0 var(--sp4);border-bottom:0;border-radius:var(--rad1);font-size:var(--t14);font-weight:500;color:var(--ink2)}
+.subnav a:hover{background:rgba(255,255,255,.6);color:var(--maroon)}
+.subnav a[aria-current="page"]{background:#fff;color:var(--maroon);font-weight:600;box-shadow:0 1px 2px rgba(42,42,42,.12)}
+@media (pointer:coarse){.subnav a{min-height:44px}}
+
+/* ---------- headline cards: label, figure, change chip, one plain line (no decoration) ---------- */
+.kpis{gap:var(--sp4);margin:var(--sp4) 0 var(--sp5)}
+.kpi{padding:20px var(--sp5);border:1px solid var(--edge);border-radius:var(--rad3);box-shadow:var(--elev1);gap:0;justify-content:flex-start}
+.kpi .l{font-size:var(--t14);font-weight:500;color:var(--ink2);margin-bottom:var(--sp2);line-height:1.35}
+.kpi .v{font-size:clamp(22px,12cqw,32px);font-weight:600;line-height:1.1;letter-spacing:-.015em;color:var(--maroon)}
+.kpi .d{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp1) var(--sp2);margin-top:var(--sp2);min-height:24px;font-size:var(--t12);color:var(--ink2);line-height:1.4}
+.kpi .chip-d{align-self:auto;padding:2px var(--sp2);border-radius:999px;font-size:var(--t12);font-weight:600;line-height:1.4}
+.kpi .vs{color:var(--ink2)}
+.kpi .ctx{margin-top:var(--sp1);font-size:var(--t12);line-height:1.45;color:var(--ink2)}
+.kpi.hero{padding:var(--sp5) 28px}
+.kpi.hero .l{font-size:var(--t16);color:var(--ink)}
+.kpi.hero .v{font-size:clamp(28px,13cqw,var(--t36))}
+.kpis.rates .kpi{padding:var(--sp4) var(--sp5)}
+.kpis.rates .v{font-size:clamp(20px,9cqw,24px)}
+.kpi.na{background:#FDFBF8;border-style:dashed;border-color:var(--edge2);box-shadow:none}
+.kpi.na .na-row{display:flex;align-items:flex-start;gap:var(--sp2);margin-top:2px}
+.kpi.na .kpi-ic{width:18px;height:18px;margin-top:1px;color:#A0968A;stroke:none;display:block}
+.kpi.na .v{font-size:var(--t14);font-weight:500;color:var(--ink);letter-spacing:0;white-space:normal;line-height:1.4}
+.kpi.na .ctx{margin-top:var(--sp2)}
+
+/* ---------- tables: 44px rows, soft header, quiet hover ---------- */
+.tw{border:1px solid var(--edge);border-radius:var(--rad2)}
+th,td{padding:0 var(--sp3);height:44px;border-bottom:1px solid #F1EBE3}
+th{height:40px;background:#FBF8F4;color:var(--ink2);font-size:var(--t12);font-weight:600;letter-spacing:.02em;border-bottom:1px solid var(--edge)}
+td.wrap{padding-top:var(--sp2);padding-bottom:var(--sp2);height:auto}
+tbody tr:nth-child(even) td{background:transparent}
+tbody tr:hover td{background:#FBF8F4}
+tr.click:hover td,tr.rowdetail:hover td{background:var(--wash)}
+th button{min-height:40px}
+td.n,th.n{font-variant-numeric:tabular-nums}
+@media (pointer:coarse){th,td{padding:0 var(--sp3)}td.wrap{padding:var(--sp3)}}
+
+/* ---------- empty, error and loading states ---------- */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp2);padding:var(--sp6) var(--sp5);border:1px dashed var(--edge2);border-radius:var(--rad2);background:#FDFBF8;color:var(--ink2);font-size:var(--t14);text-align:center}
+.empty .empty-ic{width:28px;height:28px;color:#A0968A;stroke:none;display:block}
+.empty .empty-t{color:var(--ink);font-weight:500;line-height:1.45}
+.empty .hint{display:block;margin:0;font-size:var(--t13);color:var(--ink2);line-height:1.45}
+.empty .btn{margin-top:var(--sp2)}
+.empty+.btn,.empty.err+.btn{margin:var(--sp3) 0 var(--sp4)}
+#foot .link{font-size:inherit;min-height:0}
+@media (pointer:coarse),(max-width:640px){#foot .link{min-height:44px;padding:0 var(--sp2)}}
+.empty.err{border-color:#E9C6B7;background:#FDF5F1}
+.empty.err .empty-ic{color:var(--terra)}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+body #lazybar{display:flex;align-items:center;gap:var(--sp3);padding:var(--sp3) var(--sp5) var(--sp3) var(--sp4);border-radius:999px;font-size:var(--t14);font-weight:500;color:#fff;background:linear-gradient(90deg,#2A2A2A 0,#4A4140 45%,#2A2A2A 90%);background-size:200% 100%;animation:shimmer 1.6s linear infinite;box-shadow:var(--elev2)}
+body #lazybar::before{content:"";width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+main[aria-busy="true"]{opacity:.5;transition:opacity .2s var(--ease)}
+body:has(main[aria-busy="true"])::before{content:"";position:fixed;left:0;right:0;top:0;height:3px;z-index:100;background:linear-gradient(90deg,transparent,var(--mustard),transparent);background-size:200% 100%;animation:shimmer 1.2s linear infinite}
+
+/* ---------- full screen bar ---------- */
+.fs-head h2{font-size:var(--t20)}
+.fs-ctl{border-radius:var(--rad2);background:#F6F1EA;gap:var(--sp3) var(--sp4)}
+.fs-bar{border-bottom:1px solid var(--edge)}
+
+/* ---------- tablet and phone ---------- */
+@media (max-width:1023px){
+  #controls{padding:var(--sp3) var(--sp5)}
+  main{padding:var(--sp5) var(--sp5) 48px}
+  .subnav{padding:var(--sp3) var(--sp5) 0}
+  .gsearch{flex:1 1 240px;max-width:none;margin-left:0}
+}
+@media (max-width:640px){
+  #controls{padding:var(--sp2) var(--sp4)}
+  .toolrow{gap:var(--sp2)}
+  .menu-btn{order:1;flex:0 0 auto;max-width:44%;padding:0 var(--sp3)}
+  .tp-date{order:2;flex:1 1 130px;min-width:0}
+  .tp-date .tbtn{width:100%}
+  .tp-fil{order:3;flex:0 0 auto}
+  .tp-fil .tbtn{padding:0 var(--sp3)}
+  #fil-btn .bt,#fil-btn .chev{display:none}
+  .sw{order:4;width:auto;flex:0 0 auto;padding:0;min-height:44px}
+  .sw-long{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .sw-short{display:inline}
+  .gsearch{order:5;flex:1 1 150px;min-width:0;max-width:none;margin-left:0}
+  .subnav{padding:var(--sp2) var(--sp4) 0}
+  .subnav-row{display:flex;overflow-x:auto}
+  main{padding:var(--sp4) var(--sp4) 48px}
+  .card{padding:var(--sp4)}
+  .kpi{padding:var(--sp3) var(--sp4)}
+  .kpi.hero{padding:var(--sp4)}
+  .kpi .v{font-size:clamp(20px,7vw,26px)}
+  .kpi.hero .v{font-size:clamp(28px,10vw,var(--t36))}
+  #foot{padding:var(--sp4) var(--sp4) var(--sp6)}
+}
+@media (pointer:coarse),(max-width:640px){
+  .info{width:44px;height:44px}
+  .link{min-height:44px}
+  summary,.tbl-details summary,.fold>summary{min-height:44px}
+  th button{min-width:44px;min-height:44px}
+  .tbtn,.btn,.btn.sm,.seg button,select,.tbl-q,.gs-in,input[type=date]{min-height:44px;height:44px}
+  select,input[type=date],.gs-in,.tbl-q{font-size:16px}
+  .ibtn{width:44px;height:44px}
+  .gs-ic{top:13px}.gs-key{top:11px}
+}
+@media (forced-colors:active){.kpi,.card,.tw,.popover{border:1px solid CanvasText}}
+@media print{.fresh,.pop-head,.pop-done,.empty .btn{display:none!important}.kpi,.card{box-shadow:none}}
+
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
 #lock[hidden]{display:none}
@@ -541,6 +766,15 @@ body.detail-on #fsroot .card.fs{padding-right:var(--s6)}
   <symbol id="i-expand" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></g></symbol>
   <symbol id="i-more" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></g></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></g></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6.5 8 6.5v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></g></symbol>
+  <symbol id="i-sales" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 16.5l5.2-5.2 3.6 3.6 7.2-7.7M15.5 7.2h4v4"/></g></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c.6-3 3-4.8 5.5-4.8s4.9 1.8 5.5 4.8M16.2 5.2a3 3 0 0 1 0 5.6M17.5 14.9c1.7.6 2.8 2.1 3.2 4.1"/></g></symbol>
+  <symbol id="i-megaphone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 0 0 1 1h2l5.5 4V5L7 9H5a1 1 0 0 0-1 1zM16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10"/></g></symbol>
+  <symbol id="i-ops" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2zM4.2 7.3L12 11.5l7.8-4.2M12 11.5V21"/></g></symbol>
+  <symbol id="i-data" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.66 3.58 3 8 3s8-1.34 8-3V6M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/></g></symbol>
+  <symbol id="i-empty" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5" stroke-dasharray="2.6 3.1"/><path d="M8.5 12h7"/></g></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3zM12 10v4.5M12 17.5v.01"/></g></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></g></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></g></symbol>
 </svg>
 <div id="lock" hidden>
@@ -565,7 +799,6 @@ body.detail-on #fsroot .card.fs{padding-right:var(--s6)}
       <button type="button" class="rail-close" id="rail-close" aria-label="Close the page list"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <nav id="nav" aria-label="Pages"></nav>
-    <p id="cover" class="rail-foot" aria-live="polite"></p>
   </aside>
   <div id="stage">
     <div id="mobilebar"><svg class="wordmark" viewBox="0 0 430 124" role="img" aria-label="mazo"><use href="#mz-wordmark"/></svg><span class="brand-sub">Business dashboard</span></div>
@@ -1101,7 +1334,9 @@ M.fail = function (host, err) {
 M.empty = function (text, hint) {
   /* an empty state says what to do next (T807): a range that holds nothing points at the date menu */
   if (hint === undefined && /range|selected|selection/i.test(text) && !/could not be drawn/.test(text)) hint = 'Try a longer date range, or choose All time in the date menu.';
-  return M.h('div', { class: 'empty', role: 'status' }, [text, hint ? M.h('span', { class: 'hint', text: hint }) : null]);
+  /* T817: one designed empty state: a quiet icon, the sentence, the next step. A "could not" message gets the warning look. */
+  var bad = /could not|failed|error/i.test(text);
+  return M.h('div', { class: 'empty' + (bad ? ' err' : ''), role: 'status' }, [M.s('svg', { class: 'ic empty-ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#' + (bad ? 'i-alert' : 'i-empty') })]), M.h('span', { class: 'empty-t', text: text }), hint ? M.h('span', { class: 'hint', text: hint }) : null]);
 };
 M.note = function (text, warn) { return M.h('p', { class: 'note' + (warn ? ' warn' : ''), text: text }); };
 M.tag = function (text, cls) { return M.h('span', { class: 'tag' + (cls ? ' ' + cls : ''), text: text }); };
@@ -1284,17 +1519,27 @@ M.donut = function (parts, o) {
   return M.h('div', { style: 'display:flex;gap:1rem;align-items:center;flex-wrap:wrap' }, [svg, M.legend(parts.map(function (p, i) { return { name: p.name + ' ' + M.pct(p.value / tot * 100, 0), color: p.color || M.CAT[i] }; }))]);
 };
 
-/* scorecard with change and sparkline */
+/* scorecard (T817, 1 Nov 2026): label, big figure, the change against the previous period as a chip, and one plain context line. The small trend line that used to sit in
+   every card was decoration and is gone (the charts below show the trend with real axes). M.sparkline stays defined for any page that wants it. */
 M.kpi = function (o) {
-  // o: label, value (text), change (percent or null), goodUp (bool), note, spark {values,color}, na (text)
-  var d = M.h('div', { class: 'd flat' }), box = M.h('div', { class: 'kpi' + (o.na ? ' na' : '') + (o.hero ? ' hero' : '') }, [M.h('div', { class: 'l', text: o.label }), M.h('div', { class: 'v', text: o.na || o.value }), d]);
-  if (o.note) d.textContent = o.note;
-  if (o.change != null && !o.na) {
+  // o: label, value (text), change (percent or null), goodUp (bool), note, cmpNote, na (text)
+  var box = M.h('div', { class: 'kpi' + (o.na ? ' na' : '') + (o.hero ? ' hero' : '') }, [M.h('div', { class: 'l', text: o.label })]);
+  if (o.na) {
+    box.appendChild(M.h('div', { class: 'na-row' }, [M.s('svg', { class: 'ic kpi-ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#i-empty' })]), M.h('div', { class: 'v', text: o.na })]));
+    if (o.note) box.appendChild(M.h('div', { class: 'ctx nodata-why', text: o.note }));      /* same class the page hook M.kpiWhyAdd looks for, so the reason is never printed twice */
+    else if (/No data in this range/i.test(o.na)) box.appendChild(M.h('div', { class: 'ctx', 'data-ux': '1', text: 'Nothing is stored for these dates. Try a later range or All time.' }));
+    return box;
+  }
+  box.appendChild(M.h('div', { class: 'v', text: o.value }));
+  var d = M.h('div', { class: 'd' });
+  if (o.change != null) {
     var up = o.change > 0.5, down = o.change < -0.5, good = o.goodUp === false ? down : up, bad = o.goodUp === false ? up : down;
-    d.className = 'd chip-d ' + (good ? 'up' : bad ? 'down' : 'flat');
-    d.textContent = (up ? '▲ ' : down ? '▼ ' : '▬ ') + M.pct(Math.abs(o.change), 1) + ' vs previous period' + (o.note ? ' (' + o.note + ')' : '');
-  } else if (o.cmpNote) d.textContent = o.cmpNote + (o.note ? ' (' + o.note + ')' : '');
-  if (o.spark && o.spark.values.length > 1 && !o.na) box.appendChild(M.sparkline(o.spark.values, o.spark.color || M.COLORS.maroon, o.label));
+    d.appendChild(M.h('span', { class: 'chip-d ' + (good ? 'up' : bad ? 'down' : 'flat'), text: (up ? '▲ ' : down ? '▼ ' : '▬ ') + M.pct(Math.abs(o.change), 1) }));
+    d.appendChild(document.createTextNode(' '));
+    d.appendChild(M.h('span', { class: 'vs', text: 'vs previous period' }));
+  } else if (o.cmpNote) d.appendChild(M.h('span', { class: 'vs', text: o.cmpNote }));
+  if (d.firstChild) box.appendChild(d);
+  if (o.note) box.appendChild(M.h('div', { class: 'ctx', text: o.note }));
   return box;
 };
 
@@ -1328,7 +1573,7 @@ M.timeChart = function (host, w, o) {
   o.series.forEach(function (s) { all = all.concat(s.values); });
   if (o.prev) all = all.concat(o.prev.values);
   var raw = Math.max.apply(null, all.concat([0])), neg = Math.min.apply(null, all.concat([0]));
-  if (!n || (raw <= 0 && neg >= 0)) { host.appendChild(M.empty(o.empty || 'No activity in this range yet.')); return; }
+  if (!n || (raw <= 0 && neg >= 0)) { host.appendChild(o.emptyNode ? o.emptyNode() : M.empty(o.empty || 'No activity in this range yet.')); return; }      /* T817: emptyNode says WHY it is empty (the source starts later) and offers the click that shows the data */
   var ymax = M.nice(raw), ymin = neg < 0 ? -M.nice(-neg) : 0, yr = ymax - ymin;
   var G = M.chartGaps ? M.chartGaps(o) : null;      /* days with no stored row: hatched band, no bar, broken line (dashboard_08_gaps.js) */
   var X = function (i) { return L + (n === 1 ? pw / 2 : (i + 0.5) / n * pw); }, Y = function (v) { return T + ph - (v - ymin) / yr * ph; };
@@ -1627,6 +1872,7 @@ M.divBar = function (v, max, unit) {
 M.PRESETS = [['yesterday', 'Yesterday'], ['7d', 'Last 7 days'], ['28d', 'Last 28 days'], ['90d', 'Last 90 days'], ['mtd', 'This month'], ['lm', 'Last month'], ['ytd', 'This year'], ['all', 'All time'], ['custom', 'Custom range']];
 M.FILTERS = [['collection', 'Collection'], ['channel', 'Channel'], ['product', 'Product'], ['device', 'Device'], ['size', 'Size']];
 /* UX round (1 Nov 2026): six top items. Each top item holds a few pages shown as a tab strip (sub nav) above the page. Page ids and the address (#/funnel ...) are unchanged. */
+M.NAVICON = { Overview: 'i-home', Sales: 'i-sales', Customers: 'i-users', Marketing: 'i-megaphone', Operations: 'i-ops', Data: 'i-data' };
 M.GROUPS = [['Overview', ['overview']], ['Sales', ['funnel', 'products', 'sizes']], ['Customers', ['customers', 'gtm']], ['Marketing', ['channels', 'social', 'search']],
   ['Operations', ['forecast', 'functions']], ['Data', ['history', 'quality']]];
 M.groupOf = function (id) { for (var i = 0; i < M.GROUPS.length; i++) if (M.GROUPS[i][1].indexOf(id) >= 0) return M.GROUPS[i]; return M.GROUPS[0]; };
@@ -1638,17 +1884,37 @@ M.builtText = function () {
   return b.length >= 16 ? M.fd(b.slice(0, 10)) + ', ' + b.slice(11, 16) + ' IST' : 'unknown';
 };
 
-/* a small popover: a button that opens a panel under it. One open at a time; Escape and a click outside close it; focus returns to the button. */
+/* a small popover: a button that opens a panel under it. One open at a time; Escape and a click outside close it; focus returns to the button.
+   T817: on a wide screen the panel is placed inside the space beside the sidebar (never clipped, never under the sidebar or the toolbar edge); at 900px and below CSS turns it into a sheet from the bottom with a dim backdrop. */
+M.popPlace = null;
+M.popPlaceFor = function (btn, panel) {
+  if (window.innerWidth <= 900) { panel.style.left = panel.style.right = panel.style.maxHeight = ''; return; }
+  var st = document.getElementById('stage'), lo = (st ? st.getBoundingClientRect().left : 0) + 12, hi = window.innerWidth - 12;
+  var host = panel.offsetParent || btn.parentNode, hb = host.getBoundingClientRect(), bb = btn.getBoundingClientRect(), w = panel.offsetWidth;
+  var left = panel.classList.contains('pop-right') ? bb.right - w : bb.left;
+  left = Math.max(lo, Math.min(left, hi - w));
+  panel.style.left = Math.round(left - hb.left) + 'px'; panel.style.right = 'auto';
+  panel.style.maxHeight = Math.max(240, Math.round(window.innerHeight - bb.bottom - 24)) + 'px';
+};
+M.popDone = function (close) {
+  return M.h('button', { type: 'button', class: 'pop-done', text: 'Done', onclick: function () { close(true); M.popClose = null; document.body.classList.remove('pop-open'); } });
+};
 M.pop = function (btn, panel) {
-  var close = function (focus) { panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (focus) btn.focus(); };
+  var close = function (focus) { panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); document.body.classList.remove('pop-open'); if (M.popPlace && M.popPlace.panel === panel) M.popPlace = null; if (focus) btn.focus(); };
   btn.addEventListener('click', function () {
     var open = panel.hidden;
     M.popClose && M.popClose();
-    if (open) { panel.hidden = false; btn.setAttribute('aria-expanded', 'true'); M.popClose = function () { close(false); M.popClose = null; }; var f = panel.querySelector('select:not(:disabled), input:not(:disabled), button'); if (f) f.focus({ preventScroll: true }); }
+    if (open) {
+      panel.hidden = false; btn.setAttribute('aria-expanded', 'true'); document.body.classList.add('pop-open');
+      M.popClose = function () { close(false); M.popClose = null; };
+      M.popPlace = { panel: panel, btn: btn }; M.popPlaceFor(btn, panel);
+      var f = panel.querySelector('select:not(:disabled), input:not(:disabled), button'); if (f) f.focus({ preventScroll: true });
+    }
   });
   panel.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); close(true); M.popClose = null; } });
   return close;
 };
+window.addEventListener('resize', function () { if (M.popPlace) M.popPlaceFor(M.popPlace.btn, M.popPlace.panel); });
 
 M.buildControls = function () {
   var host = document.getElementById('controls'), c = M.ctl;
@@ -1669,11 +1935,12 @@ M.buildControls = function () {
   c.dateBtn = M.h('button', { type: 'button', class: 'tbtn', id: 'date-btn', 'aria-expanded': 'false', 'aria-haspopup': 'dialog', 'aria-controls': 'date-pop' }, [icon('i-cal'), c.dateTxt, icon('i-chev', 'chev')]);
   c.datePop = M.h('div', { class: 'popover', id: 'date-pop', role: 'dialog', 'aria-label': 'Date range', hidden: true }, [
     fld('Date range', 'f-preset', c.preset), fld('Year', 'f-year', c.year), M.h('div', { class: 'two' }, [fld('From', 'f-from', c.from), fld('To', 'f-to', c.to)]), fld('Chart steps', 'f-group', c.group), c.line]);
-  c.dateWrap = M.h('div', { class: 'tpop' }, [c.dateBtn, c.datePop]);
-  M.pop(c.dateBtn, c.datePop);
+  c.datePop.insertBefore(M.h('div', { class: 'pop-head', 'data-ux': '1', text: 'Pick dates' }), c.datePop.firstChild);
+  c.datePop.appendChild(M.popDone(M.pop(c.dateBtn, c.datePop)));
+  c.dateWrap = M.h('div', { class: 'tpop tp-date' }, [c.dateBtn, c.datePop]);
 
   /* compare switch */
-  c.cmpWrap = M.h('label', { class: 'sw', for: 'f-cmp' }, [c.cmp, M.h('span', { class: 'swt', 'aria-hidden': 'true' }), M.h('span', { text: 'Compare with the previous period' })]);
+  c.cmpWrap = M.h('label', { class: 'sw', for: 'f-cmp' }, [c.cmp, M.h('span', { class: 'swt', 'aria-hidden': 'true' }), M.h('span', { class: 'sw-long', text: 'Compare with the previous period' }), M.h('span', { class: 'sw-short', 'data-ux': '1', 'aria-hidden': 'true', text: 'Compare' })]);
 
   /* filters popover */
   c.f = {};
@@ -1681,21 +1948,23 @@ M.buildControls = function () {
   M.FILTERS.forEach(function (f) { c.f[f[0]] = M.h('select', { id: 'f-' + f[0] }); fbody.appendChild(fld(f[1], 'f-' + f[0], c.f[f[0]])); });
   c.snapWrap = M.h('div', { class: 'fld' });
   c.snap = M.h('select', { id: 'f-snap' });
-  c.snapWrap.appendChild(M.h('label', { for: 'f-snap', text: 'Table picture of' }));
+  c.snapWrap.appendChild(M.h('label', { for: 'f-snap', text: 'Snapshot of' }));
   c.snapWrap.appendChild(c.snap);
   c.reset = M.h('button', { type: 'button', class: 'link', id: 'f-reset', text: 'Clear all filters' });
   c.badge = M.h('span', { class: 'badge-n', id: 'filter-n', hidden: true });
-  c.filBtn = M.h('button', { type: 'button', class: 'tbtn', id: 'fil-btn', 'aria-expanded': 'false', 'aria-haspopup': 'dialog', 'aria-controls': 'fil-pop' }, [icon('i-filter'), M.h('span', { class: 'bt', text: 'Filters' }), c.badge, icon('i-chev', 'chev')]);
+  c.filBtn = M.h('button', { type: 'button', class: 'tbtn', id: 'fil-btn', 'aria-label': 'Filters', 'aria-expanded': 'false', 'aria-haspopup': 'dialog', 'aria-controls': 'fil-pop' }, [icon('i-filter'), M.h('span', { class: 'bt', text: 'Filters' }), c.badge, icon('i-chev', 'chev')]);
   c.filPop = M.h('div', { class: 'popover pop-right', id: 'fil-pop', role: 'dialog', 'aria-label': 'Filters', hidden: true }, [fbody, c.snapWrap, M.h('div', { class: 'pop-foot' }, [c.reset])]);
-  c.filWrap = M.h('div', { class: 'tpop' }, [c.filBtn, c.filPop]);
-  M.pop(c.filBtn, c.filPop);
+  c.filPop.insertBefore(M.h('div', { class: 'pop-head', 'data-ux': '1', text: 'Filters' }), c.filPop.firstChild);
+  c.filPop.appendChild(M.popDone(M.pop(c.filBtn, c.filPop)));
+  c.filWrap = M.h('div', { class: 'tpop tp-fil' }, [c.filBtn, c.filPop]);
 
   c.chips = M.h('div', { class: 'chips', id: 'chips', 'aria-label': 'Filters in force' });
   c.snapInfo = M.h('p', { class: 'toolnote', id: 'toolnote' });
   c.rail = M.h('button', { type: 'button', class: 'tbtn menu-btn', id: 'menu-btn', 'aria-controls': 'rail', 'aria-expanded': 'false', 'aria-label': 'Open the page list' }, [icon('i-menu'), M.h('span', { class: 'bt', id: 'menu-txt', text: 'Pages' })]);
   c.rail.addEventListener('click', function () { M.railOpen(true); });
   c.search = M.searchBox ? M.searchBox() : null;
-  host.appendChild(M.h('div', { class: 'toolrow' }, [c.rail, c.dateWrap, c.cmpWrap, c.filWrap, c.sum, c.search]));
+  c.fresh = M.h('span', { class: 'fresh', id: 'fresh', 'data-ux': '1', tabindex: '0' });
+  host.appendChild(M.h('div', { class: 'toolrow' }, [c.rail, c.dateWrap, c.cmpWrap, c.filWrap, c.sum, c.search, c.fresh]));
   host.appendChild(c.chips);
 
   var f = M.facts();
@@ -1758,7 +2027,9 @@ M.syncControls = function () {
   c.line.textContent = dateUsed ? M.fd(r.from) + ' to ' + M.fd(r.to) + ' (' + M.num(r.days) + ' days)' + (r.clamped ? '. The data starts here.' : '') : '';
   c.dateTxt.textContent = dateUsed ? (s.preset === 'custom' ? M.fds(r.from) + ' to ' + M.fd(r.to) : r.label) : 'No date range';
   c.dateBtn.title = dateUsed ? M.fd(r.from) + ' to ' + M.fd(r.to) + ' (' + M.num(r.days) + ' days)' : 'This page does not follow the date range';
-  document.getElementById('cover').textContent = (M.D.kind === 'year' ? 'Year ' + M.D.year + ' only. ' : '') + 'Data ' + M.fd(first) + ' to ' + M.fd(M.D.anchor) + '. ' + M.num(nOrders) + ' orders. Built ' + M.builtText() + '.';
+  /* T817: the long "Data 19 May to 31 Oct. 28 orders. Built ..." block left the sidebar. One quiet line sits at the right of the toolbar; the full detail is on the Data quality page and in the hover title. */
+  c.fresh.textContent = (M.D.kind === 'year' ? 'Year ' + M.D.year + ' only. ' : '') + 'Data up to ' + M.fd(M.D.anchor);
+  c.fresh.title = 'Data ' + M.fd(first) + ' to ' + M.fd(M.D.anchor) + '. ' + M.num(nOrders) + ' orders. Built ' + M.builtText() + '.';
   /* filters in force: only the ones this page uses count and show; each is a removable chip */
   var act = M.FILTERS.filter(function (fl) { return s[fl[0]] && pg && pg.uses.indexOf(fl[0]) >= 0; });
   var ignored = M.FILTERS.filter(function (fl) { return s[fl[0]] && !(pg && pg.uses.indexOf(fl[0]) >= 0); });
@@ -1784,7 +2055,7 @@ M.renderNav = function () {
     var ids = g[1].filter(function (id) { return M.PAGES[id]; });
     if (!ids.length) return;
     var target = ids.indexOf(M.lastIn[g[0]]) >= 0 ? M.lastIn[g[0]] : ids[0];
-    var a = M.h('a', { href: '#/' + target, text: g[0], 'data-group': g[0], 'data-page': ids.length === 1 ? ids[0] : null });
+    var a = M.h('a', { href: '#/' + target, 'data-group': g[0], 'data-page': ids.length === 1 ? ids[0] : null }, [M.s('svg', { class: 'ic nav-ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#' + (M.NAVICON[g[0]] || 'i-data') })]), M.h('span', { text: g[0] })]);
     if (g === grp) a.setAttribute('aria-current', 'page');
     a.addEventListener('click', function (e) { e.preventDefault(); M.go({ page: target }, true); window.scrollTo(0, 0); M.railOpen(false); });
     ul.appendChild(M.h('li', null, a));
@@ -1873,6 +2144,8 @@ M.render = function () {
 M.renderFoot = function () {
   var f = document.getElementById('foot');
   M.clear(f);
+  /* T817: the "Data up to" line shows in the toolbar on a wide screen; below that width it is the first line of the footer */
+  f.appendChild(M.h('p', { class: 'small fresh-foot', 'data-ux': '1', text: M.ctl.fresh ? M.ctl.fresh.textContent : '' }));
   f.appendChild(M.h('p', null, ['A snapshot built from the mazo data Sheet, not a live page. Money is a management estimate, not accounts. Instagram content is Madhu\'s: only numbers are shown here. ',
     M.h('button', { type: 'button', class: 'link', onclick: function () { window.print(); }, text: 'Print this page' })]));
 };
@@ -2068,6 +2341,8 @@ M.moreMenu = function (fr) {
   wrap.appendChild(btn); wrap.appendChild(panel);
   btn.addEventListener('click', fill);      /* refresh the menu BEFORE the shell opens it and moves the focus into it (registered first, so it runs first) */
   var close = M.pop(btn, panel);
+  /* a menu opened near the bottom of the window would hang below the fold: after the shell has opened and placed it, bring it fully into view */
+  btn.addEventListener('click', function () { if (!panel.hidden) panel.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
   return wrap;
 };
 
@@ -2093,6 +2368,9 @@ M.fsOpenKey = function (key) {
   }
   if (fr) M.fsOpen(fr, true);
 };
+/* T817 (1 Nov 2026): in full screen the card sits above everything (z-index 70) and the tooltip (z-index 60) was drawn UNDER it, so hovering showed nothing. The tooltip is lifted above the card
+   while a full screen card is open and put back when it closes. Done here (not in the style file) so it works whatever the look files say. */
+M.tipLift = function (on) { var t = document.getElementById('tip'); if (t) t.style.zIndex = on ? '90' : ''; };
 M.fsOpen = function (fr, quiet) {
   if (M.fs) M.fsClose(true);
   var card = fr.host.closest('.card');
@@ -2103,8 +2381,7 @@ M.fsOpen = function (fr, quiet) {
   var ph = M.h('div', { class: 'fs-ph' }); ph.style.height = card.offsetHeight + 'px';
   card.parentNode.insertBefore(ph, card);
   var title = (card.querySelector('h3') || {}).textContent || fr.title || 'Chart';
-  var close = M.h('button', { type: 'button', class: 'btn fs-close', 'aria-label': 'Close full screen', text: 'Close' }, null);
-  close.insertBefore(icon('i-x'), close.firstChild);
+  var close = M.h('button', { type: 'button', class: 'btn fs-close', 'aria-label': 'Close full screen' }, [icon('i-x'), M.h('span', { text: 'Close' })]);      /* T817: icon and word in one centred row */
   close.addEventListener('click', function () { M.fsClose(); });
   var tools = M.h('div', { class: 'fs-tools' });
   var fillTools = function () {
@@ -2119,6 +2396,7 @@ M.fsOpen = function (fr, quiet) {
   root.appendChild(card);
   root.hidden = false;
   document.body.classList.add('fs-on');
+  M.tipLift(true);
   ['rail', 'stage'].forEach(function (id) { var e = document.getElementById(id); if (e) { e.setAttribute('inert', ''); e.setAttribute('aria-hidden', 'true'); } });
   M.fs = { fr: fr, card: card, ph: ph, bar: bar, opener: (document.activeElement && document.activeElement.closest && document.activeElement.closest('#main')) ? document.activeElement : null };
   fr.big = true;
@@ -2136,6 +2414,7 @@ M.fsClose = function (silent) {
   if (f.ph.parentNode) { f.ph.parentNode.insertBefore(f.card, f.ph); f.ph.parentNode.removeChild(f.ph); }
   var root = document.getElementById('fsroot'); if (root) root.hidden = true;
   document.body.classList.remove('fs-on');
+  M.tipLift(false);
   ['rail', 'stage'].forEach(function (id) { var e = document.getElementById(id); if (e) { e.removeAttribute('inert'); e.removeAttribute('aria-hidden'); } });
   M.frames.forEach(function (fr) { if (f.card.contains(fr.wrap)) { fr.big = false; fr.paint(); } });
   M.state.fs = ''; if (!silent) M.keepHash();
@@ -2470,6 +2749,51 @@ M.gapPattern = function (svg) {
   return 'url(#' + id + ')';
 };
 
+
+/* ---------------------------------------------------------------- T817 (1 Nov 2026): "no data" always says WHY and offers the one click that fixes it.
+   A source has a first day (Google Analytics visits start on 5 Oct 2026, Instagram numbers on 9 Sep ...). A range that ends before it is empty for that reason, not because something broke. */
+M.SOURCE_NAMES = {
+  ga4_funnel_daily: 'Visits', funnel_device_daily: 'Visits by device', source_daily: 'Visits by channel', product_daily: 'Product views', place_device_daily: 'Visits by device and city',
+  instagram_daily: 'Instagram numbers', pinterest_daily: 'Pinterest numbers', youtube_analytics_daily: 'YouTube numbers', threads_daily: 'Threads numbers', facebook_daily: 'Facebook numbers',
+  linkedin_daily: 'LinkedIn numbers', mastodon_daily: 'Mastodon numbers', brand_search_daily: 'Google search numbers', bing_daily: 'Bing numbers', merchant_daily: 'Google shop listing numbers',
+  judgeme_daily: 'Review numbers', search_queries_weekly: 'Search phrases'
+};
+M.noDataWhy = function (tab, r, col) {
+  /* returns {text, first, last, action:{label, patch}}: the reason in plain words and the date menu action that shows the data */
+  var c = M.cover(tab, col), name = M.SOURCE_NAMES[tab] || 'This data', first = c.first, last = c.last, anchor = M.D.anchor;
+  if (!first) return { text: name + ' have not started yet.', first: null, action: null };
+  if (r.to < first) return { text: name + ' start on ' + M.fd(first) + '. Nothing was recorded before that day.', first: first, last: last, action: { label: 'Go to ' + M.fds(first) + ' to today', patch: { preset: 'custom', from: first, to: anchor } } };
+  if (last && r.from > last) return { text: name + ' end on ' + M.fd(last) + '.', first: first, last: last, action: { label: 'Go to the last 28 days', patch: { preset: '28d', from: '', to: '' } } };
+  return { text: name + ' has no days inside this range (it holds ' + M.fd(first) + ' to ' + M.fd(last) + ').', first: first, last: last, action: { label: 'Show ' + M.fds(first) + ' to ' + M.fds(last), patch: { preset: 'custom', from: first, to: last } } };
+};
+/* the button that goes with it; an element carrying data-ux so the regression scripts can ignore it */
+M.noDataAction = function (why) {
+  if (!why || !why.action) return null;
+  var b = M.h('button', { type: 'button', class: 'btn sm nodata-go', 'data-ux': '1', text: why.action.label });
+  b.addEventListener('click', function () { M.go(why.action.patch, true); });
+  return b;
+};
+/* an empty box for a card or a page: the reason, then the button */
+M.emptyWhy = function (tab, r, col) {
+  var why = M.noDataWhy(tab, r, col), box = M.h('div', { class: 'empty', role: 'status' }, [why.text]);
+  var b = M.noDataAction(why); if (b) { box.appendChild(M.h('span', { class: 'hint' }, [b])); }
+  return box;
+};
+/* a headline tile with no data: short value text, the reason as its note line, and the button under it */
+/* An empty tile gets its reason and its button added AFTER M.kpi has drawn it, so it works with any version of the tile design (an empty tile may or may not print its own note). The reason
+   is added once: if the tile already shows a line with this text, nothing is added twice. */
+M.kpiWhy = function (label, tab, r, col) {
+  var why = M.noDataWhy(tab, r, col), k = M.kpi({ label: label, na: why.first && r.to < why.first ? 'Starts ' + M.fds(why.first) : 'No data', note: why.text });
+  M.kpiWhyAdd(k, why);
+  return k;
+};
+M.kpiWhyAdd = function (k, why) {
+  if (!k.querySelector('.nodata-why')) k.appendChild(M.h('p', { class: 'ctx nodata-why', 'data-ux': '1', text: why.text }));
+  var old = k.querySelectorAll('.ctx:not(.nodata-why)'); Array.prototype.forEach.call(old, function (e) { if (/nothing is stored|try a later range/i.test(e.textContent)) e.remove(); });      /* the generic line is replaced by the specific one */
+  var b = M.noDataAction(why); if (b) k.appendChild(b);
+  return k;
+};
+
 /* mazo dashboard full screen controls (UX round, 1 Nov 2026, T807). A card in full screen gets a compact strip: date range, compare, and the filters the page uses, so the range and
    filters can be changed WITHOUT leaving full screen. A change runs M.go like the toolbar does; the page is drawn again and the card is reopened in full screen (the key in the
    address, or its place on the page when a filter changed its title). The focus goes back to the control that was used. Every element carries data-ux="1". */
@@ -2534,7 +2858,7 @@ M.fsFocusBack = function () {
 
 /* page id -> folds. match: regexes tested against the titles (h3) found inside a top level block of the page; blocks that match are moved, in order, into one fold placed where the first match was */
 M.FOLDS = {
-  funnel: [{ label: 'Drop offs by device, source and product', hint: '28 days, from the Sheet', match: [/Drop offs by device/i] }],
+  funnel: [{ label: 'Where shoppers leave, by device, source and product', hint: 'last 28 days', match: [/Where shoppers leave/i] }],
   sizes: [{ label: 'More on sizes', hint: 'reorder plan, size curve, stock over time', match: [/Reorder plan/i, /Stock by size over time/i] }],
   customers: [
     { label: 'What buyers have in common', hint: 'collection, price, size, source, payment, weekday', match: [/What buyers have in common/i, /^Collection/] },
@@ -2548,7 +2872,7 @@ M.FOLDS = {
   ],
   functions: [{ label: 'History and targets', hint: 'night by night counts, the lines each status is judged against', match: [/How many functions are green/i, /Targets the status is judged against/i] }],
   quality: [
-    { label: 'Every table in the Sheet', hint: 'rows and date span of each', match: [/Every table in the Sheet/i] },
+    { label: 'Everything that is stored', hint: 'rows and dates of each set of numbers', match: [/Everything that is stored/i] },
     { label: 'Privacy and build notes', match: [/Privacy and build notes/i] }
   ]
 };
@@ -3003,8 +3327,8 @@ M.sp = function (id, nav, title, why, uses, extra) {
 /* ---------------------------------------------------------------- the metric layer: which Sheet tab answers a number under the active filters */
 M.basis = function () {
   var s = M.state, note = '', b = 'all';
-  if (s.product || s.collection) { b = 'product'; if (s.channel || s.device) note = 'The Sheet holds sales by product, and sales by channel, and sales by device, but never two of these at once. The channel and device filters are ignored while a product or collection is chosen.'; }
-  else if (s.channel) { b = 'channel'; if (s.device) note = 'Channel and device cannot be combined in the Sheet. The device filter is ignored while a channel is chosen.'; }
+  if (s.product || s.collection) { b = 'product'; if (s.channel || s.device) note = 'Sales are kept by product, by channel and by device, but never two of these together. While a product or collection is chosen, the channel and device filters are ignored.'; }
+  else if (s.channel) { b = 'channel'; if (s.device) note = 'Channel and device cannot be combined. The device filter is ignored while a channel is chosen.'; }
   else if (s.device) b = 'device';
   return { b: b, note: note };
 };
@@ -3022,7 +3346,7 @@ M.defs = function (b) {
   D.push({ key: 'profit', label: 'Profit estimate', fmt: M.inr, num: P.profit, na: P.profit ? null : 'not split by ' + (b === 'product' ? 'product' : b) });
   D.push({ key: 'visits', label: visitWord, fmt: M.num, num: P.visits });
   var conv = b === 'all' ? { num: P.buys, den: P.visits } : b === 'product' ? { num: P.orders, den: P.visits } : { num: P.orders, den: P.visits };
-  D.push({ key: 'conv', label: b === 'product' ? 'Buy rate (units per view)' : 'Conversion', fmt: function (v) { return M.pct(v); }, num: conv.num, den: conv.den, scale: 100 });
+  D.push({ key: 'conv', label: b === 'product' ? 'Buy rate (units per view)' : 'Visits that bought', fmt: function (v) { return M.pct(v); }, num: conv.num, den: conv.den, scale: 100 });
   var atcN = b === 'product' ? P.atc : P.atc, atcD = b === 'product' ? P.visits : P.vi;
   D.push({ key: 'atc', label: 'Add to cart rate', fmt: function (v) { return M.pct(v); }, num: atcN, den: atcD, scale: 100, na: atcN && atcD ? null : 'not available by channel' });
   D.push({ key: 'aov', label: b === 'product' ? 'Average price paid' : 'Average order value', fmt: M.inr, num: P.sales, den: P.orders, na: P.sales && P.orders ? null : 'not available by ' + b });
@@ -3066,18 +3390,23 @@ M.cmpBlurb = function (r) {
 };
 
 /* ================================================================ OVERVIEW */
-M.sp('overview', 'Overview', 'Overview', 'How much did we sell, how many people visited, and how many bought? Each number is compared with the period before.', ['collection', 'channel', 'product', 'device']);
+M.sp('overview', 'Overview', 'Overview', 'How much did we sell, how many people visited, and how many bought? Each number is compared with the period before it.', ['collection', 'channel', 'product', 'device']);
 M.PAGES.overview.render = function (r) {
   var bs = M.basis(), D = M.defs(bs.b), buckets = M.buckets(r.from, r.to, r.mode), root = M.h('div'), cmp = M.cmpOn(r), pb = cmp ? M.prevBuckets(buckets, r) : null;
   if (bs.note) root.appendChild(M.note(bs.note, true));
   var cb = M.cmpBlurb(r); if (cb) root.appendChild(M.h('p', { class: 'small muted', text: cb }));
   var kp = M.h('div', { class: 'kpis lead' }), kp2 = M.h('div', { class: 'kpis rates' }), kn = 0;
   /* first screen (T807): one headline (net sales and its change), three supporting tiles, then the three rates */
-  var put = function (box) { box.hero = kn === 0; (kn < 4 ? kp : kp2).appendChild(M.kpi(box)); kn++; };
+  var put = function (box) {
+    box.hero = kn === 0;
+    var k = M.kpi(box);
+    if (box.noData) M.kpiWhyAdd(k, box.noData);      /* T817: a tile with no data says why (the source starts later) and shows the click that fixes it */
+    (kn < 4 ? kp : kp2).appendChild(k); kn++;
+  };
   D.forEach(function (d) {
     if (d.na || !d.num) { put({ label: d.label, na: 'Not available: ' + (d.na || 'no data') }); return; }
     var cur = M.defVal(d, r.from, r.to), prev = cmp ? M.defVal(d, r.pfrom, r.pto) : null, ch = cmp ? M.change(cur, prev) : null, cov = M.defCov(d, r);
-    if (cur === null) { put({ label: d.label, na: 'No data in this range' }); return; }
+    if (cur === null) { var nd = d.den || d.num, why = M.noDataWhy(nd.tab, r); put({ label: d.label, na: why.first && r.to < why.first ? 'Starts ' + M.fds(why.first) : 'No data', note: why.text, noData: why }); return; }
     var isPct = d.key === 'conv' || d.key === 'atc', chv = ch;
     if (isPct && cmp && cur != null && prev != null) chv = prev === 0 ? null : (cur - prev) / prev * 100;
     put({ label: d.label, value: d.fmt(cur), change: chv, cmpNote: cmp ? (prev === null ? 'no data for the previous period' : prev === 0 ? 'previous period: 0' : '') : '', note: cov, spark: { values: M.defSeries(d, buckets), color: M.COLORS.maroon } });
@@ -3088,9 +3417,9 @@ M.PAGES.overview.render = function (r) {
   var mk = function (d, color, lineColor) {
     var vals = M.defSeries(d, buckets), k = r.mode === 'day' ? 7 : 3, pv = cmp ? M.defSeries(d, pb) : null;
     var host = M.chart('', function (h, w) {
-      M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: d.label, yfmt: d.key === 'sales' || d.key === 'profit' ? function (v) { return 'Rs. ' + M.short(v); } : M.short, series: [{ name: d.label + ' per ' + r.mode, values: vals, color: color, fmt: d.fmt }, { name: k + ' step average', values: M.ma(vals, k), color: lineColor, type: 'line', fmt: function (v) { return d.fmt(Math.round(v * 10) / 10); } }], prev: pv ? { values: pv } : null, empty: 'No ' + d.label.toLowerCase() + ' in this range yet.' });
+      M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: d.label, yfmt: d.key === 'sales' || d.key === 'profit' ? function (v) { return 'Rs. ' + M.short(v); } : M.short, series: [{ name: d.label + ' per ' + r.mode, values: vals, color: color, fmt: d.fmt }, { name: k + ' step average', values: M.ma(vals, k), color: lineColor, type: 'line', fmt: function (v) { return d.fmt(Math.round(v * 10) / 10); } }], prev: pv ? { values: pv } : null, emptyNode: function () { return M.emptyWhy((d.den || d.num).tab, r); }, empty: 'No ' + d.label.toLowerCase() + ' in this range yet.' });
     });
-    return M.card(d.label + ' by ' + r.mode, 'Bars are each ' + r.mode + '; the line is the average of the last ' + k + ' (' + r.mode + 's) so a single quiet day does not look like a trend.', [host, M.tableView([{ k: 'label', label: 'Period' }, { k: 'v', label: d.label, num: true, fmt: function (v) { return d.fmt(v); } }], buckets.map(function (b, i) { return { label: b.label, v: vals[i] }; }))]);
+    return M.card(d.label + ' by ' + r.mode, 'Each bar is one ' + r.mode + '. The line is the average of the last ' + k + ' ' + r.mode + 's, so one quiet ' + r.mode + ' is not read as a trend.', [host, M.tableView([{ k: 'label', label: 'Period' }, { k: 'v', label: d.label, num: true, fmt: function (v) { return d.fmt(v); } }], buckets.map(function (b, i) { return { label: b.label, v: vals[i] }; }))]);
   };
   var sales = D[0], units = D[1], visits = D[3];
   var cards = [];
@@ -3103,19 +3432,19 @@ M.PAGES.overview.render = function (r) {
     var sum = function (c) { var t = M.total({ tab: 'money_daily', col: c }, r.from, r.to); return t.v || 0; };
     var g = sum('gross_sales'), disc = sum('discounts'), gst = sum('gst_included'), cost = sum('product_cost'), fee = sum('est_payment_fee'), parcel = sum('est_parcel_cost'), pack = sum('est_packaging'), prof = sum('contribution_profit');
     var wf = M.chart('', function (h, w) { M.waterfall(h, w, [{ label: 'Gross sales', value: g, kind: 'total' }, { label: 'Discounts', value: disc, kind: 'minus' }, { label: 'GST included', value: gst, kind: 'minus' }, { label: 'Product cost', value: cost, kind: 'minus' }, { label: 'Payment fee (est.)', value: fee, kind: 'minus' }, { label: 'Parcel cost (est.)', value: parcel, kind: 'minus' }, { label: 'Packaging (est.)', value: pack, kind: 'minus' }, { label: 'Profit estimate', value: prof, kind: 'total', color: M.COLORS.green }]); });
-    root.appendChild(M.grid([M.card('Where the money goes', 'From gross sales to the profit estimate for the range. Fee, parcel and packaging use default costs until Madhu gives real figures, so profit is a management estimate, not accounts.',
+    root.appendChild(M.grid([M.card('Where the money goes', 'From what customers were charged to what is left. Payment fee, parcel and packaging are estimates, so profit is a good guide, not accounts.',
       [g ? wf : M.empty('No sales in this range, so there is nothing to split.'), M.tableView([{ k: 'a', label: 'Step' }, { k: 'b', label: 'Amount', num: true, fmt: M.inr }], [{ a: 'Gross sales', b: g }, { a: 'Discounts', b: -disc }, { a: 'GST included', b: -gst }, { a: 'Product cost', b: -cost }, { a: 'Payment fee (est.)', b: -fee }, { a: 'Parcel cost (est.)', b: -parcel }, { a: 'Packaging (est.)', b: -pack }, { a: 'Profit estimate', b: prof }])]),
-      M.card('Read this with care', 'What the numbers can and cannot say yet.', [M.h('p', { class: 'small', text: 'With ' + M.num(M.totalOrders()) + ' orders in total, one order moves a percentage a lot. Anything under ' + M.MIN_EVENTS + ' events is marked "too few to read" on the pages that explain it. The visit numbers start on ' + M.fd(M.cover('ga4_funnel_daily').first) + ', sales start on ' + M.fd(M.cover('money_daily').first) + ', so long ranges show visits for part of the time only (each scorecard says how many days it has).' })])], 'wide'));
+      M.card('Read this with care', 'What the numbers can and cannot tell you yet.', [M.h('p', { class: 'small', text: 'There are only ' + M.num(M.totalOrders()) + ' orders so far, so one order moves a percentage a lot. Where a number rests on fewer than ' + M.MIN_EVENTS + ' cases it is marked "too few to read". Sales are counted from ' + M.fd(M.cover('money_daily').first) + ' and visits from ' + M.fd(M.cover('ga4_funnel_daily').first) + ', so a long range shows visits for part of the time only.' })])], 'wide'));
   }
   return root;
 };
 
 /* ================================================================ FUNNEL */
 M.STEPS = [['view_item', 'Viewed a product'], ['add_to_cart', 'Added to cart'], ['begin_checkout', 'Started checkout'], ['add_shipping_info', 'Added shipping details'], ['add_payment_info', 'Added payment details'], ['purchase', 'Bought']];
-M.sp('funnel', 'Funnel', 'Funnel', 'Where do shoppers drop out between looking at a product and paying? Steps are GA4 events, so a step can exceed the one before it when people repeat an action.', ['device'], {});
+M.sp('funnel', 'Funnel', 'Funnel', 'Where do shoppers leave between looking at a product and paying? A step can be bigger than the one before it, because the same person can repeat a step.', ['device'], {});
 M.PAGES.funnel.render = function (r) {
   var s = M.state, root = M.h('div'), devs = M.facts().devices, rows = M.rowsIn('funnel_device_daily', r.from, r.to), days = M.daysCovered('funnel_device_daily', r.from, r.to);
-  if (!rows.length) { root.appendChild(M.empty('No funnel data in this range. The device funnel starts on ' + M.fd(M.cover('funnel_device_daily').first) + '.')); return root; }
+  if (!rows.length) { root.appendChild(M.emptyWhy('funnel_device_daily', r)); return root; }
   var tot = function (dev) { var o = {}; M.STEPS.forEach(function (st) { o[st[0]] = 0; }); rows.forEach(function (x) { if (dev && x.device !== dev) return; M.STEPS.forEach(function (st) { o[st[0]] += +x[st[0]] || 0; }); }); return o; };
   var cur = tot(s.device || null), sessions = M.total({ tab: 'ga4_funnel_daily', col: 'sessions' }, r.from, r.to);
   var steps = M.STEPS.map(function (st) { return { name: st[1], value: cur[st[0]] }; });
@@ -3129,7 +3458,7 @@ M.PAGES.funnel.render = function (r) {
   root.appendChild(kp);
   var th = M.thinTag(cur.add_to_cart, 'cart adds');
   root.appendChild(M.grid([
-    M.card('The six steps' + (s.device ? ' on ' + s.device : ', all devices'), 'Each bar is a step; the line under it is the share of the step before. The shortest bar is where most people leave.', [th, M.funnel(steps), M.tableView([{ k: 'name', label: 'Step' }, { k: 'value', label: 'Events', num: true, fmt: M.num }], steps)].filter(Boolean)),
+    M.card('The six steps' + (s.device ? ' on ' + s.device : ', all devices'), 'Each bar is a step; the line under it is the share of the step before. The shortest bar is where most people leave.', [th, M.funnel(steps), M.tableView([{ k: 'name', label: 'Step' }, { k: 'value', label: 'Times', num: true, fmt: M.num }], steps)].filter(Boolean)),
     M.card('By device', 'The same six steps for each device, as a share of the first step. A device with fewer than ' + M.MIN_EVENTS + ' product views is too small to compare.', [(function () {
       var box = M.h('div');
       devs.forEach(function (d) {
@@ -3145,15 +3474,15 @@ M.PAGES.funnel.render = function (r) {
   ], 'wide'));
   /* drop offs from the Sheet (28 day cuts), newest picture */
   var dr = M.stateRows('drop_offs');
-  root.appendChild(M.card('Drop offs by device, source and product (28 days, from the Sheet)', 'A table the nightly job builds: for each cut, how many go from viewing to cart, cart to checkout, and checkout to paying.' + (M.state.snap ? ' Showing the picture of ' + M.fd(M.snapOf('drop_offs')) + '.' : ''), [M.table([
-    { k: 'cut', label: 'Cut' }, { k: 'label', label: 'Name', wrap: true }, { k: 'view_item', label: 'Views', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'add_to_cart', label: 'Carts', num: true, fmt: M.num }, { k: 'begin_checkout', label: 'Checkouts', num: true, fmt: M.num }, { k: 'purchase', label: 'Bought', num: true, fmt: M.num },
+  root.appendChild(M.card('Where shoppers leave, by device, source and product (last 28 days)', 'For each group: how many go from looking to the cart, from the cart to checkout, and from checkout to paying.' + (M.state.snap ? ' Showing the snapshot of ' + M.fd(M.snapOf('drop_offs')) + '.' : ''), [M.table([
+    { k: 'cut', label: 'Grouped by' }, { k: 'label', label: 'Name', wrap: true }, { k: 'view_item', label: 'Views', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'add_to_cart', label: 'Carts', num: true, fmt: M.num }, { k: 'begin_checkout', label: 'Checkouts', num: true, fmt: M.num }, { k: 'purchase', label: 'Bought', num: true, fmt: M.num },
     { k: 'view_to_cart_pct', label: 'View to cart', num: true, fmt: function (v, row) { return v == null ? '' : M.pct(v, 1) + (M.thin(row.view_item) ? ' (too few)' : ''); } }, { k: 'checkout_to_buy_pct', label: 'Checkout to bought', num: true, fmt: function (v, row) { return v == null ? '' : M.pct(v, 1) + (M.thin(row.begin_checkout, 10) ? ' (too few)' : ''); } }
   ], { rows: dr, sortKey: 'view_item', empty: 'No drop off table yet.', limit: 60 })], 'one'));
   return root;
 };
 
 /* ================================================================ CHANNELS */
-M.sp('channels', 'Channels', 'Channels', 'Which sources bring visitors, and which bring buyers? Position shows visits and conversion; bubble size shows the money.', ['channel']);
+M.sp('channels', 'Channels', 'Channels', 'Which sources bring visitors, and which bring buyers? A bubble further right has more visits, higher means more of them bought, bigger means more money.', ['channel']);
 M.channelRows = function (r) {
   var by = {}, c = M.state.channel;
   M.rowsIn('source_daily', r.from, r.to).forEach(function (x) {
@@ -3169,7 +3498,7 @@ M.channelRows = function (r) {
 };
 M.PAGES.channels.render = function (r) {
   var root = M.h('div'), rows = M.channelRows(r), days = M.daysCovered('source_daily', r.from, r.to);
-  if (!rows.length) { root.appendChild(M.empty('No channel data in this range. Channels are recorded from ' + M.fd(M.cover('source_daily').first) + '.')); return root; }
+  if (!rows.length) { root.appendChild(M.emptyWhy('source_daily', r)); return root; }
   if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Channel data covers ' + days + ' of the ' + r.days + ' days in this range.' }));
   var tv = rows.reduce(function (s, x) { return s + x.visits; }, 0), to = rows.reduce(function (s, x) { return s + x.orders; }, 0), tr = rows.reduce(function (s, x) { return s + x.revenue; }, 0);
   var kp = M.h('div', { class: 'kpis' });
@@ -3177,20 +3506,20 @@ M.PAGES.channels.render = function (r) {
   root.appendChild(kp);
   var maxConv = Math.max.apply(null, rows.map(function (x) { return x.conv; }).concat([1])), pts = rows.filter(function (x) { return x.visits > 0; }).map(function (x) {
     var thin = x.visits < M.MIN_EVENTS;
-    return { label: x.source, x: x.visits, y: x.conv, r: x.revenue || 0.01, color: thin ? M.COLORS.grey : M.COLORS.maroon, tip: { title: x.source, rows: [{ k: 'Visits', v: M.num(x.visits) }, { k: 'Conversion', v: M.pct(x.conv) }, { k: 'Orders', v: M.num(x.orders) }, { k: 'Revenue', v: M.inr(x.revenue) }, { k: 'Read', v: x.read }] } };
+    return { label: x.source, x: x.visits, y: x.conv, r: x.revenue || 0.01, color: thin ? M.COLORS.grey : M.COLORS.maroon, tip: { title: x.source, rows: [{ k: 'Visits', v: M.num(x.visits) }, { k: 'Visits that bought', v: M.pct(x.conv) }, { k: 'Orders', v: M.num(x.orders) }, { k: 'Revenue', v: M.inr(x.revenue) }, { k: 'Read', v: x.read }] } };
   });
   root.appendChild(M.grid([M.card('Visits against conversion', 'Right means more visits, higher means more of them buy. Bigger bubbles earned more. Grey bubbles have fewer than ' + M.MIN_EVENTS + ' visits: too few to read, so their height is luck as much as anything.', [
     M.chart('', function (h, w) { M.bubble(h, w, { dim: 'channel', points: pts, title: 'Channels', xlabel: 'Visits', ylabel: 'Visits that bought, percent', yfmt: function (v) { return M.pct(v, v < 1 || v % 1 ? 1 : 0); }, labelTop: 8, h: w < 520 ? 300 : 340, legend: [{ name: 'Maybe enough visits to read (30 or more)', color: M.COLORS.maroon }, { name: 'Too few visits to read', color: M.COLORS.grey }] }); }),
-    M.tableView([{ k: 'source', label: 'Channel' }, { k: 'visits', label: 'Visits', num: true, fmt: M.num }, { k: 'conv', label: 'Conversion', num: true, fmt: function (v) { return M.pct(v); } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr }], rows)
+    M.tableView([{ k: 'source', label: 'Channel' }, { k: 'visits', label: 'Visits', num: true, fmt: M.num }, { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr }], rows)
   ], 'one')], 'one'));
   var cols = [
     { k: 'source', label: 'Channel', wrap: true }, { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'eng', label: 'Engaged', num: true, fmt: function (v) { return M.pct(v, 0); }, bar: { color: M.COLORS.teal, max: 100 } },
     { k: 'carts', label: 'Cart adds', num: true, fmt: M.num, bar: { color: M.COLORS.mustard } }, { k: 'orders', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
-    { k: 'conv', label: 'Conversion', num: true, fmt: function (v) { return M.pct(v); } }, { k: 'rpv', label: 'Revenue per visit', num: true, fmt: M.inr },
+    { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); } }, { k: 'rpv', label: 'Revenue per visit', num: true, fmt: M.inr },
     { k: 'read', label: 'Read for this range', wrap: true, render: function (x) { return x.visits < M.MIN_EVENTS ? M.tag('too few visits to read', 'thin') : M.h('span', { text: x.read }); } },
-    { k: 'sheetRead', label: 'Sheet read (28 days)', wrap: true }
+    { k: 'sheetRead', label: 'Our read, last 28 days', wrap: true }
   ];
-  root.appendChild(M.card('All channels', 'Click a heading to sort. Bars are scaled within the column. "Engaged" is the share of visits GA4 counted as engaged.', [M.table(cols, { rows: rows, sortKey: 'visits', empty: 'No channels.', limit: 100 })]));
+  root.appendChild(M.card('All channels', 'Click a heading to sort. "Engaged" is the share of visits where the person stayed and looked around.', [M.table(cols, { rows: rows, sortKey: 'visits', empty: 'No channels.', limit: 100 })]));
   return root;
 };
 
@@ -3241,7 +3570,7 @@ M.PAGES.products.render = function (r) {
     { k: 'buyRate', label: 'Buy rate', num: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (M.thin(x.views) ? ' *' : ''); } },
     { k: 'verdict', label: 'Verdict', render: function (x) { return x.verdict ? M.badge(x.verdict, M.VERDICT[x.verdict] || 'grey') : null; } }
   ];
-  var cardTable = M.card('All products', 'Views, carts, units and revenue are for the date range. In stock, sell through and the verdict are the nightly picture' + (s.snap ? ' of ' + M.fd(M.snapOf('product_ledger')) : '') + ' and do not change with the range. * = fewer than ' + M.MIN_EVENTS + ' views: too few to read the rate.', [M.table(cols, {
+  var cardTable = M.card('All products', 'Views, carts, units and revenue are for the date range. Stock, share sold and the verdict come from the latest saved snapshot' + (s.snap ? ' (' + M.fd(M.snapOf('product_ledger')) + ')' : '') + ' and do not change with your dates. * = fewer than ' + M.MIN_EVENTS + ' views: too few to trust the percentage.', [M.table(cols, {
     rows: rows, sortKey: 'views', limit: 100, onRow: function (x) { M.go({ sel: s.sel === x.product ? '' : x.product }); }, selected: function (x) { return x.product === s.sel; }, empty: 'No products.'
   })]);
   root.appendChild(cardTable);
@@ -3268,7 +3597,7 @@ M.PAGES.sizes.render = function (r) {
   var s = M.state, root = M.h('div'), mode = M.SMODES.some(function (m) { return m[0] === s.sm; }) ? s.sm : 'sold90';
   var all = M.stateRows('size_product_matrix'), rows = all.filter(function (x) { return M.prodOk(x.product); });
   var snapD = M.snapOf('size_product_matrix');
-  root.appendChild(M.note('This page shows the nightly picture' + (snapD ? ' of ' + M.fd(snapD) : '') + ' and does not follow the date range; the sales and cart counts inside it have their own windows (named on each switch). Choose "Table picture of" in the top bar to see an earlier night.'));
+  root.appendChild(M.note('This page shows the latest saved snapshot' + (snapD ? ' (' + M.fd(snapD) + ')' : '') + ' and does not follow the dates you picked; the sales and cart counts inside it cover their own time window (named on each switch). To see an earlier day, use "Snapshot of" in the top bar.'));
   if (!rows.length) { root.appendChild(M.empty('No size data for this selection.')); return root; }
   var seg = M.h('div', { class: 'seg', role: 'group', 'aria-label': 'What the heatmap shows' }, M.SMODES.map(function (m) {
     return M.h('button', { type: 'button', 'aria-pressed': m[0] === mode ? 'true' : 'false', text: m[1], onclick: function () { M.go({ sm: m[0] }); } });
@@ -3304,7 +3633,7 @@ M.PAGES.sizes.render = function (r) {
   /* restock + stock out */
   var ro = M.stateRows('reorder_plan').filter(function (x) { return M.prodOk(x.product); }), so = M.stateRows('stockout_forecast').filter(function (x) { return M.prodOk(x.product) && (!s.size || x.size === s.size); });
   root.appendChild(M.grid([
-    M.card('Reorder plan', 'What the nightly job suggests per product. Advice only.', [M.table([{ k: 'product', label: 'Product', wrap: true }, { k: 'size', label: 'Size' }, { k: 'action', label: 'Action', wrap: true }, { k: 'stock', label: 'Stock', num: true, fmt: M.num }, { k: 'sold_28d', label: 'Sold 28d', num: true, fmt: M.num }, { k: 'why', label: 'Why', wrap: true }], { rows: ro, sortKey: 'product', sortDir: 1, empty: 'No reorder advice right now.' })]),
+    M.card('Reorder plan', 'What is suggested per product, worked out every night. Advice only.', [M.table([{ k: 'product', label: 'Product', wrap: true }, { k: 'size', label: 'Size' }, { k: 'action', label: 'Action', wrap: true }, { k: 'stock', label: 'Stock', num: true, fmt: M.num }, { k: 'sold_28d', label: 'Sold 28d', num: true, fmt: M.num }, { k: 'why', label: 'Why', wrap: true }], { rows: ro, sortKey: 'product', sortDir: 1, empty: 'No reorder advice right now.' })]),
     M.card('Size curve, all products', 'Share of all units sold against share of all stock, by size.', [M.table([{ k: 'size', label: 'Size', sort: function (x) { return zs.indexOf(x.size); } }, { k: 'units_sold', label: 'Units sold', num: true, fmt: M.num }, { k: 'share_of_sales_pct', label: 'Sales share', num: true, fmt: function (v) { return M.pct(v, 0); }, bar: { color: M.COLORS.maroon, max: 100 } }, { k: 'share_of_stock_pct', label: 'Stock share', num: true, fmt: function (v) { return M.pct(v, 0); }, bar: { color: M.COLORS.teal, max: 100 } }, { k: 'read', label: 'Read', wrap: true }], { rows: M.stateRows('size_curve').filter(function (x) { return !s.size || x.size === s.size; }), sortKey: 'size', sortDir: 1, empty: 'No size curve yet.' })])
   ], 'one'));
   /* stock by size over time (daily) */
@@ -3322,10 +3651,10 @@ M.HOURS = ['00-04', '04-08', '08-12', '12-16', '16-20', '20-24'];
 M.cuts = function (name, cut) { return M.stateRows(name).filter(function (x) { return x.cut === cut; }); };
 
 /* ================================================================ CUSTOMERS */
-M.sp('customers', 'Customers', 'Customers', 'Who buys, what they buy, when, and do they come back? The Sheet keeps counts only: no names, emails, phones or addresses.', [], { dates: false, snap: true });
+M.sp('customers', 'Customers', 'Customers', 'Who buys, what they buy, when, and do they come back? Only counts are kept here: no names, emails, phones or addresses.', [], { dates: false, snap: true });
 M.PAGES.customers.render = function (r) {
   var s = M.state, root = M.h('div'), orders = M.totalOrders(), op = M.stateRows('buyer_patterns');
-  root.appendChild(M.note('This page shows the nightly pictures over all orders so far (' + M.num(orders) + ' orders), not the date range. ' + (orders < M.MIN_EVENTS ? 'That is under ' + M.MIN_EVENTS + ' orders, so every split below is too few to read as a pattern. They are shown so the answer exists when the volume does.' : '')));
+  root.appendChild(M.note('This page shows the latest saved snapshot of all orders so far (' + M.num(orders) + ' orders), not the dates you picked. ' + (orders < M.MIN_EVENTS ? 'That is under ' + M.MIN_EVENTS + ' orders, so every split below has too few orders to show a pattern. They are here so the answer is ready when orders grow.' : '')));
   var kp = M.h('div', { class: 'kpis' }), ly = {}; M.stateRows('loyalty').forEach(function (x) { ly[x.measure] = x; });
   var lv = function (k) { return ly[k] && ly[k].value != null ? ly[k].value : null; };
   kp.appendChild(M.kpi({ label: 'Orders so far', value: M.num(orders) })); kp.appendChild(M.kpi({ label: 'Customers who ordered', value: lv('customers who ordered') != null ? M.num(lv('customers who ordered')) : 'n/a', note: 'the base for the repeat rate' })); kp.appendChild(M.kpi({ label: 'Contacts on file', value: lv('contacts on file') != null ? M.num(lv('contacts on file')) : 'n/a', note: 'everyone in Shopify, most never ordered' }));
@@ -3334,7 +3663,7 @@ M.PAGES.customers.render = function (r) {
   root.appendChild(kp);
   /* cohorts */
   var co = M.stateRows('cohorts');
-  root.appendChild(M.card('Cohorts: do first time buyers come back?', 'Each row is the month of a customer\'s first order. Columns show how many bought a second time within 30 and 90 days. A cohort inside 90 days is not final.', [co.length ? M.heat(co.map(function (x) { return x.cohort_month; }), ['Customers', 'Second order in 30 days', 'Second order in 90 days', 'Repeat rate'], function (rl, c) {
+  root.appendChild(M.card('Do first time buyers come back?', 'Each row is the month of a customer\'s first order. Columns show how many bought a second time within 30 and 90 days. A month less than 90 days old is not final yet.', [co.length ? M.heat(co.map(function (x) { return x.cohort_month; }), ['Customers', 'Second order in 30 days', 'Second order in 90 days', 'Repeat rate'], function (rl, c) {
     var x = co.filter(function (y) { return y.cohort_month === rl; })[0], v = c === 'Customers' ? x.customers : c === 'Repeat rate' ? x.repeat_rate_pct : c === 'Second order in 30 days' ? x.second_order_within_30d : x.second_order_within_90d;
     return { v: v, text: c === 'Repeat rate' ? M.pct(v, 0) : M.num(v), tip: { title: 'Customers whose first order was in ' + rl, rows: [{ k: 'Customers', v: M.num(x.customers) }, { k: 'Repeat rate', v: M.pct(x.repeat_rate_pct, 1) }, { k: 'Read', v: x.read || '' }] } };
   }, { rowHead: 'First order month', max: Math.max.apply(null, co.map(function (x) { return +x.customers || 0; }).concat([1])), legendText: 'Darker means more customers. All repeat counts are zero so far: nobody has ordered twice.' }) : M.empty('No cohort table yet.')]));
@@ -3342,7 +3671,7 @@ M.PAGES.customers.render = function (r) {
   var rfm = M.stateRows('rfm_groups'), rtot = rfm.reduce(function (a, x) { return a + (+x.customers || 0); }, 0), RC = { 'Champions': M.COLORS.green, 'Loyal': M.COLORS.teal, 'New and recent': M.COLORS.maroon, 'Promising': M.COLORS.mustard, 'Quiet': M.COLORS.grey, 'Lapsed': M.COLORS.terra };
   var rfmOrder = ['Champions', 'Loyal', 'New and recent', 'Promising', 'Quiet', 'Lapsed'], rsorted = rfm.slice().sort(function (a, b) { var i = rfmOrder.indexOf(a.group), j = rfmOrder.indexOf(b.group); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); });
   var rfmSnap = M.snapOf('rfm_groups');
-  root.appendChild(M.card('Customer groups', 'Customers grouped by how recently and how often they bought and how much they spent. Counts only: nobody is named. Under ' + M.MIN_EVENTS + ' customers in a group is too few to read, so the table shows the Sheet\'s own read instead of a conclusion.' + (rfmSnap && M.state.snap ? ' Picture of ' + M.fd(rfmSnap) + '.' : ''), rfm.length ? [
+  root.appendChild(M.card('Customer groups', 'Customers grouped by how recently they bought, how often, and how much they spent. Counts only: nobody is named. A group of fewer than ' + M.MIN_EVENTS + ' customers is too small to draw a conclusion from.' + (rfmSnap && M.state.snap ? ' Snapshot of ' + M.fd(rfmSnap) + '.' : ''), rfm.length ? [
     M.thinTag(rtot, 'customers'),
     M.stacked([{ name: 'Customers per group', note: M.num(rtot) + ' in total', parts: rsorted.map(function (x, i) { return { name: x.group, value: +x.customers || 0, color: RC[x.group] || M.CAT[i % 6] }; }) }]),
     M.legend(rsorted.map(function (x, i) { return { name: x.group + ' ' + M.num(x.customers), color: RC[x.group] || M.CAT[i % 6] }; })),
@@ -3378,7 +3707,7 @@ M.PAGES.customers.render = function (r) {
   ], 'wide'));
   var bp = M.stateRows('basket_pairs');
   root.appendChild(M.grid([
-    M.card('Baskets: products bought together', 'Lift above 1 means the pair is bought together more than chance. With only a few multi item orders, treat every row as too few to read.', [M.table([{ k: 'product_a', label: 'Product A', wrap: true }, { k: 'product_b', label: 'Product B', wrap: true }, { k: 'orders_together', label: 'Together', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'lift', label: 'Lift', num: true, fmt: function (v) { return v == null ? '' : M.num(v, 2); } }, { k: 'read', label: 'Read', render: function (x) { return x.read ? M.tag(x.read, /few/.test(x.read) ? 'thin' : '') : null; } }], { rows: bp, sortKey: 'orders_together', empty: 'No product pairs yet: no order held two products.' })]),
+    M.card('Baskets: products bought together', 'A number above 1 in the last column means the pair is bought together more often than chance. Only a few orders held two products, so treat every row as a hint, not a fact.', [M.table([{ k: 'product_a', label: 'Product A', wrap: true }, { k: 'product_b', label: 'Product B', wrap: true }, { k: 'orders_together', label: 'Together', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'lift', label: 'Together vs chance', num: true, fmt: function (v) { return v == null ? '' : M.num(v, 2); } }, { k: 'read', label: 'Read', render: function (x) { return x.read ? M.tag(x.read, /few/.test(x.read) ? 'thin' : '') : null; } }], { rows: bp, sortKey: 'orders_together', empty: 'No product pairs yet: no order held two products.' })]),
     M.card('Couriers', 'Parcels, dispatch and delivery days by carrier and state. Under 10 parcels is too few to read.', [M.table([{ k: 'carrier', label: 'Carrier', wrap: true }, { k: 'state', label: 'State' }, { k: 'parcels', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'avg_delivery_days', label: 'Delivery days', num: true, fmt: function (v) { return v == null ? '' : M.num(v, 1); } }, { k: 'late', label: 'Late', num: true, fmt: M.num }], { rows: cour, sortKey: 'parcels', empty: 'No courier table yet.' })])
   ], 'wide'));
   return root;
@@ -3403,19 +3732,19 @@ M.PAGES.social.render = function (r) {
     if (c.roll) return;
     var t = M.total({ tab: c.tab, col: c.col }, r.from, r.to), p = cmp ? M.total({ tab: c.tab, col: c.col }, r.pfrom, r.pto) : { v: null };
     var cf = M.cmpFor(t.v, p.v, cmp);
-    kp.appendChild(t.v === null ? M.kpi({ label: c.name + ' ' + c.unit, na: 'No data in this range' }) : M.kpi({ label: c.name + ' ' + c.unit, value: M.num(t.v), change: cf.change, cmpNote: cf.cmpNote, note: t.days < r.days ? 'data for ' + t.days + ' of ' + r.days + ' days' : '', spark: { values: M.series({ tab: c.tab, col: c.col }, buckets), color: c.color } }));
+    kp.appendChild(t.v === null ? M.kpiWhy(c.name + ' ' + c.unit, c.tab, r) : M.kpi({ label: c.name + ' ' + c.unit, value: M.num(t.v), change: cf.change, cmpNote: cf.cmpNote, note: t.days < r.days ? 'data for ' + t.days + ' of ' + r.days + ' days' : '', spark: { values: M.series({ tab: c.tab, col: c.col }, buckets), color: c.color } }));
   });
   root.appendChild(kp);
   chs.forEach(function (c) {
     var v = M.series({ tab: c.tab, col: c.col }, buckets), cov = M.cover(c.tab);
-    cards.push(M.card(c.name + ' ' + c.unit, (c.roll ? 'A snapshot taken each day of a rolling 7 day count, so bars are not added up. ' : 'Per ' + r.mode + '. ') + 'Records start ' + M.fd(cov.first) + '.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: c.name, h: 190, series: [{ name: c.name, values: v, color: c.color }], empty: 'No ' + c.name + ' numbers in this range.' }); })]));
+    cards.push(M.card(c.name + ' ' + c.unit, (c.roll ? 'A snapshot taken each day of a rolling 7 day count, so bars are not added up. ' : 'Per ' + r.mode + '. ') + 'Records start ' + M.fd(cov.first) + '.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: c.name, h: 190, series: [{ name: c.name, values: v, color: c.color }], emptyNode: function () { return M.emptyWhy(c.tab, r); }, empty: 'No ' + c.name + ' numbers in this range.' }); })]));
   });
   root.appendChild(M.grid(cards, 'wide'));
   /* content scorecard */
   var cs = M.stateRows('content_scorecard').filter(function (x) { return x.date && x.date >= r.from && x.date <= r.to && (!s.channel || chs.some(function (c) { return c.id === x.channel; })); });
   var withReach = cs.filter(function (x) { return x.reach_or_views != null; }).sort(function (a, b) { return (b.reach_or_views || 0) - (a.reach_or_views || 0); });
   var settled = withReach.filter(function (x) { return x.date <= M.add(M.D.anchor, -2); });   // posts of the last two days are still collecting views
-  var cols = [{ k: 'channel', label: 'Channel' }, { k: 'date', label: 'Posted', fmt: M.fd }, { k: 'format', label: 'Format' }, { k: 'topic', label: 'Topic', wrap: true, dim: 'topic' }, { k: 'reach_or_views', label: 'Reach or views', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'likes', label: 'Likes', num: true, fmt: M.num }, { k: 'saves', label: 'Saves', num: true, fmt: M.num }, { k: 'link_clicks_ga4', label: 'Link clicks (GA4)', num: true, fmt: M.num }, { k: 'orders_ga4', label: 'Orders (GA4)', num: true, fmt: M.num }];
+  var cols = [{ k: 'channel', label: 'Channel' }, { k: 'date', label: 'Posted', fmt: M.fd }, { k: 'format', label: 'Format' }, { k: 'topic', label: 'Topic', wrap: true, dim: 'topic' }, { k: 'reach_or_views', label: 'Reach or views', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'likes', label: 'Likes', num: true, fmt: M.num }, { k: 'saves', label: 'Saves', num: true, fmt: M.num }, { k: 'link_clicks_ga4', label: 'Link clicks (website)', num: true, fmt: M.num }, { k: 'orders_ga4', label: 'Orders (website)', num: true, fmt: M.num }];
   root.appendChild(M.card('Posts in this range', M.num(cs.length) + ' posts in the date range. Top ten and bottom ten by reach or views. Reach and views are different counts on different channels, so compare within a channel. Posts from the last two days are still collecting views.', [
     M.thinTag(cs.length, 'posts', 5),
     M.h('h3', { text: 'Top ten', style: 'font-size:.95rem;margin:.4rem 0' }), M.table(cols, { rows: withReach.slice(0, 10), sortKey: 'reach_or_views', empty: 'No posts in this range.', limit: 10 }),
@@ -3424,7 +3753,7 @@ M.PAGES.social.render = function (r) {
   /* patterns */
   var cut = ['topic', 'format', 'hour block', 'channel'].indexOf(s.ccut) >= 0 ? s.ccut : 'topic', seg = M.h('div', { class: 'seg', role: 'group', 'aria-label': 'Pattern to show' }, [['topic', 'Topic'], ['format', 'Format'], ['hour block', 'Hour (IST)'], ['channel', 'Channel']].map(function (m) { return M.h('button', { type: 'button', 'aria-pressed': m[0] === cut ? 'true' : 'false', text: m[1], onclick: function () { M.go({ ccut: m[0] }); } }); }));
   var pat = M.cuts('content_patterns', cut).sort(function (a, b) { return (+b.avg_reach_or_views || 0) - (+a.avg_reach_or_views || 0); });
-  root.appendChild(M.card('What works: average reach by ' + cut, 'Average reach or views per post, over all posts the nightly job has seen (not the date range). Averages of fewer than 5 posts are marked.', [M.h('div', { class: 'row-ctl' }, seg), M.bars(pat.map(function (x) { return { label: x.value + ' (' + M.num(x.posts) + ' posts)', dim: cut === 'topic' ? 'topic' : (cut === 'channel' ? 'channel' : null), dimValue: x.value, value: +x.avg_reach_or_views || 0, text: M.num(x.avg_reach_or_views) + ' avg, ' + M.num(x.avg_likes, 1) + ' likes', sub: M.thin(x.posts, 5) ? 'too few posts to read (under 5)' : null, color: M.thin(x.posts, 5) ? M.COLORS.grey : M.COLORS.maroon, tip: { title: x.value, rows: [{ k: 'Posts', v: M.num(x.posts) }, { k: 'Average reach or views', v: M.num(x.avg_reach_or_views) }, { k: 'Average likes', v: M.num(x.avg_likes, 1) }] } }; }), { empty: 'No pattern table yet.' }), M.h('p', { class: 'small muted', text: 'Grey bars have fewer than 5 posts. Threads and YouTube posts are counted in views, Instagram in reach, so "channel" and "format" differ partly because of what is counted.' })]));
+  root.appendChild(M.card('What works: average reach by ' + cut, 'Average reach or views per post, over all posts so far (not the dates you picked). Averages of fewer than 5 posts are marked.', [M.h('div', { class: 'row-ctl' }, seg), M.bars(pat.map(function (x) { return { label: x.value + ' (' + M.num(x.posts) + ' posts)', dim: cut === 'topic' ? 'topic' : (cut === 'channel' ? 'channel' : null), dimValue: x.value, value: +x.avg_reach_or_views || 0, text: M.num(x.avg_reach_or_views) + ' avg, ' + M.num(x.avg_likes, 1) + ' likes', sub: M.thin(x.posts, 5) ? 'too few posts to read (under 5)' : null, color: M.thin(x.posts, 5) ? M.COLORS.grey : M.COLORS.maroon, tip: { title: x.value, rows: [{ k: 'Posts', v: M.num(x.posts) }, { k: 'Average reach or views', v: M.num(x.avg_reach_or_views) }, { k: 'Average likes', v: M.num(x.avg_likes, 1) }] } }; }), { empty: 'No pattern table yet.' }), M.h('p', { class: 'small muted', text: 'Grey bars have fewer than 5 posts. Threads and YouTube posts are counted in views, Instagram in reach, so "channel" and "format" differ partly because of what is counted.' })]));
   return root;
 };
 
@@ -3436,20 +3765,20 @@ M.PAGES.search.render = function (r) {
   [['Brand searches shown (impressions)', 'brand_impressions', M.COLORS.maroon], ['Brand clicks', 'brand_clicks', M.COLORS.green], ['Other searches shown', 'nonbrand_impressions', M.COLORS.teal], ['Other clicks', 'nonbrand_clicks', M.COLORS.mustard]].forEach(function (c) {
     var part = { tab: 'brand_search_daily', col: c[1] }, t = M.total(part, r.from, r.to), p = cmp ? M.total(part, r.pfrom, r.pto) : { v: null };
     var cf = M.cmpFor(t.v, p.v, cmp);
-    kp.appendChild(t.v === null ? M.kpi({ label: c[0], na: 'No data in this range' }) : M.kpi({ label: c[0], value: M.num(t.v), change: cf.change, cmpNote: cf.cmpNote, spark: { values: M.series(part, buckets), color: c[2] }, note: t.days < r.days ? 'data for ' + t.days + ' of ' + r.days + ' days' : '' }));
+    kp.appendChild(t.v === null ? M.kpiWhy(c[0], 'brand_search_daily', r) : M.kpi({ label: c[0], value: M.num(t.v), change: cf.change, cmpNote: cf.cmpNote, spark: { values: M.series(part, buckets), color: c[2] }, note: t.days < r.days ? 'data for ' + t.days + ' of ' + r.days + ' days' : '' }));
   });
   root.appendChild(kp);
-  root.appendChild(M.note('"Brand" means searches that include mazo or shopmazo. Google Search Console lags about 2 to 3 days and reports small numbers, so a day of 0 can simply mean "not enough searches to be counted".'));
+  root.appendChild(M.note('"Brand" means searches that include mazo or shopmazo. Google reports search numbers 2 to 3 days late, and only counts them when there are enough searches, so a day of 0 can mean "too few to count".'));
   var bi = M.series({ tab: 'brand_search_daily', col: 'brand_impressions' }, buckets), bc = M.series({ tab: 'brand_search_daily', col: 'brand_clicks' }, buckets), ni = M.series({ tab: 'brand_search_daily', col: 'nonbrand_impressions' }, buckets);
-  cards.push(M.card('Brand searches over time', 'Bars: times mazo showed up in a search for the brand. The line is the average of the last few periods.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Brand search impressions', series: [{ name: 'Brand impressions', values: bi, color: M.COLORS.maroon }, { name: 'Average', values: M.ma(bi, r.mode === 'day' ? 7 : 3), color: M.COLORS.mustard, type: 'line', fmt: function (v) { return M.num(v, 1); } }], prev: cmp ? { values: M.series({ tab: 'brand_search_daily', col: 'brand_impressions' }, M.prevBuckets(buckets, r)) } : null, empty: 'No brand search numbers in this range.' }); })]));
-  cards.push(M.card('Other searches over time', 'Searches that do not name mazo but still showed one of our pages.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Other search impressions', series: [{ name: 'Other impressions', values: ni, color: M.COLORS.teal }], empty: 'No numbers in this range.' }); })]));
+  cards.push(M.card('Brand searches over time', 'Bars: times mazo showed up in a search for the brand. The line is the average of the last few periods.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Brand search impressions', series: [{ name: 'Brand impressions', values: bi, color: M.COLORS.maroon }, { name: 'Average', values: M.ma(bi, r.mode === 'day' ? 7 : 3), color: M.COLORS.mustard, type: 'line', fmt: function (v) { return M.num(v, 1); } }], prev: cmp ? { values: M.series({ tab: 'brand_search_daily', col: 'brand_impressions' }, M.prevBuckets(buckets, r)) } : null, emptyNode: function () { return M.emptyWhy('brand_search_daily', r); }, empty: 'No brand search numbers in this range.' }); })]));
+  cards.push(M.card('Other searches over time', 'Searches that do not name mazo but still showed one of our pages.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Other search impressions', series: [{ name: 'Other impressions', values: ni, color: M.COLORS.teal }], emptyNode: function () { return M.emptyWhy('brand_search_daily', r); }, empty: 'No numbers in this range.' }); })]));
   root.appendChild(M.grid(cards, 'wide'));
   /* queries: latest week in the range */
   var qs = M.rowsIn('search_queries_weekly', r.from, r.to, 'week'), by = {};
   qs.forEach(function (x) { if (!x.query) return; var o = by[x.query] || (by[x.query] = { query: x.query, clicks: 0, impressions: 0, pos: 0, n: 0 }); o.clicks += +x.clicks || 0; o.impressions += +x.impressions || 0; if (x.position != null) { o.pos += +x.position * (+x.impressions || 1); o.n += +x.impressions || 1; } });
   var qrows = Object.keys(by).map(function (k) { var o = by[k]; o.position = o.n ? o.pos / o.n : null; return o; });
   var qweeks = Array.from(new Set(qs.map(function (x) { return x.week; }))).length;
-  root.appendChild(M.card('What people typed', 'Search queries in weeks that start inside the range (' + qweeks + ' weekly pictures). Position 1 is the top of the page. ' + (qrows.length ? '' : 'None in this range. Weekly queries start ' + M.fd(M.cover('search_queries_weekly', 'week').first) + '.'), [M.table([{ k: 'query', label: 'Query', wrap: true }, { k: 'impressions', label: 'Times shown', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'clicks', label: 'Clicks', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'position', label: 'Average position', num: true, fmt: function (v) { return v == null ? '' : M.num(v, 1); } }], { rows: qrows, sortKey: 'impressions', empty: 'No search queries in this range.', limit: 50 })]));
+  root.appendChild(M.card('What people typed', 'Search queries in weeks that start inside the range (' + qweeks + ' weekly pictures). Position 1 is the top of the page. ' + (qrows.length ? '' : M.noDataWhy('search_queries_weekly', r, 'week').text), [M.table([{ k: 'query', label: 'Query', wrap: true }, { k: 'impressions', label: 'Times shown', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'clicks', label: 'Clicks', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'position', label: 'Average position', num: true, fmt: function (v) { return v == null ? '' : M.num(v, 1); } }], { rows: qrows, sortKey: 'impressions', empty: M.noDataWhy('search_queries_weekly', r, 'week').text, limit: 50 })]));
   /* market signal scatter: Trends direction against our impressions */
   var ms = M.stateRows('market_signal'), pts = ms.filter(function (x) { return x.trend_4w != null; }).map(function (x) {
     var dir = x.trend_12m ? (x.trend_4w / x.trend_12m - 1) * 100 : 0;
@@ -3461,7 +3790,7 @@ M.PAGES.search.render = function (r) {
   var gaps = M.stateRows('range_gaps'), pp = M.stateRows('price_position');
   root.appendChild(M.grid([
     M.card('Range gaps', 'Categories where the market has many items and we have few or none.', [M.table([{ k: 'category', label: 'Category' }, { k: 'mazo_products', label: 'Ours', num: true, fmt: M.num }, { k: 'market_items', label: 'Market items', num: true, fmt: M.num, bar: { color: M.COLORS.grey } }, { k: 'demand_signal', label: 'Demand signal', wrap: true }, { k: 'read', label: 'Read', wrap: true }], { rows: gaps, sortKey: 'market_items', empty: 'No range gap table yet.' })]),
-    M.card('Price position', 'Our median price against a sample of 3 competitor shops that lean premium. A sample, not the whole market.', [M.table([{ k: 'product_type', label: 'Type' }, { k: 'mazo_median', label: 'Ours (median)', num: true, fmt: function (v) { return v == null ? 'none' : M.inr(v); } }, { k: 'market_median', label: 'Market (median)', num: true, fmt: function (v) { return v == null ? '' : M.inr(v); }, bar: { color: M.COLORS.grey } }, { k: 'market_n', label: 'Items seen', num: true, fmt: M.num }, { k: 'position', label: 'Position', wrap: true }], { rows: pp, sortKey: 'product_type', sortDir: 1, empty: 'No price table yet.' })])
+    M.card('Price position', 'Our middle price against a sample of 3 competitor shops that lean premium. A sample, not the whole market.', [M.table([{ k: 'product_type', label: 'Type' }, { k: 'mazo_median', label: 'Ours (middle price)', num: true, fmt: function (v) { return v == null ? 'none' : M.inr(v); } }, { k: 'market_median', label: 'Market (middle price)', num: true, fmt: function (v) { return v == null ? '' : M.inr(v); }, bar: { color: M.COLORS.grey } }, { k: 'market_n', label: 'Items seen', num: true, fmt: M.num }, { k: 'position', label: 'Position', wrap: true }], { rows: pp, sortKey: 'product_type', sortDir: 1, empty: 'No price table yet.' })])
   ], 'wide'));
   return root;
 };
@@ -3497,7 +3826,7 @@ M.PAGES.forecast.render = function () {
   /* stock-out */
   var so = M.stateRows('stockout_forecast').filter(function (x) { return M.prodOk(x.product) && (!s.size || x.size === s.size); });
   var low = so.filter(function (x) { return /LOW/.test(x.flag || ''); });
-  root.appendChild(M.card('When a size runs out', 'Days left = stock divided by the sales pace of the last 28 days ("middle"), and at double the pace ("fast"). Under 21 days is flagged LOW. The pace is built from very few sales, so treat days as indicative.', [
+  root.appendChild(M.card('When a size runs out', 'Days left = stock divided by how fast it sold in the last 28 days ("normal pace"), and at double that speed ("fast pace"). Under 21 days is marked LOW. There are very few sales so far, so treat the days as a rough guess.', [
     M.tag('indicative', 'indic'), low.length ? M.note(M.num(low.length) + ' size(s) flagged LOW: ' + low.map(function (x) { return x.product + ' ' + x.size; }).join(', ') + '.', true) : M.h('p', { class: 'small', text: 'No size is under 21 days at its current pace.' }),
     M.table([{ k: 'product', label: 'Product', wrap: true }, { k: 'size', label: 'Size' }, { k: 'stock', label: 'In stock', num: true, fmt: M.num }, { k: 'sold_28d', label: 'Sold 28d', num: true, fmt: M.num }, { k: 'days_left_mid', label: 'Days left (middle pace)', num: true, fmt: M.num, bar: { color: M.COLORS.teal, max: 120 } }, { k: 'days_left_fast', label: 'Days left (fast pace)', num: true, fmt: M.num, bar: { color: M.COLORS.terra, max: 120 } },
       { k: 'flag', label: 'Flag', render: function (x) { return /LOW/.test(x.flag || '') ? M.badge('LOW', 'red') : x.flag ? M.badge('OK', 'green') : null; }, sort: function (x) { return /LOW/.test(x.flag || '') ? 0 : 1; } }], { rows: so, sortKey: 'days_left_mid', sortDir: 1, empty: 'No size has recent sales, so no run out dates can be worked out.' })]));
@@ -3529,7 +3858,7 @@ M.PAGES.functions.render = function () {
   var hist = M.rows('function_summary_hist'), by = {};
   hist.forEach(function (x) { if (!x.snapshot_date) return; var o = by[x.snapshot_date] || (by[x.snapshot_date] = { GREEN: 0, AMBER: 0, RED: 0, 'NO DATA': 0 }); o[x.status] = (o[x.status] || 0) + 1; });
   var dates = Object.keys(by).sort(), buckets = dates.map(function (d) { return { from: d, to: d, label: M.fds(d) }; });
-  root.appendChild(M.card('How many functions are green, amber and red, night by night', 'One bar per night the picture was saved. ' + (dates.length < 2 ? 'Only ' + dates.length + ' night is stored so far, so there is no trend yet: this fills in as nights pass.' : 'A growing green block is progress.'), [dates.length ? M.chart('', function (h, w) { M.stackChart(h, w, { buckets: buckets, title: 'Functions by status', h: 200, series: [{ name: 'Green', values: dates.map(function (d) { return by[d].GREEN; }), color: M.COLORS.green }, { name: 'Amber', values: dates.map(function (d) { return by[d].AMBER; }), color: M.COLORS.mustard }, { name: 'Red', values: dates.map(function (d) { return by[d].RED; }), color: M.COLORS.terra }, { name: 'No data', values: dates.map(function (d) { return by[d]['NO DATA']; }), color: M.COLORS.grey }] }); }) : M.empty('No history yet.')]));
+  root.appendChild(M.card('How many functions are green, amber and red, night by night', 'One bar per night. ' + (dates.length < 2 ? 'Only ' + dates.length + ' night is stored so far, so there is no trend yet: this fills in as nights pass.' : 'A growing green block is progress.'), [dates.length ? M.chart('', function (h, w) { M.stackChart(h, w, { buckets: buckets, title: 'Functions by status', h: 200, series: [{ name: 'Green', values: dates.map(function (d) { return by[d].GREEN; }), color: M.COLORS.green }, { name: 'Amber', values: dates.map(function (d) { return by[d].AMBER; }), color: M.COLORS.mustard }, { name: 'Red', values: dates.map(function (d) { return by[d].RED; }), color: M.COLORS.terra }, { name: 'No data', values: dates.map(function (d) { return by[d]['NO DATA']; }), color: M.COLORS.grey }] }); }) : M.empty('No history yet.')]));
   var tg = M.rows('kpi_targets');
   root.appendChild(M.card('Targets the status is judged against', 'Defaults set by the agent on 29 Oct 2026 until you and Madhu confirm them. Amber and red are the lines past which the status turns.', [M.table([{ k: 'kpi', label: 'Measure', wrap: true }, { k: 'target', label: 'Target', num: true }, { k: 'amber', label: 'Amber at', num: true }, { k: 'red', label: 'Red at', num: true }, { k: 'direction', label: 'Better is', fmt: function (v) { return v === 'up' ? 'higher' : 'lower'; } }, { k: 'lever', label: 'What moves it', wrap: true }], { rows: tg, sortKey: 'kpi', sortDir: 1, empty: 'No targets yet.' })]));
   return root;
@@ -3547,14 +3876,19 @@ M.RATIO_PARTS = {
     checkout_completion_pct: { num: 'purchase', den: 'begin_checkout', scale: 100 }, profit_per_order: { num: 'contribution_profit', den: 'orders', scale: 1 }
   }
 };
+/* a stored name in everyday words: capital first letter, no underscores, "pct" as percent, "hist" and "est" spelled out */
+M.niceName = function (n) {
+  var t = String(n).replace(/_hist$/, '').replace(/_/g, ' ').replace(/\bpct\b/g, '(%)').replace(/\best\b/g, 'estimate').replace(/\bga4\b/g, 'website').replace(/\b(\d+)d\b/g, '$1 days').replace(/\bavg\b/g, 'average').replace(/^conversion\b/, 'visits that bought').replace(/\bn\b/g, 'count');
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
 M.histSources = function () {
-  var out = [{ id: 'kpi_daily', label: 'Daily measures (kpi_daily)' }];
+  var out = [{ id: 'kpi_daily', label: 'Daily measures' }];
   if (M.has('rollup_monthly')) out.push({ id: 'rollup_monthly', label: 'Monthly totals' });
   if (M.has('rollup_weekly')) out.push({ id: 'rollup_weekly', label: 'Weekly totals' });
   Object.keys(M.D.tabs).sort().forEach(function (n) {
     var t = M.D.tabs[n];
     if (n === 'kpi_daily' || n === 'order_sources' || /^rollup_/.test(n)) return;
-    if (/_hist$/.test(n) || t.c.indexOf('date') >= 0) out.push({ id: n, label: n.replace(/_/g, ' ') + (/_hist$/.test(n) ? ' (every night)' : ' (daily)') });
+    if (/_hist$/.test(n) || t.c.indexOf('date') >= 0) out.push({ id: n, label: M.niceName(n) + (/_hist$/.test(n) ? ' (saved each night)' : ' (one row a day)') });
   });
   return out;
 };
@@ -3642,12 +3976,12 @@ M.PAGES.history.render = function (r) {
   var sel = M.histSel;
   var ctl = M.h('div', { class: 'row-ctl' }, [
     sel('h-src', 'Table', srcs.map(function (x) { return [x.id, x.label]; }), src, 'hsrc'),
-    sel('h-col', 'Measure', meta.num.map(function (c) { return [c, c.replace(/_/g, ' ')]; }), col, 'hcol'),
+    sel('h-col', 'Measure', meta.num.map(function (c) { return [c, M.niceName(c)]; }), col, 'hcol'),
     meta.hasEntity ? sel('h-ent', meta.isHist ? 'Row' : 'Which one', ents.map(function (e) { return [e, e === '*' ? 'All together' : e]; }), ent, 'hent') : null,
-    sel('h-col2', 'Second measure (own chart)', [['', 'None']].concat(meta.num.filter(function (c) { return c !== col; }).map(function (c) { return [c, c.replace(/_/g, ' ')]; })), col2, 'hcol2'),
+    sel('h-col2', 'Second measure (own chart)', [['', 'None']].concat(meta.num.filter(function (c) { return c !== col; }).map(function (c) { return [c, M.niceName(c)]; })), col2, 'hcol2'),
     sel('h-agg', 'Combine each period by', [['sum', 'Adding up'], ['avg', 'Average'], ['last', 'Latest value']], agg, 'hagg')
   ].filter(Boolean));
-  root.appendChild(M.card('Choose what to look at', 'Daily tables add a row every day; "every night" tables save a full picture each night, so they grow one picture a day. Rows with no value in a period are left empty, not drawn as zero.', [ctl]));
+  root.appendChild(M.card('Choose what to look at', 'Some sets of numbers add one row a day. Others save a full copy each night, so they grow by one copy a day. Days with no value are left empty, not drawn as zero.', [ctl]));
   var cov = M.cover(src, meta.dateCol);
   root.appendChild(M.h('p', { class: 'small muted', text: M.fd(cov.first) + ' to ' + M.fd(cov.last) + ' stored in this table (' + M.num(meta.t.rows.length) + ' rows).' + (meta.isHist && M.idx(src, 'snapshot_date').size < 2 ? ' Only one night has been saved so far, so a line will start to appear after the second night.' : '') }));
   var hi = r.to === M.D.anchor && cov.last && cov.last > r.to ? cov.last : r.to;   // a nightly picture is dated the morning after the day it describes
@@ -3657,8 +3991,8 @@ M.PAGES.history.render = function (r) {
     var latest = have.length ? have[have.length - 1] : null, tot = have.reduce(function (a, x) { return a + x; }, 0);
     var sv = M.nz(v), isMoney = /sales|revenue|profit|cost|fee|price|value|spend|gross|net|discount|gst/i.test(c) && !/pct|rate|per_order/.test(c);
     var f = isMoney ? M.inr : /_pct$/.test(c) ? function (x) { return M.pct(x); } : function (x) { return M.num(x, x % 1 ? 1 : 0); };
-    var body = have.length ? M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: c, h: 230, series: [{ name: c.replace(/_/g, ' '), values: sv, color: M.COLORS.maroon, fmt: f }].concat(buckets.length > 6 ? [{ name: 'Average', values: M.ma(sv, r.mode === 'day' ? 7 : 3), color: M.COLORS.mustard, type: 'line', fmt: function (x) { return f(Math.round(x * 10) / 10); } }] : []), prev: pv ? { values: M.nz(pv) } : null, yfmt: isMoney ? function (n) { return 'Rs. ' + M.short(n); } : M.short }); }) : M.empty('This table has no values for this selection in the date range. Try "All time".');
-    return M.card(c.replace(/_/g, ' ') + (ent !== '*' ? ' for ' + ent : ''), have.length ? 'Per ' + r.mode + ', ' + (agg === 'sum' ? 'added up' : agg === 'avg' ? 'averaged' : 'latest value') + '. Total in range ' + f(Math.round(tot * 100) / 100) + (agg === 'last' ? ' (not meaningful for a level)' : '') + '; latest ' + f(latest) + '.' : null, [body, have.length ? M.tableView([{ k: 'label', label: 'Period' }, { k: 'v', label: c.replace(/_/g, ' '), num: true, fmt: function (x) { return x == null ? 'no value' : f(x); } }], buckets.map(function (b, i) { return { label: b.from === b.to ? M.fd(b.from) : M.fd(b.from) + ' to ' + M.fd(b.to), v: v[i] }; })) : null]);
+    var body = have.length ? M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: c, h: 230, series: [{ name: M.niceName(c), values: sv, color: M.COLORS.maroon, fmt: f }].concat(buckets.length > 6 ? [{ name: 'Average', values: M.ma(sv, r.mode === 'day' ? 7 : 3), color: M.COLORS.mustard, type: 'line', fmt: function (x) { return f(Math.round(x * 10) / 10); } }] : []), prev: pv ? { values: M.nz(pv) } : null, yfmt: isMoney ? function (n) { return 'Rs. ' + M.short(n); } : M.short }); }) : M.empty('This table has no values for this selection in the date range. Try "All time".');
+    return M.card(M.niceName(c) + (ent !== '*' ? ' for ' + ent : ''), have.length ? 'Per ' + r.mode + ', ' + (agg === 'sum' ? 'added up' : agg === 'avg' ? 'averaged' : 'latest value') + '. Total in range ' + f(Math.round(tot * 100) / 100) + (agg === 'last' ? ' (not meaningful for a level)' : '') + '; latest ' + f(latest) + '.' : null, [body, have.length ? M.tableView([{ k: 'label', label: 'Period' }, { k: 'v', label: c.replace(/_/g, ' '), num: true, fmt: function (x) { return x == null ? 'no value' : f(x); } }], buckets.map(function (b, i) { return { label: b.from === b.to ? M.fd(b.from) : M.fd(b.from) + ' to ' + M.fd(b.to), v: v[i] }; })) : null]);
   };
   root.appendChild(M.grid([draw(col)].concat(col2 ? [draw(col2)] : []), col2 ? 'wide' : 'one'));
   var yc = M.yearsCard(); if (yc) root.appendChild(yc);
@@ -3714,21 +4048,21 @@ M.histRollup = function (r, srcs, src) {
 };
 
 /* ================================================================ DATA QUALITY */
-M.sp('quality', 'Data quality', 'Data quality', 'Can you trust the numbers today? Freshness of each daily table, the nightly checks, and what every table holds.', [], { dates: false });
+M.sp('quality', 'Data quality', 'Data quality', 'Can you trust the numbers today? How recent each set of numbers is, the checks run every night, and what is stored.', [], { dates: false });
 M.PAGES.quality.render = function () {
   var root = M.h('div'), dq = M.rows('data_quality_daily'), latest = dq.reduce(function (m, x) { return x.date && x.date > m ? x.date : m; }, ''), today = dq.filter(function (x) { return x.date === latest; });
   var bad = today.filter(function (x) { return x.status !== 'OK'; });
   var kp = M.h('div', { class: 'kpis' });
   kp.appendChild(M.kpi({ label: 'Checks last run', value: latest ? M.fds(latest) : 'n/a', note: latest ? latest.slice(0, 4) : '' })); kp.appendChild(M.kpi({ label: 'Checks passed', value: M.num(today.length - bad.length) + ' of ' + M.num(today.length) }));
-  kp.appendChild(M.kpi({ label: 'Built', value: M.builtText().split(',')[0], note: M.builtText().split(', ')[1] || '' })); kp.appendChild(M.kpi({ label: 'Newest data day', value: M.fds(M.D.anchor), note: M.D.anchor.slice(0, 4) }));
+  kp.appendChild(M.kpi({ label: 'Updated', value: M.builtText().split(',')[0], note: M.builtText().split(', ')[1] || '' })); kp.appendChild(M.kpi({ label: 'Newest data day', value: M.fds(M.D.anchor), note: M.D.anchor.slice(0, 4) }));
   root.appendChild(kp);
-  root.appendChild(M.card('Nightly checks', 'Is each table fresh, is its row count sensible, did a number jump ten times. Not OK first.', [M.table([{ k: 'check', label: 'Check', wrap: true }, { k: 'target', label: 'Should be', wrap: true }, { k: 'status', label: 'Status', render: function (x) { return x.status === 'OK' ? M.badge('OK', 'green') : M.badge(x.status || '?', 'red'); }, sort: function (x) { return x.status === 'OK' ? 1 : 0; } }, { k: 'detail', label: 'Detail', wrap: true }], { rows: today, sortKey: 'status', sortDir: 1, empty: 'No checks have run yet.', limit: 100 })]));
+  root.appendChild(M.card('Nightly checks', 'Is each set of numbers recent, is its size sensible, did any number suddenly jump ten times. Problems come first.', [M.table([{ k: 'check', label: 'Check', wrap: true }, { k: 'target', label: 'Should be', wrap: true }, { k: 'status', label: 'Status', render: function (x) { return x.status === 'OK' ? M.badge('OK', 'green') : M.badge(x.status || '?', 'red'); }, sort: function (x) { return x.status === 'OK' ? 1 : 0; } }, { k: 'detail', label: 'Detail', wrap: true }], { rows: today, sortKey: 'status', sortDir: 1, empty: 'No checks have run yet.', limit: 100 })]));
   /* freshness of every daily tab */
   var today0 = M.D.built.slice(0, 10), fr = M.D.meta.filter(function (m) { return m.last && /_daily$/.test(m.name) && m.name !== 'data_quality_daily'; }).map(function (m) { return { name: m.name, last: m.last, age: M.diff(m.last, today0), rows: m.rows }; });
-  root.appendChild(M.card('How fresh is each daily table?', 'Days between the newest row and the day this file was built. GA4 and Search Console finish a day 24 to 72 hours later, so 2 to 3 is normal for them.', [M.bars(fr.sort(function (a, b) { return b.age - a.age; }).map(function (x) { return { label: x.name, value: x.age, max: Math.max(7, fr.reduce(function (m, y) { return Math.max(m, y.age); }, 0)), text: x.age + ' day' + (x.age === 1 ? '' : 's') + ' old (' + M.fd(x.last) + ')', color: x.age > 5 ? M.COLORS.terra : x.age > 3 ? M.COLORS.mustard : M.COLORS.green }; }), { empty: 'No daily tables.' })]));
+  root.appendChild(M.card('How fresh is each daily table?', 'How many days old the newest number is. Google Analytics and Google Search report a day 1 to 3 days late, so 2 to 3 is normal for them.', [M.bars(fr.sort(function (a, b) { return b.age - a.age; }).map(function (x) { return { label: x.name, value: x.age, max: Math.max(7, fr.reduce(function (m, y) { return Math.max(m, y.age); }, 0)), text: x.age + ' day' + (x.age === 1 ? '' : 's') + ' old (' + M.fd(x.last) + ')', color: x.age > 5 ? M.COLORS.terra : x.age > 3 ? M.COLORS.mustard : M.COLORS.green }; }), { empty: 'No daily tables.' })]));
   var meta = M.D.meta.filter(function (m) { return m.name !== 'Sheet1' && m.name !== 'Dashboard' && m.name !== 'History'; });
-  root.appendChild(M.card('Every table in the Sheet', 'Rows and the span of dates each one covers. "Embedded" means the dashboard file carries it. Tables with 0 rows have not received their first data yet.', [M.table([{ k: 'name', label: 'Table', wrap: true }, { k: 'rows', label: 'Rows', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'cols', label: 'Columns', num: true }, { k: 'first', label: 'First date', fmt: function (v) { return v ? M.fd(v) : ''; }, sort: function (x) { return x.first || ''; } }, { k: 'last', label: 'Last date', fmt: function (v) { return v ? M.fd(v) : ''; }, sort: function (x) { return x.last || ''; } },
-    { k: 'emb', label: 'Embedded', render: function (x) { return x.rows === 0 ? M.badge('EMPTY', 'grey') : x.emb ? M.badge('YES', 'green') : M.badge('NO', 'grey'); }, sort: function (x) { return x.emb ? 1 : 0; } }], { rows: meta.map(function (m) { return { name: m.name, rows: m.rows, cols: m.cols, first: m.first, last: m.last, emb: !!M.D.tabs[m.name] }; }), sortKey: 'name', sortDir: 1, limit: 200 })]));
+  root.appendChild(M.card('Everything that is stored', 'Rows and the dates each one covers. "On dashboard" means this page can show it. A table with 0 rows has not received its first data yet.', [M.table([{ k: 'name', label: 'Table', wrap: true }, { k: 'rows', label: 'Rows', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'cols', label: 'Columns', num: true }, { k: 'first', label: 'First date', fmt: function (v) { return v ? M.fd(v) : ''; }, sort: function (x) { return x.first || ''; } }, { k: 'last', label: 'Last date', fmt: function (v) { return v ? M.fd(v) : ''; }, sort: function (x) { return x.last || ''; } },
+    { k: 'emb', label: 'On dashboard', render: function (x) { return x.rows === 0 ? M.badge('EMPTY', 'grey') : x.emb ? M.badge('YES', 'green') : M.badge('NO', 'grey'); }, sort: function (x) { return x.emb ? 1 : 0; } }], { rows: meta.map(function (m) { return { name: m.name, rows: m.rows, cols: m.cols, first: m.first, last: m.last, emb: !!M.D.tabs[m.name] }; }), sortKey: 'name', sortDir: 1, limit: 200 })]));
   var notes = [];
   if (M.D.dropped.length) notes.push('Columns left out for privacy: ' + M.D.dropped.join(', ') + '.');
   if (M.D.missing.length) notes.push('Tables with no rows yet: ' + M.D.missing.join(', ') + '.');
@@ -3743,7 +4077,7 @@ M.sp('gtm', 'Go to market and CRM', 'Go to market and CRM', 'Which channels earn
 M.PAGES.gtm.render = function () {
   var root = M.h('div'), sc = M.stateRows('gtm_scorecard'), cg = M.stateRows('channel_groups'), lc = M.stateRows('lifecycle_board'), cr = M.stateRows('checkout_recovery'), ep = M.stateRows('email_program');
   var orders = M.totalOrders();
-  root.appendChild(M.note('This page shows the nightly picture of the last 28 days and of everyone on file, not the date range above. ' + (orders < M.MIN_EVENTS ? 'With ' + M.num(orders) + ' orders in all, every split is direction only, not proof.' : ''), orders < M.MIN_EVENTS));
+  root.appendChild(M.note('This page shows the latest saved snapshot of the last 28 days and of all customers so far, not the dates you picked above. ' + (orders < M.MIN_EVENTS ? 'With ' + M.num(orders) + ' orders in all, every split is a hint only, not proof.' : ''), orders < M.MIN_EVENTS));
   /* the scorecard: one line per question */
   var KIND = { GREEN: 'green', AMBER: 'amber', RED: 'red', 'NO DATA': 'grey', info: 'grey' };
   root.appendChild(M.card('Six questions a go to market review asks', 'Each line is a question, the answer from our own numbers, and the next step. Status is green, amber or red against a simple rule.', [
