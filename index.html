@@ -1039,6 +1039,7 @@ M.stateRows = function (n) {
   return best ? m.get(best) : M.rows(n);
 };
 M.snapOf = function (n) {   // the snapshot date actually shown for a state tab
+  if (M.D.histLast && !M.state.snap) return M.D.histLast[n] || null;      /* hosted site: the newest night of every picture table is written into the core file */
   var m = M.has(n + '_hist') ? M.idx(n + '_hist', 'snapshot_date') : null, want = M.state.snap, best = null;
   if (!m) return null;
   m.forEach(function (_, d) { if ((!want || d <= want) && (best === null || d > best)) best = d; });
@@ -3812,8 +3813,6 @@ M.needFor = function () {
     if (src === 'threads_posts_daily' || src === 'youtube_videos_daily') wide.forEach(function (m) { if (has(F.p, m)) want.push('p-' + m); });
   }
   if (s.page === 'functions') (F.h.function_summary_hist || []).forEach(function (m) { want.push('h-function_summary_hist-' + m); });
-  /* M.snapOf / M.stateRows name the night a state table's picture is from by looking at its history twin: the newest month of every twin is loaded (a few KB each) */
-  Object.keys(F.h).forEach(function (tbl) { var ms = F.h[tbl]; if (ms && ms.length) want.push('h-' + tbl + '-' + ms[ms.length - 1]); });
   if (s.snap) {
     var sm = s.snap.slice(0, 7), pm = M.add(sm + '-01', -1).slice(0, 7);
     Object.keys(F.h).forEach(function (t) { [pm, sm].forEach(function (m) { if (has(F.h[t], m)) want.push('h-' + t + '-' + m); }); });
