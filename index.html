@@ -3533,6 +3533,14 @@ M.PAGES.functions.render = function () {
 M.LEVEL = /followers|subscribers|reviews_published|published_reviews|stock|units_on_hand|rating/i;
 M.NOTRECORDED = /followers|subscribers|reviews_published|published_reviews/i;
 M.RATIO = /pct|rate|avg|average|position|per_order|days|share|ratio|lift/i;
+/* T814 (1 Nov 2026): a daily ratio must never be averaged across days (October conversion read 0.287 percent instead of the true 0.388). For the ratio columns of kpi_daily the period value is
+   the SUM of the numerator divided by the SUM of the denominator, exactly how the Overview, Funnel and Channels pages work. {num, den, scale, dp} */
+M.RATIO_PARTS = {
+  kpi_daily: {
+    conversion_pct: { num: 'purchase', den: 'visits', scale: 100 }, add_to_cart_rate_pct: { num: 'add_to_cart', den: 'view_item', scale: 100 },
+    checkout_completion_pct: { num: 'purchase', den: 'begin_checkout', scale: 100 }, profit_per_order: { num: 'contribution_profit', den: 'orders', scale: 1 }
+  }
+};
 M.histSources = function () {
   var out = [{ id: 'kpi_daily', label: 'Daily measures (kpi_daily)' }];
   if (M.has('rollup_monthly')) out.push({ id: 'rollup_monthly', label: 'Monthly totals' });
@@ -3578,6 +3586,17 @@ M.histSeries = function (meta, col, entity, agg, buckets) {
     if (v === 0 && M.NOTRECORDED.test(col)) return;      // audit F-15: a follower, subscriber or review count of 0 means 'not recorded that day', never zero followers
     per[bi.get(d)].push({ d: d, v: v });
   });
+  var rp = (M.RATIO_PARTS[meta.t.name] || {})[col];
+  if (rp && agg === 'avg') {
+    var sums = buckets.map(function () { return { n: 0, d: 0, any: false }; });
+    meta.t.rows.forEach(function (x) {
+      var dd = typeof x[meta.dateCol] === 'string' ? x[meta.dateCol].slice(0, 10) : null; if (!dd || dd < from || dd > to) return;
+      var n = x[rp.num], q = x[rp.den]; if (typeof n !== 'number' || typeof q !== 'number') return;
+      var s0 = sums[bi.get(dd)]; s0.n += n; s0.d += q; s0.any = true;
+    });
+    var outR = sums.map(function (s0) { return s0.any && s0.d > 0 ? s0.n / s0.d * rp.scale : null; });     /* no denominator = no value (a gap), never 0 */
+    return M.metaSet(outR, { recompute: function (b) { return M.histSeries(meta, col, entity, agg, b); }, gapsFor: function (b) { var c = M.cover(meta.t.name, meta.dateCol), v = M.histSeries(meta, col, entity, agg, b); return b.map(function (x, i) { var lo = c.first && x.from < c.first ? c.first : x.from, hi = c.last && x.to > c.last ? c.last : x.to, of = c.first && hi >= lo ? M.diff(lo, hi) + 1 : 0; return { n: v[i] == null ? of : 0, of: of }; }); } });
+  }
   var out = per.map(function (a) {
     if (!a.length) return null;
     if (agg === 'last') { a.sort(function (p, q) { return p.d < q.d ? -1 : 1; }); var lastD = a[a.length - 1].d; return a.filter(function (z) { return z.d === lastD; }).reduce(function (s, z) { return s + z.v; }, 0); }
