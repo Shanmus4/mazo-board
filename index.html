@@ -1119,6 +1119,97 @@ select.dd-native,.row-ctl .fld select.dd-native,.fld select.dd-native,.tsec sele
   td button.dimlink{min-width:44px;min-height:44px}
 }
 
+/* mazo dashboard FULL SCREEN (T858, 2 Nov 2026). Owner: "the full screen view of all graphs does not have a proper layout, no padding on the page edges".
+   One layout for every card that can go full screen (charts, tables, bar lists, heat maps). Loads after the Editorial look and wins over it and over the older full screen rules in
+   dashboard.css, dashboard_20_design.css and dashboard_21_polish.css (those are left in place; this file only overrides).
+   The shape, top to bottom, all inside a column no wider than 1400px with 24px (16px on a phone) of room on every side:
+     1. the top row: the title and its (i) on the left, Close on the right (stays in view while the card scrolls)
+     2. ONE block with the date and filter strip and the chart tools, on a light sand background
+     3. the chart, using the height that is left (the chart code reads the window height), then its key and the link to its numbers
+   The page behind does not scroll. Escape closes. On a phone the block of dates, filters and options folds into one line. */
+
+#fsroot .card.fs{
+  --fs-x:max(24px,env(safe-area-inset-left,0px),calc((100% - 1400px) / 2));
+  --fs-xr:max(24px,env(safe-area-inset-right,0px),calc((100% - 1400px) / 2));
+  position:fixed;inset:0;z-index:70;margin:0;border:0;border-radius:0;box-shadow:none;background:var(--paper);
+  padding:0 var(--fs-xr) max(40px,env(safe-area-inset-bottom,0px)) var(--fs-x);
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+}
+body.detail-on #fsroot .card.fs{padding-right:var(--fs-xr)}      /* the detail panel floats over the card; the card keeps its own room */
+
+/* 1. the top row */
+#fsroot .fs-bar{position:static;display:block;margin:0;padding:0;border:0;background:transparent}
+#fsroot .fs-top{position:sticky;top:0;z-index:5;display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp4);margin:0;padding:max(20px,env(safe-area-inset-top,0px)) 0 var(--sp4);background:var(--paper);border-bottom:1px solid var(--edge)}
+#fsroot .fs-head{flex:1 1 auto;min-width:0}
+#fsroot .fs-head h2,#fsroot .card.fs .fs-head h2{display:block;margin:0;font-size:28px;line-height:1.2;letter-spacing:-.01em;overflow-wrap:anywhere}
+#fsroot .fs-head h2 .info-mark{margin-left:var(--sp1);vertical-align:middle}
+#fsroot .fs-scope{margin:var(--sp1) 0 0;font-size:var(--t13);color:var(--ink3)}
+#fsroot .fs-close{flex:0 0 auto;align-self:flex-start;margin:0}
+
+/* 2. dates, filters and tools: one block */
+#fsroot .fs-panel{margin:var(--sp5) 0 var(--sp4);padding:var(--sp4) var(--sp5);background:var(--sand);border-radius:var(--rad2);display:flex;flex-direction:column;gap:var(--sp4)}
+#fsroot .fs-panel .fs-ctl{display:flex;flex-wrap:wrap;gap:var(--sp3) var(--sp4);align-items:flex-end;padding:0;background:transparent;border-radius:0}
+#fsroot .fs-panel .fs-ctl .fld{flex:1 1 172px;max-width:240px;min-width:0}
+#fsroot .fs-panel .fs-ctl .sw{flex:0 0 auto;min-height:40px;white-space:nowrap}
+#fsroot .fs-panel .fs-tools{display:flex;flex-wrap:wrap;grid-template-columns:none;gap:var(--sp4) var(--sp6);align-items:flex-start;justify-content:flex-start;max-width:none;width:auto}
+#fsroot .fs-panel .fs-ctl + .fs-tools{padding-top:var(--sp4);border-top:1px solid var(--edge2)}
+#fsroot .fs-panel .fs-tools:empty{display:none}
+#fsroot .fs-panel .fs-tools .tsec{flex-direction:column;align-items:flex-start;gap:var(--sp2);min-width:0}
+#fsroot .fs-panel .fs-tools .tsec .tl{align-self:flex-start}
+#fsroot .fs-panel .fs-tools .tsec .tsec-hint{max-width:42ch}
+#fsroot .fs-panel .fs-tools .ev-key{max-width:100%}
+#fsroot .fs-panel .fs-tools .seg{flex-wrap:nowrap}
+#fsroot .fs-panel:not(:has(*)){display:none}
+
+/* 3. the chart and what sits under it */
+#fsroot .card.fs .cframe{margin-top:var(--sp3)}
+#fsroot .card.fs .cb{min-height:0}
+#fsroot .card.fs .zoomnote{margin:0 0 var(--sp2)}
+#fsroot .card.fs .legend{margin:var(--sp3) 0 var(--sp2)}
+#fsroot .card.fs .tbl-details{margin-top:var(--sp4)}
+#fsroot .card.fs>:last-child{margin-bottom:0}
+/* a long table or list is a box that scrolls with its heading fixed; in full screen it may use most of the window */
+#fsroot .card.fs .tw.tall{max-height:max(320px,calc(100vh - 150px))}
+#fsroot .card.fs .hbscroll{max-height:none;overflow:visible}
+#fsroot .card.fs .tblbox{margin-top:var(--sp3)}
+
+/* phone and small tablet */
+@media (max-width:640px){
+  #fsroot .card.fs{--fs-x:max(16px,env(safe-area-inset-left,0px));--fs-xr:max(16px,env(safe-area-inset-right,0px));padding-bottom:max(32px,env(safe-area-inset-bottom,0px))}
+  #fsroot .fs-top{padding-top:max(14px,env(safe-area-inset-top,0px));padding-bottom:var(--sp3);gap:var(--sp3)}
+  #fsroot .fs-head h2{font-size:22px}
+  #fsroot .fs-panel{margin:var(--sp4) 0 var(--sp3);padding:var(--sp3)}
+  #fsroot .fs-panel .fs-ctl .fld{flex:1 1 calc(50% - 8px);max-width:none}
+  #fsroot .fs-panel .fs-ctl .sw{flex:1 1 100%;white-space:normal}
+  #fsroot .fs-panel .fs-tools{gap:var(--sp4)}
+  #fsroot .fs-panel .fs-tools .tsec{width:100%}
+  #fsroot .fs-panel .fs-tools .seg{width:100%}
+  #fsroot .fs-panel .fs-tools .seg button{flex:1 1 0;min-width:0;padding:0 var(--sp2)}
+}
+/* the folded block on a phone: one line, "Dates, filters and options" */
+#fsroot details.fs-panel{padding:0;gap:0}
+#fsroot details.fs-panel>summary{cursor:pointer;display:flex;align-items:center;min-height:48px;padding:0 var(--sp4);list-style:none;color:var(--maroon);font-size:var(--t14);font-weight:600}
+#fsroot details.fs-panel>summary::-webkit-details-marker{display:none}
+#fsroot details.fs-panel>summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--maroon);border-bottom:2px solid var(--maroon);transform:rotate(45deg);transition:transform .15s var(--ease)}
+#fsroot details.fs-panel[open]>summary::after{transform:rotate(-135deg)}
+#fsroot details.fs-panel>summary:focus-visible{outline:2px solid var(--ring);outline-offset:-2px;border-radius:var(--rad2)}
+#fsroot details.fs-panel[open]>summary{border-bottom:1px solid var(--edge2)}
+#fsroot details.fs-panel>.fs-ctl,#fsroot details.fs-panel>.fs-tools{margin:var(--sp3) var(--sp3) 0}
+#fsroot details.fs-panel>:last-child{margin-bottom:var(--sp3)}
+
+/* ---------- growth limits used outside full screen (T857) ---------- */
+/* a long bar list scrolls inside its own box; full screen shows every row */
+.hbscroll{max-height:min(56vh,468px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px;scrollbar-width:thin}
+/* any table inside a card (not full screen) scrolls inside a box of at most 640px, heading fixed: rows that wrap onto several lines (post captions) can make ten rows very tall */
+.card:not(.fs) .tw{max-height:min(70vh,640px);overflow:auto}
+/* the table under a chart: the latest rows, scrolling, with a button for earlier ones */
+.tbl-details .tw.tall{max-height:min(56vh,440px)}
+.tbl-earlier{margin:0 0 var(--sp2)}
+/* a heat map with many rows scrolls too; its heading row stays */
+.card .tw.tall table.heat th{position:sticky;top:0;z-index:2;background:#FBF8F4}
+.hide-fs{display:block}
+#fsroot .hide-fs{display:none}
+
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
 #lock[hidden]{display:none}
@@ -1857,15 +1948,32 @@ M.tipFor = function (el, fn, act) {
   el.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target === el) { e.preventDefault(); open(e); } });
 };
 
-/* ---------------------------------------------------------------- table view of any chart's numbers */
+/* ---------------------------------------------------------------- table view of any chart's numbers
+   T857 (2 Nov 2026, scalability): a year of days is 365 rows and five years of weeks is 260. The table opens on the LATEST 60 rows (the order stays as given), sits in a box that scrolls with its heading
+   fixed, starts scrolled to the newest row, and a button above adds 60 earlier rows at a time. The CSV file always holds every row. */
+M.TBLWIN = 60;
 M.tableView = function (cols, rows, label) {
   var d = M.h('details', { class: 'tbl-details' }, [M.h('summary', { text: label || 'Show the numbers as a table' })]);
   var done = false;
   d.addEventListener('toggle', function () {
     if (!d.open || done) return;
     done = true;
-    d.appendChild(M.staticTable(cols, rows.slice(0, 500)));
-    if (rows.length > 500) d.appendChild(M.h('p', { class: 'small muted', text: 'Showing the first 500 of ' + M.num(rows.length) + ' rows.' }));
+    var from = Math.max(0, rows.length - M.TBLWIN), holder = M.h('div', { class: 'tbl-win' }), note = M.h('p', { class: 'small muted', 'data-ux': '1' });
+    var draw = function (keepFromBottom) {
+      var old = holder.querySelector('.tw'), before = old ? old.scrollHeight - old.scrollTop : 0;
+      M.clear(holder);
+      if (from > 0) {
+        var more = M.h('button', { type: 'button', class: 'btn sm', 'data-ux': '1', text: 'Show ' + M.num(Math.min(M.TBLWIN, from)) + ' earlier rows' });
+        more.addEventListener('click', function () { from = Math.max(0, from - M.TBLWIN); draw(true); });
+        holder.appendChild(M.h('p', { class: 'tbl-earlier small muted', 'data-ux': '1' }, ['Showing the latest ' + M.num(rows.length - from) + ' of ' + M.num(rows.length) + ' rows. ', more]));
+      }
+      var tw = M.staticTable(cols, rows.slice(from));
+      holder.appendChild(tw);
+      var box = tw.classList.contains('tall') ? tw : null;
+      if (box) box.scrollTop = keepFromBottom ? box.scrollHeight - before : box.scrollHeight;
+    };
+    d.appendChild(holder);
+    draw(false);
     if (M.tableCsv) {      /* UX round: the same numbers as a CSV file (raw values, a blank cell stays blank) */
       var b = M.h('button', { type: 'button', class: 'btn sm', 'data-ux': '1' }, [M.icon ? M.icon('i-down') : null, M.h('span', { text: 'Download CSV' })]);
       b.addEventListener('click', function () { var card = d.closest('.card'), h3 = card && card.querySelector('h3'); M.tableCsv(cols, rows, (h3 && h3.textContent) || 'table'); });
@@ -1879,7 +1987,7 @@ M.staticTable = function (cols, rows) {
   var tb = M.h('tbody');
   rows.forEach(function (r) { tb.appendChild(M.h('tr', null, cols.map(function (c) { var v = c.fmt ? c.fmt(r[c.k], r) : r[c.k]; v = v == null ? '' : String(v); return M.h('td', { class: c.num ? 'n' : '', text: v === 'n/a' ? 'not available' : (M.plain ? M.plain(v) : v) }); }))); });
   t.appendChild(tb);
-  return M.h('div', { class: 'tw' }, t);
+  return M.h('div', { class: 'tw' + (rows.length > 14 ? ' tall' : '') }, t);
 };
 
 /* the sortable table with in-cell bars (M.table) lives in dashboard_09_tables.js: row filter, click a value, row detail, CSV, show more */
@@ -1888,7 +1996,7 @@ M.staticTable = function (cols, rows) {
    rows: {label, value, text, sub, color, tip:{title,rows}}   o: {max, color} */
 M.bars = function (rows, o) {
   o = o || {};
-  var box = M.h('div', { role: 'list' });
+  var box = M.h('div', { role: 'list', class: rows.length > 12 ? 'hbscroll' : '' });      /* T857: more than 12 rows scroll inside their own box (full screen shows them all) */
   if (!rows.length) return M.empty(o.empty || 'Nothing to show for this selection.');
   var max = o.max || Math.max.apply(null, rows.map(function (r) { return Math.abs(r.value) || 0; }).concat([0])) || 1;
   rows.forEach(function (r) {
@@ -1997,8 +2105,41 @@ M.sparkline = function (values, color, label) {
     M.s('polyline', { points: pts, fill: 'none', stroke: color, 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke', 'stroke-linejoin': 'round' })]);
 };
 
-/* the height of a chart: its own height, or most of the window when the chart is in full screen */
-M.bigH = function (host, H) { var fr = host && host._frame; return fr && fr.big ? Math.max(H, Math.round(Math.min(window.innerHeight * 0.6, 640))) : H; };
+/* the height of a chart: its own height, or in full screen the free height of the window (T858: the chart takes what is left under the bar, with room for the key and the table link below it) */
+M.bigH = function (host, H) {
+  var fr = host && host._frame;
+  if (!(fr && fr.big)) return H;
+  var card = host.closest ? host.closest('.card') : null, top = card ? host.getBoundingClientRect().top - card.getBoundingClientRect().top + card.scrollTop : 260;
+  var free = window.innerHeight - top - 170;
+  return Math.max(H, Math.round(Math.max(340, Math.min(free, 860))));
+};
+
+/* ONE hover readout for charts made of columns (the weekly buyers, the weekly forecast), the same as the time chart has (T858, owner 2 Nov 2026): a dashed line down the column you point at,
+   a cross cursor, one tooltip for that column, arrow keys, and a click or Enter that opens the same facts in the detail panel. It is drawn over the bars. Only THIS chart shows its line:
+   the old shared line that also appeared in the other charts of the page is gone.   g: {n, L, T, pw, ph, X(i), tip(i) -> {title, rows}} */
+M.colHover = function (svg, w, g) {
+  var hair = M.s('line', { class: 'hair', y1: g.T, y2: g.T + g.ph, stroke: M.COLORS.ink, 'stroke-width': 1, 'stroke-dasharray': '2 3', visibility: 'hidden', 'pointer-events': 'none' });
+  var hit = M.s('rect', { x: g.L, y: g.T, width: g.pw, height: g.ph, fill: 'transparent', class: 'hit' });
+  svg.appendChild(hair); svg.appendChild(hit);
+  svg.setAttribute('tabindex', '0');
+  var idx = function (e) { var r = svg.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * w; return Math.max(0, Math.min(g.n - 1, Math.floor((x - g.L) / g.pw * g.n))); };
+  var show = function (i, cx, cy) { hair.setAttribute('x1', g.X(i)); hair.setAttribute('x2', g.X(i)); hair.setAttribute('visibility', 'visible'); var d = g.tip(i); if (d) M.tipShow(cx, cy, d.title, d.rows); };
+  var hide = function () { hair.setAttribute('visibility', 'hidden'); M.tipHide(); };
+  var open = function (i) { var d = g.tip(i); if (d && M.detail) { hide(); M.detail.open({ title: d.title, rows: d.rows, opener: svg }); } };
+  hit.addEventListener('pointermove', function (e) { show(idx(e), e.clientX, e.clientY); });
+  hit.addEventListener('pointerdown', function (e) { show(idx(e), e.clientX, e.clientY); });
+  hit.addEventListener('pointerleave', hide);
+  hit.addEventListener('click', function (e) { open(idx(e)); });
+  var cur = g.n - 1, at = function (i) { cur = Math.max(0, Math.min(g.n - 1, i)); var r = svg.getBoundingClientRect(); show(cur, r.left + g.X(cur) / w * r.width, r.top + r.height / 2); };
+  svg.addEventListener('focus', function () { if (svg.matches(':focus-visible')) at(g.n - 1); });
+  svg.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); at(cur + (e.key === 'ArrowRight' ? 1 : -1)); }
+    else if (e.key === 'Enter') { e.preventDefault(); open(cur); }
+  });
+  svg.addEventListener('blur', hide);
+};
+/* a year after the day on an axis whose columns span two years, so the same day of two years is never confused */
+M.axisLabel = function (b, first, last) { var yrs = first.slice(0, 4) !== last.slice(0, 4); return yrs ? b.label + " '" + b.from.slice(2, 4) : b.label; };
 
 /* ---------------------------------------------------------------- time chart: bars and/or lines on one axis, optional previous-period dashed line */
 M.timeChart = function (host, w, o) {
@@ -2041,12 +2182,11 @@ M.timeChart = function (host, w, o) {
     svg.appendChild(M.s('text', { x: X(t), y: H - 8, 'text-anchor': t === 0 ? 'start' : 'middle' }, lab));
   }
   if (M.drawEvents) M.drawEvents(svg, host, o, { X: X, T: T - evLane, ph: ph + evLane, L: L, pw: pw, w: w, n: n });      /* dated markers (data/dashboard_events.json), unless switched off */
-  var hair = M.s('line', { y1: T, y2: T + ph, stroke: M.COLORS.ink, 'stroke-width': 1, 'stroke-dasharray': '2 3', visibility: 'hidden' });
+  var hair = M.s('line', { class: 'hair', y1: T, y2: T + ph, stroke: M.COLORS.ink, 'stroke-width': 1, 'stroke-dasharray': '2 3', visibility: 'hidden', 'pointer-events': 'none' });
   svg.appendChild(hair);
-  if (host._frame) host._frame.cross = { show: function (from, to) { var j = -1; for (var q = 0; q < n; q++) if (o.buckets[q].to >= from) { j = q; break; } if (j < 0 || o.buckets[j].from > to) { hair.setAttribute('visibility', 'hidden'); return; } hair.setAttribute('x1', X(j)); hair.setAttribute('x2', X(j)); hair.setAttribute('visibility', 'visible'); }, hide: function () { hair.setAttribute('visibility', 'hidden'); } };
   var hit = M.s('rect', { x: L, y: T, width: pw, height: ph, fill: 'transparent', class: 'hit' });
   svg.appendChild(hit);
-  function at(i, cx, cy, g2) {
+  function at(i, cx, cy) {
     hair.setAttribute('x1', X(i)); hair.setAttribute('x2', X(i)); hair.setAttribute('visibility', 'visible');
     var rows = o.series.map(function (s, si) { var fg = G && G.full[si] && G.full[si][i]; return { k: s.name, v: fg ? 'no data stored for this day' : s.values[i] == null ? 'n/a' : (s.fmt || M.num)(s.values[i]) }; });
     var part = G && G.raw.reduce(function (m, g) { return g && g[i] && g[i].n > 0 && g[i].n < g[i].of && (!m || g[i].n > m.n) ? g[i] : m; }, null);
@@ -2056,9 +2196,7 @@ M.timeChart = function (host, w, o) {
       var pv = o.prev.values[i], cur = o.series[0].values[i], f0 = o.series[0].fmt || M.num, ch = (cur != null && pv) ? M.change(cur, pv) : null;
       rows.push({ k: 'Period before', v: f0(pv) + (ch != null ? '  (' + (ch > 0 ? '+' : '') + M.num(ch, 1) + '%)' : '') });      /* the earlier period's value and the change against it */
     }
-    if (g2 === false) return M.tipShow(cx, cy, title, rows);
     M.tipShow(cx, cy, title, rows);
-    if (M.syncCross) M.syncCross(host, b.from, b.to);
   }
   var idx = function (e) { var r = svg.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * w; return Math.max(0, Math.min(n - 1, Math.floor((x - L) / pw * n))); };
   /* selection (drag with mouse or finger; Shift + arrows then Enter): paints a band, then zooms to those buckets */
@@ -2076,7 +2214,7 @@ M.timeChart = function (host, w, o) {
   hit.addEventListener('pointerup', function (e) { if (!dragging) return; dragging = false; var i = idx(e); if (Math.abs(e.clientX - selPx) > 10 && i !== sel0) applyZoom(sel0, i); else band.setAttribute('visibility', 'hidden'); sel0 = null; });
   hit.addEventListener('pointercancel', function () { dragging = false; sel0 = null; band.setAttribute('visibility', 'hidden'); });
   hit.addEventListener('dblclick', function () { if (host._frame && host._frame.zoomed) M.zoomReset(host._frame); });
-  hit.addEventListener('pointerleave', function () { if (dragging) return; hair.setAttribute('visibility', 'hidden'); M.tipHide(); if (M.syncCross) M.syncCross(null); });
+  hit.addEventListener('pointerleave', function () { if (dragging) return; hair.setAttribute('visibility', 'hidden'); M.tipHide(); });
   var cur = n - 1, kStart = null;
   svg.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && kStart != null) { e.preventDefault(); applyZoom(kStart, cur); kStart = null; return; }
@@ -2209,7 +2347,7 @@ M.heat = function (rows, cols, cell, o) {
   });
   t.appendChild(tb);
   var legend = M.h('div', { class: 'legend' }, [M.h('span', null, ['Low ', M.s('svg', { width: 90, height: 12, viewBox: '0 0 90 12', 'aria-hidden': 'true' }, [M.s('rect', { width: 90, height: 12, rx: 3, fill: '#F6EDE4' }), M.s('rect', { x: 30, width: 30, height: 12, fill: M.lerp('#F6EDE4', '#5E1204', 0.5) }), M.s('rect', { x: 60, width: 30, height: 12, rx: 3, fill: '#5E1204' })]), ' High']), M.h('span', { class: 'muted', text: o.legendText || 'Darker means more. Hatched cells have no data.' })]);
-  return M.h('div', null, [M.h('div', { class: 'tw' }, t), legend]);
+  return M.h('div', null, [M.h('div', { class: 'tw' + (rows.length > 12 ? ' tall' : '') }, t), legend]);      /* T857: more than 12 rows scroll inside their own box with the heading fixed */
 };
 
 /* ---------------------------------------------------------------- stacked bars over time (parts of a whole per day, week or month) */
@@ -2221,19 +2359,23 @@ M.stackChart = function (host, w, o) {
   var svg = M.s('svg', { viewBox: '0 0 ' + w + ' ' + H, role: 'img', 'aria-label': (o.title || 'Stacked bars') + ', ' + n + ' bars. The numbers are in the table below.' });
   for (var g = 0; g <= 4; g++) { var gy = Y(ymax * g / 4); svg.appendChild(M.s('line', { x1: L, x2: w - R, y1: gy, y2: gy, class: g === 0 ? 'ax' : 'gl' })); svg.appendChild(M.s('text', { x: L - 6, y: gy + 4, 'text-anchor': 'end' }, M.short(ymax * g / 4))); }
   o.buckets.forEach(function (b, i) {
-    var acc = 0, gp = M.s('g', { tabindex: '0', class: 'mk', role: 'img', 'aria-label': b.label + ': ' + M.num(totals[i]) });
+    var acc = 0, gp = M.s('g', { class: 'mk', 'aria-hidden': 'true' });
     o.series.forEach(function (s) {
       var v = s.values[i] || 0; if (!v) return;
       var y1 = Y(acc + v), y0 = Y(acc);
       gp.appendChild(M.s('rect', { x: (X(i) - bw / 2).toFixed(1), y: y1.toFixed(1), width: bw.toFixed(1), height: Math.max(1, y0 - y1).toFixed(1), fill: s.color, stroke: '#fff', 'stroke-width': bw > 6 ? 1 : 0 }));
       acc += v;
     });
-    gp.appendChild(M.s('rect', { x: X(i) - Math.max(bw, pw / n) / 2, y: T, width: Math.max(bw, pw / n), height: ph, fill: 'transparent' }));
-    M.tipFor(gp, function () { var rows = o.series.filter(function (s) { return s.values[i]; }).map(function (s) { return { k: s.name, v: M.num(s.values[i]) }; }); rows.push({ k: 'Total', v: M.num(totals[i]) }); return { title: b.title || (b.from === b.to ? M.fd(b.from) : M.fd(b.from) + ' to ' + M.fd(b.to)), rows: rows }; });
     svg.appendChild(gp);
   });
   var step = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / 78))));
-  for (var t = 0; t < n; t += step) svg.appendChild(M.s('text', { x: X(t), y: H - 8, 'text-anchor': t === 0 ? 'start' : 'middle' }, o.buckets[t].label));
+  for (var t = 0; t < n; t += step) svg.appendChild(M.s('text', { x: X(t), y: H - 8, 'text-anchor': t === 0 ? 'start' : 'middle' }, M.axisLabel(o.buckets[t], o.buckets[0].from, o.buckets[n - 1].from)));
+  /* T858: the same hover as the time chart: a line down the week you point at, a cross cursor, one tooltip, arrow keys */
+  M.colHover(svg, w, { n: n, L: L, T: T, pw: pw, ph: ph, X: X, tip: function (i) {
+    var b = o.buckets[i], rows = o.series.map(function (s) { return { k: s.name, v: M.num(s.values[i] || 0) }; }); rows.push({ k: 'Total', v: M.num(totals[i]) });
+    return { title: b.title || (b.from === b.to ? M.fd(b.from) : M.fd(b.from) + ' to ' + M.fd(b.to)), rows: rows };
+  } });
+  svg.setAttribute('aria-label', (o.title || 'Stacked bars') + ', ' + n + ' bars. Use the left and right arrow keys to read each bar. The numbers are in the table below.');
   host.appendChild(svg);
   host.appendChild(M.legend(o.series.map(function (s) { return { name: s.name, color: s.color }; })));
 };
@@ -2279,24 +2421,24 @@ M.forecastChart = function (host, w, rows) {
   }
   svg.appendChild(M.s('line', { x1: L, x2: w - R, y1: Y(0), y2: Y(0), stroke: '#8F8579', 'stroke-width': 1.5 }));
   rows.forEach(function (r, i) {
-    var gp = M.s('g', { tabindex: '0', class: 'mk', role: 'img', 'aria-label': 'Week of ' + M.fd(r.week) });
+    var gp = M.s('g', { class: 'mk', 'aria-hidden': 'true' });
     if (r.low != null && r.high != null) gp.appendChild(M.s('line', { x1: X(i), x2: X(i), y1: Y(r.low), y2: Y(0), class: 'fc-stem' }));
     if (r.actual != null) gp.appendChild(M.s('rect', { x: (X(i) - bw / 2).toFixed(1), y: Y(r.actual).toFixed(1), width: bw.toFixed(1), height: Math.max(1, Y(0) - Y(r.actual)).toFixed(1), fill: M.COLORS.maroon, rx: 2, class: 'bar', style: '--d:' + (i * 40) }));
     if (r.low != null && r.high != null) {
       gp.appendChild(M.s('rect', { x: (X(i) - bw / 2).toFixed(1), y: Y(r.high).toFixed(1), width: bw.toFixed(1), height: Math.max(2, Y(r.low) - Y(r.high)).toFixed(1), fill: M.COLORS.teal, 'fill-opacity': 0.22, stroke: M.COLORS.teal, 'stroke-width': 1.5, 'stroke-dasharray': '4 3', rx: 2 }));
       gp.appendChild(M.s('line', { x1: X(i) - bw / 2 - 3, x2: X(i) + bw / 2 + 3, y1: Y(r.mid), y2: Y(r.mid), stroke: M.COLORS.teal, 'stroke-width': 3 }));
     }
-    gp.appendChild(M.s('rect', { x: X(i) - pw / n / 2, y: T, width: pw / n, height: ph, fill: 'transparent' }));
-    M.tipFor(gp, function () {
-      var t = [{ k: 'Week starting', v: M.fd(r.week) }];
-      if (r.actual != null) t.push({ k: 'Orders (actual)', v: M.num(r.actual) }, { k: 'Revenue', v: M.inr(r.revenue || 0) });
-      if (r.low != null) t.push({ k: 'Guess: low / middle / high', v: M.num(r.low, 1) + ' / ' + M.num(r.mid, 1) + ' / ' + M.num(r.high, 1) });
-      return { title: r.low != null && r.actual == null ? 'Guess for this week' : 'Orders that week', rows: t };
-    });
     svg.appendChild(gp);
   });
   var step = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / 70))));
-  for (var t = 0; t < n; t += step) svg.appendChild(M.s('text', { x: X(t), y: H - 10, 'text-anchor': t === 0 ? 'start' : 'middle' }, M.fds(rows[t].week)));
+  for (var t = 0; t < n; t += step) svg.appendChild(M.s('text', { x: X(t), y: H - 10, 'text-anchor': t === 0 ? 'start' : 'middle' }, M.fds(rows[t].week) + (rows[0].week.slice(0, 4) !== rows[n - 1].week.slice(0, 4) ? " '" + rows[t].week.slice(2, 4) : '')));
+  M.colHover(svg, w, { n: n, L: L, T: T, pw: pw, ph: ph, X: X, tip: function (i) {
+    var r = rows[i], t = [{ k: 'Week starting', v: M.fd(r.week) }];
+    if (r.actual != null) t.push({ k: 'Orders (actual)', v: M.num(r.actual) }, { k: 'Revenue', v: M.inr(r.revenue || 0) });
+    if (r.low != null) t.push({ k: 'Guess: low / middle / high', v: M.num(r.low, 1) + ' / ' + M.num(r.mid, 1) + ' / ' + M.num(r.high, 1) });
+    return { title: r.low != null && r.actual == null ? 'Guess for this week' : 'Orders that week', rows: t };
+  } });
+  svg.setAttribute('aria-label', 'Weekly orders: actual weeks as bars, forecast weeks as an indicative range. Use the left and right arrow keys to read each week. The numbers are in the table below.');
   host.appendChild(svg);
   host.appendChild(M.legend([{ name: 'Orders (actual)', color: M.COLORS.maroon }, { name: 'Likely range (low to high), a guess', color: M.COLORS.teal }]));
 };
@@ -2815,11 +2957,12 @@ M.moreMenu = function (fr) {
 
 /* ---------------------------------------------------------------- full screen */
 M.fs = null;
-/* on a phone the tools fold into one line ("Chart tools") so the chart gets the screen; on a laptop they sit open under the title */
-M.fsToolsBox = function (tools) {
-  if (window.innerWidth > 640) return tools;
-  var d = M.h('details', { class: 'fs-fold' }, [M.h('summary', { text: 'Chart options' }), tools]);
-  return d;
+/* T858 (2 Nov 2026): the dates, filters and chart tools of a full screen card sit in ONE tidy block under the title. On a laptop it is open; on a phone it folds into one line
+   ("Dates, filters and options") so the chart gets the screen, and it stays open after a control inside it was used. */
+M.fsPanel = function (ctl, tools) {
+  var kids = [ctl, tools].filter(Boolean);      /* the tools box is always inside: it fills later (after a zoom) and hides itself while it is empty */
+  if (window.innerWidth > 640) return M.h('div', { class: 'fs-panel', 'data-ux': '1' }, kids);
+  return M.h('details', { class: 'fs-panel fs-fold', 'data-ux': '1', open: M._fsRefocus ? true : null }, [M.h('summary', { text: 'Dates, filters and options' })].concat(kids));
 };
 M.scopeText = function () {
   var r = M.range(), pg = M.PAGES[M.state.page], parts = [];
@@ -2856,7 +2999,8 @@ M.fsOpen = function (fr, quiet) {
     M.toolSections.forEach(function (sec) { var n = sec(fr, { inline: true, refresh: fillTools }); if (n) tools.appendChild(n); });
   };
   fillTools(); M.fsTools = fillTools;
-  var bar = M.h('div', { class: 'fs-bar' }, [M.h('div', { class: 'fs-head' }, [M.h('h2', null, [M.h('span', { text: title }), card._why ? M.infoMark(card._why, null, 'card-info') : null]), M.h('p', { class: 'fs-scope', text: M.scopeText() })]), close, M.fsControls ? M.fsControls() : null, M.fsToolsBox(tools)]);
+  var top = M.h('div', { class: 'fs-top' }, [M.h('div', { class: 'fs-head' }, [M.h('h2', null, [M.h('span', { text: title }), card._why ? M.infoMark(card._why, null, 'card-info') : null]), M.h('p', { class: 'fs-scope', text: M.scopeText() })]), close]);
+  var bar = M.h('div', { class: 'fs-bar' }, [top, M.fsPanel(M.fsControls ? M.fsControls() : null, tools)]);
   var ct = card.querySelector(':scope > .ctools'); if (ct) { M.fs_ct = ct; ct.parentNode.removeChild(ct); }      // the More menu is replaced by the bar's own controls while full screen is open
   card.insertBefore(bar, card.firstChild);
   card.classList.add('fs');
@@ -3120,14 +3264,7 @@ M.toolSections.push(function (fr, ctx) {
   return M.h('div', { class: 'tsec' }, kids);
 });
 
-/* ---------------------------------------------------------------- shared crosshair: pointing at a date in one chart marks the same date in every other time chart on the page */
-M.syncCross = function (host, from, to) {
-  if (M.fs) return;                      /* in full screen there is only one chart */
-  M.frames.forEach(function (fr) {
-    if (!fr.cross || (host && fr.host === host)) return;
-    if (from) fr.cross.show(from, to); else fr.cross.hide();
-  });
-};
+/* T858 (2 Nov 2026): the shared crosshair that drew a line on EVERY time chart of a page when you pointed at one is removed on purpose (owner: "if I hover on one graph, the hover line is showing on the other graph also"). Each chart shows its own line only. */
 
 /* mazo dashboard chart export (T807 part 2): download the picture (PNG), download the data as CSV, copy a link that reopens this exact view. Everything happens inside the page:
    no network, nothing is uploaded. The CSV holds exactly the numbers of the chart as drawn (the same series, the same steps, the same zoom), so it always equals the
@@ -4311,6 +4448,9 @@ M.PAGES.sizes.render = function (r) {
 
 /* Pages: Customers. (Social and content, Search and market moved to dashboard_16_marketing.js on 1 Nov 2026.) */
 
+/* two choices kept in the address: the first-order table window (coh: 12 months, year, all) and how many weeks the weekly buyers chart draws (nbw: 26, 52, all) */
+['coh', 'nbw'].forEach(function (k) { if (!(k in M.DEFAULTS)) { M.DEFAULTS[k] = ''; M.state[k] = ''; } });
+
 M.WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 M.HOURS = ['00-04', '04-08', '08-12', '12-16', '16-20', '20-24'];
 M.cuts = function (name, cut) { return M.stateRows(name).filter(function (x) { return x.cut === cut; }); };
@@ -4326,12 +4466,17 @@ M.PAGES.customers.render = function (r) {
   kp.appendChild(M.kpi({ label: 'Repeat customers', value: lv('repeat customers') != null ? M.num(lv('repeat customers')) : 'not available', note: ly['repeat customers'] ? ly['repeat customers'].read || '' : '' }));
   kp.appendChild(M.kpi({ label: 'Average order value', value: lv('average order value') != null ? M.inr(lv('average order value')) : 'not available' }));
   root.appendChild(kp);
-  /* cohorts */
-  var co = M.stateRows('cohorts');
-  root.appendChild(M.card('Do first time buyers come back?', 'Each row is the month of a customer\'s first order. Columns show how many bought a second time within 30 and 90 days. A month less than 90 days old is not final yet.', [co.length ? M.heat(co.map(function (x) { return x.cohort_month; }), ['Customers', 'Second order in 30 days', 'Second order in 90 days', 'Repeat rate'], function (rl, c) {
-    var x = co.filter(function (y) { return y.cohort_month === rl; })[0], v = c === 'Customers' ? x.customers : c === 'Repeat rate' ? x.repeat_rate_pct : c === 'Second order in 30 days' ? x.second_order_within_30d : x.second_order_within_90d;
-    return { v: v, text: c === 'Repeat rate' ? M.pct(v, 0) : M.num(v), tip: { title: 'Customers whose first order was in ' + rl, rows: [{ k: 'Customers', v: M.num(x.customers) }, { k: 'Repeat rate', v: M.pct(x.repeat_rate_pct, 1) }, { k: 'Read', v: x.read || '' }] } };
-  }, { rowHead: 'First order month', max: Math.max.apply(null, co.map(function (x) { return +x.customers || 0; }).concat([1])), legendText: 'Darker means more customers. All repeat counts are zero so far: nobody has ordered twice.' }) : M.empty('No cohort table yet.')]));
+  /* cohorts. T857 (2 Nov 2026, scalability): the table used to grow by a row every month for ever. It now shows a fixed window: the last 12 months (newest first, empty months included so the window never shifts),
+     or one row per year, or every month (a scroll box). The choice is kept in the address (coh). */
+  var co = M.stateRows('cohorts'), cmode = M.state.coh === 'year' || M.state.coh === 'all' ? M.state.coh : '12';
+  var cohRows = M.cohortRows(co, cmode), cohCols = ['Customers', 'Second order in 30 days', 'Second order in 90 days', 'Repeat rate'];
+  var cohSeg = co.length > 12 || cmode !== '12' ? M.h('div', { class: 'row-ctl' }, M.segment('What rows to show', [['12', 'Last 12 months'], ['year', 'By year'], ['all', 'Every month']], cmode, function (v) { M.go({ coh: v === '12' ? '' : v }); })) : null;
+  root.appendChild(M.card('Do first time buyers come back?', 'Each row is the month (or year) of a customer\'s first order. Columns show how many bought a second time within 30 and 90 days. A month less than 90 days old is not final yet. The latest 12 months are shown; the buttons above the table show years or every month.', [cohSeg, co.length ? M.heat(cohRows.map(function (x) { return x.label; }), cohCols, function (rl, c) {
+    var x = cohRows.filter(function (y) { return y.label === rl; })[0];
+    if (!x.customers) return { v: null, text: 'no first orders' };
+    var v = c === 'Customers' ? x.customers : c === 'Repeat rate' ? x.repeat : c === 'Second order in 30 days' ? x.d30 : x.d90;
+    return { v: v, text: c === 'Repeat rate' ? M.pct(v, 0) : M.num(v), tip: { title: 'Customers whose first order was in ' + rl, rows: [{ k: 'Customers', v: M.num(x.customers) }, { k: 'Repeat rate', v: M.pct(x.repeat, 1) }, { k: 'Read', v: x.read || '' }] } };
+  }, { rowHead: cmode === 'year' ? 'First order year' : 'First order month', max: Math.max.apply(null, cohRows.map(function (x) { return +x.customers || 0; }).concat([1])), legendText: 'Darker means more customers.' + (co.every(function (x) { return !(+x.second_order_within_90d); }) ? ' All repeat counts are zero so far: nobody has ordered twice.' : '') }) : M.empty('No cohort table yet.')].filter(Boolean)));
   /* customer groups (recency, frequency, spend): counts only, never who */
   var rfm = M.stateRows('rfm_groups'), rtot = rfm.reduce(function (a, x) { return a + (+x.customers || 0); }, 0), RC = { 'Champions': M.COLORS.green, 'Loyal': M.COLORS.teal, 'New and recent': M.COLORS.maroon, 'Promising': M.COLORS.mustard, 'Quiet': M.COLORS.grey, 'Lapsed': M.COLORS.terra };
   var rfmOrder = ['Champions', 'Loyal', 'New and recent', 'Promising', 'Quiet', 'Lapsed'], rsorted = rfm.slice().sort(function (a, b) { var i = rfmOrder.indexOf(a.group), j = rfmOrder.indexOf(b.group); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); });
@@ -4379,17 +4524,48 @@ M.PAGES.customers.render = function (r) {
   return root;
 };
 
+/* the rows of the first-order table for one mode: 12 = the last 12 months up to this month (empty months kept, newest first); year = one row per year; all = every month with a first order */
+M.cohortRows = function (co, mode) {
+  var by = {}; co.forEach(function (x) { by[x.cohort_month] = x; });
+  var mk = function (label, c) { return { label: label, customers: +c.customers || 0, d30: +c.second_order_within_30d || 0, d90: +c.second_order_within_90d || 0, repeat: c.repeat_rate_pct != null ? +c.repeat_rate_pct : (+c.customers ? 100 * (+c.second_order_within_90d || 0) / +c.customers : 0), read: c.read || '' }; };
+  var months = co.map(function (x) { return x.cohort_month; }).sort(), last = (M.D.anchor || '').slice(0, 7) || months[months.length - 1];
+  if (months.length && months[months.length - 1] > last) last = months[months.length - 1];
+  if (mode === 'year') {
+    var yr = {}; co.forEach(function (x) { var y = String(x.cohort_month).slice(0, 4), o = yr[y] || (yr[y] = { customers: 0, second_order_within_30d: 0, second_order_within_90d: 0 }); o.customers += +x.customers || 0; o.second_order_within_30d += +x.second_order_within_30d || 0; o.second_order_within_90d += +x.second_order_within_90d || 0; });
+    return Object.keys(yr).sort().reverse().map(function (y) { var o = yr[y]; o.repeat_rate_pct = o.customers ? 100 * o.second_order_within_90d / o.customers : 0; return mk(y, o); });
+  }
+  var list = [];
+  if (mode === 'all') list = months.slice().reverse();
+  else if (months.length) {      /* the last 12 months, but never earlier than the first month with a first order */
+    var y = +last.slice(0, 4), m = +last.slice(5, 7);
+    for (var i = 0; i < 12; i++) { var key = y + '-' + String(m).padStart(2, '0'); if (key < months[0]) break; list.push(key); m--; if (m === 0) { m = 12; y--; } }
+  }
+  return list.map(function (k) {
+    var c = by[k]; if (!c) return { label: M.monthName(k), customers: 0, d30: 0, d90: 0, repeat: 0, read: '' };
+    return mk(M.monthName(k), c);
+  });
+};
+M.monthName = function (ym) { return M.MON[+String(ym).slice(5, 7) - 1] + ' ' + String(ym).slice(0, 4); };
+/* a row of buttons where one is chosen (the same look as the other choosers): M.segment(label, [[value, text]], current, onChoose) */
+M.segment = function (label, opts, cur, onChoose) {
+  return M.h('div', { class: 'seg', role: 'group', 'aria-label': label }, opts.map(function (o) { return M.h('button', { type: 'button', 'aria-pressed': o[0] === cur ? 'true' : 'false', text: o[1], onclick: function () { onChoose(o[0]); } }); }));
+};
+
 /* ---- more ways to look at customers (T829, 1 Nov 2026): new against coming back over time, where orders go (state bars and cities), the size of an order, how people find the shop, the weekly line */
 M.customerExtras = function (root) {
   /* 1 new against coming back, week by week (Shopify daily table: new_customers, returning_customers) */
   var wk = {};
   M.rows('shopify_daily').forEach(function (x) { if (!x.date) return; var d = M.add(x.date, -((new Date(x.date + 'T00:00:00Z').getUTCDay() + 6) % 7)); var o = wk[d] || (wk[d] = { n: 0, r: 0, o: 0, net: 0 }); o.n += +x.new_customers || 0; o.r += +x.returning_customers || 0; o.o += +x.orders || 0; o.net += +x.net_sales || 0; });
   var weeks = Object.keys(wk).sort();
+  if (weeks.length) { var wAll = [], wz = { n: 0, r: 0, o: 0, net: 0 }; for (var wd = weeks[0]; wd <= weeks[weeks.length - 1]; wd = M.add(wd, 7)) { wAll.push(wd); if (!wk[wd]) wk[wd] = { n: wz.n, r: wz.r, o: wz.o, net: wz.net }; } weeks = wAll; }      /* every calendar week between the first and the last, so "the last 26 weeks" really is 26 weeks */
   if (weeks.length >= 2) {
-    var bk = weeks.map(function (d) { return { from: d, to: M.add(d, 6), label: M.fds(d), title: 'Week starting ' + M.fd(d) }; });
-    root.appendChild(M.card('New buyers and buyers coming back, week by week', 'Each bar is a week. Dark = first time buyers. Gold = people who had bought before. A first time buyer counts once, in the week of their first order.', [M.chart('', function (h, w) {
-      M.stackChart(h, w, { buckets: bk, title: 'New and returning buyers', h: 210, series: [{ name: 'First time buyers', values: weeks.map(function (d) { return wk[d].n; }), color: M.COLORS.maroon }, { name: 'Bought before', values: weeks.map(function (d) { return wk[d].r; }), color: M.COLORS.mustard }], empty: 'No orders yet.' });
-    }), M.tableView([{ k: 'w', label: 'Week starting' }, { k: 'n', label: 'First time', num: true }, { k: 'r', label: 'Bought before', num: true }, { k: 'o', label: 'Orders', num: true }, { k: 'net', label: 'Net sales', num: true, fmt: M.inr }], weeks.map(function (d) { return { w: M.fd(d), n: wk[d].n, r: wk[d].r, o: wk[d].o, net: wk[d].net }; }))]));
+    /* T857: the chart shows the last 26 weeks (or 52, or every week) so it stays readable for years; full screen always shows every week; the table holds every week */
+    var wlim = M.state.nbw === '52' ? 52 : M.state.nbw === 'all' ? 1e6 : 26, tabRows = weeks.map(function (d) { return { w: M.fd(d), n: wk[d].n, r: wk[d].r, o: wk[d].o, net: wk[d].net }; });
+    var weekSeg = weeks.length > 26 ? M.h('div', { class: 'row-ctl hide-fs' }, M.segment('How many weeks to draw', [['26', 'Last 26 weeks'], ['52', 'Last 52 weeks'], ['all', 'Every week']], M.state.nbw === '52' || M.state.nbw === 'all' ? M.state.nbw : '26', function (v) { M.go({ nbw: v === '26' ? '' : v }); })) : null;
+    root.appendChild(M.card('New buyers and buyers coming back, week by week', 'Each bar is a week. Dark = first time buyers. Gold = people who had bought before. A first time buyer counts once, in the week of their first order.', [weekSeg, M.chart('', function (h, w) {
+      var use = h._frame && h._frame.big ? weeks : weeks.slice(-wlim), bk = use.map(function (d) { return { from: d, to: M.add(d, 6), label: M.fds(d), title: 'Week starting ' + M.fd(d) }; });
+      M.stackChart(h, w, { buckets: bk, title: 'New and returning buyers', h: 210, series: [{ name: 'First time buyers', values: use.map(function (d) { return wk[d].n; }), color: M.COLORS.maroon }, { name: 'Bought before', values: use.map(function (d) { return wk[d].r; }), color: M.COLORS.mustard }], empty: 'No orders yet.' });
+    }), M.tableView([{ k: 'w', label: 'Week starting' }, { k: 'n', label: 'First time', num: true }, { k: 'r', label: 'Bought before', num: true }, { k: 'o', label: 'Orders', num: true }, { k: 'net', label: 'Net sales', num: true, fmt: M.inr }], tabRows)].filter(Boolean)));
   }
   /* 2 where orders go: states as bars, cities from website visits */
   var geo = M.stateRows('geo_board').filter(function (x) { return x.state; }), gmax = geo.reduce(function (a, x) { return a + (+x.orders || 0); }, 0);
@@ -4416,6 +4592,8 @@ M.customerExtras = function (root) {
 
 /* ================================================================ FORECAST AND STOCK */
 M.sp('forecast', 'Forecast and stock', 'Forecast and stock', 'How many orders might next weeks bring, and which sizes will run out? These are guesses from the last few weeks, never a promise.', ['product', 'collection', 'size'], { dates: false, snap: true });
+/* T857: the weekly orders chart draws the last 26 weeks that happened and every week ahead; full screen draws all of them (the table under it always holds all) */
+M.lastWeeks = function (rows) { var fut = rows.filter(function (x) { return x.actual == null; }).length, past = rows.length - fut; return past > 26 ? rows.slice(past - 26) : rows; };
 M.PAGES.forecast.render = function () {
   var s = M.state, root = M.h('div'), fw = M.stateRows('forecast_weekly');
   var rows = fw.map(function (x) { return { week: x.week, actual: x.orders_actual, revenue: x.revenue_actual, low: x.orders_low, mid: x.orders_mid, high: x.orders_high, note: x.note }; }).sort(function (a, b) { return a.week < b.week ? -1 : 1; });
@@ -4429,7 +4607,7 @@ M.PAGES.forecast.render = function () {
   }
   kp.appendChild(M.kpi({ label: 'Orders in the last 4 weeks', value: M.num(act.slice(-4).reduce(function (a, x) { return a + (x.actual || 0); }, 0)) }));
   root.appendChild(kp);
-  root.appendChild(M.card('Orders each week, and the next weeks', 'Solid bars are weeks that happened. Dashed boxes are a guess for the weeks ahead, from low to high; the thick line is the middle. Weeks start on Monday.', [rows.length ? M.chart('', function (h, w) { M.forecastChart(h, w, rows); }) : M.empty('No weekly series yet.'), M.tableView([{ k: 'week', label: 'Week starting', fmt: M.fd }, { k: 'actual', label: 'Orders (actual)', num: true }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr }, { k: 'low', label: 'Low', num: true }, { k: 'mid', label: 'Middle', num: true }, { k: 'high', label: 'High', num: true }, { k: 'note', label: 'Note' }], rows)]));
+  root.appendChild(M.card('Orders each week, and the next weeks', 'Solid bars are weeks that happened. Dashed boxes are a guess for the weeks ahead, from low to high; the thick line is the middle. Weeks start on Monday.', [rows.length ? M.chart('', function (h, w) { M.forecastChart(h, w, h._frame && h._frame.big ? rows : M.lastWeeks(rows)); }) : M.empty('No weekly series yet.'), M.tableView([{ k: 'week', label: 'Week starting', fmt: M.fd }, { k: 'actual', label: 'Orders (actual)', num: true }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr }, { k: 'low', label: 'Low', num: true }, { k: 'mid', label: 'Middle', num: true }, { k: 'high', label: 'High', num: true }, { k: 'note', label: 'Note' }], rows)]));
   /* forecast error: every past forecast against what really happened */
   var fe = M.stateRows('forecast_error').filter(function (x) { return x.week && x.week !== 'none' && x.actual_orders != null; });
   var feRead = M.stateRows('forecast_error').map(function (x) { return x.read; }).filter(function (t) { return t && !/^forecast was|^close/.test(t); })[0];
