@@ -527,6 +527,12 @@ body.detail-on #fsroot .card.fs{padding-right:var(--s6)}
   .ch-bar{position:relative;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:var(--sp5)}
 }
 
+/* Channels: the category table at the top (T854) */
+.cat-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);flex-wrap:wrap;margin:0 0 var(--sp2);font-size:var(--t14)}
+.cat-pick{font-weight:600;color:var(--maroon)}
+.cat-pick.on{background:var(--sand,#F3EEE6);border-radius:6px;padding:0 var(--sp2)}
+.own-line{display:flex;align-items:center;gap:var(--sp2);margin:var(--sp2) 0 var(--sp4);font-size:var(--t13);color:var(--ink2)}
+
 /* Payments and Shipping pages (T835, 1 Nov 2026). Style files load in name order (this one before dashboard_20_design.css), so every selector here is either unique to these two pages or has higher specificity than the shared rule it adjusts. */
 .conn{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:var(--sp5);align-items:start;margin:var(--sp4) 0 var(--sp5)}
 @media (max-width:900px){.conn{grid-template-columns:1fr}}
@@ -4936,7 +4942,7 @@ M.GROW_IDEAS = [
 
 /* new state keys of the Marketing pages (kept in the address so a view can be shared): the channel on the Social page (cch), best and worst posts for these dates or all time (pscope),
    the format and topic filters of the post lists (pfmt, ptopic). Added here so the shared state file stays untouched; M.state copies the defaults, so the new keys are copied too. */
-['pscope', 'pfmt', 'ptopic'].forEach(function (k) { if (!(k in M.DEFAULTS)) { M.DEFAULTS[k] = ''; M.state[k] = ''; } });
+['pscope', 'pfmt', 'ptopic', 'ccat'].forEach(function (k) { if (!(k in M.DEFAULTS)) { M.DEFAULTS[k] = ''; M.state[k] = ''; } });
 
 /* ================================================================ SHARED: what each traffic source means, in plain words (T831) */
 /* Every source name that exists in the data has a meaning a shop owner can read once and remember. A name we have not seen gets the last sentence. The glossary is matched on the
@@ -5059,17 +5065,46 @@ M.VIEWTIP = {
 };
 
 /* ================================================================ CHANNELS */
-M.sp('channels', 'Channels', 'Channels', 'Which sources bring visitors, and which bring buyers? A bubble further right has more visits, higher means more of them bought, bigger means more money.', ['channel']);
-M.channelRows = function (r) {
-  var by = {}, c = M.state.channel;
+M.sp('channels', 'Channels', 'Channels', 'Where do visitors come from, and which places bring buyers? Seven categories first, then the groups inside them, then every single source name.', ['channel']);
+/* the channel map (T854): every website source name sorted into a GROUP (second level) and a CATEGORY (top level) by data/channel_rules.json, written nightly to the Sheet tab channel_map */
+M.chMap = function () {
+  var m = {}; M.stateRows('channel_map').forEach(function (x) { if (x.source_medium) m[x.source_medium] = x; });
+  return m;
+};
+M.CAT_ORDER = ['Social', 'Search', 'Direct', 'AI assistants', 'Email', 'Other sites', 'Paid ads', 'Not known'];
+M.CAT_MEANING = {
+  'Social': 'People who came from our posts, videos or profiles on a social network (Instagram, YouTube, Facebook, Threads, LinkedIn, Pinterest), or from that network\'s own app or website.',
+  'Search': 'People who found mazo in a search engine (Google, Bing, Yahoo). Free results, not ads.',
+  'Direct': 'People who typed shopmazo.in, opened a saved link or a bookmark, or came from an app that hides where it sent them.',
+  'AI assistants': 'People sent by an AI assistant such as ChatGPT that named or linked mazo in an answer.',
+  'Email': 'People who tapped a link in an email we sent (review requests, Shopify Email, thank you emails).',
+  'Other sites': 'People who clicked a link to mazo on another website: review tools, directories, listings, press.',
+  'Paid ads': 'People who clicked a paid ad. We run no ads yet, so this stays empty until the first ad.',
+  'Not known': 'Google Analytics could not record where the visit came from. We cannot improve this, so treat it as unknown.'
+};
+M.TAGWORD = { 'our link': 'Tagged by us', 'mixed': 'Partly tagged by us', 'automatic': 'Named by Google, no tag needed', 'untagged': 'Not tagged: Google guesses from the website', 'not recorded': 'No source recorded', 'not a shopper': 'Our own tool' };
+M.TAGTIP = {
+  'our link': 'Tagged by us: the link we placed carries a tag, so Google Analytics knows exactly which profile, post or email it came from.',
+  'mixed': 'Some visits under this name come through links we tagged, others through links that carry no tag. The tagged ones are ours; the rest are people sharing or opening links elsewhere.',
+  'automatic': 'Nobody needs to tag these: Google Analytics reads the source itself (a search engine, an AI assistant).',
+  'untagged': 'The link carried no tag, so Google Analytics only knows which website the visitor came from. We cannot see which post it was.',
+  'not recorded': 'The visit arrived with no tag and no website, so nothing was recorded about where it came from.',
+  'not a shopper': 'Our own tool or test. It is removed from every total on this page.'
+};
+M.channelRows = function (r, allCats) {
+  var by = {}, c = M.state.channel, cat = allCats ? '' : M.state.ccat, map = M.chMap();
   M.rowsIn('source_daily', r.from, r.to).forEach(function (x) {
     if (!x.source_medium || (c && x.source_medium !== c)) return;
+    var mp = map[x.source_medium];
+    if (mp && mp.own_tool === 'yes') return;                                   /* our own tools and tests are in no total */
+    if (cat && (!mp || mp.category !== cat)) return;                           /* the category chosen on this page */
     var o = by[x.source_medium] || (by[x.source_medium] = { source: x.source_medium, visits: 0, engaged: 0, carts: 0, orders: 0, revenue: 0 });
     o.visits += +x.sessions || 0; o.engaged += +x.engaged || 0; o.carts += +x.carts || 0; o.orders += +x.purchases || 0; o.revenue += +x.revenue || 0;
   });
   var sc = {}; M.stateRows('channel_scorecard').forEach(function (x) { sc[x.source_medium] = x.read; });
   return Object.keys(by).map(function (k) {
-    var o = by[k]; o.conv = o.visits ? o.orders / o.visits * 100 : 0; o.rpv = o.visits ? o.revenue / o.visits : 0; o.eng = o.visits ? o.engaged / o.visits * 100 : 0; o.sheetRead = sc[k] || '';
+    var o = by[k], mp = map[k] || {}; o.conv = o.visits ? o.orders / o.visits * 100 : 0; o.rpv = o.visits ? o.revenue / o.visits : 0; o.eng = o.visits ? o.engaged / o.visits * 100 : 0; o.sheetRead = sc[k] || '';
+    o.group = mp.channel_group || 'Other sites'; o.category = mp.category || 'Other sites'; o.how = mp.how_tagged || 'untagged'; o.sorted = mp.sorted !== 'no'; o.note = mp.note || '';
     o.read = o.visits < M.MIN_EVENTS ? 'too few visits to read' : o.orders > 0 ? 'earning' : o.carts > 0 ? 'visits and carts, no sales' : 'visits but no sales'; return o;
   });
 };
@@ -5079,6 +5114,53 @@ M.channelRows = function (r) {
 M.srcSeries = function (pred, col, buckets) {
   return M.series({ tab: 'source_daily', col: col, pred: pred }, buckets);
 };
+/* the top of the Channels page: the seven categories as one clear table. A click on a category shows only its groups and sources below; a second click clears it. (T854) */
+M.catBlock = function (r, map) {
+  var s = M.state, box = M.h('div'), rows = M.channelRows(r, true), cats = {}, own = { visits: 0, names: [] }, unsorted = [];
+  var cmp = M.cmpOn(r), pa = {};
+  if (cmp) M.rowsIn('source_daily', r.pfrom, r.pto).forEach(function (q) { var mp = map[q.source_medium]; if (mp && mp.own_tool === 'yes') return; var c = mp ? mp.category : 'Other sites'; pa[c] = (pa[c] || 0) + (+q.sessions || 0); });
+  rows.forEach(function (x) {
+    var o = cats[x.category] || (cats[x.category] = { category: x.category, visits: 0, orders: 0, revenue: 0, carts: 0, names: 0, groups: {} });
+    o.visits += x.visits; o.orders += x.orders; o.revenue += x.revenue; o.carts += x.carts; o.names += 1; o.groups[x.group] = (o.groups[x.group] || 0) + x.visits;
+    if (!x.sorted && x.visits) unsorted.push(x);
+  });
+  M.rowsIn('source_daily', r.from, r.to).forEach(function (q) { var mp = map[q.source_medium]; if (mp && mp.own_tool === 'yes') { own.visits += +q.sessions || 0; if (own.names.indexOf(q.source_medium) < 0) own.names.push(q.source_medium); } });
+  var tv = Object.keys(cats).reduce(function (a, k) { return a + cats[k].visits; }, 0);
+  var list = M.CAT_ORDER.filter(function (c) { return cats[c]; }).concat(Object.keys(cats).filter(function (c) { return M.CAT_ORDER.indexOf(c) < 0; })).map(function (c) {
+    var o = cats[c]; o.share = tv ? o.visits / tv * 100 : 0; o.conv = o.visits ? o.orders / o.visits * 100 : 0;
+    o.change = cmp && pa[c] >= M.MIN_EVENTS ? (o.visits - pa[c]) / pa[c] * 100 : null;
+    o.top = Object.keys(o.groups).sort(function (a, b) { return o.groups[b] - o.groups[a]; }).slice(0, 3).join(', ');
+    o.read = o.visits < M.MIN_EVENTS ? 'Too few visits to say anything yet.' : o.orders > 0 ? 'Earning: these visits turn into orders.' : o.category === 'Not known' ? 'Cannot be changed: we do not know where these people came from.' : o.category === 'Direct' ? 'Cannot be tagged. Watch it as a total only.' : o.carts > 0 ? 'People add to the cart but do not buy yet.' : 'Visits, but no cart yet.';
+    return o;
+  });
+  var head = M.h('div', { class: 'cat-head' });
+  if (s.ccat) head.appendChild(M.h('button', { type: 'button', class: 'btn sm', onclick: function () { M.go({ ccat: '' }); } }, [M.icon ? M.icon('i-x') : null, M.h('span', { text: 'Showing only ' + s.ccat + '. Show all' })]));
+  var tbl = M.table([
+    { k: 'category', label: 'Where they came from', wrap: true, dim: false, render: function (x) {
+      var on = s.ccat === x.category, b = M.h('button', { type: 'button', class: 'dimlink cat-pick' + (on ? ' on' : ''), 'aria-pressed': on ? 'true' : 'false', title: on ? 'Show all places again' : 'Show only ' + x.category + ' below' }, x.category);
+      b.addEventListener('click', function (e) { e.stopPropagation(); M.go({ ccat: on ? '' : x.category }); });
+      return M.h('span', { class: 'src-cell' }, [b, M.infoMark(M.CAT_MEANING[x.category] || 'A category of visits.', x.category, 'src-info')]); }, sort: function (x) { return x.category; } },
+    { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } },
+    { k: 'share', label: 'Share of visits', num: true, fmt: function (v) { return M.pct(v, 0); } },
+    { k: 'change', label: 'Change on the dates before', num: true, fmt: function (v) { return v == null ? 'nothing to compare' : (v > 0 ? '+' : '') + M.pct(v, 0); } },
+    { k: 'orders', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.green } },
+    { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr },
+    { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); }, hidden: true },
+    { k: 'top', label: 'Biggest groups inside', wrap: true },
+    { k: 'read', label: 'Our read', wrap: true, hidden: true }
+  ], { rows: list, sortKey: 'visits', name: 'channel categories', limit: 12, onRow: function (x) { M.go({ ccat: s.ccat === x.category ? '' : x.category }); }, empty: 'No visits in these dates.' });
+  box.appendChild(M.card('Where visitors come from', 'Every visit sorted into one of seven places. Click a name to see only its groups and sources further down; click again to see all. The sorting rules are one small file (data/channel_rules.json), so a new source is sorted automatically and an unknown one is listed for a decision.', [s.ccat ? head : null, tbl]));
+  if (unsorted.length) {
+    box.appendChild(M.h('p', { class: 'note warn', role: 'status' }, 'Not yet sorted: ' + unsorted.slice().sort(function (a, b) { return b.visits - a.visits; }).slice(0, 4).map(function (x) { return x.source + ' (' + M.num(x.visits) + ')'; }).join(', ') + '. They are counted under Other sites until someone adds a line to the rule file.'));
+  }
+  var ownNames = Object.keys(map).filter(function (k) { return map[k].own_tool === 'yes'; }).map(function (k) { return map[k].source_medium.replace(' (our own tool)', ''); });
+  if (ownNames.length) {
+    var line = M.h('p', { class: 'own-line' }, [M.h('span', { text: 'Our own tools and tests are left out of every number on this page' + (own.visits ? ' (' + M.num(own.visits) + ' visits in these dates)' : '') }),
+      M.infoMark('Visits made by our own tools and tests are removed here and in every other table and chart, so they never count as shoppers. Today that means: ' + ownNames.join(', ') + '; also the loader and speed tests, and phones simulated by our test tools.', 'Our own tools and tests', 'src-info')]);
+    box.appendChild(line);
+  }
+  return box;
+};
 M.PAGES.channels.render = function (r) {
   var s = M.state, root = M.h('div'), rows = M.channelRows(r), days = M.daysCovered('source_daily', r.from, r.to);
   if (!rows.length) { root.appendChild(M.emptyWhy('source_daily', r)); return root; }
@@ -5086,14 +5168,17 @@ M.PAGES.channels.render = function (r) {
   var tv = rows.reduce(function (a, x) { return a + x.visits; }, 0), to = rows.reduce(function (a, x) { return a + x.orders; }, 0), tr = rows.reduce(function (a, x) { return a + x.revenue; }, 0);
   var cmp = M.cmpOn(r), cur = {};
   rows.forEach(function (x) { cur[x.source] = x; });
-  var prevTot = function (col) { var t = M.total({ tab: 'source_daily', col: col, pred: s.channel ? function (q) { return q.source_medium === s.channel; } : null }, r.pfrom, r.pto); return cmp ? t.v : null; };
+  var cmap = M.chMap();
+  var keep = function (q) { var mp = cmap[q.source_medium]; if (mp && mp.own_tool === 'yes') return false; if (s.channel && q.source_medium !== s.channel) return false; if (s.ccat && (!mp || mp.category !== s.ccat)) return false; return true; };
+  var prevTot = function (col) { var t = M.total({ tab: 'source_daily', col: col, pred: keep }, r.pfrom, r.pto); return cmp ? t.v : null; };
   var kp = M.h('div', { class: 'kpis' });
   [['Visits', M.num(tv), 'sessions'], ['Orders', M.num(to), 'purchases'], ['Revenue', M.inr(tr), 'revenue']].forEach(function (k, i) {
     var v = [tv, to, tr][i], pv = prevTot(k[2]), cf = M.cmpFor(v, pv, cmp);
     kp.appendChild(M.kpi({ label: k[0], value: k[1], change: cf.change, cmpNote: cf.cmpNote }));
   });
-  kp.appendChild(M.kpi({ label: 'Sources with visits', value: M.num(rows.length), note: 'a "source" is where a visit came from' }));
+  kp.appendChild(M.kpi({ label: 'Sources with visits', value: M.num(rows.length) }));
   root.appendChild(kp);
+  root.appendChild(M.catBlock ? M.catBlock(r, cmap) : M.h('div'));
   var pts = rows.filter(function (x) { return x.visits > 0; }).map(function (x) {
     var thin = x.visits < M.MIN_EVENTS;
     return { label: x.source, x: x.visits, y: x.conv, r: x.revenue || 0.01, color: thin ? M.COLORS.grey : M.COLORS.maroon, tip: { title: x.source, rows: [{ k: 'What it is', v: M.srcMeaning(x.source) }, { k: 'Visits', v: M.num(x.visits) }, { k: 'Visits that bought', v: M.pct(x.conv) }, { k: 'Orders', v: M.num(x.orders) }, { k: 'Revenue', v: M.inr(x.revenue) }, { k: 'Read', v: x.read }] } };
@@ -5103,10 +5188,13 @@ M.PAGES.channels.render = function (r) {
     M.tableView([{ k: 'source', label: 'Source' }, { k: 'visits', label: 'Visits', num: true, fmt: M.num }, { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr }], rows)
   ]));
   /* the groups: the same visits in 12 big buckets (a state table, last 28 days) */
-  var gr = M.stateRows('channel_groups');
+  var gr = M.stateRows('channel_groups'), cmapG = M.chMap(), gcat = {};
+  Object.keys(cmapG).forEach(function (k) { gcat[cmapG[k].channel_group] = cmapG[k].category; });
+  gr = gr.filter(function (x) { return !s.ccat || gcat[x.channel_group] === s.ccat; }).map(function (x) { x.category = gcat[x.channel_group] || 'Other sites'; return x; });
   if (gr.length) {
-    root.appendChild(M.card('Big groups, last 28 days', 'The same visits sorted into a dozen groups so the picture is readable. Compared with the 28 days before.', [M.table([
+    root.appendChild(M.card('Groups inside' + (s.ccat ? ' ' + s.ccat : ' each place') + ', last 28 days', 'The same visits sorted into groups, for example Instagram, YouTube or Google search. Compared with the 28 days before.', [M.table([
       { k: 'channel_group', label: 'Group', wrap: true, render: function (x) { return M.srcCell(x.channel_group, true); }, sort: function (x) { return x.channel_group; } },
+      { k: 'category', label: 'Place', wrap: true },
       { k: 'visits_28d', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } },
       { k: 'visit_change_pct', label: 'Change on the 28 days before', num: true, fmt: function (v) { return v == null || v === '' ? 'nothing to compare' : (v > 0 ? '+' : '') + M.pct(v, 0); } },
       { k: 'carts_28d', label: 'Cart adds', num: true, fmt: M.num }, { k: 'orders_28d', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.green } },
@@ -5116,13 +5204,15 @@ M.PAGES.channels.render = function (r) {
   /* every source with its meaning and what to do */
   var cols = [
     { k: 'source', label: 'Source', wrap: true, render: function (x) { return M.srcCell(x.source, false); }, sort: function (x) { return x.source; } },
+    { k: 'category', label: 'Place', wrap: true }, { k: 'group', label: 'Group', wrap: true, hidden: true },
+    { k: 'how', label: 'How it is tagged', wrap: true, fmt: function (v) { return M.TAGWORD[v] || v; }, render: function (x) { return M.h('span', { class: 'src-cell' }, [M.h('span', { text: M.TAGWORD[x.how] || x.how }), M.infoMark((M.TAGTIP[x.how] || '') + (x.note ? ' ' + x.note : ''), M.TAGWORD[x.how] || x.how, 'src-info')]); }, sort: function (x) { return M.TAGWORD[x.how] || x.how; } },
     { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'eng', label: 'Stayed and looked around', num: true, fmt: function (v) { return M.pct(v, 0); }, bar: { color: M.COLORS.teal, max: 100 } },
     { k: 'carts', label: 'Cart adds', num: true, fmt: M.num, bar: { color: M.COLORS.mustard } }, { k: 'orders', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
     { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); } }, { k: 'rpv', label: 'Revenue per visit', num: true, fmt: M.inr },
     { k: 'advice', label: 'What to do about it', wrap: true, hidden: true, fmt: function (v, x) { return M.srcAdvice(x); }, render: function (x) { return M.h('span', { text: M.srcAdvice(x) }); }, sort: function (x) { return x.visits; } },
     { k: 'sheetRead', label: 'Our read, last 28 days', wrap: true, hidden: true }
   ];
-  root.appendChild(M.card('Every source', 'Click a heading to sort. Press the (i) next to a name to see what it means. "What to do about it" is a suggestion from the numbers of that row, open the Columns button to show it.', [M.table(cols, { rows: rows, sortKey: 'visits', empty: 'No sources.', limit: 100, name: 'sources' })]));
+  root.appendChild(M.card('Every source' + (s.ccat ? ', ' + s.ccat : ''), 'Click a heading to sort. Press the (i) next to a name to see what it means and how its link is tagged. "What to do about it" is a suggestion from the numbers of that row, open the Columns button to show it.', [M.table(cols, { rows: rows, sortKey: 'visits', empty: 'No sources.', limit: 100, name: 'sources' })]));
   /* trend per source: one small line chart each for the biggest ones */
   var top = rows.slice().sort(function (a, b) { return b.visits - a.visits; }).slice(0, 6), buckets = M.buckets(r.from, r.to, r.mode);
   root.appendChild(M.card('Visits over time, biggest six sources', 'One bar per ' + r.mode + '. Compare the shape, not only the size: a source that keeps growing matters more than one big day.', [M.grid(top.map(function (x, i) {
