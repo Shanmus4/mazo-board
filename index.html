@@ -1245,8 +1245,247 @@ body.detail-on #fsroot .card.fs{padding-right:var(--fs-xr)}      /* the detail p
   table.fn col.c-step{width:30%}
   table.fn col.c-ppl{width:64px}
   table.fn col.c-kept{width:84px}
-  table.fn th .info-mark{width:28px;height:28px;margin:-6px -4px -6px 0}
+  table.fn th{vertical-align:bottom}
+  table.fn th .info-mark{display:inline-flex;width:20px;height:20px;margin:0 0 0 2px;vertical-align:middle}
 }
+
+/* T857 round 3 (2 Nov 2026, owner: "all have proper filters, a way to manage"): a numbers list of more than 8 rows has a filter box and a count in the same strip as the date choice (or alone when
+   the list has no dates). Click-to-sort headings in a list look like the ones in a table. */
+.tbl-strip{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp3);margin:0 0 var(--sp3)}
+.tbl-dates .tbl-q,.tbl-strip .tbl-q{flex:0 1 260px;min-width:min(200px,100%)}
+.tbl-details .tbl-dates .tbl-q{order:-1}
+.tbl-details th>button{all:unset;box-sizing:border-box;cursor:pointer;font:inherit;color:inherit;white-space:nowrap}
+.tbl-details th>button:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:3px}
+.tbl-details th.n>button{display:inline-block}
+/* a heading that sorts is a real button: on a touch screen it is at least 44 px tall and as wide as its column title (T857 round 3; the audit found 30 of them 19 px tall) */
+@media (pointer:coarse),(max-width:640px){
+  .tbl-details th>button{display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0 var(--sp1)}
+  .tbl-details th.n>button{justify-content:flex-end}
+  .tbl-details thead th{height:44px;padding-top:0;padding-bottom:0}
+}
+@media (max-width:640px){
+  .tbl-dates .tbl-q,.tbl-strip .tbl-q{flex:1 1 100%;height:44px}
+  .tbl-strip{gap:var(--sp2)}
+}
+
+/* Growth page (T871, 2 Nov 2026): a grid of small charts, one per growth area. Code: dashboard_36_growth_charts.js. */
+.minigrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:var(--sp5) var(--sp5);margin:var(--sp3) 0 0}
+.minigrid .minichart{display:flex;flex-direction:column;gap:var(--sp2);min-width:0}
+.minigrid .minichart .cb,.minigrid .minichart .donut{min-width:0}
+.card h4.sub{font-size:var(--t14);font-weight:600;color:var(--ink);margin:var(--sp4) 0 var(--sp2)}
+@media (max-width:640px){.minigrid{grid-template-columns:1fr}}
+
+/* mazo dashboard CONSISTENCY LAYER (T870, 2 Nov 2026). Loads after the Editorial look and the table rules, before the lazy loader. One place for the numbers every page shares, so no page
+   draws its own. Owner: "info buttons are not aligned", "corner radius must be the same everywhere", "padding and spacing between sections", "some places dividers, some just space,
+   some headings small, some big", "the dropdown arrow does not look centred". Measured on 18 pages before this file (docs/reports/design-audit-2026-11-02.md).
+
+   THE SCALES (use these, never a new number):
+     radius  --cr-bar 2px   bars, tracks, stacks, heat cells, legend keys
+             --cr-ctl 6px   buttons, inputs, selects, chips, tags, tabs, small panels
+             --cr-pan 12px  floating panels, lists, tooltips, empty boxes
+     space   --gap-block 32px   between two cards, folds, grids on a page (phone 24px)
+             --gap-in 16px      between a card title and its content
+     type    page 44 (34, 28 on phones) | card title 18 | sub title 16 | label 13 | table head 12
+     marks   --mk-sm 20px (table heads, labels, tags) | --mk-md 24px (card titles and the page title)
+     divider ONE rule: a card or a fold starts with a 1px line (--edge2); nothing else separates sections. */
+
+:root{
+  --cr-bar:2px; --cr-ctl:6px; --cr-pan:12px;
+  --gap-block:32px; --gap-in:16px;
+  --mk-sm:20px; --mk-md:24px;
+  --h-page:44px; --h-card:18px; --h-sub:16px; --h-label:13px;
+}
+@media (max-width:900px){:root{--gap-block:28px;--h-page:34px}}
+@media (max-width:640px){:root{--gap-block:24px;--h-page:28px}}
+
+/* ---------- (b) corner radius, by role ---------- */
+.btn,.tbtn,.ibtn,.seg,.fld select,.fld input,input[type=date],.tbl-q,.gs-in,.dd-btn,.badge,.chip,.tag,.subnav a,.pop-done,.cm-row,.kpi .chip-d,.postlink{border-radius:var(--cr-ctl)}
+.popover,.dd-list,#tip,.empty,.detail,.fs-panel,.gs-panel,.note,.why.fold-why{border-radius:var(--cr-pan)}
+/* every bar, track, fill and stack: one small radius */
+.fn-track,.fn-fill,.cellbar svg,.hb svg,.stack,.stack>div,.cmp-bar,.ch-bar,.untracked-bar{border-radius:var(--cr-bar)}
+.fn-fill{border-radius:var(--cr-bar)!important}
+table.fn .fn-track{border-radius:var(--cr-bar)!important;overflow:hidden}
+.cellbar svg,.hb svg{overflow:hidden}
+.legend i{border-radius:var(--cr-bar)}
+table.heat td.c{border-radius:var(--cr-bar)}
+.seg button{border-radius:0}
+.seg button:first-child{border-radius:var(--cr-ctl) 0 0 var(--cr-ctl)}
+.seg button:last-child{border-radius:0 var(--cr-ctl) var(--cr-ctl) 0}
+.seg button:only-child{border-radius:var(--cr-ctl)}
+.tag{border-radius:0}
+.kpis,.card,.kpi,.tw{border-radius:0}
+
+/* ---------- (c)(d) spacing and dividers: one gap, one line ---------- */
+#main>div>.kpis,#main>div>.kpis+.kpis{margin-top:var(--gap-in);margin-bottom:0}
+#main>div>.kpis+.kpis{margin-top:var(--gap-block)}
+#main>div>.card,#main>div>details.fold,#main>div>.grid,#main>div>.cards13,#main>div>div.conn{margin-top:var(--gap-block);margin-bottom:0}
+#main>div>.kpis+.card,#main>div>.kpis+.grid,#main>div>.kpis+details.fold{margin-top:var(--gap-block)}
+.grid{margin:var(--gap-block) 0 0;gap:var(--gap-block)}
+.grid>.card{margin-top:0}
+.fold>.grid,.fold>.card,.fold>div>.card{margin-top:var(--gap-in)}
+.fold>.card:first-of-type{margin-top:var(--gap-in)}
+.card{padding:22px 0 8px;border-top:1px solid var(--edge2)}
+.card+.card{margin-top:var(--gap-block)}
+.fold{border-top:1px solid var(--edge2);margin:var(--gap-block) 0 0}
+.card .card{border-top:0;padding-top:0;margin-top:var(--gap-in)}
+/* the line above a card inside a grid column is the same line; the page head and the scoreboard keep their own heavier rule */
+.kpis{border-top:2px solid var(--maroon)}
+.fs-bar,.fs-panel{border-top:0}
+#main>div>p.small:first-child,#main>div>.note:first-child{margin-top:var(--sp3);margin-bottom:0}
+#main>div>.kpis.rates{margin-top:var(--gap-block)}
+
+/* ---------- (e) heading scale ---------- */
+h2{font-size:var(--h-page)}
+.card>h3,.card>h3 .h3t,.card-title{font-size:var(--h-card)}
+.card h4,.card .sub-t,.cards13 h3,.fcard h3,.conn h3{font-size:var(--h-sub);line-height:1.35}
+.conn>h3,.conn h3,.card.conn>h3{font-size:var(--h-card)}
+.kpi .l,.fld label,.hb .lb,.pg-q+*{font-size:var(--h-label)}
+.fold>summary{font-size:var(--h-card);min-height:56px;align-items:center}
+.fold>summary .fold-hint{font-size:var(--h-label)}
+th,.tw th{font-size:12px}
+
+/* ---------- (a) the (i) mark: three sizes, one rule for where it sits ---------- */
+.info-mark{width:var(--mk-md);height:var(--mk-md);flex:0 0 var(--mk-md);vertical-align:middle}
+.info-mark .ic{width:16px;height:16px}
+th .info-mark,.kpi .l .info-mark,.tag .info-mark,.fld label .info-mark,.mc-head .info-mark,.legend .info-mark{width:var(--mk-sm);height:var(--mk-sm);flex-basis:var(--mk-sm)}
+th .info-mark .ic,.kpi .l .info-mark .ic,.tag .info-mark .ic{width:14px;height:14px}
+.info-mark.page-info{width:var(--mk-md);height:var(--mk-md);flex-basis:var(--mk-md);margin-left:var(--sp2)}
+.info-mark.page-info .ic{width:16px;height:16px}
+/* a page title is 44px tall: the mark aligns to the top of its first line, not to the middle of the whole block */
+.pg-line{align-items:flex-start;gap:var(--sp2)}
+.pg-line h2{line-height:1.1}
+.pg-line .info-mark.page-info{margin-top:calc(var(--h-page) * .144)}      /* top of the mark = top of the capital letters of the title */
+/* a card title: the mark is glued to the LAST word, so a title that wraps never leaves it alone on a line */
+.card>h3{display:block;min-height:28px;line-height:1.35}
+.card>h3 .h3t{display:inline}
+.card>h3 .info-mark{display:inline-flex;vertical-align:-0.1em;margin-left:var(--sp2)}
+.card>h3[data-zoom]::after{white-space:normal}
+/* a label with a mark: the label and the mark are one line item */
+/* a label and its mark flow as ONE line of text: a long label wraps, the mark stays after the last word */
+.kpi .l{display:block;min-height:24px;line-height:24px}
+.kpi .l .info-mark{display:inline-flex;vertical-align:middle;margin-left:var(--sp1)}
+th .info-mark{vertical-align:middle;margin-left:var(--sp1)}
+.tag .info-mark{margin-left:var(--sp1)}
+td .info-mark{vertical-align:-0.25em;margin-left:var(--sp1)}
+@media (pointer:coarse){
+  .info-mark{width:var(--mk-md);height:var(--mk-md)}
+  .info-mark::after{content:"";position:absolute;inset:-10px}
+  .info-mark{position:relative}
+}
+
+/* ---------- (f) the arrows: one box, one centre, no jump ---------- */
+.fold>summary::after,.fs-fold>summary::after,#fsroot details.fs-panel>summary::after,.tbl-details summary::before{
+  width:8px;height:8px;margin:0;top:50%;translate:0 -50%;transform-origin:50% 50%;transition:transform .18s var(--ease)}
+.fold>summary::after{position:absolute;right:var(--sp2);transform:rotate(45deg);margin-top:-3px}
+.fold[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
+.tbl-details summary::before{translate:0 0;margin-top:-2px}
+.tbl-details[open]>summary::before{margin-top:2px}
+.dd-btn .dd-chev,.tbtn .chev{transform-origin:50% 50%}
+.dd-btn .dd-chev{width:16px;height:16px;flex:0 0 16px}
+.dd-btn[aria-expanded="true"] .dd-chev{transform:rotate(180deg)}
+.tbtn[aria-expanded="true"] .chev{transform:rotate(180deg)}
+
+/* ---------- (g) multi-select menus (Columns): a whole row is the target ---------- */
+.tbl-cols-pop .tc-row{display:flex;align-items:center;gap:var(--sp3);min-height:40px;padding:0 var(--sp3);border-radius:var(--cr-ctl);cursor:pointer;font-size:var(--t14)}
+.tbl-cols-pop .tc-row:hover{background:var(--sand)}
+.tbl-cols-pop .tc-row input{width:18px;height:18px;flex:0 0 18px;accent-color:var(--maroon);margin:0}
+.tbl-cols-pop .tc-row input:disabled+span{color:var(--ink3)}
+/* the menu is a scroll box when the list is long; its footer (Show all columns, Done) stays in view at the bottom, so the way out is never below the fold of the menu */
+.tbl-cols-pop{display:flex;flex-direction:column;gap:0;padding:var(--sp2);overflow:hidden;max-height:min(60vh,420px)}
+.tbl-cols-pop .tc-list{overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0}
+.tbl-cols-pop .tc-foot{display:flex;justify-content:space-between;align-items:center;gap:var(--sp3);padding:var(--sp2) var(--sp3) var(--sp1);margin-top:var(--sp1);border-top:1px solid var(--edge);flex:0 0 auto;background:#fff}
+.tbl-cols-pop .tc-foot .pop-done{width:auto;margin:0;min-height:36px;padding:0 var(--sp4);border-radius:var(--cr-ctl)}
+@media (pointer:coarse){.tbl-cols-pop .tc-row{min-height:44px}}
+
+/* ---------- (i) a fold that holds one card with the same title: the fold IS the heading ---------- */
+.fold.one-card>.card{border-top:0;padding-top:var(--sp2);margin-top:0}
+.fold.one-card>.card>h3{display:none}
+/* the card's own tools (full screen, options) sit in the fold's title row, left of the arrow, and the card's first row (filter, columns, download) starts below it */
+.fold.one-card{position:relative}
+.fold.one-card>.card{position:static}
+.fold.one-card>.card>.ctools{top:calc(var(--sp3) + 4px);right:calc(var(--sp6) + var(--sp5))}
+.fold.one-card:not([open])>.card{display:none}
+.fold.one-card>summary .fold-hint{display:none}
+
+/* ---------- (j) change arrows: a drawn arrow, colour by meaning ---------- */
+.kpi .chip-d{display:inline-flex;align-items:center;gap:4px;padding:2px var(--sp2) 2px 6px}
+.kpi .chip-d .ar{width:12px;height:12px;flex:0 0 12px;display:block}
+.kpi .chip-d.up .ar{color:var(--green-t)}
+.kpi .chip-d.down .ar{color:var(--terra-t)}
+.kpi .chip-d.flat .ar{color:var(--ink2)}
+.kpi .chip-d.up{background:#EAF3EE;color:var(--green-t)}
+.kpi .chip-d.down{background:#F8E9E2;color:var(--terra-t)}
+.delta-ar{display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums;font-weight:500}
+.delta-ar svg{width:12px;height:12px;flex:0 0 12px}
+.delta-ar.good{color:var(--green-t)}
+.delta-ar.bad{color:var(--terra-t)}
+.delta-ar.flat{color:var(--ink2)}
+/* status words get the same small drawn mark instead of a bare dot */
+.badge .st-ic{width:12px;height:12px;flex:0 0 12px;margin-right:4px;vertical-align:-1px}
+.badge{display:inline-flex;align-items:center}
+
+/* ---------- donut charts (dashboard_35_pies.js) ---------- */
+.donut{display:grid;grid-template-columns:minmax(160px,220px) 1fr;gap:var(--sp5);align-items:center;padding:var(--sp3) 0}
+.donut svg{width:100%;height:auto;max-height:220px;display:block;overflow:visible}
+.donut .dn-seg{cursor:pointer;transition:opacity .15s var(--ease)}
+.donut .dn-seg:hover,.donut .dn-seg:focus-visible{opacity:.82}
+.donut svg:focus-visible{outline:2px solid var(--ring);outline-offset:4px;border-radius:var(--cr-pan)}
+.donut .dn-total{font-family:Merriweather,Georgia,serif;font-size:22px;fill:var(--maroon);text-anchor:middle}
+.donut .dn-cap{font-size:11px;fill:var(--ink3);text-anchor:middle}
+.dn-legend{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.dn-legend li{display:grid;grid-template-columns:14px 1fr auto auto;gap:var(--sp2);align-items:center;min-height:32px;padding:0 var(--sp2);border-radius:var(--cr-ctl);font-size:var(--t14);cursor:default}
+.dn-legend li:hover,.dn-legend li.on{background:var(--sand)}
+.dn-legend i{width:12px;height:12px;border-radius:var(--cr-bar);display:block}
+.dn-legend b{font-weight:500;font-variant-numeric:tabular-nums}
+.dn-legend em{font-style:normal;color:var(--ink3);font-variant-numeric:tabular-nums;min-width:3.4em;text-align:right}
+@media (max-width:640px){.donut{grid-template-columns:1fr;justify-items:center}.donut svg{max-width:200px}.dn-legend{width:100%}}
+
+/* marks after a value in a table cell or beside a source name: inline after the text, centred on that line */
+td.na,td.n.na{white-space:nowrap}
+td.na .info-mark{display:inline-flex;vertical-align:middle;margin-left:var(--sp1)}
+.src-cell{display:inline-flex;align-items:center;gap:var(--sp1);white-space:nowrap}
+.src-cell .info-mark{flex:0 0 var(--mk-sm);width:var(--mk-sm);height:var(--mk-sm)}
+td .tag{display:inline-flex;align-items:center}
+.own-line{display:block}
+.own-line .info-mark{display:inline-flex;vertical-align:middle;margin-left:var(--sp1)}
+
+/* ---------- headline blocks on a phone (found by the audit: the Overview forced 4 columns of 66px and 3 of 106px, so labels wrapped to 3 lines and the (i) fell under them) ----------
+   Rule: a headline column is never narrower than 150px. The first (lead) figure takes the full row, the others sit two across. The Editorial layer set the wide grids last, so this
+   is repeated here with the same weight. */
+@media (max-width:700px){
+  .kpis.lead,.kpis.rates,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpis.lead>.kpi:first-child{grid-column:1/-1}
+  .kpis.rates>.kpi:last-child:nth-child(odd){grid-column:1/-1}
+  .kpis .kpi{min-width:0}
+  .kpi .l{overflow-wrap:anywhere}
+}
+@media (max-width:420px){.kpis.rates .v,.kpis .v{font-size:24px}.kpis.lead>.kpi:first-child .v{font-size:32px}}
+/* the second row of headline figures (rates) has no side padding of its own: it lines up with the first row */
+.kpis.rates .kpi,.kpis .kpi{padding-left:0;padding-right:0}
+@media (max-width:700px){.kpis.rates .kpi{padding:14px 0}}
+.kpi .l{padding-right:var(--sp1)}
+
+/* a mark that follows plain text (a card title, a label, a funnel heading, a cell) is glued to the last word by dashboard_35_pies.js (M.glueMarks): the word and the mark are one no-break
+   group, so the mark can never be left alone on a line. Sortable table headings are buttons and stay on one line as the table rules draw them. */
+.glue{white-space:nowrap}
+.glue .info-mark{vertical-align:middle;margin-left:var(--sp1)}
+
+/* a tag is a dot and one run of text; the mark follows the last word (long tags wrap, the dot stays on the first line) */
+.tag{display:inline-block;position:relative;padding-left:12px;line-height:1.5;text-indent:0}
+.tag::before{position:absolute;left:0;top:.62em}
+.tag .info-mark{display:inline-flex;vertical-align:middle}
+
+/* ---------- a card that has arrived has NO transform (found with the Columns menu on a phone, 2 Nov 2026) ----------
+   The page-in animation used "animation-fill-mode: both", so a card kept "transform: none" as an active style for ever. In some engines an animated transform that is only "none" still makes the
+   card the containing block of a position:fixed child, so the phone bottom sheet (the Columns menu, the chart options) was placed INSIDE the card, under the dimming layer, and could not be
+   pressed. build-traps.md: "a transform makes an element the containing block for position:fixed children". The animation now runs from the start state only (backwards fill) and lets go. */
+body.anim main>div>*,body.anim main>div .grid>.card,body.anim main .kpis,body.anim .pg-head{animation-fill-mode:backwards}
+
+/* a sortable column heading is [sort button][mark], both at full tap size (44 on touch). The button keeps its own box from the table rules; the mark sits beside it on the same line */
+th{white-space:nowrap}
+th>button{display:inline-flex;align-items:center;vertical-align:middle}
+th>.info-mark{display:inline-flex;vertical-align:middle;margin-left:var(--sp1)}
+@media (pointer:coarse){th>button{min-height:44px}}
 
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
@@ -2000,12 +2239,34 @@ M.tableView = function (cols, rows, label, o) {
     if (!d.open || done) return;
     done = true;
     var spec = M.tdSpec ? M.tdSpec(cols, rows, o) : null, from = Math.max(0, rows.length - M.TBLWIN), holder = M.h('div', { class: 'tbl-win' }), shownNow = rows, ctl = null;
+    /* T857 round 3 (2 Nov 2026, owner: "all have proper filters, a way to manage"): a list of more than 8 rows also gets a filter box, click-to-sort headings and a plain row count.
+       A filter or a sort shows every matching row in the scroll box (the "latest 60" window is only for the plain, date ordered view). */
+    var q = '', sort = { key: null, dir: 1 }, qIn = null, cntOnly = null, strs = null;
+    var colOf = function (k) { return cols.filter(function (c) { return c.k === k; })[0]; };
+    var rowStr = function (r) { return cols.map(function (c) { var v = c.fmt ? c.fmt(r[c.k], r) : r[c.k]; return v == null ? '' : String(v); }).join(' ').toLowerCase(); };
+    var sortVal = function (c, r) { if (spec && c === cols[0]) { var g = spec.get(r); if (g) return g[0]; } return r[c.k]; };
+    var onSort = function (k) {
+      if (sort.key === k) { if (sort.dir === (colOf(k).num ? -1 : 1)) sort.dir = -sort.dir; else sort = { key: null, dir: 1 }; }      /* first click: the natural way (biggest first for numbers), second: reversed, third: back to the original order */
+      else sort = { key: k, dir: colOf(k).num ? -1 : 1 };
+      draw(false);
+    };
     var draw = function (keepFromBottom) {
       var old = holder.querySelector('.tw'), before = old ? old.scrollHeight - old.scrollTop : 0;
       M.clear(holder);
       var list = ctl && ctl.active() ? rows.filter(ctl.accept) : rows;
-      if (!list.length) { shownNow = []; if (ctl) { ctl.setCount(0, rows.length); ctl.setMore(null); holder.appendChild(M.tdEmpty(ctl)); } return; }
-      var windowed = !ctl || ctl.st.mode === 'latest';      /* only the plain view keeps the latest 60 rows; any other choice shows every row it holds, inside a scroll box */
+      if (q) { if (!strs || strs.length !== rows.length) strs = rows.map(rowStr); var at = new Map(); rows.forEach(function (r, i) { at.set(r, i); }); list = list.filter(function (r) { return strs[at.get(r)].indexOf(q) >= 0; }); }
+      var setCount = function (n) { if (cntOnly) cntOnly.textContent = n < rows.length ? M.num(n) + ' of ' + M.num(rows.length) + ' rows' : M.num(rows.length) + (rows.length === 1 ? ' row' : ' rows'); };
+      if (!list.length) {
+        shownNow = [];
+        if (ctl) { ctl.setCount(0, rows.length); ctl.setMore(null); }
+        setCount(0);
+        if (q && !(ctl && ctl.active())) holder.appendChild(M.empty('No row matches "' + q + '".', 'Clear the filter box to see every row again.'));
+        else if (ctl) holder.appendChild(M.tdEmpty(ctl));
+        else holder.appendChild(M.empty('Nothing to show for this selection.'));
+        return;
+      }
+      if (sort.key) { var sc = colOf(sort.key); list = list.slice().sort(function (a, b) { var x = sortVal(sc, a), y = sortVal(sc, b); if (x == null || x === '') return y == null || y === '' ? 0 : 1; if (y == null || y === '') return -1; var nx = +x, ny = +y; return (isNaN(nx) || isNaN(ny) ? String(x).localeCompare(String(y)) : nx - ny) * sort.dir; }); }
+      var windowed = (!ctl || ctl.st.mode === 'latest') && !q && !sort.key;      /* only the plain view keeps the latest 60 rows; any other choice shows every row it holds, inside a scroll box */
       var start = windowed ? Math.min(from, Math.max(0, list.length - 1)) : 0, shown = list.slice(start);
       shownNow = shown;
       var more = null;
@@ -2015,27 +2276,41 @@ M.tableView = function (cols, rows, label, o) {
       }
       if (ctl) { ctl.setCount(shown.length, rows.length, shown); ctl.setMore(more); }
       else if (more) holder.appendChild(M.h('p', { class: 'tbl-earlier small muted', 'data-ux': '1' }, ['Showing the latest ' + M.num(shown.length) + ' of ' + M.num(rows.length) + ' rows. ', more]));
-      var tw = M.staticTable(cols, shown);
+      setCount(shown.length);
+      var tw = M.staticTable(cols, shown, sort, rows.length > 8 ? onSort : null);
       holder.appendChild(tw);
       var box = tw.classList.contains('tall') ? tw : null;
-      if (box) box.scrollTop = keepFromBottom ? box.scrollHeight - before : box.scrollHeight;
+      if (box) box.scrollTop = keepFromBottom ? box.scrollHeight - before : (sort.key || q ? 0 : box.scrollHeight);
     };
     if (spec && rows.length > 8) {
-      ctl = M.tdControl(cols, spec, { withLatest: rows.length > M.TBLWIN, onChange: function () { from = Math.max(0, rows.length - M.TBLWIN); draw(false); } });
+      ctl = M.tdControl(cols, spec, { withLatest: rows.length > M.TBLWIN, onChange: function () { from = Math.max(0, rows.length - M.TBLWIN); sort = { key: null, dir: 1 }; draw(false); } });
       d.appendChild(ctl.el);
+    }
+    if (rows.length > 8) {
+      qIn = M.h('input', { type: 'search', class: 'tbl-q', placeholder: 'Filter rows', 'aria-label': 'Filter the rows of this list', autocomplete: 'off', 'data-ux': '1' });
+      qIn.addEventListener('input', function () { q = qIn.value.trim().toLowerCase(); draw(false); });
+      qIn.addEventListener('keydown', function (e) { if (e.key === 'Escape' && qIn.value) { e.preventDefault(); e.stopPropagation(); qIn.value = ''; q = ''; draw(false); } });
+      if (ctl) ctl.el.insertBefore(qIn, ctl.el.firstChild);
+      else { cntOnly = M.h('span', { class: 'tbl-dn', 'aria-live': 'polite' }); d.appendChild(M.h('div', { class: 'tbl-strip', 'data-ux': '1' }, [qIn, cntOnly])); }
     }
     d.appendChild(holder);
     draw(false);
-    if (M.tableCsv) {      /* UX round: the same numbers as a CSV file (raw values, a blank cell stays blank); with a date choice it holds exactly the rows on screen */
+    if (M.tableCsv) {      /* UX round: the same numbers as a CSV file (raw values, a blank cell stays blank); with a date choice, a filter or a sort it holds exactly the rows on screen */
       var b = M.h('button', { type: 'button', class: 'btn sm', 'data-ux': '1' }, [M.icon ? M.icon('i-down') : null, M.h('span', { text: 'Download CSV' })]);
-      b.addEventListener('click', function () { var card = d.closest('.card'), h3 = card && card.querySelector('h3'); M.tableCsv(cols, ctl ? shownNow : rows, (h3 && h3.textContent) || 'table'); });
+      b.addEventListener('click', function () { var card = d.closest('.card'), h3 = card && card.querySelector('h3'); M.tableCsv(cols, ctl || q || sort.key ? shownNow : rows, (h3 && h3.textContent) || 'table'); });
       d.appendChild(M.h('p', { 'data-ux': '1', style: 'margin:.5rem 0 0' }, b));
     }
   });
   return d;
 };
-M.staticTable = function (cols, rows) {
-  var t = M.h('table', null, [M.h('thead', null, M.h('tr', null, cols.map(function (c) { return M.h('th', { class: c.num ? 'n' : '', text: c.label }); })))]);
+M.staticTable = function (cols, rows, sort, onSort) {
+  sort = sort || {};
+  var t = M.h('table', null, [M.h('thead', null, M.h('tr', null, cols.map(function (c) {
+    if (!onSort) return M.h('th', { class: c.num ? 'n' : '', text: c.label });
+    var th = M.h('th', { class: c.num ? 'n' : '', scope: 'col', 'aria-sort': sort.key === c.k ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none' });
+    th.appendChild(M.h('button', { type: 'button', onclick: function () { onSort(c.k); } }, [c.label, sort.key === c.k ? (sort.dir > 0 ? ' ▲' : ' ▼') : '']));
+    return th;
+  })))]);
   var tb = M.h('tbody');
   rows.forEach(function (r) { tb.appendChild(M.h('tr', null, cols.map(function (c) { var v = c.fmt ? c.fmt(r[c.k], r) : r[c.k]; v = v == null ? '' : String(v); return M.h('td', { class: c.num ? 'n' : '', text: v === 'n/a' ? 'not available' : (M.plain ? M.plain(v) : v) }); }))); });
   t.appendChild(tb);
@@ -2116,6 +2391,15 @@ M.donut = function (parts, o) {
 
 /* scorecard (T817, 1 Nov 2026): label, big figure, the change against the previous period as a chip, and one plain context line. The small trend line that used to sit in
    every card was decoration and is gone (the charts below show the trend with real axes). M.sparkline stays defined for any page that wants it. */
+/* T870 (2 Nov 2026, owner: "use icons, increase and decrease as green and red arrows, similarly where you can"): ONE drawn arrow for every rise, fall and level. The colour is set by the caller's
+   class (green for good, terracotta for bad, grey for level), the shape says the direction. */
+M.arrow = function (dir) {
+  var d = dir === 'up' ? 'M6 10V2M2.5 5.5L6 2l3.5 3.5' : dir === 'down' ? 'M6 2v8M2.5 6.5L6 10l3.5-3.5' : 'M2 6h8';
+  return M.s('svg', { class: 'ar', viewBox: '0 0 12 12', 'aria-hidden': 'true', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [M.s('path', { d: d })]);
+};
+/* measures that are good when they go DOWN (a headline figure the page did not mark with goodUp) */
+M.DOWNGOOD = /\b(bounces?|refunds?|refunded|returns?|exchanges?|cancel\w*|disputes?|days to (send|deliver|dispatch)|delivery days|dispatch days|late|left checkouts?|abandon\w*|errors?|costs?|fees?|discounts?|stock ?outs?|out of stock|missed|unsubscribes?|complaints?)\b/i;
+M.downIsGood = function (label) { return M.DOWNGOOD.test(String(label || '')); };
 M.kpi = function (o) {
   // o: label, value (text), change (percent or null), goodUp (bool), note, cmpNote, na (text)
   var box = M.h('div', { class: 'kpi' + (o.na ? ' na' : '') + (o.hero ? ' hero' : '') }, [M.h('div', { class: 'l', text: o.label })]);
@@ -2128,8 +2412,9 @@ M.kpi = function (o) {
   box.appendChild(M.h('div', { class: 'v', text: o.value }));
   var d = M.h('div', { class: 'd' });
   if (o.change != null) {
-    var up = o.change > 0.5, down = o.change < -0.5, good = o.goodUp === false ? down : up, bad = o.goodUp === false ? up : down;
-    d.appendChild(M.h('span', { class: 'chip-d ' + (good ? 'up' : bad ? 'down' : 'flat'), text: (up ? '▲ ' : down ? '▼ ' : '▬ ') + M.pct(Math.abs(o.change), 1) }));
+    var low = o.goodUp === false || (o.goodUp == null && M.downIsGood(o.label));      /* T870: bounce, returns, days to deliver ... are good when they fall */
+    var up = o.change > 0.5, down = o.change < -0.5, good = low ? down : up, bad = low ? up : down;
+    d.appendChild(M.h('span', { class: 'chip-d ' + (good ? 'up' : bad ? 'down' : 'flat'), title: up ? 'Went up' : down ? 'Went down' : 'About the same' }, [M.arrow(up ? 'up' : down ? 'down' : 'flat'), M.pct(Math.abs(o.change), 1)]));
     d.appendChild(document.createTextNode(' '));
     d.appendChild(M.h('span', { class: 'vs', text: 'vs before', title: M.compareNote || 'Compared with the period just before the one you picked' }));
   } else if (o.cmpNote) d.appendChild(M.h('span', { class: 'vs', text: o.cmpNote }));
@@ -2399,7 +2684,12 @@ M.heat = function (rows, cols, cell, o) {
   });
   t.appendChild(tb);
   var legend = M.h('div', { class: 'legend' }, [M.h('span', null, ['Low ', M.s('svg', { width: 90, height: 12, viewBox: '0 0 90 12', 'aria-hidden': 'true' }, [M.s('rect', { width: 90, height: 12, rx: 3, fill: '#F6EDE4' }), M.s('rect', { x: 30, width: 30, height: 12, fill: M.lerp('#F6EDE4', '#5E1204', 0.5) }), M.s('rect', { x: 60, width: 30, height: 12, rx: 3, fill: '#5E1204' })]), ' High']), M.h('span', { class: 'muted', text: o.legendText || 'Darker means more. Hatched cells have no data.' })]);
-  return M.h('div', null, [M.h('div', { class: 'tw' + (rows.length > 12 ? ' tall' : '') }, t), legend]);      /* T857: more than 12 rows scroll inside their own box with the heading fixed */
+  var wrapH = M.h('div', null, [M.h('div', { class: 'tw' + (rows.length > 12 ? ' tall' : '') }, t), legend]);      /* T857: more than 12 rows scroll inside their own box with the heading fixed */
+  /* T857 round 3 (2 Nov 2026): a colour grid saves its numbers as a CSV from the card's options menu, like every table (raw numbers, an empty cell stays empty) */
+  var hcols = [{ k: 'row', label: o.rowHead || 'Row' }].concat(cols.map(function (c, j) { return { k: 'c' + j, label: String(c), num: true }; })), hrows = rows.map(function (r, i) { var q = { row: r }; cols.forEach(function (c, j) { var x = cells[i][j]; q['c' + j] = x && x.v != null ? x.v : ''; }); return q; });
+  wrapH.cols = hcols; wrapH.view = function () { return hrows; }; wrapH.csv = function () { var card = wrapH.closest ? wrapH.closest('.card') : null, h3 = card && card.querySelector('h3'); M.tableCsv(hcols, hrows, (h3 && h3.textContent) || 'grid'); };
+  (M.tables = M.tables || []).push(wrapH);
+  return wrapH;
 };
 
 /* ---------------------------------------------------------------- stacked bars over time (parts of a whole per day, week or month) */
@@ -2638,8 +2928,12 @@ M.buildControls = function () {
   c.snap.addEventListener('change', function () { M.go({ snap: c.snap.value }); });
   M.FILTERS.forEach(function (fl) { c.f[fl[0]].addEventListener('change', function () { var p = {}; p[fl[0]] = c.f[fl[0]].value; M.go(p); }); });
   c.reset.addEventListener('click', function () { M.go({ collection: '', channel: '', product: '', device: '', size: '' }); });
-  document.addEventListener('click', function (e) { if (M.popClose && !e.target.closest('.tpop') && !e.target.closest('.dd-list')) M.popClose(); });
-  document.addEventListener('focusin', function (e) { if (M.popClose && !e.target.closest('.tpop') && !e.target.closest('.dd-list')) M.popClose(); });
+  /* T870 (2 Nov 2026): a panel closes on a click or a focus OUTSIDE it. A click on a row inside the Columns menu redraws the table and replaces the very node that was clicked, so by the time this
+     runs the node is no longer inside the panel and the menu used to close on the first click. The press is remembered when it starts (capture phase, before any redraw) and decides. */
+  var inside = false;
+  document.addEventListener('pointerdown', function (e) { inside = !!(e.target.closest && (e.target.closest('.tpop') || e.target.closest('.dd-list'))); }, true);
+  document.addEventListener('click', function (e) { if (M.popClose && !inside && !e.target.closest('.tpop') && !e.target.closest('.dd-list')) M.popClose(); inside = false; });
+  document.addEventListener('focusin', function (e) { if (M.popClose && !inside && !M._menuKeep && !e.target.closest('.tpop') && !e.target.closest('.dd-list')) M.popClose(); });
 };
 
 /* bottom left of the sidebar: when the data ends (a dot and a short date, the detail in a floating tip) and, on the hosted site, Sign out */
@@ -3591,6 +3885,16 @@ M.shape = function () {
     var fold = M.fold(f.label, [], { hint: f.hint });
     root.insertBefore(fold, picked[0]);
     picked.forEach(function (k) { fold.appendChild(k); pull.push(k); });
+    /* T870 (2 Nov 2026, owner: "same heading twice, a hint line and an arrow, very hard to use"): a fold that holds ONE card whose title is the fold's own title is one heading, not two. The fold
+       keeps the title and the arrow; the card keeps its tools (filter box, columns, download); the second title and the hint line are not drawn. */
+    var cards = Array.prototype.filter.call(fold.children, function (c) { return c.nodeName === 'SECTION'; });
+    var norm = function (t) { return String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
+    var h3 = cards.length === 1 && cards[0].querySelector(':scope > h3');
+    if (h3 && norm(h3.textContent).slice(0, 24) === norm(f.label).slice(0, 24)) {
+      fold.classList.add('one-card');
+      var mk = h3.querySelector('.info-mark');
+      if (mk) { var sm = fold.querySelector(':scope > summary'); if (sm && !sm.querySelector('.info-mark')) sm.insertBefore(mk, sm.querySelector('.fold-hint')); }
+    }
   });
 };
 
@@ -4026,6 +4330,8 @@ M.dimBtn = function (kind, value, text) {
   M.detail = {
     isOpen: function () { return !!el && !el.hidden; },
     open: function (o) {
+      /* T870: a panel that only repeats what the hover tip already says is not opened with a mouse (a touch screen has no hover, so it still opens there) */
+      if (!o.force && !(o.actions && o.actions.length) && (o.rows || []).length <= 6 && !(window.matchMedia && window.matchMedia('(pointer:coarse)').matches)) return;
       if (!el) build();
       M.clear(el);
       lastFocus = o.opener || document.activeElement;
@@ -4073,6 +4379,8 @@ M.tableCsv = function (cols, rows, name) {
    cols: {k,label,num,fmt(v,row),bar:{max,color},render(row)->node, sort(row)->value, wrap, dim:'product'|false|function(row)->{kind,value}}
    o: {rows, sortKey, sortDir, onRow(row), selected(row), empty, limit, name, detail:false, noTools:true}
    Returns a box; box.redraw(rows) draws it again with other rows; box.view() gives the rows as displayed (filtered and sorted, before "show more"). */
+/* a column whose job is to show how much something went up or down (T870): decided by its key or its heading, never by guessing from the numbers */
+M.isChangeCol = function (c) { return /(^|_)(change|chg|delta|grew|growth|gained|fchange)(_|$)/i.test(c.k || '') || /^(change|against the|vs previous|followers gained|growth)/i.test(c.label || '') && !/rate|share|per /i.test(c.label || ''); };
 M.table = function (cols, o) {
   var box = M.h('div', { class: 'tblbox' }), wrap = M.h('div', { class: 'tw' }), st = { key: o.sortKey || null, dir: o.sortDir || -1, q: '', shown: o.limit || 300 }, step = o.limit || 300;
   var tools = null, qIn = null, cnt = null, strs = null, view = [], hide = {}, colPanel = null, dctl = null;      /* dctl: the date choice (dashboard_09_tabledates.js), made when the table has dated rows */
@@ -4103,15 +4411,23 @@ M.table = function (cols, o) {
   function columnChooser() {
     var btn = M.h('button', { type: 'button', class: 'btn sm tbl-cols', 'aria-expanded': 'false', 'aria-haspopup': 'dialog', title: 'Choose which columns to show' }, [M.icon ? M.icon('i-filter') : null, M.h('span', { text: 'Columns' })]);
     colPanel = M.h('div', { class: 'popover tbl-cols-pop', role: 'dialog', 'aria-label': 'Choose columns', hidden: true });
+    /* T870 (2 Nov 2026, owner: "if I click on a dropdown item the dropdown disappears, I should click on the checkbox for it to work, bad UX"): a click anywhere on a row switches that column, and
+       the menu STAYS OPEN. It closes on a click outside, Escape, or Done. Cause found by tracing events: switching a column redraws the table, the focus fell to the page, and the global focus rule
+       closed every open panel. The row is now a button-like label, the redraw keeps focus on the same row, and the panel is marked as a menu that a redraw never closes. */
+    var rows = [], list = M.h('div', { class: 'tc-list', 'data-keep-open': '1' }); colPanel.appendChild(list);
     cols.forEach(function (c, i) {
-      var id = 'tc-' + Math.random().toString(36).slice(2, 8), cb = M.h('input', { type: 'checkbox', id: id });
+      var id = 'tc-' + Math.random().toString(36).slice(2, 8), cb = M.h('input', { type: 'checkbox', id: id, 'data-keep-open': '1' });
       cb.checked = !hide[c.k]; if (i === 0) cb.disabled = true;
-      cb.addEventListener('change', function () { hide[c.k] = !cb.checked; draw(); });
-      colPanel.appendChild(M.h('label', { class: 'tc-row', for: id }, [cb, M.h('span', { text: c.label })]));
+      cb.addEventListener('change', function () { hide[c.k] = !cb.checked; M._menuKeep = colPanel; draw(); cb.focus({ preventScroll: true }); M._menuKeep = null; });
+      var row = M.h('label', { class: 'tc-row', for: id, 'data-keep-open': '1' }, [cb, M.h('span', { text: c.label })]);
+      rows.push(cb); list.appendChild(row);
     });
-    var all = M.h('button', { type: 'button', class: 'link', text: 'Show all columns', onclick: function () { hide = {}; Array.prototype.forEach.call(colPanel.querySelectorAll('input'), function (i) { i.checked = true; }); draw(); } });
-    colPanel.appendChild(all);
-    M.pop(btn, colPanel);
+    var foot = M.h('div', { class: 'tc-foot', 'data-keep-open': '1' });
+    foot.appendChild(M.h('button', { type: 'button', class: 'link', text: 'Show all columns', onclick: function () { hide = {}; rows.forEach(function (i) { i.checked = true; }); M._menuKeep = colPanel; draw(); M._menuKeep = null; } }));
+    colPanel.appendChild(foot);
+    var close = M.pop(btn, colPanel);
+    foot.appendChild(M.popDone ? M.popDone(close) : M.h('span'));
+    foot.lastChild.style.display = 'inline-flex';      /* shown on a laptop too: the way out is always in view */
     return M.h('div', { class: 'tpop tbl-colwrap' }, [btn, colPanel]);
   }
   /* the date choice (T857 round 2): added once the table is long enough for the filter box (more than 8 rows) and its rows are dated; its row count replaces the plain count */
@@ -4169,14 +4485,17 @@ M.table = function (cols, o) {
         [c.label, st.key === c.k ? (st.dir > 0 ? ' ▲' : ' ▼') : '']));
       return th;
     }));
-    var tb = M.h('tbody'), canDetail = !o.onRow && o.detail !== false && (cols.length >= 4 || rows.some(function (r) { return extras(r).length; }));
+    /* T870 (2 Nov 2026, owner: "side panel opens to show only one bit of information? weird"): measured on 50 tables, in 31 the panel repeated exactly the columns on screen. The row opens it ONLY
+       when it can show something the table does not: columns the user switched off or that start hidden, or 3 or more fields the table has no column for. */
+    var hiddenNow = Object.keys(hide).some(function (k) { return hide[k]; }) || cols.some(function (c) { return c.hidden; });
+    var tb = M.h('tbody'), canDetail = !o.onRow && o.detail !== false && (hiddenNow || rows.some(function (r) { return extras(r).length >= 4; }));      /* 4 or more fields the table has no column for: a real second level of detail */
     rows.slice(0, st.shown).forEach(function (r) {
       var tr = M.h('tr', { class: (o.onRow ? 'click ' : canDetail ? 'click rowdetail ' : '') + (o.selected && o.selected(r) ? 'sel' : '') });
       if (o.onRow || canDetail) {
         var go = function () { if (o.onRow) o.onRow(r); else detail(r, tr); };
         tr.tabIndex = 0; tr.addEventListener('click', function (e) { if (e.target.closest('a, .dimlink')) return; go(); });
         tr.addEventListener('keydown', function (e) { if (e.target === tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); go(); } });
-        if (canDetail) tr.title = 'Click for the full detail of this row';
+        if (canDetail) tr.title = hiddenNow ? 'Click to see the columns that are switched off' : 'Click for the full detail of this row';
       }
       vis.forEach(function (c) {
         var td = M.h('td', { class: (c.num ? 'n ' : '') + (c.wrap ? 'wrap' : '') });
@@ -4187,6 +4506,11 @@ M.table = function (cols, o) {
             var w = Math.max(0, Math.min(100, (+val(c, r) || 0) / maxes[c.k] * 100));
             td.appendChild(M.h('div', { class: 'cellbar', style: '--nw:' + (nlen[c.k] + 0.5) + 'ch' }, [M.s('svg', { viewBox: '0 0 100 10', preserveAspectRatio: 'none', 'aria-hidden': 'true' }, [M.s('rect', { width: 100, height: 10, fill: M.COLORS.grid }), M.s('rect', { width: w, height: 10, fill: c.bar.color || M.COLORS.maroon })]), M.h('span', { text: txt })]));
           } else if (d) td.appendChild(M.dimBtn(d.kind, d.value, txt));
+          else if (c.num && M.isChangeCol(c) && v != null && v !== '' && !isNaN(+v) && /^[+\-]?\d/.test(txt)) {      /* T870: a column of changes shows a drawn arrow, green when it is good news, terracotta when not (never colour alone) */
+            var chg = +v, dirn = chg > 0.0001 ? 'up' : chg < -0.0001 ? 'down' : 'flat', lowGood = M.downIsGood(c.label + ' ' + (o.name || ''));
+            var goodc = dirn === 'flat' ? 'flat' : ((dirn === 'up') !== lowGood ? 'good' : 'bad');
+            td.appendChild(M.h('span', { class: 'delta-ar ' + goodc, title: dirn === 'up' ? 'Went up' : dirn === 'down' ? 'Went down' : 'About the same' }, [M.arrow(dirn), document.createTextNode(txt.replace(/^[+\-]/, ''))]));
+          }
           else { td.textContent = txt === 'n/a' ? 'not available' : txt; if (!c.wrap && txt.length > 28) td.title = txt; }
         }
         tr.appendChild(td);
@@ -4207,7 +4531,7 @@ M.table = function (cols, o) {
     }
   }
   box.appendChild(wrap);
-  if (!o.noTools) buildTools();
+  if (!o.noTools || (o.rows || []).length > 8) buildTools();      /* T857 round 3 (2 Nov 2026): noTools is for short lists only; a table of more than 8 rows always gets the filter box, count, date choice, Columns menu and Download CSV */
   draw();
   box.redraw = function (rows) { o.rows = rows; strs = null; draw(); };
   box.dateChoice = function () { return dctl; };
@@ -4492,7 +4816,7 @@ M.productCols = function (withRank) {
     { k: 'product', label: 'Product', wrap: true }, { k: 'collection', label: 'Collection', hidden: true },
     { k: 'views', label: 'Views', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'carts', label: 'Added to cart', num: true, fmt: M.num, bar: { color: M.COLORS.mustard } },
     { k: 'units', label: 'Units sold', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue before order codes', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
-    { k: 'stock', label: 'In stock', num: true, fmt: M.num, bar: { color: M.COLORS.grey } }, { k: 'sell', label: 'Share sold', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); }, bar: { color: M.COLORS.green, max: 100 } },
+    { k: 'stock', label: 'In stock', num: true, fmt: M.num, bar: { color: M.COLORS.grey } }, { k: 'sell', label: 'Share sold', tip: 'Pieces sold divided by pieces sold plus pieces still in stock. It is an estimate: it becomes exact when Madhu gives the number of pieces made for each design.', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); }, bar: { color: M.COLORS.green, max: 100 } },
     { k: 'rating', label: 'Rating', tip: 'The average stars shoppers gave, from reviews Judge.me shows on the product page. A star mark means fewer than 5 reviews, too few to trust.', num: true, fmt: function (v, x) { return v == null ? 'no reviews yet' : v.toFixed(1) + ' of 5' + (x.reviews < 5 ? ' *' : ''); } },
     { k: 'reviews', label: 'Reviews', num: true, fmt: function (v) { return v ? M.num(v) : 'none'; } },
     { k: 'price', label: 'Price', num: true, hidden: true, fmt: function (v) { return v == null ? '' : M.inr(v); } }, { k: 'margin', label: 'Margin', num: true, hidden: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } },
@@ -4560,7 +4884,12 @@ M.productCompare = function (rows) {
       tb.appendChild(M.h('tr', null, [M.h('td', { text: m[1] }), M.h('td', { class: 'n ' + bx, text: fx }), M.h('td', { class: 'n ' + by, text: fy })]));
     });
     t.appendChild(tb);
-    out.appendChild(M.h('div', { class: 'tw' }, t));
+    var twC = M.h('div', { class: 'tw' }, t);
+    out.appendChild(twC);
+    /* T857 round 3 (2 Nov 2026): the comparison saves as a CSV from the card's options menu, like every table */
+    var ccols = [{ k: 'm', label: 'Number' }, { k: 'a', label: x.product, num: true }, { k: 'b', label: y.product, num: true }], crows = METRICS.map(function (m) { return { m: m[1], a: x[m[0]], b: y[m[0]] }; });
+    twC.cols = ccols; twC.view = function () { return crows; }; twC.csv = function () { M.tableCsv(ccols, crows, 'compare ' + x.product + ' and ' + y.product); };
+    M.tables = (M.tables || []).filter(function (tb) { return !tb.cmp; }); twC.cmp = true; M.tables.push(twC);
     out.appendChild(M.h('p', { class: 'small muted', text: 'The bolder green number is the higher one. Price, stock and weeks of stock left are not marked, because higher is not better or worse by itself.' }));
   };
   sa.addEventListener('change', draw); sb.addEventListener('change', draw);
@@ -4701,7 +5030,7 @@ M.HOURS = ['00-04', '04-08', '08-12', '12-16', '16-20', '20-24'];
 M.cuts = function (name, cut) { return M.stateRows(name).filter(function (x) { return x.cut === cut; }); };
 
 /* ================================================================ CUSTOMERS */
-M.sp('customers', 'Customers', 'Customers', 'Who buys, what they buy, when, and do they come back? Only counts are kept here: no names, emails, phones or addresses.', [], { dates: false, snap: true });
+M.sp('customers', 'Customers', 'Customers', 'Who buys, what they buy, when, and do they come back? Only counts are kept here: no names, emails, phones or addresses. To file GST, use the GST filing view further down: one row for each month and state.', [], { dates: false, snap: true });
 M.PAGES.customers.render = function (r) {
   var s = M.state, root = M.h('div'), orders = M.totalOrders(), op = M.stateRows('buyer_patterns');
   root.appendChild(M.note('All ' + M.num(orders) + ' orders so far, whatever dates you picked.' + (orders < M.MIN_EVENTS ? ' With under ' + M.MIN_EVENTS + ' orders no split below shows a real pattern yet.' : '')));
@@ -4742,7 +5071,7 @@ M.PAGES.customers.render = function (r) {
     var rows = M.cuts('buyer_patterns', cw[0]);
     if (!rows.length) return;
     rows.sort(function (a, b) { return (+b.orders || 0) - (+a.orders || 0); });
-    var parts = rows.map(function (x, i) { return { name: x.value, value: +x.orders || 0, color: M.CAT[i % 6] }; }), total = parts.reduce(function (a, p) { return a + p.value; }, 0);
+    var parts = rows.map(function (x, i) { return { name: x.value, label: x.value, value: +x.orders || 0, color: M.CAT[i % 6] }; }), total = parts.reduce(function (a, p) { return a + p.value; }, 0);
     var body = rows.length <= 4 ? M.donut(parts, { label: cw[1], unit: 'Orders' }) : M.bars(rows.slice(0, 8).map(function (x) { return { label: x.value, value: +x.orders || 0, text: M.num(x.orders) + ' (' + M.pct(x.share_pct, 0) + ')', tip: { title: cw[1] + ': ' + x.value, rows: [{ k: 'Orders', v: M.num(x.orders) }, { k: 'Share', v: M.pct(x.share_pct, 1) }] } }; }));
     cards.push(M.card(cw[1], 'Share of the ' + M.num(total) + (total === orders ? ' orders' : ' items') + ' in this split' + (total === orders ? '.' : ' (an order with two items counts twice).'), [M.thinTag(total, total === orders ? 'orders' : 'items'), body].filter(Boolean)));
   });
@@ -5100,9 +5429,9 @@ M.histRollup = function (r, srcs, src) {
 M.sp('quality', 'Data quality', 'Data quality', 'Can you trust the numbers today? How recent each set of numbers is, the checks run every night, and what is stored.', [], { dates: false });
 M.PAGES.quality.render = function () {
   var root = M.h('div'), dq = M.rows('data_quality_daily'), latest = dq.reduce(function (m, x) { return x.date && x.date > m ? x.date : m; }, ''), today = dq.filter(function (x) { return x.date === latest; });
-  var bad = today.filter(function (x) { return x.status !== 'OK'; });
+  var bad = today.filter(function (x) { return x.status !== 'OK' && x.status !== 'KNOWN'; }), known = today.filter(function (x) { return x.status === 'KNOWN'; });      /* T878: a known gap (a past night no source can give back, written in data/known_gaps.json) is counted on its own, not as a problem */
   var kp = M.h('div', { class: 'kpis' });
-  kp.appendChild(M.kpi({ label: 'Checks last run', value: latest ? M.fds(latest) : 'not available', note: latest ? latest.slice(0, 4) : '' })); kp.appendChild(M.kpi({ label: 'Checks passed', value: M.num(today.length - bad.length) + ' of ' + M.num(today.length) }));
+  kp.appendChild(M.kpi({ label: 'Checks last run', value: latest ? M.fds(latest) : 'not available', note: latest ? latest.slice(0, 4) : '' })); kp.appendChild(M.kpi({ label: 'Checks passed', value: M.num(today.length - bad.length - known.length) + ' of ' + M.num(today.length), note: (bad.length ? M.num(bad.length) + ' need a look' : 'none needs a look') + (known.length ? ', ' + M.num(known.length) + ' known gap' + (known.length === 1 ? '' : 's') + ' (nights that cannot be refilled)' : '') }));
   kp.appendChild(M.kpi({ label: 'Updated', value: M.builtText().split(',')[0], note: M.builtText().split(', ')[1] || '' })); kp.appendChild(M.kpi({ label: 'Newest data day', value: M.fds(M.D.anchor), note: M.D.anchor.slice(0, 4) }));
   root.appendChild(kp);
   /* the raw check names (fresh:bing_daily, holes.facebook_daily, catchup fillable) are written for the machine; the page shows them in words (T848) */
@@ -5116,10 +5445,20 @@ M.PAGES.quality.render = function () {
     return s.replace(/[_:.]+/g, ' ');
   };
   today.forEach(function (x) { if (!x._shown) { x._shown = true; x.check = checkName(x.check); } });
-  root.appendChild(M.card('Nightly checks', 'Is each set of numbers recent, is its size sensible, did any number suddenly jump ten times. Problems come first.', [M.table([{ k: 'check', label: 'Check', wrap: true }, { k: 'target', label: 'Should be', wrap: true }, { k: 'status', label: 'Result', render: function (x) { return x.status === 'OK' ? M.badge('Passed', 'green') : M.badge('Needs a look', 'red'); }, sort: function (x) { return x.status === 'OK' ? 1 : 0; } }, { k: 'detail', label: 'What was found', wrap: true }], { rows: today, sortKey: 'status', sortDir: 1, empty: 'No checks have run yet.', limit: 100 })]));
+  root.appendChild(M.card('Nightly checks', 'Is each set of numbers recent, is its size sensible, did any number suddenly jump ten times. Problems come first.', [M.table([{ k: 'check', label: 'Check', wrap: true }, { k: 'target', label: 'Should be', wrap: true }, { k: 'status', label: 'Result', render: function (x) { return x.status === 'OK' ? M.badge('Passed', 'green') : x.status === 'KNOWN' ? M.badge('Known gap', 'grey') : M.badge('Needs a look', 'red'); }, sort: function (x) { return x.status === 'OK' ? 2 : x.status === 'KNOWN' ? 1 : 0; } }, { k: 'detail', label: 'What was found', wrap: true }], { rows: today, sortKey: 'status', sortDir: 1, empty: 'No checks have run yet.', limit: 100 })]));
   /* freshness of every daily tab */
   var today0 = M.D.built.slice(0, 10), fr = M.D.meta.filter(function (m) { return m.last && /_daily$/.test(m.name) && m.name !== 'data_quality_daily'; }).map(function (m) { return { name: m.name, last: m.last, age: M.diff(m.last, today0), rows: m.rows }; });
-  root.appendChild(M.card('How fresh is each daily table?', 'How many days old the newest number is. Google Analytics and Google Search report a day 1 to 3 days late, so 2 to 3 is normal for them.', [M.bars(fr.sort(function (a, b) { return b.age - a.age; }).map(function (x) { return { label: x.name, value: x.age, max: Math.max(7, fr.reduce(function (m, y) { return Math.max(m, y.age); }, 0)), text: x.age + ' day' + (x.age === 1 ? '' : 's') + ' old (' + M.fd(x.last) + ')', color: x.age > 5 ? M.COLORS.terra : x.age > 3 ? M.COLORS.mustard : M.COLORS.green }; }), { empty: 'No daily tables.' })]));
+  /* T878 (3 Nov 2026, owner: "Data page, needs a look"): a table that writes a row ONLY when something happened (a day with an order, a parcel that moved) looks old on a quiet week although nothing is wrong. It is shown calmly with its reason; a table that writes every day and is old is the real warning. Google reports a day 1 to 3 days late. */
+  var QUIET = { data_trust_daily: 'one row per day that had an order; no order since', shipping_daily: 'one row per parcel; no new parcel since' };
+  var LATE = { bing_daily: 1, merchant_daily: 1, youtube_analytics_daily: 1, brand_search_daily: 1, ga4_funnel_daily: 1, source_daily: 1, landing_daily: 1, campaign_daily: 1, visitor_type_daily: 1, funnel_device_daily: 1, product_daily: 1, place_device_daily: 1 };
+  var freshText = function (x) {
+    var base = x.age + ' day' + (x.age === 1 ? '' : 's') + ' old (' + M.fd(x.last) + ')';
+    if (QUIET[x.name]) return base + ': ' + QUIET[x.name] + ' ' + M.fd(x.last);
+    if (LATE[x.name] && x.age <= 3) return base + ', Google reports late';
+    return base;
+  };
+  var freshColor = function (x) { if (QUIET[x.name]) return M.COLORS.grey; return x.age > 5 ? M.COLORS.terra : x.age > (LATE[x.name] ? 4 : 3) ? M.COLORS.mustard : M.COLORS.green; };
+  root.appendChild(M.card('How fresh is each daily table?', 'How many days old the newest number is. Google Analytics, Search, Bing and Merchant Center report a day 1 to 3 days late, so 2 to 3 is normal for them. A grey bar is a table that only gets a row when something happens, so it is not late.', [M.bars(fr.sort(function (a, b) { return b.age - a.age; }).map(function (x) { return { label: x.name, value: x.age, max: Math.max(7, fr.reduce(function (m, y) { return Math.max(m, y.age); }, 0)), text: freshText(x), color: freshColor(x) }; }), { empty: 'No daily tables.' })]));
   var meta = M.D.meta.filter(function (m) { return m.name !== 'Sheet1' && m.name !== 'Dashboard' && m.name !== 'History'; });
   root.appendChild(M.card('Everything that is stored', 'Rows and the dates each one covers. "Shown" means a page can show it. "Nothing yet" means it has not received its first data.', [M.table([{ k: 'name', label: 'Table', wrap: true }, { k: 'rows', label: 'Rows', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'cols', label: 'Columns', num: true }, { k: 'first', label: 'First date', fmt: function (v) { return v ? M.fd(v) : ''; }, sort: function (x) { return x.first || ''; } }, { k: 'last', label: 'Last date', fmt: function (v) { return v ? M.fd(v) : ''; }, sort: function (x) { return x.last || ''; } },
     { k: 'emb', label: 'On the dashboard', render: function (x) { return x.rows === 0 ? M.badge('Nothing yet', 'grey') : x.emb ? M.badge('Shown', 'green') : M.badge('Not shown', 'grey'); }, sort: function (x) { return x.emb ? 1 : 0; } }], { rows: meta.map(function (m) { return { name: m.name, rows: m.rows, cols: m.cols, first: m.first, last: m.last, emb: !!M.D.tabs[m.name] }; }), sortKey: 'name', sortDir: 1, limit: 200 })]));
@@ -5730,9 +6069,14 @@ M.trackCol = function (field, label) {
       return document.createTextNode(t);
     } };
 };
+/* a post with no words of its own is named by what it is and when it went out */
+M.postName = function (p) {
+  var f = { reel: 'Reel', video: 'Video', short: 'Short', photo: 'Photo', carousel: 'Photo set', pin: 'Pin', post: 'Post', story: 'Story' }[String(p.format || '').toLowerCase()] || (p.format ? String(p.format).charAt(0).toUpperCase() + String(p.format).slice(1) : 'Post');
+  return f + (p.date ? ' of ' + M.fd(p.date) : '');
+};
 M.POSTCOL = { k: 'caption', label: 'Post', wrap: true, fmt: function (v) { return v || ''; },
   render: function (r) {
-    if (!r.caption) return M.h('span', { class: 'untracked', title: 'No caption is stored for this post', text: 'no caption stored' });
+    if (!r.caption) return M.h('span', { class: 'postcap', text: M.postName(r) });      /* T870: never the dead words 'no caption stored': say what the post is */
     return M.h('span', { class: 'postcap', title: r.caption, text: r.caption.length > 60 ? r.caption.slice(0, 59).replace(/\s+$/, '') + '...' : r.caption });
   } };
 M.POSTLINK = { k: 'post_url', label: 'Link', fmt: function (v) { return M.safePostUrl(v); },
@@ -5832,7 +6176,7 @@ M.followers = function (c, r) {
 };
 /* a post's caption start as a link when it has an address */
 M.postLinkText = function (p) {
-  var t = p.caption ? (p.caption.length > 60 ? p.caption.slice(0, 59).replace(/\s+$/, '') + '...' : p.caption) : 'no caption stored';
+  var t = p.caption ? (p.caption.length > 60 ? p.caption.slice(0, 59).replace(/\s+$/, '') + '...' : p.caption) : M.postName(p);
   return p.post_url ? M.h('a', { class: 'postlink-text', href: p.post_url, target: '_blank', rel: 'noopener noreferrer', title: 'Open this post in a new tab', text: t }) : M.h('span', { text: t });
 };
 M.copiesCard = function (root, r) {
@@ -6380,6 +6724,12 @@ M.TABLE_WORDS = {
   compliance_dates: ['Dates the business owes', 'Renewals, tokens, filings and checks, each with a due date and who owns it.', 'Business tables'],
   range_calendar: ['Seasons coming up', 'Festivals and seasons ahead, with the dates to shoot, stock and post by.', 'Business tables'],
   human_inputs: ['Numbers Madhu typed in', 'Parcel cost, packaging cost, payment fee, monthly fixed cost and other numbers that only a person knows.', 'Business tables'],
+  gst_filing: ['GST filing view', 'One row for each month and state of delivery: what customers paid, the taxable value and the GST split into CGST, SGST and IGST, built from the tax lines of every real order.', 'Customers'],
+  ga4_users_daily: ['People and time each day', 'Different people, new people, sessions, time on site and key events for every day from Google Analytics, our own test visits left out.', 'Business tables'],
+  ga4_device_daily: ['People and time by device', 'The same numbers each day for phone, desktop and tablet.', 'Business tables'],
+  ga4_source_daily: ['People and time by first source', 'The same numbers each day by where a person first came from.', 'Business tables'],
+  ga4_country_daily: ['People and time by country', 'The same numbers each day by country.', 'Business tables'],
+  ga4_users_window: ['Different people over 7, 28 and 90 days', 'Different people and new people for a whole period as Google counts them, because adding daily people counts the same person on every day.', 'Business tables'],
   backlinks: ['Listings and links to the shop', 'Websites that list or link to mazo, and whether the link works.', 'Business tables'],
   ai_weekly: ['Do AI assistants name mazo', 'Whether chat assistants name or link mazo when asked about the kind of clothes we make.', 'Business tables'],
   buyer_notes: ['Why buyers bought', 'Short notes from calls with buyers (typed in by Madhu).', 'Business tables'],
@@ -6485,7 +6835,7 @@ M.PAGES.tables.render = function () {
     var last = rv.length ? rv[rv.length - 1] : null, jl = jd.length ? jd.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; })[jd.length - 1] : null;
     var k2 = M.h('div', { class: 'kpis' });
     if (jl) { k2.appendChild(M.kpi({ label: 'Reviews published', value: M.num(jl.published_reviews), note: 'on ' + M.fd(jl.date) })); k2.appendChild(M.kpi({ label: 'Average rating', value: jl.average_rating != null ? M.num(jl.average_rating, 2) + ' of 5' : 'not available' })); }
-    if (last && last.reviews_90d_per_100_delivered != null) k2.appendChild(M.kpi({ label: 'Reviews for every 100 delivered orders', value: M.num(last.reviews_90d_per_100_delivered, 0), note: 'last 90 days' }));
+    if (last && last.reviews_90d_per_100_delivered != null) k2.appendChild(M.kpi({ label: 'Product reviews for every 100 delivered orders', value: M.num(last.reviews_90d_per_100_delivered, 0), note: 'last 90 days; reviews of the shop itself are not counted' }));
     kids.push(M.card('Reviews', 'What customers say about us, from the reviews app. The rating moves slowly while there are only a few reviews.', [k2, rt.length ? M.table([{ k: 'theme', label: 'Mentioned in reviews' }, { k: 'mentions', label: 'Times', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'avg_rating', label: 'Rating when mentioned', num: true, fmt: function (v) { return v == null ? 'not yet' : M.num(v, 1); } }, { k: 'read', label: 'What it means', wrap: true }], { rows: rt, sortKey: 'mentions', empty: 'No themes yet.', noTools: true, detail: false }) : null].filter(Boolean)));
   }
   if (rw.length) {
@@ -7218,6 +7568,454 @@ M.TERMS = [
     return root;
   };
   pg._winNote = true;
+})();
+
+/* mazo dashboard donut charts (T870, 2 Nov 2026). Owner: "figure out ways to include interactive charts like pie charts and other types, if applicable only".
+   A donut is used ONLY for parts of one whole where there are 2 to 6 parts that a reader can compare by angle: visits by channel category, visits and orders by device, the size mix, sales by
+   collection. A list of 30 sources, or anything that needs exact reading, stays a bar list or a table. The code mirrors the other charts: one hover tip, arrow keys, role=img, and the same
+   numbers are always available as a table (M.tableView) under the chart.
+   M.donut(parts, o): parts [{label, value, color?, note?}], o {total: 'text under the total', unit: 'visits', fmt: function (v), name: 'chart name for screen readers', other: 'Other'}. Returns a node.
+   More than 6 parts: the smallest are grouped into one 'Other' part so the chart never turns into confetti. A part of 0 is not drawn but stays in the legend and the table. */
+M.DONUTCOL = function (i) { var c = M.CAT || [M.COLORS.maroon, M.COLORS.mustard, M.COLORS.teal, M.COLORS.terra, M.COLORS.green, M.COLORS.grey]; return c[i % c.length]; };
+M.donutParts = function (parts, o) {
+  o = o || {};
+  var ps = (parts || []).filter(function (p) { return p && p.value != null && !isNaN(+p.value); }).map(function (p) { return { label: String(p.label), value: +p.value, color: p.color, note: p.note, other: p.other }; });
+  ps.sort(function (a, b) { return b.value - a.value; });
+  if (ps.length > 6) {
+    var keep = ps.slice(0, 5), rest = ps.slice(5), sum = rest.reduce(function (s, p) { return s + p.value; }, 0);
+    keep.push({ label: (o.other || 'Other') + ' (' + rest.length + ')', value: sum, note: rest.map(function (p) { return p.label; }).join(', '), other: true });
+    ps = keep;
+  }
+  /* two different greys: 'Not known' is light, a grouped 'Other' is dark, so the two are never confused; everything else walks the palette */
+  var n = 0;
+  ps.forEach(function (p) { if (!p.color) p.color = /^not known/i.test(p.label) ? '#C9C0B4' : (p.other ? '#7C7368' : M.DONUTCOL(n++)); });
+  return ps;
+};
+M.donut = function (parts, o) {
+  o = o || {};
+  var ps = M.donutParts(parts, o), total = ps.reduce(function (s, p) { return s + p.value; }, 0), fmt = o.fmt || M.num;
+  var wrap = M.h('div', { class: 'donut' });
+  if (!ps.length || total <= 0) return M.empty(o.empty || 'Nothing to split for these dates.');
+  var R = 80, r = 52, C = 100, svg = M.s('svg', { viewBox: '0 0 200 200', role: 'img', tabindex: '0', 'aria-label': (o.name || 'Split') + ': ' + ps.map(function (p) { return p.label + ' ' + fmt(p.value) + ' (' + M.pct(p.value / total * 100, 0) + ')'; }).join('; ') + '. Use the left and right arrow keys to read each part. The numbers are in the table below.' });
+  var a0 = -Math.PI / 2, segs = [];
+  var pt = function (rad, a) { return (C + rad * Math.cos(a)).toFixed(2) + ' ' + (C + rad * Math.sin(a)).toFixed(2); };
+  ps.forEach(function (p, i) {
+    var frac = p.value / total, a1 = a0 + frac * Math.PI * 2 - (ps.length > 1 && frac < 0.999 ? 0.012 : 0);
+    var big = a1 - a0 > Math.PI ? 1 : 0, d;
+    if (frac >= 0.999) d = 'M' + pt(R, 0) + ' A' + R + ' ' + R + ' 0 1 1 ' + pt(R, Math.PI) + ' A' + R + ' ' + R + ' 0 1 1 ' + pt(R, 0) + ' L' + pt(r, 0) + ' A' + r + ' ' + r + ' 0 1 0 ' + pt(r, Math.PI) + ' A' + r + ' ' + r + ' 0 1 0 ' + pt(r, 0) + 'Z';
+    else d = 'M' + pt(R, a0) + ' A' + R + ' ' + R + ' 0 ' + big + ' 1 ' + pt(R, a1) + ' L' + pt(r, a1) + ' A' + r + ' ' + r + ' 0 ' + big + ' 0 ' + pt(r, a0) + 'Z';
+    var seg = M.s('path', { d: d, fill: p.color, class: 'dn-seg', 'data-i': i }); svg.appendChild(seg); segs.push(seg); a0 += frac * Math.PI * 2;
+  });
+  var tt = String(fmt(total)), fsz = tt.length <= 6 ? 24 : tt.length <= 8 ? 19 : tt.length <= 10 ? 15 : 12;      /* the total must fit inside the hole (it is 104 wide): a long money figure gets a smaller size */
+  svg.appendChild(M.s('text', { x: C, y: C + (fsz > 18 ? 4 : 2), class: 'dn-total', style: 'font-size:' + fsz + 'px' }, tt));
+  svg.appendChild(M.s('text', { x: C, y: C + 22, class: 'dn-cap' }, o.total || o.unit || 'in all'));
+  var legend = M.h('ul', { class: 'dn-legend' }), lis = [];
+  ps.forEach(function (p, i) {
+    var li = M.h('li', { 'data-i': i }, [M.h('i', { style: 'background:' + p.color }), M.h('span', { text: p.label }), M.h('b', { text: fmt(p.value) }), M.h('em', { text: M.pct(p.value / total * 100, 0) })]);
+    lis.push(li); legend.appendChild(li);
+  });
+  var tip = function (i) { var p = ps[i]; return { title: p.label, rows: [{ k: o.unit ? o.unit.charAt(0).toUpperCase() + o.unit.slice(1) : 'Amount', v: fmt(p.value) }, { k: 'Share of the whole', v: M.pct(p.value / total * 100, 1) }].concat(p.note ? [{ k: 'Includes', v: p.note }] : []) }; };
+  var on = function (i) { segs.forEach(function (s, j) { s.style.opacity = i == null || i === j ? '' : '.35'; }); lis.forEach(function (l, j) { l.classList.toggle('on', i === j); }); };
+  var cur = -1;
+  segs.forEach(function (s, i) {
+    s.addEventListener('pointerenter', function (e) { on(i); var d = tip(i); M.tipShow(e.clientX, e.clientY, d.title, d.rows); });
+    s.addEventListener('pointermove', function (e) { var d = tip(i); M.tipShow(e.clientX, e.clientY, d.title, d.rows); });
+    s.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') { on(null); M.tipHide(); } });
+    /* a finger has no hover: a tap on a part pins its facts as the tip and lights its legend row; a tap anywhere else lets go */
+    s.addEventListener('click', function (e) { if (e.pointerType === 'mouse' || (e.detail && e.pointerType == null && !('ontouchstart' in window))) return; on(i); var d = tip(i), r = svg.getBoundingClientRect(); M.tipShow(r.left + r.width / 2, r.bottom + 4, d.title, d.rows); e.stopPropagation(); });
+  });
+  document.addEventListener('click', function (e) { if (!e.target.closest || e.target.closest('.donut')) return; if (svg.isConnected) on(null); });
+  lis.forEach(function (l, i) { l.addEventListener('pointerenter', function () { on(i); }); l.addEventListener('pointerleave', function () { on(null); }); });
+  svg.addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault(); cur = (cur + (e.key === 'ArrowRight' ? 1 : -1) + ps.length) % ps.length; on(cur);
+    var b = svg.getBoundingClientRect(), d = tip(cur); M.tipShow(b.left + b.width / 2, b.top + b.height / 2, d.title, d.rows);
+  });
+  svg.addEventListener('blur', function () { cur = -1; on(null); M.tipHide(); });
+  wrap.appendChild(svg); wrap.appendChild(legend);
+  var box = M.h('div', null, [wrap]);
+  if (M.tableView) box.appendChild(M.tableView([{ k: 'label', label: o.what || 'Part' }, { k: 'v', label: o.unit ? o.unit.charAt(0).toUpperCase() + o.unit.slice(1) : 'Amount', num: true, fmt: fmt }, { k: 'share', label: 'Share', num: true, fmt: function (v) { return M.pct(v, 1); } }], ps.map(function (p) { return { label: p.label, v: p.value, share: p.value / total * 100 }; })));
+  return box;
+};
+
+/* ---------------------------------------------------------------- the (i) mark glued to the last word (T870, 2 Nov 2026)
+   Owner: "info buttons are not aligned, they stay in a weird spot". A heading, label or card title that wraps used to leave its mark alone on the next line. After every page is drawn the LAST
+   word of the text and the mark are put in one no-break group, so the mark always follows the last word, on any width. Done once per element; the text and the tip are not changed. */
+M.glueMarks = function () {
+  var main = document.getElementById('main'); if (!main) return;
+  Array.prototype.forEach.call(main.querySelectorAll('table.fn th > .info-mark, .kpi .l > .info-mark, .card > h3 > .info-mark, .card > h3 > .h3t > .info-mark, td.na > .info-mark, .tag > .info-mark'), function (mk) {
+    var par = mk.parentNode; if (mk.dataset.glued || (par.classList && par.classList.contains('glue'))) return;
+    mk.dataset.glued = '1';
+    /* the text node (or the sort button's text) just before the mark */
+    var prev = mk.previousSibling; while (prev && prev.nodeType === 3 && !prev.nodeValue.trim()) prev = prev.previousSibling;
+    if (!prev || prev.nodeType !== 3 && !(prev.nodeType === 1 && prev.classList.contains('h3t'))) return;      /* a sort button is never split */
+    var node = prev.nodeType === 3 ? prev : prev.lastChild, hostEl = prev.nodeType === 3 ? par : prev;
+    if (!node || node.nodeType !== 3) return;
+    var v = node.nodeValue, m = /(\S+)(\s*)$/.exec(v); if (!m) return;
+    var word = m[1], g = document.createElement('span'); g.className = 'glue';
+    node.nodeValue = v.slice(0, m.index);
+    g.appendChild(document.createTextNode(word));
+    if (hostEl === par) { par.insertBefore(g, mk); g.appendChild(mk); }
+    else { hostEl.parentNode.insertBefore(g, hostEl.nextSibling); g.appendChild(mk); }
+  });
+};
+(function () {
+  var base = M.afterRender;
+  M.afterRender = function () { if (base) base(); try { M.glueMarks(); } catch (e) { console.error(e); } };
+})();
+
+/* ---------------------------------------------------------------- where the donuts go (T870, 2 Nov 2026)
+   Only parts of ONE whole, 2 to 6 parts, where the angle helps a reader: visits by place they came from (Channels), visits by device (Shopping steps), units sold by size (Sizes), sales by
+   collection (Products). Each is added to its page by wrapping the page's render function, so the page files stay as they are, and each one sits right under the page's headline figures.
+   Every donut states its dates and unit, and the numbers are also a table under it. The same filters as the page apply because each reads the same range (r.from to r.to). */
+(function () {
+  var after = function (root, node) {
+    if (!root || !node) return;
+    var kids = Array.prototype.slice.call(root.children), k = null;
+    for (var i = 0; i < kids.length; i++) { if (kids[i].classList && kids[i].classList.contains('kpis')) k = kids[i]; }
+    var anchor = k && k.nextElementSibling && k.nextElementSibling.classList.contains('kpis') ? k.nextElementSibling : k;
+    if (anchor) root.insertBefore(node, anchor.nextSibling); else root.insertBefore(node, root.firstChild);
+  };
+  var wrap = function (id, build) {
+    var pg = M.PAGES[id]; if (!pg || !pg.render || pg._donut) return; pg._donut = true;
+    var base = pg.render;
+    pg.render = function (r) {
+      var root = base.apply(this, arguments);
+      try { var card = build(r); if (card) after(root, card); } catch (e) { console.error('donut (' + id + '):', e); }
+      return root;
+    };
+  };
+  var dates = function (r) { return M.fds(r.from) + ' to ' + M.fds(r.to); };
+
+  /* Channels: visits by the seven places they came from */
+  wrap('channels', function (r) {
+    if (!M.channelRows) return null;
+    var rows = M.channelRows(r, true), by = {};
+    rows.forEach(function (x) { by[x.category] = (by[x.category] || 0) + x.visits; });
+    var parts = Object.keys(by).filter(function (k) { return by[k] > 0; }).map(function (k) { return { label: k, value: by[k] }; });
+    if (parts.length < 2) return null;
+    return M.card('Where visits came from, at a glance', 'The share of all visits for each of the places visitors arrive from, ' + dates(r) + '. The table below this has the same numbers and the groups inside each place.', [M.donut(parts, { unit: 'visits', total: 'visits', name: 'Visits by place they came from', what: 'Place', other: 'Smaller places' })]);
+  });
+
+  /* Shopping steps: visits by device */
+  wrap('funnel', function (r) {
+    var by = {};
+    M.rowsIn('place_device_daily', r.from, r.to).forEach(function (x) { if (x.kind === 'device' && x.place) by[x.place] = (by[x.place] || 0) + (+x.sessions || 0); });
+    var parts = Object.keys(by).filter(function (k) { return by[k] > 0; }).map(function (k) { return { label: k.charAt(0).toUpperCase() + k.slice(1), value: by[k] }; });
+    if (parts.length < 2) return null;
+    return M.card('Visits by device', 'Which kind of screen people used, ' + dates(r) + '. Phones are where most visits happen; the steps below show where each device loses people.', [M.donut(parts, { unit: 'visits', total: 'visits', name: 'Visits by device', what: 'Device' })]);
+  });
+
+  /* Sizes: units sold by size over the last 90 days (the size curve table is a 90 day picture) */
+  wrap('sizes', function () {
+    var rows = M.stateRows('size_curve');
+    var order = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+    var parts = rows.filter(function (x) { return +x.units_sold > 0; }).sort(function (a, b) { return order.indexOf(a.size) - order.indexOf(b.size); }).map(function (x, i) { return { label: x.size, value: +x.units_sold, color: M.DONUTCOL(i) }; });
+    if (parts.length < 2) return null;
+    return M.card('Units sold by size, last 90 days', 'How the pieces sold were split across sizes. Few sales so far, so read the shape, not the exact share. The stock against sales table below shows what to reorder.', [M.donut(parts, { unit: 'units sold', total: 'units sold', name: 'Units sold by size', what: 'Size' })]);
+  });
+
+  /* Products: sales by collection */
+  wrap('products', function () {
+    var rows = M.stateRows('collection_board');
+    var parts = rows.filter(function (x) { return +x.revenue > 0; }).map(function (x) { return { label: x.collection, value: +x.revenue }; });
+    if (parts.length < 2) return null;
+    return M.card('Sales by collection', 'Money earned by each collection in the saved picture of the last 90 days. The table of collections side by side below has units, margin and sell through.', [M.donut(parts, { unit: 'sales', total: 'in sales', fmt: M.inr, name: 'Sales by collection', what: 'Collection' })]);
+  });
+})();
+
+/* mazo dashboard, Growth page: charts and tables that show whether each growth area is working over time (T871, 2 Nov 2026).
+   Owner: "Do you have any more ideas to include in the dashboard? Think like a team at Zara ... I feel like Growth could do some analytics and tables and charts as well."
+   Loads after dashboard_14 (the page), 28 (the Instagram tile) and 33 (the tile words). It adds three cards under the six tiles and leaves everything else as it was:
+     1. "Is each area working?" one small chart per growth area, over time, each saying its dates and its unit:
+          Buyers who come back     buyers by month of first order and how many came back (cohorts)
+          Email list               subscribers by week, with new and left people (email_weekly)
+          Left checkouts           people who left a checkout by month and how many later bought (checkout_recovery)
+          Instagram                different people reached in 28 day windows (instagram_window)
+          Search                   Google clicks by week, for the name and for other words (brand_search_daily)
+          The shop                 shopping steps over the last 28 days (ga4_funnel_daily)
+          Delivery promise         share of delivered orders that arrived inside their promise (shipping_daily)
+     2. "Ideas by area and status" the idea board: a split of the 62 ideas by status and by area, the next three to start with how we will know they worked, and the proof of each running idea.
+     3. "Which channel paid back" visits, carts, orders and revenue per channel group over the last 28 days, with the campaign names that sent the visits (channel_groups, campaign_daily).
+   Every figure is read from a stored table, never typed here. A small chart with too little history says so in one plain line instead of drawing a line through two points.
+   Everything added carries data-ux="1". Checked live where a source exists: scripts/mcheck_growth.py. */
+(function () {
+  var pg = M.PAGES && M.PAGES.gtm;
+  if (!pg || !pg.render || pg._charts) return;
+  var base = pg.render;
+  var mon = function (ym) { return M.monthName ? M.monthName(ym) : ym; };
+
+  /* ---------------------------------------------------------------- small helpers */
+  var mini = function (title, tip, node, note) {
+    var head = M.h('div', { class: 'mc-head' }, [M.h('b', { text: title })].concat(tip ? [M.infoMark(tip, title, 'src-info')] : []));
+    return M.h('div', { class: 'minichart', 'data-ux': '1' }, [head, node].concat(note ? [M.h('p', { class: 'small muted', text: note })] : []));
+  };
+  var few = function (text) { return M.empty(text); };
+  var weekBuckets = function (dates) { return dates.map(function (d) { return { from: d, to: M.add(d, 6), label: M.fds(d), title: 'Week starting ' + M.fd(d) }; }); };
+  var monthBuckets = function (months) { return months.map(function (m) { return { from: m + '-01', to: m + '-28', label: mon(m), title: mon(m) }; }); };
+  var lastN = function (arr, n) { return arr.slice(Math.max(0, arr.length - n)); };
+  var span = function (a, b) { return M.fd(a) + ' to ' + M.fd(b); };
+
+  /* ---------------------------------------------------------------- 1 one small chart per growth area */
+  M.growthCharts = function () {
+    var cards = [];
+    /* buyers who come back: by month of first order, how many were new and how many came back inside 90 days */
+    var co = M.stateRows('cohorts').filter(function (x) { return /^\d{4}-\d{2}$/.test(String(x.cohort_month)); }).sort(function (a, b) { return a.cohort_month < b.cohort_month ? -1 : 1; });
+    var coShow = lastN(co, 24);      /* a chart must stay readable for years: the last 24 months are drawn, the sentence under it counts every month */
+    var back = co.length >= 2 ? M.chart('', function (h, w) {
+      M.stackChart(h, w, { buckets: monthBuckets(coShow.map(function (x) { return x.cohort_month; })), title: 'Buyers by month of first order', h: 150, series: [
+        { name: 'Came back within 90 days', values: coShow.map(function (x) { return +x.second_order_within_90d || 0; }), color: M.COLORS.green },
+        { name: 'Have not come back (yet)', values: coShow.map(function (x) { return Math.max(0, (+x.customers || 0) - (+x.second_order_within_90d || 0)); }), color: M.COLORS.maroon }], empty: 'No buyers yet.' });
+    }) : few('Fewer than 2 months of first orders so far.');
+    var tc = co.reduce(function (a, x) { return a + (+x.customers || 0); }, 0), tb = co.reduce(function (a, x) { return a + (+x.second_order_within_90d || 0); }, 0);
+    cards.push(mini('Buyers who come back', 'Each bar is the buyers whose FIRST order was in that month. Green = they ordered again within 90 days. A month is not final until 90 days have passed.', back,
+      co.length ? M.num(tc) + ' buyers in ' + co.length + ' months (' + mon(co[0].cohort_month) + ' to ' + mon(co[co.length - 1].cohort_month) + '); ' + M.num(tb) + ' came back.' + (co.length > coShow.length ? ' The chart draws the last ' + coShow.length + ' months.' : '') : ''));
+
+    /* email list: subscribers by week */
+    var ew = M.rows('email_weekly').filter(function (x) { return M.isDate(x.week); }).sort(function (a, b) { return a.week < b.week ? -1 : 1; });
+    var emailNode = ew.length >= 3 ? M.chart('', function (h, w) {
+      M.timeChart(h, w, { noEvents: true, buckets: weekBuckets(ew.map(function (x) { return x.week; })), mode: 'week', title: 'People on the email list', h: 150, series: [
+        { name: 'People on the list', values: ew.map(function (x) { return +x.subscribers || 0; }), color: M.COLORS.teal }, { name: 'New that week', values: ew.map(function (x) { return +x.new_subscribers || 0; }), color: M.COLORS.mustard }], empty: 'No list numbers yet.' });
+    }) : few(ew.length ? 'Only ' + ew.length + ' week of list numbers saved so far (' + M.fd(ew[0].week) + '): ' + M.num(+ew[0].subscribers) + ' people, ' + M.num(+ew[0].new_subscribers) + ' new, ' + M.num(+ew[0].unsubscribed_total) + ' have left in all. The chart starts when 3 weeks are saved.' : 'No list numbers saved yet.');
+    cards.push(mini('Email list', 'People on the email list at the start of each week, and how many joined that week. The list is saved once a week.', emailNode));
+
+    /* left checkouts: people by month and how many later bought */
+    var cr = M.stateRows('checkout_recovery').filter(function (x) { return /^\d{4}-\d{2}$/.test(String(x.month)); }).sort(function (a, b) { return a.month < b.month ? -1 : 1; });
+    var crShow = lastN(cr, 24);
+    var crNode = cr.length >= 2 ? M.chart('', function (h, w) {
+      M.stackChart(h, w, { buckets: monthBuckets(crShow.map(function (x) { return x.month; })), title: 'People who left a checkout', h: 150, series: [
+        { name: 'Later bought', values: crShow.map(function (x) { return +x.later_bought || 0; }), color: M.COLORS.green },
+        { name: 'Did not buy', values: crShow.map(function (x) { return Math.max(0, (+x.abandoned || 0) - (+x.later_bought || 0)); }), color: M.COLORS.grey }], empty: 'Nobody has left a checkout yet.' });
+    }) : few('Fewer than 2 months of left checkouts so far.');
+    var cn = cr.reduce(function (a, x) { return a + (+x.abandoned || 0); }, 0), cm = cr.reduce(function (a, x) { return a + (+x.money_in_them || 0); }, 0), cb = cr.reduce(function (a, x) { return a + (+x.later_bought || 0); }, 0);
+    cards.push(mini('Left checkouts', 'People who started a checkout and did not pay, each counted once, by the month they left. Green = they came back and bought later.', crNode,
+      cr.length ? M.num(cn) + ' people since ' + mon(cr[0].month) + ', ' + M.inr(cm) + ' in their carts, ' + M.num(cb) + ' later bought.' + (cr.length > crShow.length ? ' The chart draws the last ' + crShow.length + ' months.' : '') : ''));
+
+    /* Instagram: different people reached, 28 day windows */
+    var iw = M.rows('instagram_window').filter(function (x) { return String(x.window_days) === '28' && x.accounts_reached !== '' && x.accounts_reached != null && M.isDate(x.date); }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    var iwUse = lastN(iw, 120);
+    var igNode = iwUse.length >= 7 ? M.chart('', function (h, w) {
+      M.timeChart(h, w, { noEvents: true, buckets: iwUse.map(function (x) { return { from: x.date, to: x.date, label: M.fds(x.date), title: 'The 28 days ending ' + M.fd(x.date) }; }), mode: 'day', title: 'Different people reached', h: 150, series: [
+        { name: 'Different people reached in the 28 days ending that day', values: iwUse.map(function (x) { return +x.accounts_reached || 0; }), color: M.COLORS.maroon, type: 'line' }], empty: 'No reach saved yet.' });
+    }) : few('Instagram windows are saved from 16 Jan; fewer than 7 are available.');
+    cards.push(mini('Instagram: different people reached', 'Each point is how many DIFFERENT people Instagram reached in the 28 days that end on that day, as Instagram counts them. One person counts once. Added up day by day the number would be higher, because a person reached on several days would count several times.', igNode,
+      iwUse.length ? 'Newest: ' + M.num(+iwUse[iwUse.length - 1].accounts_reached) + ' people in the 28 days ending ' + M.fd(iwUse[iwUse.length - 1].date) + '.' : ''));
+
+    /* search: Google clicks by week, name and other words */
+    var bs = M.rows('brand_search_daily').filter(function (x) { return M.isDate(x.date); }), wk = {};
+    bs.forEach(function (x) { var d = M.monday(x.date), o = wk[d] || (wk[d] = { b: 0, n: 0, a: 0, days: 0 }); o.b += +x.brand_clicks || 0; o.n += +x.nonbrand_clicks || 0; o.a += +x.anonymous_clicks || 0; o.days++; });
+    var wks = Object.keys(wk).sort().filter(function (d) { return wk[d].days >= 7 || d === Object.keys(wk).sort().slice(-1)[0]; });
+    var wuse = lastN(wks, 26);
+    var seNode = wuse.length >= 4 ? M.chart('', function (h, w) {
+      M.stackChart(h, w, { buckets: weekBuckets(wuse), title: 'Google clicks', h: 150, series: [
+        { name: 'Searched for the name mazo', values: wuse.map(function (d) { return wk[d].b; }), color: M.COLORS.maroon }, { name: 'Other words', values: wuse.map(function (d) { return wk[d].n; }), color: M.COLORS.mustard },
+        { name: 'Words Google hides', values: wuse.map(function (d) { return wk[d].a; }), color: M.COLORS.grey }], empty: 'No clicks yet.' });
+    }) : few('Fewer than 4 weeks of Google clicks.');
+    cards.push(mini('Search: Google clicks', 'Clicks on our pages from Google search, by week. Dark = people who searched for the name mazo. Gold = other words. Grey = searches Google does not show us. The newest week may be partial.', seNode,
+      bs.length ? 'From ' + M.fd(bs.map(function (x) { return x.date; }).sort()[0]) + ' to ' + M.fd(bs.map(function (x) { return x.date; }).sort().slice(-1)[0]) + ' (Google reports 2 to 3 days late).' : ''));
+
+    /* the shop: the steps over the last 28 days */
+    var g = function (c) { return M.growSum('ga4_funnel_daily', c); }, steps = [['Visits', 'sessions'], ['Viewed a product', 'view_item'], ['Added to cart', 'add_to_cart'], ['Started checkout', 'begin_checkout'], ['Bought', 'purchase']].map(function (s) { return { name: s[0], value: g(s[1]) || 0 }; });
+    var shopNode = steps[0].value ? M.funnel(steps, { empty: 'No visits yet.' }) : few('No shop visits saved for these dates.');
+    var gw = M.growWin(), gcov = M.cover('ga4_funnel_daily');
+    cards.push(mini('The shop: buying steps', 'How many visits reached each step in the last 28 days, own test visits left out. A wide drop between two steps is where people leave. A step can show more than the one before because Google Analytics counts actions, not people.', shopNode,
+      gcov.first ? span(gw.from < gcov.first ? gcov.first : gw.from, gw.to > gcov.last ? gcov.last : gw.to) + '.' : ''));
+
+    /* delivery promise: delivered orders inside their promise */
+    var sh = M.rows('shipping_daily').filter(function (x) { return x.status === 'DELIVERED' && (x.on_time === 'yes' || x.on_time === 'no'); });
+    var yes = sh.filter(function (x) { return x.on_time === 'yes'; }).length;
+    var promise = sh.length ? M.bars([{ label: 'Arrived inside the promise', value: yes, text: M.num(yes) + ' of ' + M.num(sh.length) + ' (' + M.pct(yes / sh.length * 100, 0) + ')', color: M.COLORS.green }, { label: 'Arrived late', value: sh.length - yes, text: M.num(sh.length - yes), color: sh.length - yes ? M.COLORS.terra : M.COLORS.grey }]) : few('No delivered order has a promise date yet.');
+    cards.push(mini('Delivery promise', 'Of the orders that have been delivered, how many arrived inside the days we promised on the product page. Made to order pieces promise about 20 days, ready to ship pieces 3 to 7.', promise,
+      sh.length ? M.num(sh.length) + ' delivered orders with a promise date.' + (sh.length < 30 ? ' Under 30: direction only.' : '') : ''));
+    return cards;
+  };
+
+  /* ---------------------------------------------------------------- 2 the idea board */
+  var STATUS = [['running', 'Running'], ['approved', 'Approved'], ['idea', 'Idea'], ['parked', 'Parked'], ['done', 'Done']];
+  M.growthBoard = function () {
+    var ideas = M.GROW_IDEAS || [], levers = M.GROW_LEVERS || [];
+    if (!ideas.length) return few('No ideas written down yet.');
+    var cnt = function (f) { return ideas.filter(f).length; };
+    var byStatus = STATUS.map(function (s) { return { label: s[1], value: cnt(function (x) { return x.status === s[0]; }) }; }).filter(function (p) { return p.value > 0; });
+    var byLever = levers.map(function (l) { return { label: l[1], value: cnt(function (x) { return x.lever === l[0]; }), note: cnt(function (x) { return x.lever === l[0] && x.status === 'running'; }) + ' running' }; }).filter(function (p) { return p.value > 0; });
+    var box = M.h('div', { 'data-ux': '1' });
+    box.appendChild(M.grid([
+      M.h('div', null, [M.h('h4', { class: 'sub', text: 'By status' }), M.donut(byStatus, { name: 'Ideas by status', unit: 'ideas', total: 'ideas', what: 'Status' })]),
+      M.h('div', null, [M.h('h4', { class: 'sub', text: 'By area' }), M.donut(byLever, { name: 'Ideas by area', unit: 'ideas', total: 'ideas', what: 'Area' })])
+    ], 'two'));
+    /* the next three: ready ideas that need no yes from the owner, those with a clear way to know it worked first */
+    var ready = ideas.filter(function (x) { return (x.status === 'idea' || x.status === 'approved') && !x.y; });
+    var next = ready.slice().sort(function (a, b) { return (b.proof ? 1 : 0) - (a.proof ? 1 : 0) || +a.id.slice(1) - +b.id.slice(1); }).slice(0, 3);
+    var lv = {}; levers.forEach(function (l) { lv[l[0]] = l[1]; });
+    box.appendChild(M.h('h4', { class: 'sub', text: 'The next three to start (no yes needed from you)' }));
+    box.appendChild(next.length ? M.table([{ k: 'id', label: 'ID' }, { k: 'idea', label: 'Idea', wrap: true }, { k: 'area', label: 'Area', wrap: true }, { k: 'proof', label: 'How we will know it worked', wrap: true }],
+      { rows: next.map(function (x) { return { id: x.id, idea: x.idea, area: lv[x.lever] || x.lever, proof: x.proof }; }), sortKey: 'id', sortDir: 1, empty: 'None.', noTools: true, detail: false }) : few('Every ready idea needs your yes first.'));
+    /* the running ideas and where the proof can be read */
+    var running = ideas.filter(function (x) { return x.status === 'running'; });
+    box.appendChild(M.h('h4', { class: 'sub', text: 'Running now, and where its proof is' }));
+    box.appendChild(running.length ? M.table([{ k: 'id', label: 'ID', sort: function (r) { return +r.id.slice(1); } }, { k: 'idea', label: 'Idea', wrap: true }, { k: 'area', label: 'Area', wrap: true }, { k: 'proof', label: 'Proof to read', wrap: true }],
+      { rows: running.map(function (x) { return { id: x.id, idea: x.idea, area: lv[x.lever] || x.lever, proof: x.proof }; }), sortKey: 'id', sortDir: 1, empty: 'None.', name: 'running growth ideas', detail: false }) : few('No idea is running.'));
+    return box;
+  };
+
+  /* ---------------------------------------------------------------- 3 which channel paid back */
+  M.growthPayback = function () {
+    var cg = M.stateRows('channel_groups').filter(function (x) { return (+x.visits_28d || 0) > 0; });
+    if (!cg.length) return few('No channel numbers saved yet.');
+    var camps = {}, w = M.growWin();
+    var map = {}; M.rows('channel_map').forEach(function (x) { map[x.source_medium] = x.channel_group; });
+    M.rows('campaign_daily').filter(function (x) { return x.date >= w.from && x.date <= w.to && x.campaign && !/^\(/.test(x.campaign) && !/agent-test|cro-audit/i.test(x.campaign + ' ' + x.source_medium); }).forEach(function (x) {      /* Google's own placeholders in brackets and our own audit tool are not campaigns */
+      var g = map[x.source_medium] || ''; if (!g) return; var o = camps[g] || (camps[g] = {}); o[x.campaign] = (o[x.campaign] || 0) + (+x.sessions || 0);
+    });
+    var rows = cg.map(function (x) {
+      var cs = camps[x.channel_group] ? Object.keys(camps[x.channel_group]).sort(function (a, b) { return camps[x.channel_group][b] - camps[x.channel_group][a]; }) : [];
+      var vpo = (+x.orders_28d || 0) ? (+x.visits_28d / +x.orders_28d) : null;
+      return { channel: x.channel_group, visits: +x.visits_28d || 0, change: x.visit_change_pct === '' || x.visit_change_pct == null ? null : +x.visit_change_pct, carts: +x.carts_28d || 0, orders: +x.orders_28d || 0, revenue: +x.revenue_28d || 0, per: vpo, campaigns: cs.slice(0, 3).join(', ') + (cs.length > 3 ? ' and ' + (cs.length - 3) + ' more' : '') };
+    });
+    var gaFirst = M.cover('source_daily').first, noPrev = gaFirst ? 'Google Analytics starts ' + M.fds(gaFirst) : 'no earlier data';      /* the 28 days before the window are only there once the data is 56 days old */
+    var arrow = function (v) { if (v == null) return null; var up = v > 0, flat = v === 0; return M.h('span', { class: 'delta-ar ' + (flat ? 'flat' : up ? 'good' : 'bad') }, [(flat ? '' : up ? '▲ ' : '▼ ') + M.pct(Math.abs(v), 0)]); };
+    return M.table([
+      { k: 'channel', label: 'Channel', wrap: true, dim: false },
+      { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.teal } },
+      { k: 'change', label: 'Against the 28 days before', num: true, render: function (r) { return arrow(r.change) || M.h('span', { class: 'muted', text: noPrev }); }, sort: function (r) { return r.change == null ? -1e9 : r.change; } },
+      { k: 'carts', label: 'Added to bag', num: true, fmt: M.num },
+      { k: 'orders', label: 'Orders', num: true, fmt: M.num },
+      { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr },
+      { k: 'per', label: 'Visits for one order', num: true, fmt: function (v) { return v == null ? 'no order yet' : M.num(Math.round(v)); } },
+      { k: 'campaigns', label: 'Campaign names that sent the visits', wrap: true }
+    ], { rows: rows, sortKey: 'visits', empty: 'No channel numbers yet.', name: 'channel payback', detail: false });
+  };
+
+  /* ---------------------------------------------------------------- put them on the page, under the six tiles */
+  pg.render = function () {
+    var root = base.apply(this, arguments);
+    try {
+      var cards = root.querySelectorAll(':scope > .card'), after = null;
+      Array.prototype.forEach.call(cards, function (c) { var h = c.querySelector('h3'); if (!after && h && /Where growth can come from/i.test(h.textContent)) after = c; });
+      var wGrid = M.h('div', { class: 'minigrid', 'data-ux': '1' }, M.growthCharts());
+      var c1 = M.card('Is each area working?', 'One small chart for each place growth comes from, over time, so you can see whether it is going up. Each chart says its own dates. A chart with too little history says so instead of drawing a line through two points.', [wGrid]);
+      var c2 = M.card('Ideas by area and status', 'How the ideas are spread, the three best ones to start next (the ones that need no yes from you), and where to read the proof of each running idea.', [M.growthBoard()]);
+      var c3 = M.card('Which channel paid back', 'Visits, bags and orders by channel in the last 28 days, with the campaign names that sent the visits. Each arrow compares with the 28 days before. A channel with a handful of visits shows a direction, not a verdict.', [M.growthPayback()]);
+      var anchor = after ? after.nextSibling : root.firstChild;
+      [c1, c2, c3].forEach(function (c) { root.insertBefore(c, anchor); });
+    } catch (e) { console.error('growth charts', e); }      /* a card that cannot be drawn must never stop the page */
+    return root;
+  };
+  pg._charts = true;
+})();
+
+/* mazo dashboard: what customers PAID, and the GST filing view (T874, 2 Nov 2026).
+   Madhu files GST from her own sheet, by state, and reads "net sales" as what customers paid including shipping (Rs 17,725 for October). The Overview headline "Net sales" is items after
+   discounts, GST inside, shipping left out (Rs 17,485). Both are right; they answer different questions, and the page now shows both with their meaning.
+   1  Overview: two plain figures beside Net sales, for the dates chosen: "Total paid by customers" (items after discounts + shipping, GST inside) and "Shipping charged".
+   2  Customers page: a card "GST filing view", one row per MONTH and STATE of delivery with the taxable value, CGST, SGST, IGST and the total paid, a TOTAL row per month, the date choice
+      and a CSV that holds exactly the rows shown. It reads the nightly table gst_filing (scripts/kpi_collectors19.py), built from the Shopify order tax lines.
+   Nothing earlier is changed: each piece is added by wrapping the page's render function (the same way dashboard_27_more_cards.js does). */
+(function () {
+  var wrap = function (id, extra) {
+    var pg = M.PAGES[id]; if (!pg || !pg.render) return;
+    var base = pg.render;
+    pg.render = function (r) {
+      var root = base.apply(this, arguments);
+      try { extra(r, root); } catch (e) { console.error('gst (' + id + '):', e); }
+      return root;
+    };
+  };
+
+  /* ---------------------------------------------------------------- Overview: total paid and shipping charged, next to net sales */
+  wrap('overview', function (r, root) {
+    var bs = M.basis();
+    if (bs.b !== 'all' || !root || !root.querySelector) return;      /* a product, channel or device filter narrows the sales: shipping and totals are only kept for the whole shop */
+    var days = M.daysCovered('money_daily', r.from, r.to);
+    var sum = function (c) { return M.total({ tab: 'money_daily', col: c }, r.from, r.to).v; };
+    var net = sum('net_sales'), ship = sum('shipping_charged');
+    if (net == null || ship == null) return;
+    var covered = days < r.days ? days + ' of ' + r.days + ' days have data' : '';
+    var box = M.h('div', { class: 'kpis rates paid-row' });      /* the same three column row as the rates above it; two tiles fill the first two columns */
+    var paid = M.kpi({ label: 'Total paid by customers', value: M.inr(net + ship), note: covered });
+    var sh = M.kpi({ label: 'Shipping charged', value: M.inr(ship), note: covered });
+    var lab = function (k, text, title) { var l = k.querySelector('.l'); if (l) { l.appendChild(document.createTextNode(' ')); l.appendChild(M.infoMark(text, title, 'term-mark')); } };
+    lab(paid, 'Everything customers paid: the pieces after discounts plus shipping, with the GST already inside. This is the figure that matches the money in the bank and the one used to file GST.', 'Total paid by customers');
+    lab(sh, 'What customers paid for delivery. It is part of the total paid and is left out of net sales.', 'Shipping charged');
+    box.appendChild(paid); box.appendChild(sh);
+    var first = root.querySelector('.kpis.lead');
+    var after = root.querySelector('.kpis.rates') || first;
+    if (!first) return;
+    after.parentNode.insertBefore(box, after.nextSibling);
+    /* net sales says what it leaves out, beside its own figure */
+    var lbl = Array.prototype.filter.call(first.querySelectorAll('.kpi'), function (k) { return /^net sales/i.test((k.querySelector('.l') || {}).textContent || ''); })[0];
+    if (lbl && !lbl.querySelector('.ctx.ns-note')) lbl.appendChild(M.h('div', { class: 'ctx ns-note', text: 'items after discounts, GST inside, shipping left out' }));
+  });
+
+  /* ---------------------------------------------------------------- Overview: the fixed costs a month (T873), under "Where the money goes"
+     The daily profit estimate is worked out per order (sales minus GST, product cost, payment fee, parcel, packaging). The costs that come every month whatever we sell are NOT inside it, and they
+     sit in two places in the Sheet (human_inputs): Madhu's Rs. 3,000 and the Shopify plan Rs. 2,000. This card lists both and their sum, with who gave each. */
+  wrap('overview', function (r, root) {
+    var bs = M.basis();
+    if (bs.b !== 'all' || !root || !root.querySelector || root.querySelector('.fixed-costs')) return;
+    var hi = {}; M.rows('human_inputs').forEach(function (x) { if (x.key && x.value !== '' && x.value != null && !isNaN(+x.value)) hi[x.key] = x; });
+    var parts = [
+      { a: 'Apps, tools and domain', k: 'monthly_fixed_cost', who: 'Madhu' },
+      { a: 'Shopify plan', k: 'shopify_monthly_fee', who: 'Owner' }
+    ].filter(function (p) { return hi[p.k]; });
+    if (!parts.length) return;
+    var total = parts.reduce(function (t, p) { return t + (+hi[p.k].value); }, 0);
+    var rows = parts.map(function (p) { return { a: p.a, b: +hi[p.k].value, c: p.who + ', ' + (hi[p.k].date ? M.fd(hi[p.k].date) : 'date not given') }; });
+    rows.push({ a: 'Fixed costs a month', b: total, c: 'the two lines added' });
+    var card = M.card('Fixed costs a month', 'What the business pays every month whatever we sell. The profit estimate above is worked out for each order, so these monthly costs are not inside it: take them off the profit of the whole month.',
+      [M.table([{ k: 'a', label: 'Cost' }, { k: 'b', label: 'Rs. a month', num: true, fmt: M.inr }, { k: 'c', label: 'Who gave it', wrap: true }], { rows: rows, sortKey: null, empty: 'None.', detail: false, noTools: true, name: 'fixed-costs' }),
+       M.h('p', { class: 'small muted', text: 'Typed in the Sheet, tab human_inputs (rows monthly_fixed_cost and shopify_monthly_fee). The same total is in the tab finance_monthly, column monthly_fixed_cost, and is used for the break-even.' })]);
+    var money = Array.prototype.filter.call(root.querySelectorAll('.card'), function (c) { return /^Where the money goes/.test((c.querySelector('h3') || {}).textContent || ''); })[0];
+    var host = money && money.parentNode;
+    var g = M.grid([card], 'wide');
+    if (host && host.parentNode) host.parentNode.insertBefore(g, host.nextSibling); else root.appendChild(g);
+  });
+
+  /* ---------------------------------------------------------------- Customers: the GST filing view */
+  var COLS = [
+    { k: 'month', label: 'Month', fmt: function (v) { return v ? M.fd(v + '-01').replace(/^1 /, '').replace(' ', '\u00a0') : ''; } },
+    { k: 'state', label: 'State of delivery' },
+    { k: 'orders', label: 'Orders', num: true, fmt: M.num },
+    { k: 'items_after_discounts', label: 'Items after discounts', num: true, fmt: M.inr },
+    { k: 'shipping_charged', label: 'Shipping charged', num: true, fmt: M.inr },
+    { k: 'taxable_value', label: 'Taxable value', num: true, fmt: M.inr },
+    { k: 'cgst', label: 'CGST', num: true, fmt: M.inr },
+    { k: 'sgst', label: 'SGST', num: true, fmt: M.inr },
+    { k: 'igst', label: 'IGST', num: true, fmt: M.inr },
+    { k: 'total_gst', label: 'Total GST', num: true, fmt: M.inr },
+    { k: 'total_paid', label: 'Total paid', num: true, fmt: M.inr },
+    { k: 'read', label: 'Where the state comes from', wrap: true, hidden: true }
+  ];
+  wrap('customers', function (r, root) {
+    var rows = M.stateRows('gst_filing').filter(function (x) { return x.month && x.month !== 'none'; });
+    var kids;
+    if (!rows.length) kids = [M.empty('The GST filing view fills in the first night after an order exists.')];
+    else {
+      /* newest month first; inside a month the states by total paid and the TOTAL row last */
+      rows = rows.slice().sort(function (a, b) {
+        if (a.month !== b.month) return a.month < b.month ? 1 : -1;
+        if (a.state === 'TOTAL') return 1; if (b.state === 'TOTAL') return -1;
+        return (+b.total_paid || 0) - (+a.total_paid || 0);
+      });
+      var table = M.table(COLS, { rows: rows, sortKey: null, empty: 'None.', detail: false, name: 'gst-filing' });
+      var note = M.h('p', { class: 'small muted', text: 'Built from the tax lines of every real order (no test or cancelled order), by the month the order was placed in India and the state it was delivered to. The GST is inside the total paid: taxable value = total paid minus all GST. A row whose state is not on the shipping address says where it was taken from (the Columns button shows that column).' });
+      kids = [table, note];
+    }
+    var card = M.card('GST filing view', 'One row for each month and state, ready to file from: what customers paid, the taxable value, and the tax split into CGST and SGST (same state) or IGST (another state). The TOTAL row of a month adds the states.', kids);
+    var grid = root.querySelector('.grid') ? root.querySelector('.grid').parentNode : root;
+    var stateCard = Array.prototype.filter.call(root.querySelectorAll('.card'), function (c) { return /^States/.test((c.querySelector('h3') || {}).textContent || ''); })[0];
+    var host = stateCard && stateCard.parentNode ? stateCard.parentNode : null;
+    if (host && host.parentNode) host.parentNode.insertBefore(M.grid([card], 'one'), host.nextSibling); else root.appendChild(card);
+  });
+  /* ---------------------------------------------------------------- Customers: the States card says when a state was not on the shipping address */
+  wrap('customers', function (r, root) {
+    var notes = M.stateRows('geo_board').filter(function (x) { return x.read; });
+    if (!notes.length) return;
+    var t = Array.prototype.filter.call(root.querySelectorAll('table'), function (tb) { return /Delivery days/.test(tb.textContent) && /Revenue/.test(tb.textContent); })[0];
+    var card = t && t.closest('.card');
+    if (!card || card.querySelector('.state-note')) return;
+    card.appendChild(M.h('p', { class: 'small muted state-note', text: notes.map(function (x) { return x.state + ': ' + x.read + '.'; }).join(' ') }));
+  });
 })();
 
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
