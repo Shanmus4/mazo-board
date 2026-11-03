@@ -1368,9 +1368,7 @@ th .info-mark{vertical-align:middle;margin-left:var(--sp1)}
 .tag .info-mark{margin-left:var(--sp1)}
 td .info-mark{vertical-align:-0.25em;margin-left:var(--sp1)}
 @media (pointer:coarse){
-  .info-mark{width:var(--mk-md);height:var(--mk-md)}
-  .info-mark::after{content:"";position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%}      /* T883: the tap target is the 44px around the mark (centred on the mark, whatever its size) and nothing else; the old rule gave it the whole card. Measured by elementFromPoint on every mark at 390 wide. */
-  .info-mark{position:relative}
+  .info-mark{width:var(--mk-md);height:var(--mk-md)}      /* the 44px tap area of a mark lives in dashboard_49_taps.css (T883, 4 Nov 2026) */
 }
 
 /* ---------- (f) the arrows: one box, one centre, no jump ---------- */
@@ -2035,6 +2033,29 @@ table tr.is-total td:first-child::after,table tr[data-total="1"] td:first-child:
 .grid.pair td .tag{min-width:110px;white-space:normal;overflow-wrap:normal;word-break:normal}
 /* cards inside a grid take their gap from the grid, never from the 'card follows card' margin: that margin pushed the second card of a pair 16px lower than the first */
 .grid>.card,.grid>.card+.card,.grid>.card:first-child,.grid>.card:last-child{margin-top:0}
+
+/* THE TAP AREA OF THE (i) MARK on touch screens (T883, 4 Nov 2026). Owner: "Fix (i) tap area covering buttons on touch screens".
+   The mark is drawn 20px (table heads, labels) or 24px (card titles, page title). A finger needs about 44px, so on a touch screen the mark gets an invisible 44px circle around its centre.
+   That circle must never take a tap from another control. Three rules keep that true:
+     1. A mark that sits beside a pressable neighbour (the sort button in a table head, a source name button, a pill) keeps the full 44px in height but only 2px more than its own box on each side
+        in width, so the neighbour keeps every point it owns.
+     2. A card heading reserves room for ALL of the card's tool buttons (download, full screen, options: 3 x 44px + 2 gaps of 4px + 4px air), so the buttons never sit on the mark.
+     3. The title of a fold that holds one card reserves room for the same tools AND the fold arrow, because the tools are drawn over the fold's title row.
+   Desktop (mouse) is not touched: its hit areas are the drawn boxes and the heading room stays as set in dashboard_48_parts.css.
+   Proved by scripts/dashboard_audit_taps.js (touch phone, Chromium and WebKit, every mark on every page, elementFromPoint with and without the mark). */
+@media (pointer:coarse){
+  .info-mark{position:relative}
+  .info-mark::after{content:"";position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%}
+  th .info-mark::after,.src-cell .info-mark::after,.mk-row:has(.mk-text button) > .info-mark::after{left:-2px;right:-2px;width:auto;margin-left:0;border-radius:12px}
+}
+/* room for the card tools on a narrow screen (a touch phone, or a window narrower than 640px) */
+@media (pointer:coarse),(max-width:640px){
+  .card.has-tools>h3,.tax-card.has-tools>h3{padding-right:144px}
+  /* the title of a one-card fold shrinks and wraps beside the mark, left of the tools (24px edge + 3 tools of 44px with 4px gaps + 8px air = 172px); the mark stays on the first line */
+  .fold.one-card>summary{flex-wrap:nowrap;align-items:flex-start;padding-right:172px}
+  .fold.one-card>summary>span:first-child{min-width:0;flex:0 1 auto;padding-top:calc((60px - 1lh) / 2);padding-bottom:calc((60px - 1lh) / 2)}
+  .fold.one-card>summary>.info-mark{margin-top:calc((60px - 24px) / 2)}
+}
 
 /* mazo dashboard filters that tell the truth (T884, 3 Nov 2026): the plain line a card shows when it does not follow a chosen filter, and a fallback look for a total row. */
 .card > .fnote, .kpi .fnote { color: var(--ink2, #5C5247); font-size: var(--fs-sm, 13px); line-height: 1.45; margin: var(--sp2, 8px) 0 var(--sp3, 12px); max-width: 70ch; }
