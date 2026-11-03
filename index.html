@@ -848,7 +848,7 @@ td.c.has-tip:hover{outline:none;box-shadow:inset 0 0 0 1.5px rgba(94,18,4,.45)}
 
 /* ---------- chart ground: a clear baseline so nothing floats ---------- */
 svg .ax{stroke:#CFC6BA}
-.fc-zone{fill:#EEF4F5}
+.fc-zone{fill:rgba(58,127,140,.09)}
 .fc-stem{stroke:#3A7F8C;stroke-width:1.5;stroke-dasharray:1.5 3;opacity:.7}
 .fc-lab{font-size:11px;font-weight:600;fill:#2C6672}
 .ev-key{display:flex;flex-wrap:wrap;gap:var(--sp1) var(--sp3);margin:0;font-size:var(--t12);color:var(--ink2)}
@@ -1487,6 +1487,253 @@ th>button{display:inline-flex;align-items:center;vertical-align:middle}
 th>.info-mark{display:inline-flex;vertical-align:middle;margin-left:var(--sp1)}
 @media (pointer:coarse){th>button{min-height:44px}}
 
+/* mazo dashboard SOFT LAYER (T877 + T870, 3 Nov 2026). Loads after the consistency layer (34), before the lazy loader (98).
+   Owner, 3 Nov: "why so many dividers!! make it look beautiful", and a BoardUI-style colourful dashboard "but wherever applicable follow our theme and mazo visual language".
+   THE IDEA: space and soft white cards instead of lines. A warm page tint, white cards (radius 16px) lifted by a very light shadow, one inner padding, tinted fills on controls
+   instead of outlines. The only lines left on a page are the ones inside a data table (header and row hairlines), which are part of the data.
+   Brand stays: maroon #5E1204 for every button, link, selected tab and chip; Merriweather for figures and titles; Archivo for the rest. Colour comes from the chart palette and the
+   soft icon tiles (maroon, mustard, teal, green), never from a new accent.
+   Scale added here (docs/guides/dashboard-design.md, Round 6): radius bar 2 | control 10 | panel 12 | card 16. Inner padding of a card: --pad 24 (phone 16). Gap between cards: --gap-block. */
+
+:root{
+  --paper:#F8F4EE;
+  --cr-ctl:10px; --cr-card:16px;
+  --pad:24px; --pad-in:20px;
+  --soft-shadow:0 1px 2px rgba(60,40,20,.05),0 10px 28px -14px rgba(60,40,20,.14);
+  --soft-shadow-up:0 2px 4px rgba(60,40,20,.06),0 14px 30px -12px rgba(60,40,20,.20);
+  --fill:#F5EFE7; --fill-hot:#EDE4D8; --tint:#FAF6F0;
+  --t-maroon:rgba(94,18,4,.09); --t-mustard:rgba(200,137,42,.16); --t-teal:rgba(58,127,140,.13); --t-green:rgba(64,128,91,.13); --t-terra:rgba(181,83,46,.13);
+}
+@media (max-width:640px){:root{--pad:16px;--pad-in:16px}}
+
+/* ---------- page, sidebar, toolbar: no lines ---------- */
+body{background:var(--paper)}
+#rail{background:#F0E9DE;border-right:0}
+.rail-foot2{border-top:0}
+#controls{background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:0;box-shadow:0 10px 24px -18px rgba(60,40,20,.28)}
+.subnav{background:transparent}
+.subnav-row{border-bottom:0;background:transparent;gap:6px;padding:0}
+.subnav a{border-bottom:0;margin-bottom:0;border-radius:999px;padding:0 16px;min-height:38px;color:var(--ink2)}
+.subnav a:hover{background:rgba(255,255,255,.75);color:var(--maroon)}
+.subnav a[aria-current="page"]{background:#fff;color:var(--maroon);font-weight:600;box-shadow:var(--soft-shadow);border-bottom-color:transparent}
+
+/* ---------- cards: white, soft, one padding ---------- */
+.card{background:#fff;border:0;border-radius:var(--cr-card);box-shadow:var(--soft-shadow);padding:var(--pad)}
+.card:hover{box-shadow:var(--soft-shadow)}
+.card .card{background:transparent;box-shadow:none;border-radius:0;padding:0}
+.grid>.card,.grid>.card+.card{margin-top:0;align-self:stretch}
+.grid,.grid.wide,.grid.one{gap:var(--gap-block)}
+/* a page block drawn inside a plain wrapper div (the Channels groups, the Customers sections) keeps the same gap as every other block */
+#main>div>div:not([class])>.card:first-child,#main>div>div:not([class])>.grid:first-child,#main>div>div:not([class])>details.fold:first-child{margin-top:var(--gap-block)}
+.grid+.card,.card+.grid,.grid+.grid,details.fold+.card,.card+details.fold{margin-top:var(--gap-block)}
+.fold .grid+.card,.fold .card+.grid{margin-top:var(--gap-block)}
+.card>h3{margin-bottom:var(--gap-in)}
+.ctools{top:calc(var(--pad) - 5px);right:calc(var(--pad) - 6px)}
+.card.fs{background:var(--paper);box-shadow:none;border-radius:0;padding:0 var(--sp6) var(--sp7)}
+.card .tw{border:0;border-radius:0}
+.tbl-more{border-top:0}
+/* three charts in one row of a wide grid: the first takes the full width, the other two sit side by side (no hole) */
+@media (min-width:1100px){.grid.wide>.card:first-child:nth-last-child(3){grid-column:1/-1}}
+
+/* a donut or ring card that sits beside a taller card centres its picture in the free height instead of leaving a hole under it */
+.grid>.card:has(>div>.donut),.grid>.card:has(>div>.gauge){display:flex;flex-direction:column}
+.grid>.card:has(>div>.donut)>div:not(.ctools),.grid>.card:has(>div>.gauge)>div:not(.ctools){margin-block:auto}
+
+/* a fold is one white row; open, it is one white card and the cards inside it are flat (space separates them, not lines) */
+.fold{background:#fff;border:0;border-radius:var(--cr-card);box-shadow:var(--soft-shadow);padding:0 var(--pad)}
+.fold[open]{padding-bottom:var(--pad)}
+.fold>summary{min-height:60px;padding:0 var(--sp6) 0 0;align-items:center}
+.fold .card,.fold .grid>.card,.fold>div>.card{background:transparent;box-shadow:none;border-radius:0;padding:0}
+.fold .card+.card{margin-top:var(--gap-block)}
+.fold .ctools{top:0;right:0}
+.fold.one-card>.card{padding:0}
+.fold.one-card>.ctools,.fold.one-card>.card>.ctools{top:calc(var(--sp3) + 4px);right:calc(var(--pad) + var(--sp5))}
+.fold .fold{background:transparent;box-shadow:none;border-radius:0;padding:0;margin-top:var(--gap-in)}
+.fold .fold>summary{min-height:48px;padding:0 var(--sp6) 0 var(--sp4);background:var(--tint);border-radius:var(--cr-ctl)}
+.fold .fold[open]>summary{margin-bottom:var(--gap-in)}
+
+/* ---------- headline numbers: separate soft cards, icon tile, big figure, change pill ---------- */
+.kpis,.kpis.rates,.kpis.lead{border:0;background:transparent;box-shadow:none;padding:0;gap:var(--gap-in);overflow:visible}
+#main>div>.kpis+.kpis{margin-top:var(--gap-in)}
+.kpis .kpi,.kpis.rates .kpi,.kpis.lead .kpi,.kpi{background:#fff;border:0;border-radius:var(--cr-card);box-shadow:var(--soft-shadow);padding:var(--pad-in);display:flex;flex-direction:column;gap:0;overflow:hidden;position:relative;transition:box-shadow .2s var(--ease),transform .2s var(--ease)}
+.kpis .kpi+.kpi{padding-left:var(--pad-in)}
+.kpi.na{background:#fff}
+@media (hover:hover) and (pointer:fine){.kpi:hover,.fcard:hover{transform:translateY(-2px);box-shadow:var(--soft-shadow-up)}}
+.kpi-top{display:flex;align-items:center;gap:var(--sp3);min-height:40px;margin-bottom:var(--sp3)}
+.kpi-tile{flex:0 0 40px;width:40px;height:40px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--t-maroon);color:var(--maroon)}
+.kpi-tile svg{width:20px;height:20px;margin:0;stroke:none;display:block}
+.kpis .kpi:nth-child(4n+2) .kpi-tile{background:var(--t-mustard);color:var(--mustard-t)}
+.kpis .kpi:nth-child(4n+3) .kpi-tile{background:var(--t-teal);color:var(--teal-t)}
+.kpis .kpi:nth-child(4n+4) .kpi-tile{background:var(--t-green);color:var(--green-t)}
+.kpis .kpi.tone-green .kpi-tile{background:var(--t-green);color:var(--green-t)}
+.kpis .kpi.tone-mustard .kpi-tile{background:var(--t-mustard);color:var(--mustard-t)}
+.kpis .kpi.tone-terra .kpi-tile{background:var(--t-terra);color:var(--terra-t)}
+.kpis .kpi.tone-grey .kpi-tile{background:var(--fill);color:var(--ink3)}
+.kpi.na .kpi-tile{background:var(--fill);color:var(--ink3)}
+.kpi-top .l{display:block;flex:1 1 auto;min-width:0;margin:0;min-height:0;font-size:13px;line-height:1.3;color:var(--ink3);overflow-wrap:anywhere}
+.kpi .v,.kpi.hero .v,.kpis.rates .v{font-family:Merriweather,Georgia,serif;font-weight:400;color:var(--maroon);letter-spacing:-.02em;line-height:1.1;min-height:0;font-size:clamp(22px,13cqw,32px)}
+.kpi.hero .v{font-size:clamp(28px,15cqw,44px)}
+.kpis.rates .v{font-size:clamp(22px,12cqw,28px)}
+.kpi.na .v{font-family:Archivo,system-ui,sans-serif;font-size:var(--t14);color:var(--ink2);letter-spacing:0}
+.kpi .d{margin-top:var(--sp2);min-height:26px}
+/* the figures of one row share a baseline: each figure sits in a box as tall as the biggest figure of the row and rests on its bottom edge */
+.kpis .kpi>.v{display:flex;align-items:flex-end;height:calc(clamp(22px,13cqw,32px) * 1.25)}
+.kpis.lead .kpi>.v{height:56px}
+.kpis.rates .kpi>.v{height:calc(clamp(22px,12cqw,28px) * 1.25)}
+.kpis .kpi.hero>.v{height:calc(clamp(28px,15cqw,44px) * 1.25)}
+.kpis .kpi.na>.v{height:auto}
+.kpi .ctx{margin-top:var(--sp1);color:var(--ink3)}
+.kpi .chip-d,.kpi .kpi .chip-d{border-radius:999px;padding:3px 10px 3px 8px;font-size:12px;font-weight:600}
+.kpi .chip-d.up{background:rgba(64,128,91,.14);color:var(--green-t)}
+.kpi .chip-d.down{background:rgba(181,83,46,.15);color:var(--terra-t)}
+.kpi .chip-d.flat{background:var(--fill);color:var(--ink2)}
+.kpi .sp-wrap{margin:auto calc(var(--pad-in) * -1) 0;padding:var(--sp3) 0 12px;min-height:60px}
+.kpi .spark{display:block;width:100%;height:44px;overflow:visible}
+.kpi .spark path.sp-line{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.kpi:has(.sp-wrap){padding-bottom:0}
+.kpi .spark path.sp-line{color:inherit}
+.kpis .kpi:nth-child(4n+1) .sp-wrap{color:var(--maroon)}
+.kpis .kpi:nth-child(4n+2) .sp-wrap{color:var(--mustard)}
+.kpis .kpi:nth-child(4n+3) .sp-wrap{color:var(--teal)}
+.kpis .kpi:nth-child(4n+4) .sp-wrap{color:var(--green)}
+
+/* a sentence between two cards (the plain-words answer on Shopping steps) keeps the page gap */
+.fn-leak{margin:var(--gap-in) 0 0;font-size:var(--t16);color:var(--ink);max-width:70ch}
+.fn-leak+.fn-leak{margin-top:var(--sp2)}
+.fn-leak+.card,.fn-leak+.grid,.fn-leak+details{margin-top:var(--gap-block)}
+#main>div>.note,#main>div>p.small{margin-top:var(--gap-in)}
+
+/* headline cards INSIDE a white card (Growth, Business tables, the goal) are flat tinted tiles: a card in a card gets space and a tint, not a second shadow */
+.card .kpis{margin:0}
+.card .kpis .kpi,.card .kpi{background:var(--tint);box-shadow:none}
+.card .kpi:hover{transform:none;box-shadow:none}
+.card .kpi.na{background:var(--tint)}
+/* the dashed "example, not real" boxes keep their hatch and their tag; the dashed outline goes */
+.preview{border:0;background:repeating-linear-gradient(135deg,#FBF7F1 0,#FBF7F1 10px,#F6F0E7 10px,#F6F0E7 20px)}
+.preview .kpis{border:0}
+.preview-tag{border-color:transparent}
+.kpis.rates{margin-top:var(--gap-in)}
+/* a soft cross fade when a filter or a date redraws the SAME page (opacity only; the first view of a page has its own rise) */
+@keyframes mzXfade{from{opacity:.5}to{opacity:1}}
+main.xfade>div{animation:mzXfade .24s ease backwards}
+
+/* a small title inside a card is 16px everywhere */
+.card h4,.card h4.sub,.minichart h4{font-size:var(--h-sub);line-height:1.35}
+/* headline cards on a phone: the round icon sits above its label, so a long label has the whole card width and the (i) mark never falls off the edge */
+@media (max-width:640px){
+  .kpi-top{flex-direction:column;align-items:flex-start;gap:var(--sp2);min-height:0}
+  .kpi-top .l{width:100%}
+  .kpi-tile{width:36px;height:36px;flex-basis:36px}
+}
+
+/* ---------- controls: tinted fills, no outlines ---------- */
+.btn,.tbtn,.dd-btn,.tbl-q,.gs-in,select,.fld input,input[type=date],.seg,.badge,.empty,.note,.popover .dd-btn{border-color:transparent}
+.btn,.tbtn,.dd-btn,.tbl-q,.gs-in,select,.fld select,.tsec select,.fs-ctl .fld select,.fld input,.fs-ctl .fld input[type=date],input[type=date]{background-color:var(--fill);color:var(--ink)}
+select,.fld select,.tsec select,.fs-ctl .fld select,.tbl-dsel{border:0;border-radius:var(--cr-ctl)}
+select:focus-visible,input:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+.btn:hover,.tbtn:hover,.dd-btn:hover{background:var(--fill-hot);border-color:transparent}
+.btn .ic,.tbtn .ic{color:var(--maroon)}
+.btn.on,.seg button[aria-pressed=true]{background:var(--maroon);color:#fff}
+.btn.on:hover{background:#7A1A06}
+.dd-btn[aria-expanded="true"],.tbl-q:focus,.gs-in:focus{background:#fff;border-color:var(--maroon);box-shadow:0 0 0 3px rgba(94,18,4,.12)}
+.seg{background:var(--fill);padding:3px;gap:2px;border-radius:var(--cr-ctl);overflow:visible}
+.seg button,.seg button:first-child,.seg button:last-child,.seg button:only-child{border:0;border-radius:calc(var(--cr-ctl) - 3px);min-height:34px;background:transparent;color:var(--ink)}
+.seg button:hover{background:var(--fill-hot)}
+.seg button[aria-pressed=true],.seg button[aria-pressed=true]:first-child,.seg button[aria-pressed=true]:last-child,.seg button[aria-pressed=true]:only-child{background:var(--maroon);color:#fff}
+.seg button[aria-pressed=true]:hover{background:#7A1A06}
+.empty{background:var(--tint)}
+.note{background:var(--tint);border-color:transparent}
+.note.warn{background:rgba(181,83,46,.10);border-color:transparent}
+p.note{border:0;border-radius:var(--cr-pan);padding:var(--sp3) var(--sp4)}
+p.note.warn{border:0}
+.badge{border-color:transparent}
+.gs-key{border-color:transparent;background:#fff}
+.minichart{border:0;background:var(--tint);border-radius:var(--cr-card)}
+.fcard,.cards13 .fcard{border:0;background:#fff;border-radius:var(--cr-card);box-shadow:var(--soft-shadow);padding:var(--pad-in)}
+.conn-card{border:0;box-shadow:var(--soft-shadow)}
+.tab-pill,.pop-foot{border-top:0}
+.tbl-cols-pop .tc-foot{border-top:0}
+
+/* the headline numbers: when the last row is not full, its cards grow to fill it (a 6 column grid, three cards per row) */
+@media (min-width:701px){
+  .kpis.rates{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .kpis.rates>.kpi{grid-column:span 2}
+  .kpis.rates>.kpi:last-child:nth-child(3n+1){grid-column:span 6}
+  .kpis.rates>.kpi:last-child:nth-child(3n+2),.kpis.rates>.kpi:nth-last-child(2):nth-child(3n+1){grid-column:span 3}
+}
+
+/* ---------- the viz components (dashboard_39*.js) ---------- */
+.viz-chart,.viz-chart .cb{min-width:0}
+.viz-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--sp3);margin-top:var(--sp4)}
+.viz-tile{background:var(--tint);border-radius:var(--cr-ctl);padding:var(--sp3) var(--sp4);display:flex;flex-direction:column;gap:2px;min-width:0;transition:background .15s var(--ease)}
+.viz-tile.on{background:var(--fill-hot)}
+.viz-tile .vt-n{display:flex;align-items:center;gap:var(--sp2);font-size:12px;color:var(--ink3);min-width:0}
+.viz-tile .vt-n i{flex:0 0 10px;width:10px;height:10px;border-radius:50%;display:block}
+.viz-tile .vt-n span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.viz-tile .vt-v{font-family:Merriweather,Georgia,serif;font-size:20px;color:var(--maroon);line-height:1.2}
+.viz-tile .vt-s{font-size:12px;color:var(--ink3)}
+.mz-step.mk{cursor:pointer;transition:opacity .15s var(--ease)}
+svg.hl .mz-step:not(.on),svg.hl .mz-rib:not(.on),svg.hl .mz-nd:not(.on),svg.hl .mz-pt:not(.on){opacity:.28}
+svg .mz-rib{transition:opacity .15s var(--ease);cursor:pointer}
+svg .mz-pill{fill:#fff;stroke:none}
+svg .mz-pilltxt{font-size:11px;font-weight:600;fill:var(--ink);text-anchor:middle}
+svg .mz-lab{font-size:11px;fill:var(--ink)}
+svg .mz-lab.sub{fill:var(--ink3)}
+svg .mz-head{font-size:11px;fill:var(--ink3);letter-spacing:.02em}
+svg .mz-halo{paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
+svg .mz-ring-c{font-family:Merriweather,Georgia,serif;fill:var(--maroon);text-anchor:middle}
+svg .mz-ring-s{font-size:11px;fill:var(--ink3);text-anchor:middle}
+.grid.viz-pair{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)}
+@media (max-width:1000px){.grid.viz-pair{grid-template-columns:minmax(0,1fr)}}
+.viz-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--sp6);align-items:center}
+@media (max-width:760px){.viz-split{grid-template-columns:minmax(0,1fr)}}
+.gauge{display:grid;grid-template-columns:minmax(200px,300px) 1fr;gap:var(--sp5);align-items:center;padding:var(--sp3) 0}
+.gauge svg{width:100%;height:auto;display:block;overflow:visible}
+.gauge .dn-seg{cursor:pointer;transition:opacity .15s var(--ease)}
+.gauge svg:focus-visible{outline:2px solid var(--ring);outline-offset:4px;border-radius:var(--cr-pan)}
+@media (max-width:640px){.gauge{grid-template-columns:1fr;justify-items:center}.gauge svg{max-width:280px}.gauge .dn-legend{width:100%}}
+.goal-split{display:grid;grid-template-columns:150px minmax(0,1fr);gap:var(--sp6);align-items:center}
+.goal-split .kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+@media (max-width:760px){.goal-split{grid-template-columns:1fr;justify-items:center}.goal-split .kpis{width:100%}}
+.ring-box{display:flex;flex-direction:column;align-items:center;gap:var(--sp2)}
+.ring-box svg{width:150px;height:150px;display:block;overflow:visible}
+.combo-axis-l{fill:var(--maroon)}
+.combo-axis-r{fill:var(--mustard-t)}
+
+/* ---------- motion: transform, opacity and stroke drawing only; first view only; off for reduced motion and ?still=1 ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes mzFade{from{opacity:0}to{opacity:1}}
+@keyframes mzGrowV{from{transform:scaleY(0);opacity:.2}to{transform:scaleY(1);opacity:1}}
+@keyframes mzGrowX{from{transform:scaleX(0);opacity:.2}to{transform:scaleX(1);opacity:1}}
+@keyframes mzGrowY{from{transform:scaleY(0);opacity:.2}to{transform:scaleY(1);opacity:1}}
+@keyframes mzSweep{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes mzRing{from{stroke-dasharray:0 1}to{stroke-dasharray:var(--f) 1}}
+@keyframes mzPop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+body.anim .viz-chart .mz-band,body.anim .viz-chart .mz-rib{transform-box:fill-box;transform-origin:0 50%;animation:mzGrowX .7s var(--ease) both;animation-delay:calc(var(--d,0) * 1ms)}
+body.anim .viz-chart .mz-bandv,body.anim .viz-chart .mz-ribv{transform-box:fill-box;transform-origin:50% 0;animation:mzGrowV .6s var(--ease) both;animation-delay:calc(var(--d,0) * 1ms)}
+body.anim .viz-chart .mz-nd{animation:mzFade .5s var(--ease) both;animation-delay:calc(var(--d,0) * 1ms)}
+body.anim .viz-chart .mz-pillg{animation:mzFade .4s var(--ease) both;animation-delay:calc(var(--d,0) * 1ms + 350ms)}
+body.anim .viz-chart .mz-arc{stroke-dasharray:1;animation:mzSweep .9s var(--ease) both;animation-delay:calc(var(--d,0) * 1ms)}
+body.anim .viz-chart .mz-ringfill{animation:mzRing 1s var(--ease) both}
+body.anim .viz-chart .mz-area{transform-box:fill-box;transform-origin:50% 100%;animation:mzGrowY .8s var(--ease) both;animation-delay:calc(var(--d,0) * 1ms)}
+body.anim .viz-chart .mz-radar{transform-box:fill-box;transform-origin:50% 50%;animation:mzPop .7s var(--ease) both;animation-delay:calc(var(--d,0) * 1ms)}
+body.anim .viz-tiles .viz-tile{animation:mzFade .5s var(--ease) both;animation-delay:calc(var(--d,0) * 1ms + 200ms)}
+/* the headline cards rise one after the other (the row itself stays still, so the cards do not rise twice). Fill mode "backwards": a settled card keeps NO transform, so hover and bottom sheets work. */
+body.anim main .kpis{animation:none}
+body.anim .kpis>.kpi{animation:rise .45s var(--ease) backwards;animation-delay:calc(var(--i,0) * 40ms + 60ms)}
+body.anim .kpi .sp-line{stroke-dasharray:1;animation:mzSweep 1s var(--ease) .2s both}
+body.anim .kpi .sp-fill{animation:mzFade .8s var(--ease) .3s both}
+.mz-pre *{animation-play-state:paused!important}
+html.still body.anim *,html.still .viz-chart *,html.still .kpi *,html.still .cb *,html.still main>div{animation:none!important}
+html.still .cb svg path.ln-draw,html.still .kpi .sp-line,html.still .viz-chart .mz-arc{stroke-dasharray:none;stroke-dashoffset:0}
+@media (prefers-reduced-motion:reduce){
+  .kpi,.fcard{transition:none}
+  .kpi:hover,.fcard:hover{transform:none}
+  body.anim *,.viz-chart *,.kpi *{animation:none!important}
+  .cb svg path.ln-draw,.kpi .sp-line,.viz-chart .mz-arc{stroke-dasharray:none;stroke-dashoffset:0}
+}
+@media print{.card,.fold,.kpi,.fcard{box-shadow:none}body{background:#fff}}
+
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
 #lock[hidden]{display:none}
@@ -1778,9 +2025,23 @@ M.niceTop = function (max) {   // an axis top that splits into 4 round steps
   while (c[i] * p * 4 < max && i < c.length - 1) i++;
   return c[i] * p * 4;
 };
-M.cmpFor = function (cur, prev, cmp) {   // {change, cmpNote} for a scorecard compared with the previous period
+/* 3 Nov 2026 (owner asks for numbers he can trust): a change against a period that was only partly TRACKED is not a change. Visits showed +3,433% because visit tracking began on 5 Oct and
+   the 28 days before held 51 visits (1 day of 28). When the earlier period has data for fewer than three quarters of its days, the percent is replaced by a plain note. tabs = one table name or a list. */
+M.prevThin = function (tabs, r) {
+  if (!r || !r.pfrom || !tabs) return null;
+  var worst = null;
+  [].concat(tabs).forEach(function (t) {
+    if (!t || !M.has(t)) return;
+    var n = M.daysCovered(t, r.pfrom, r.pto), want = M.diff(r.pfrom, r.pto) + 1;
+    if (n < want * 0.75 && (worst === null || n < worst.n)) worst = { n: n, want: want };
+  });
+  return worst ? 'earlier period only tracked ' + worst.n + ' of ' + worst.want + ' days' : null;
+};
+M.cmpFor = function (cur, prev, cmp, tabs, r) {   // {change, cmpNote} for a scorecard compared with the previous period; tabs and r (optional) switch the thin earlier period check on
   if (!cmp) return { change: null, cmpNote: '' };
   if (prev === null) return { change: null, cmpNote: 'nothing to compare with' };
+  var thin = tabs && r ? M.prevThin(tabs, r) : null;
+  if (thin) return { change: null, cmpNote: thin };
   if (prev === 0) return { change: null, cmpNote: 'was 0 before' };
   return { change: M.change(cur, prev), cmpNote: '' };
 };
@@ -2761,7 +3022,7 @@ M.forecastChart = function (host, w, rows) {
     svg.appendChild(M.s('rect', { x: zx.toFixed(1), y: T, width: (L + pw - zx).toFixed(1), height: ph, class: 'fc-zone', 'aria-hidden': 'true' }));
     svg.appendChild(M.s('text', { x: (zx + 8).toFixed(1), y: T + 14, class: 'fc-lab' }, 'Next weeks (a guess)'));
   }
-  svg.appendChild(M.s('line', { x1: L, x2: w - R, y1: Y(0), y2: Y(0), stroke: '#8F8579', 'stroke-width': 1.5 }));
+  svg.appendChild(M.s('line', { x1: L, x2: w - R, y1: Y(0), y2: Y(0), stroke: M.COLORS.grey, 'stroke-width': 1.5 }));
   rows.forEach(function (r, i) {
     var gp = M.s('g', { class: 'mk', 'aria-hidden': 'true' });
     if (r.low != null && r.high != null) gp.appendChild(M.s('line', { x1: X(i), x2: X(i), y1: Y(r.low), y2: Y(0), class: 'fc-stem' }));
@@ -4637,7 +4898,9 @@ M.PAGES.overview.render = function (r) {
     if (cur === null) { var nd = d.den || d.num, why = M.noDataWhy(nd.tab, r); put({ label: d.label, na: why.first && r.to < why.first ? 'Starts ' + M.fds(why.first) : 'No data', note: why.text, noData: why }); return; }
     var isPct = d.key === 'conv' || d.key === 'atc', chv = ch;
     if (isPct && cmp && cur != null && prev != null) chv = prev === 0 ? null : (cur - prev) / prev * 100;
-    put({ label: d.label, value: d.fmt(cur), change: chv, cmpNote: cmp ? (prev === null ? 'nothing to compare with' : prev === 0 ? 'was 0 before' : '') : '', note: cov, spark: { values: M.defSeries(d, buckets), color: M.COLORS.maroon } });
+    var thin = cmp && prev !== null ? M.prevThin([d.num && d.num.tab, d.den && d.den.tab], r) : null;      /* 3 Nov 2026: no percent against a period that was only partly tracked */
+    if (thin) chv = null;
+    put({ label: d.label, value: d.fmt(cur), change: chv, cmpNote: cmp ? (prev === null ? 'nothing to compare with' : thin ? thin : prev === 0 ? 'was 0 before' : '') : '', note: cov, spark: { values: M.defSeries(d, buckets), color: M.COLORS.maroon } });
   });
   root.appendChild(kp);
   if (kp2.children.length) root.appendChild(kp2);
@@ -5939,7 +6202,7 @@ M.PAGES.channels.render = function (r) {
   var prevTot = function (col) { var t = M.total({ tab: 'source_daily', col: col, pred: keep }, r.pfrom, r.pto); return cmp ? t.v : null; };
   var kp = M.h('div', { class: 'kpis' });
   [['Visits', M.num(tv), 'sessions'], ['Orders', M.num(to), 'purchases'], ['Revenue', M.inr(tr), 'revenue']].forEach(function (k, i) {
-    var v = [tv, to, tr][i], pv = prevTot(k[2]), cf = M.cmpFor(v, pv, cmp);
+    var v = [tv, to, tr][i], pv = prevTot(k[2]), cf = M.cmpFor(v, pv, cmp, 'source_daily', r);
     kp.appendChild(M.kpi({ label: k[0], value: k[1], change: cf.change, cmpNote: cf.cmpNote }));
   });
   kp.appendChild(M.kpi({ label: 'Sources with visits', value: M.num(rows.length) }));
@@ -6118,7 +6381,7 @@ M.PAGES.social.render = function (r) {
 M.socialAll = function (root, r, chs) {
   var cmp = M.cmpOn(r), buckets = M.buckets(r.from, r.to, r.mode), posts = M.allPosts();
   var rows = chs.map(function (c) {
-    var t = M.total({ tab: c.tab, col: c.col }, r.from, r.to), pv = cmp ? M.total({ tab: c.tab, col: c.col }, r.pfrom, r.pto) : { v: null }, cf = M.cmpFor(t.v, pv.v, cmp);
+    var t = M.total({ tab: c.tab, col: c.col }, r.from, r.to), pv = cmp ? M.total({ tab: c.tab, col: c.col }, r.pfrom, r.pto) : { v: null }, cf = M.cmpFor(t.v, pv.v, cmp, c.tab, r);
     var ps = posts.filter(function (p) { return p.channel === c.id && p.date >= r.from && p.date <= r.to; }), fol = M.followers(c, r);
     var vis = M.total({ tab: 'source_daily', col: 'sessions', pred: M.srcOfChannel(c.id) }, r.from, r.to).v, ord = M.total({ tab: 'source_daily', col: 'purchases', pred: M.srcOfChannel(c.id) }, r.from, r.to).v;
     return { id: c.id, name: c.name, color: c.color, reach: t.v, change: cf.change, unit: c.unit, roll: c.roll, posts: ps.length, followers: fol.now, fchange: fol.change, visits: vis, orders: ord,
@@ -6198,13 +6461,13 @@ M.socialOne = function (root, r, c) {
   if (c.id === 'instagram' && M.instagramOne) return M.instagramOne(root, r, c);      /* T865: the Instagram account view is in dashboard_28_instagram.js (numbers that match the Instagram app) */
   var cmp = M.cmpOn(r), buckets = M.buckets(r.from, r.to, r.mode), all = M.chPosts(c.id), inR = all.filter(function (p) { return p.date >= r.from && p.date <= r.to; });
   var kp = M.h('div', { class: 'kpis' }), fol = M.followers(c, r);
-  var t = M.total({ tab: c.tab, col: c.col }, r.from, r.to), pv = cmp ? M.total({ tab: c.tab, col: c.col }, r.pfrom, r.pto) : { v: null }, cf = M.cmpFor(t.v, pv.v, cmp);
+  var t = M.total({ tab: c.tab, col: c.col }, r.from, r.to), pv = cmp ? M.total({ tab: c.tab, col: c.col }, r.pfrom, r.pto) : { v: null }, cf = M.cmpFor(t.v, pv.v, cmp, c.tab, r);
   if (c.roll) kp.appendChild(M.kpi({ label: c.name + ' ' + c.unit, value: 'see the chart', note: 'a running count, not added up' }));
   else kp.appendChild(t.v === null ? M.kpiWhy(c.name + ' ' + c.unit, c.tab, r) : M.kpi({ label: c.name + ' ' + c.unit, value: M.num(t.v), change: cf.change, cmpNote: cf.cmpNote, note: t.days < r.days ? t.days + ' of ' + r.days + ' days have data' : '' }));
   kp.appendChild(fol.now == null ? M.kpi({ label: 'Followers', na: 'Not recorded', note: 'The channel does not give a follower count we store.' }) : M.kpi({ label: 'Followers', value: M.num(fol.now), note: fol.change == null ? (fol.asOf ? 'count taken on ' + M.fd(fol.asOf) + ', the first one stored' : 'newest count') : (fol.change > 0 ? '+' : '') + M.num(fol.change) + (fol.since ? ' since ' + M.fd(fol.since) + ' (the first count we stored; the dates you picked start earlier)' : ' over these dates') }));
   kp.appendChild(M.kpi({ label: 'Posts in these dates', value: M.num(inR.length), note: all.length ? M.num(all.length) + ' posts altogether' : 'no post list for this channel' }));
   var vis = M.total({ tab: 'source_daily', col: 'sessions', pred: M.srcOfChannel(c.id) }, r.from, r.to), ord = M.total({ tab: 'source_daily', col: 'purchases', pred: M.srcOfChannel(c.id) }, r.from, r.to);
-  kp.appendChild(vis.v == null ? M.kpiWhy('Visits to the shop from ' + c.name, 'source_daily', r) : M.kpi({ label: 'Visits to the shop from ' + c.name, value: M.num(vis.v), note: M.num(ord.v) + ' orders', change: cmp ? M.cmpFor(vis.v, M.total({ tab: 'source_daily', col: 'sessions', pred: M.srcOfChannel(c.id) }, r.pfrom, r.pto).v, cmp).change : null }));
+  kp.appendChild(vis.v == null ? M.kpiWhy('Visits to the shop from ' + c.name, 'source_daily', r) : M.kpi({ label: 'Visits to the shop from ' + c.name, value: M.num(vis.v), note: M.num(ord.v) + ' orders', change: cmp ? M.cmpFor(vis.v, M.total({ tab: 'source_daily', col: 'sessions', pred: M.srcOfChannel(c.id) }, r.pfrom, r.pto).v, cmp, 'source_daily', r).change : null }));
   root.appendChild(kp);
   /* the two time charts: reach and followers */
   var cards = [], v = M.series({ tab: c.tab, col: c.col }, buckets), cov = M.cover(c.tab);
@@ -6360,7 +6623,7 @@ M.PAGES.search.render = function (r) {
   var kp = M.h('div', { class: 'kpis' });
   [['Brand searches shown (impressions)', 'brand_impressions', M.COLORS.maroon], ['Brand clicks', 'brand_clicks', M.COLORS.green], ['Other searches shown', 'nonbrand_impressions', M.COLORS.teal], ['Other clicks', 'nonbrand_clicks', M.COLORS.mustard]].forEach(function (c) {
     var part = { tab: 'brand_search_daily', col: c[1] }, t = M.total(part, r.from, r.to), p = cmp ? M.total(part, r.pfrom, r.pto) : { v: null };
-    var cf = M.cmpFor(t.v, p.v, cmp);
+    var cf = M.cmpFor(t.v, p.v, cmp, 'brand_search_daily', r);
     kp.appendChild(t.v === null ? M.kpiWhy(c[0], 'brand_search_daily', r) : M.kpi({ label: c[0], value: M.num(t.v), change: cf.change, cmpNote: cf.cmpNote, spark: { values: M.series(part, buckets), color: c[2] }, note: t.days < r.days ? 'data for ' + t.days + ' of ' + r.days + ' days' : '' }));
   });
   root.appendChild(kp);
@@ -7374,6 +7637,7 @@ M.TERMS = [
     var sum = function (a, b) { return md.filter(function (x) { return x.date >= a && x.date <= b; }).reduce(function (t, x) { return t + (+x.orders || 0); }, 0); };
     var now28 = sum(from, last), before28 = sum(prev, M.add(from, -1)), goal = typed != null ? typed : now28 * 2;
     var how = typed != null ? 'the number typed in the Sheet' : 'twice the orders of the last 28 days (the rule you gave on 31 Oct 2026)';
+    M.goalInfo = { now: now28, goal: goal, typed: typed != null };      /* T877: the goal ring on the Overview reads the same two numbers */
     var kp = M.h('div', { class: 'kpis' });
     kp.appendChild(M.kpi({ label: 'Orders in the last 28 days', value: M.num(now28), note: before28 ? 'the 28 days before: ' + M.num(before28) : 'no orders in the 28 days before' }));
     kp.appendChild(M.kpi({ label: 'Goal: orders a month', value: M.num(goal), note: how }));
@@ -7404,7 +7668,7 @@ M.TERMS = [
     var row = M.rows('instagram_window').filter(function (x) { return +x.window_days === n && x.date === r.to && !blank(x.accounts_reached); })[0];
     return row ? { v: +row.accounts_reached, n: n } : null;
   };
-  var change = function (tab, col, r, cmp) { if (!cmp) return null; var a = sumOf(tab, col, r.from, r.to).v, b = sumOf(tab, col, r.pfrom, r.pto).v; return M.cmpFor(a, b, cmp); };
+  var change = function (tab, col, r, cmp) { if (!cmp) return null; var a = sumOf(tab, col, r.from, r.to).v, b = sumOf(tab, col, r.pfrom, r.pto).v; return M.cmpFor(a, b, cmp, tab, r); };
   var span = function (r) { return M.fd(r.from) + ' to ' + M.fd(r.to); };
 
   M.instagramOne = function (root, r, c) {
@@ -8015,6 +8279,808 @@ M.glueMarks = function () {
     var card = t && t.closest('.card');
     if (!card || card.querySelector('.state-note')) return;
     card.appendChild(M.h('p', { class: 'small muted state-note', text: notes.map(function (x) { return x.state + ': ' + x.read + '.'; }).join(' ') }));
+  });
+})();
+
+/* mazo dashboard VISUAL LAYER, part 1 (T877, 3 Nov 2026). Owner, 3 Nov: a colourful, beautiful dashboard in the spirit of BoardUI (funnel, Sankey, radar, gauge, rings, sparklines, area, combo, motion),
+   "but wherever applicable follow our theme and mazo visual language". Everything is our own plain SVG and CSS: nothing is installed, bought or copied (BoardUI Pro is paid; we only re-draw the ideas).
+   This file holds what every chart of the layer shares:
+     MOTION      M.reduceMotion(): true for ?still=1, for prefers-reduced-motion and for an automated browser (tests) unless ?motion=1 is in the address. Motion plays only on the FIRST view of a page
+                 (body.anim is set by the shell when the page changes), only when the element has scrolled into view (IntersectionObserver), and uses transform, opacity and stroke drawing only.
+                 Numbers count up with requestAnimationFrame and always end on the exact text; a hidden tab or reduced motion shows the final text at once.
+     HEADLINE CARDS  M.kpi gets a soft round icon tile before its label and, when the page gives it a series, a sparkline along its bottom edge.
+     HOVER       M.vizHover(svg, items): one tooltip, the same hover/touch/arrow key behaviour as the donut, and a highlight of the part pointed at.
+     HELPERS     M.vizChart (a width aware chart frame), M.vizWrap (add a card to a page without touching the page file), M.vizPlace, M.vizPair.
+   The charts themselves: dashboard_40_viz_flow.js (funnel, Sankey), dashboard_41_viz_shape.js (radar, gauge, rings), dashboard_42_viz_trend.js (area, combo). Choices: docs/reports/viz-choices-2026-11-03.md. */
+(function () {
+  var still = /[?&]still=1/.test(location.search) || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) || (navigator.webdriver && !/[?&]motion=1/.test(location.search));
+  M.reduceMotion = function () { return still; };
+  if (still) document.documentElement.classList.add('still');
+  var animOn = function () { return !still && document.body.classList.contains('anim'); };
+  M.vizAnimOn = animOn;
+
+  /* ---------------------------------------------------------------- in view, once */
+  var io = null, watch = new WeakMap();
+  M.inView = function (el, fn) {
+    if (still || !('IntersectionObserver' in window)) { fn(); return; }
+    var rc = el.getBoundingClientRect();
+    if (rc.top < window.innerHeight * 0.9 && rc.bottom > 0) { fn(); return; }      /* already on screen: start now, no flash of the final value first */
+    if (!io) io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (!e.isIntersecting) return; io.unobserve(e.target); var f = watch.get(e.target); watch.delete(e.target); if (f) f(); });
+    }, { threshold: 0.01, rootMargin: '0px 0px -10% 0px' });
+    watch.set(el, fn); io.observe(el);
+  };
+
+  /* ---------------------------------------------------------------- numbers that count up (the final text is always exact) */
+  var NUM = /^(\D*?)(\d[\d,]*)(\.\d+)?(\D*)$/, PRE = /^(-|Rs\. |Rs\. )?$/, SUF = /^(%| days)?$/;
+  M.vizCount = function (el) {
+    if (still || !el || el._counted || document.hidden) return;
+    var t = el.textContent, m = NUM.exec(t);
+    if (!m || !PRE.test(m[1]) || !SUF.test(m[4])) return;
+    var dp = m[3] ? m[3].length - 1 : 0, end = parseFloat(m[2].replace(/,/g, '') + (m[3] || ''));
+    if (!isFinite(end) || end < 2) return;
+    el._counted = true;
+    var fmt = function (v) { var s = v.toFixed(dp).split('.'); return m[1] + M.group(s[0]) + (s[1] ? '.' + s[1] : '') + m[4]; };
+    var t0 = null, dur = 800, done = function () { if (el.textContent !== t) el.textContent = t; };
+    el.textContent = fmt(0);
+    var tick = function (ts) {
+      if (!el.isConnected) return;
+      if (t0 == null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur);
+      if (p >= 1) { done(); return; }
+      el.textContent = fmt(end * (1 - Math.pow(1 - p, 3)));
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    setTimeout(done, dur + 200);      /* a tab that stopped drawing never keeps a half counted number */
+  };
+
+  /* ---------------------------------------------------------------- icons (24 box, one stroke, the same family as the sidebar icons) */
+  var P = function (d) { return M.s('path', { d: d }); }, C = function (x, y, r) { return M.s('circle', { cx: x, cy: y, r: r }); };
+  var ICONS = {
+    trend: function () { return [P('M3.5 16.5l5.2-5.2 3.6 3.6 7.2-7.7M15.5 7.2h4v4')]; },
+    wallet: function () { return [P('M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3M4 7.5V17a2 2 0 0 0 2 2h12.5a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 1 4 7.5z'), C(15.8, 13.5, 1)]; },
+    bag: function () { return [P('M6.2 8.5h11.6l-.9 10.5H7.1zM9 8.5a3 3 0 0 1 6 0')]; },
+    eye: function () { return [P('M2.8 12S6.3 5.8 12 5.8 21.2 12 21.2 12 17.7 18.2 12 18.2 2.8 12 2.8 12z'), C(12, 12, 2.6)]; },
+    people: function () { return [C(9, 8.2, 3.1), P('M3.6 19.4c.6-3 3-4.7 5.4-4.7s4.8 1.7 5.4 4.7M16.2 5.4a3 3 0 0 1 0 5.6M17.4 15c1.7.6 2.8 2 3.1 4.4')]; },
+    cart: function () { return [P('M3.5 5h2.2l2 9.4h9.3l1.8-7H6.4'), C(9.6, 18.6, 1.1), C(16.2, 18.6, 1.1)]; },
+    percent: function () { return [P('M18 6L6 18'), C(7.6, 8, 1.6), C(16.4, 16, 1.6)]; },
+    clock: function () { return [C(12, 12, 8), P('M12 7.5V12l3 2')]; },
+    check: function () { return [C(12, 12, 8), P('M8.3 12.4l2.5 2.5 4.9-5.3')]; },
+    mail: function () { return [P('M4.5 6.5h15a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zM4 8l8 5.5L20 8')]; },
+    star: function () { return [P('M12 4.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z')]; },
+    megaphone: function () { return [P('M4 10v4a1 1 0 0 0 1 1h2l5.5 4V5L7 9H5a1 1 0 0 0-1 1zM16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10')]; },
+    alert: function () { return [P('M12 4l9 16H3zM12 10v4.5M12 17.5v.01')]; },
+    spark: function () { return [P('M6 19V12M12 19V6M18 19v-9')]; }
+  };
+  M.vizIcon = function (name) {
+    var g = M.s('g', { fill: 'none', stroke: 'currentColor', 'stroke-width': 1.7, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, (ICONS[name] || ICONS.spark)());
+    return M.s('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true', focusable: 'false' }, [g]);
+  };
+  var ICONRULES = [[/rate|that bought|conversion|share of|percent|%/i, 'percent'], [/review|rating|star/i, 'star'], [/e-?mail|subscri|list/i, 'mail'], [/cart|checkout|left a/i, 'cart'],
+    [/follower|customer|buyer|people|contacts|repeat|visitor/i, 'people'], [/post|channel|social|instagram|facebook|pin|reach/i, 'megaphone'], [/fail|problem|wrong|error|needs|came back|refund|dispute|cancel|exchange/i, 'alert'],
+    [/check|passed|on target|close|done/i, 'check'], [/day|time|updated|when|quiet|newest|run|last/i, 'clock'], [/paid|cost|fee|bank|kept|value|price|gst|shipping charged|razorpay|money/i, 'wallet'],
+    [/order|bought|units|parcel|sent|delivered|stock|pieces|product|sizes|sets|rows/i, 'bag'], [/visit|view|session|seen|impression|search|click/i, 'eye'], [/sales|revenue|profit|growth|goal/i, 'trend']];
+  M.kpiIcon = function (label) { for (var i = 0; i < ICONRULES.length; i++) if (ICONRULES[i][0].test(label || '')) return ICONRULES[i][1]; return 'spark'; };
+
+  /* ---------------------------------------------------------------- headline cards: icon tile + label, and a sparkline when the page has a series */
+  var STATUSTONE = { 'On target': 'green', 'Close': 'mustard', 'Needs work': 'terra', 'No data yet': 'grey' };
+  var kpi0 = M.kpi;
+  M.kpi = function (o) {
+    var k = kpi0(o), l = k.firstChild, tone = STATUSTONE[String(o.label || '').trim()];
+    if (tone) k.classList.add('tone-' + tone);      /* a status word keeps its meaning in colour: On target green, Close mustard, Needs work terracotta */
+    if (l && l.classList && l.classList.contains('l')) {
+      k.insertBefore(M.h('div', { class: 'kpi-top' }, [M.h('span', { class: 'kpi-tile', 'aria-hidden': 'true' }, [M.vizIcon(M.kpiIcon(o.label))]), l]), k.firstChild);
+    }
+    if (o.spark) M.vizAttachSpark(k, o.spark.values, o.label);
+    return k;
+  };
+  M.vizAttachSpark = function (k, values, label) {
+    if (!k || k.classList.contains('na') || k._spark || !values || values.length < 4) return;
+    var vals = values.map(Number).filter(function (v) { return isFinite(v); });
+    if (vals.length < 4 || Math.max.apply(null, vals) === Math.min.apply(null, vals)) return;      /* a flat line says nothing */
+    k._spark = { values: vals, label: label || 'Trend' };
+    k.appendChild(M.h('div', { class: 'sp-wrap' }));
+  };
+  /* the figures of one row of headline cards sit on one baseline: every label block in a row is as tall as the tallest one (a long label wraps to three lines, a short one to one) */
+  M.vizAlignTops = function (main) {
+    Array.prototype.forEach.call(main.querySelectorAll('.kpis'), function (bx) {
+      var ks = Array.prototype.filter.call(bx.children, function (k) { return k.classList.contains('kpi') && k.querySelector('.kpi-top'); });
+      ks.forEach(function (k) { k.querySelector('.kpi-top').style.minHeight = ''; });
+      var rows = {};
+      ks.forEach(function (k) { var t = Math.round(k.getBoundingClientRect().top), h = k.querySelector('.kpi-top').getBoundingClientRect().height; if (!rows[t]) rows[t] = { m: 0, list: [] }; rows[t].m = Math.max(rows[t].m, h); rows[t].list.push(k); });
+      Object.keys(rows).forEach(function (t) { var r = rows[t]; if (r.list.length > 1) r.list.forEach(function (k) { k.querySelector('.kpi-top').style.minHeight = r.m + 'px'; }); });
+    });
+  };
+  var sparkId = 0;
+  var drawSpark = function (k) {
+    var wrap = k.querySelector('.sp-wrap'), sp = k._spark; if (!wrap || !sp || wrap.firstChild) return;
+    var w = Math.max(80, Math.round(wrap.clientWidth || k.clientWidth)), H = 44, n = sp.values.length, vals = sp.values, id = 'spg' + (++sparkId);
+    var max = Math.max.apply(null, vals), min = Math.min.apply(null, vals.concat([0])), span = (max - min) || 1;
+    var X = function (i) { return i / (n - 1) * w; }, Y = function (v) { return H - 3 - (v - min) / span * (H - 14); };
+    var pts = vals.map(function (v, i) { return [X(i), Y(v)]; });
+    var line = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
+    for (var i = 1; i < n; i++) { var mx = (pts[i - 1][0] + pts[i][0]) / 2; line += ' C' + mx.toFixed(1) + ' ' + pts[i - 1][1].toFixed(1) + ' ' + mx.toFixed(1) + ' ' + pts[i][1].toFixed(1) + ' ' + pts[i][0].toFixed(1) + ' ' + pts[i][1].toFixed(1); }
+    var svg = M.s('svg', { class: 'spark', viewBox: '0 0 ' + w + ' ' + H, width: w, height: H, role: 'img', 'aria-label': sp.label + ' over the dates shown: from ' + M.short(vals[0]) + ' to ' + M.short(vals[n - 1]) + ', highest ' + M.short(max) + '.' }, [
+      M.s('defs', null, [M.s('linearGradient', { id: id, x1: 0, y1: 0, x2: 0, y2: 1 }, [M.s('stop', { offset: '0', 'stop-color': 'currentColor', 'stop-opacity': '.26' }), M.s('stop', { offset: '1', 'stop-color': 'currentColor', 'stop-opacity': '0' })])]),
+      M.s('path', { class: 'sp-fill', d: line + ' L' + w + ' ' + H + ' L0 ' + H + 'Z', fill: 'url(#' + id + ')', stroke: 'none' }),
+      M.s('path', { class: 'sp-line', d: line, pathLength: 1, stroke: 'currentColor' })]);
+    wrap.appendChild(svg);
+    if (animOn()) { wrap.classList.add('mz-pre'); M.inView(wrap, function () { wrap.classList.remove('mz-pre'); }); }
+  };
+
+  /* ---------------------------------------------------------------- after every page draw: sparklines, the stagger of the headline cards, numbers that count up */
+  /* the page title is the ONE level 1 heading of the page (it is drawn as an h2 so the type scale and the older tests stay as they are) */
+  var head0 = M.pageHead;
+  M.pageHead = function () { var h = head0.apply(this, arguments), t = h.querySelector('h2'); if (t) t.setAttribute('aria-level', '1'); return h; };
+
+  var base = M.afterRender;
+  M.afterRender = function () {
+    if (base) base();
+    try {
+      var main = document.getElementById('main'); if (!main) return;
+      if (!still && !animOn()) { main.classList.remove('xfade'); void main.offsetWidth; main.classList.add('xfade'); main.addEventListener('animationend', function f(e) { if (e.target.parentNode === main) { main.classList.remove('xfade'); main.removeEventListener('animationend', f); } }); }
+      Array.prototype.forEach.call(main.querySelectorAll('.kpi'), drawSpark);
+      M.vizAlignTops(main);
+      if (!animOn()) return;
+      Array.prototype.forEach.call(main.querySelectorAll('.kpis'), function (bx) { Array.prototype.forEach.call(bx.children, function (c, i) { c.style.setProperty('--i', i); }); });
+      Array.prototype.forEach.call(main.querySelectorAll('.kpi:not(.na) .v'), function (v) { M.inView(v, function () { M.vizCount(v); }); });
+      /* the charts of the older layers (bars rising, lines drawing) also wait until they are on screen */
+      Array.prototype.forEach.call(main.querySelectorAll('.cb:not(.mz-fx)'), function (h) { h.classList.add('mz-fx', 'mz-pre'); M.inView(h, function () { h.classList.remove('mz-pre'); }); });
+    } catch (e) { console.error('viz after render:', e); }
+  };
+
+  /* ---------------------------------------------------------------- one hover/keys/touch behaviour for the charts of this layer
+     items: [{els: [svg nodes that take the pointer], mark: [svg nodes that only light up with it], tile: node?, tip: function () -> {title, rows}}]. A part pointed at gets class "on", the others dim (svg.hl). */
+  var clearAll = null;
+  document.addEventListener('click', function (e) { if (clearAll && !(e.target.closest && e.target.closest('.viz-chart'))) clearAll(); });
+  M.vizHover = function (svg, items) {
+    var cur = -1;
+    var on = function (i) {
+      svg.classList.toggle('hl', i != null);
+      items.forEach(function (it, j) { it.els.concat(it.mark || []).forEach(function (e) { e.classList.toggle('on', j === i); }); if (it.tile) it.tile.classList.toggle('on', j === i); });
+    };
+    var show = function (i, x, y) { var d = items[i].tip(); if (d) M.tipShow(x, y, d.title, d.rows); };
+    var off = function () { cur = -1; on(null); M.tipHide(); };
+    items.forEach(function (it, i) {
+      it.els.forEach(function (e) {
+        e.addEventListener('pointerenter', function (ev) { on(i); show(i, ev.clientX, ev.clientY); });
+        e.addEventListener('pointermove', function (ev) { show(i, ev.clientX, ev.clientY); });
+        e.addEventListener('pointerleave', function (ev) { if (ev.pointerType === 'mouse') off(); });
+        e.addEventListener('click', function (ev) { if (ev.pointerType === 'mouse') return; on(i); show(i, ev.clientX, ev.clientY); clearAll = off; ev.stopPropagation(); });
+      });
+      if (it.tile) {
+        it.tile.addEventListener('pointerenter', function () { on(i); });
+        it.tile.addEventListener('pointerleave', function () { on(null); });
+      }
+    });
+    svg.setAttribute('tabindex', '0');
+    svg.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault();
+      var fwd = e.key === 'ArrowRight' || e.key === 'ArrowDown';
+      cur = (cur + (fwd ? 1 : -1) + items.length) % items.length; on(cur);
+      var b = svg.getBoundingClientRect(); show(cur, b.left + b.width / 2, b.top + b.height / 2);
+    });
+    svg.addEventListener('blur', off);
+  };
+
+  /* ---------------------------------------------------------------- a chart frame that knows its width, and the first view reveal */
+  M.vizReveal = function (host) {
+    var fr = host._frame; if (!fr || fr._played) return; fr._played = true;      /* the chart is drawn again for full screen or a new width: it does not play again */
+    if (!animOn()) return;
+    host.classList.add('mz-fx', 'mz-pre');
+    M.inView(host, function () { host.classList.remove('mz-pre'); });
+    Array.prototype.forEach.call(host.querySelectorAll('[data-count]'), function (el) { M.inView(el, function () { M.vizCount(el); }); });
+  };
+  M.vizChart = function (draw) {
+    return M.chart('viz-host', function (host, w) { draw(host, w); M.vizReveal(host); });
+  };
+  /* a card for this layer: the class lets the stylesheet find it */
+  M.vizCard = function (title, why, kids, cls) { return M.card(title, why, kids, 'viz-chart' + (cls ? ' ' + cls : '')); };
+
+  /* ---------------------------------------------------------------- adding a card to a page without touching the page file (same idea as the donuts in dashboard_35_pies.js) */
+  var cardTitle = function (el) {
+    var h = el.nodeName === 'SECTION' ? el.querySelector(':scope > h3') : (el.classList && el.classList.contains('grid') ? el.querySelector('h3') : null);
+    return h ? h.textContent : '';
+  };
+  M.vizTitle = cardTitle;
+  M.vizPlace = function (root, node, afterRx) {
+    if (!root || !node) return;
+    var kids = Array.prototype.slice.call(root.children), anchor = null, i;
+    if (afterRx) for (i = kids.length - 1; i >= 0; i--) if (afterRx.test(cardTitle(kids[i]))) { anchor = kids[i]; break; }
+    if (!anchor) for (i = 0; i < kids.length; i++) if (kids[i].classList && kids[i].classList.contains('kpis')) anchor = kids[i];
+    if (anchor) root.insertBefore(node, anchor.nextSibling); else root.insertBefore(node, root.firstChild);
+  };
+  M.vizBefore = function (root, node, rx) {
+    var kids = Array.prototype.slice.call(root.children), hit = null;
+    kids.forEach(function (k) { if (!hit && rx.test(cardTitle(k))) hit = k; });
+    if (hit) { root.insertBefore(node, hit); return true; }
+    return false;
+  };
+  /* put a new card next to an existing one in a two column grid (the existing card keeps its place) */
+  M.vizPair = function (root, titleRx, node) {
+    var kids = Array.prototype.slice.call(root.children), hit = null;
+    kids.forEach(function (k) { if (!hit && k.nodeName === 'SECTION' && titleRx.test(cardTitle(k))) hit = k; });
+    if (!hit) return false;
+    var g = M.h('div', { class: 'grid' });
+    root.insertBefore(g, hit); g.appendChild(hit); g.appendChild(node);
+    return true;
+  };
+  M.vizWrap = function (id, build) {
+    var pg = M.PAGES[id]; if (!pg || !pg.render || pg._viz) return; pg._viz = true;
+    var render = pg.render;
+    pg.render = function (r) {
+      var root = render.apply(this, arguments);
+      try { build(r, root); } catch (e) { console.error('viz (' + id + '):', e); }
+      return root;
+    };
+  };
+  M.vizDates = function (r) { return M.fds(r.from) + ' to ' + M.fds(r.to); };
+  /* a percent for a pill: one decimal under 10, none above */
+  M.vizPct = function (v) { return M.pct(v, v < 10 && v > 0 ? 1 : 0); };
+})();
+
+/* mazo dashboard VISUAL LAYER, part 2: charts that show FLOW (T877, 3 Nov 2026). Own plain SVG; the idea is BoardUI's, the drawing and the data are ours.
+   M.vizFunnel(steps, o)  a tapered funnel: one soft band per step, the band's height is how many, a white pill with the share of the first step, smooth ribbons between the steps, and a tile
+                          under each band with the real name, the number and how much was kept from the step before. steps: [{name, value, color?}]; o: {name, what, unit}.
+   M.vizSankey(cats, o)   a Sankey: places visitors came from -> stayed and looked around / left quickly -> bought / did not buy. Ribbons keep the colour of their place all the way, so a reader can
+                          follow Social to the orders. cats: [{name, color, visits, engaged, orders}]. Per place we store visits, visits that stayed and looked around, and orders; we do NOT store the
+                          cart and checkout steps per place, so those steps are not in this chart (the Shopping steps page has them for all visits together).
+   Both: role=img with the numbers in words, one tooltip (hover, touch, arrow keys), a legend with real names, an honest empty state, and "Show the numbers as a table" under the chart. */
+(function () {
+  var STEPCOL = [M.COLORS.maroon, M.COLORS.terra, M.COLORS.mustard, M.COLORS.teal, M.COLORS.grey, M.COLORS.green];
+
+  /* ---------------------------------------------------------------- funnel */
+  M.vizFunnel = function (steps, o) {
+    o = o || {};
+    var vals = steps.map(function (s) { return +s.value || 0; }), first = vals[0] || 0, max = Math.max.apply(null, vals.concat([0]));
+    if (!(max > 0)) return M.empty(o.empty || 'Nobody reached these steps in the dates chosen.');
+    steps.forEach(function (s, i) { s.color = s.color || STEPCOL[i % STEPCOL.length]; });
+    var share = function (i) { return first ? vals[i] / first * 100 : 0; };
+    var kept = function (i) { return i && vals[i - 1] ? vals[i] / vals[i - 1] * 100 : null; };
+    var fmtShare = function (i) { return M.pct(share(i), share(i) < 10 && share(i) > 0 ? 1 : 0); };
+    var wrap = M.h('div', { class: 'viz-wrap' }), tiles = [], items = [];
+    var aria = (o.name || 'Funnel') + ': ' + steps.map(function (s, i) { return s.name + ' ' + M.num(vals[i]) + (i ? ' (' + fmtShare(i) + ' of the first step)' : ''); }).join('; ') + '. The numbers are in the table below.';
+    var chart = M.vizChart(function (host, w) {
+      var n = steps.length, narrow = w < 520;
+      var svg, ribs = [], bands = [], pills = [], defs = M.s('defs');
+      if (narrow) {
+        /* a phone: an upright funnel, the widest step on top, each step centred under the one before */
+        var bh = 30, rg = 14, H = n * bh + (n - 1) * rg + 6, cx = w / 2, maxW = w - 8;
+        var bw = vals.map(function (v) { return Math.max(60, Math.sqrt(v / max) * maxW); });
+        svg = M.s('svg', { viewBox: '0 0 ' + w + ' ' + H, role: 'img', 'aria-label': aria }); svg.appendChild(defs);
+        for (var i = 0; i < n - 1; i++) {
+          var gid = 'fng' + Math.random().toString(36).slice(2, 8) + i, y0 = 3 + i * (bh + rg) + bh, y1 = y0 + rg;
+          defs.appendChild(M.s('linearGradient', { id: gid, x1: 0, y1: 0, x2: 0, y2: 1 }, [M.s('stop', { offset: '0', 'stop-color': steps[i].color, 'stop-opacity': '.34' }), M.s('stop', { offset: '1', 'stop-color': steps[i + 1].color, 'stop-opacity': '.34' })]));
+          var rib = M.s('path', { d: 'M' + (cx - bw[i] / 2) + ' ' + y0 + ' L' + (cx + bw[i] / 2) + ' ' + y0 + ' L' + (cx + bw[i + 1] / 2) + ' ' + y1 + ' L' + (cx - bw[i + 1] / 2) + ' ' + y1 + 'Z', fill: 'url(#' + gid + ')', class: 'mz-rib mz-ribv', style: '--d:' + (i * 110 + 120), 'aria-hidden': 'true' });
+          svg.appendChild(rib); ribs.push(rib);
+        }
+        for (var j = 0; j < n; j++) {
+          var yy = 3 + j * (bh + rg);
+          var bd = M.s('rect', { x: (cx - bw[j] / 2).toFixed(1), y: yy, width: bw[j].toFixed(1), height: bh, rx: 8, fill: steps[j].color, class: 'mz-step mz-band mz-bandv', style: '--d:' + j * 110, 'aria-hidden': 'true' }); svg.appendChild(bd); bands.push(bd);
+          var pg = M.s('g', { class: 'mz-pillg mz-step', style: '--d:' + j * 110, 'aria-hidden': 'true' }, [M.s('rect', { x: cx - 22, y: yy + bh / 2 - 10, width: 44, height: 20, rx: 10, class: 'mz-pill' }), M.s('text', { x: cx, y: yy + bh / 2 + 4, class: 'mz-pilltxt' }, j ? fmtShare(j) : '100%')]);
+          svg.appendChild(pg); pills.push(pg);
+        }
+      } else {
+        var H2 = 240, padX = 4, g = .9, colW = (w - padX * 2) / (n + (n - 1) * g), gap = colW * g, plotH = H2 - 16, cy = H2 / 2;
+        var hb = vals.map(function (v) { return Math.max(8, Math.sqrt(v / max) * plotH); });      /* square root scale: with 1,242 at the top and 7 at the bottom a true scale would draw the last bands as hairlines */
+        var X = function (i) { return padX + i * (colW + gap); };
+        svg = M.s('svg', { viewBox: '0 0 ' + w + ' ' + H2, role: 'img', 'aria-label': aria }); svg.appendChild(defs);
+        for (var i2 = 0; i2 < n - 1; i2++) {
+          var gid2 = 'fng' + Math.random().toString(36).slice(2, 8) + i2;
+          defs.appendChild(M.s('linearGradient', { id: gid2, x1: 0, y1: 0, x2: 1, y2: 0 }, [M.s('stop', { offset: '0', 'stop-color': steps[i2].color, 'stop-opacity': '.34' }), M.s('stop', { offset: '1', 'stop-color': steps[i2 + 1].color, 'stop-opacity': '.34' })]));
+          var x0 = X(i2) + colW, x1 = X(i2 + 1), xm = (x0 + x1) / 2, t0 = cy - hb[i2] / 2, b0 = cy + hb[i2] / 2, t1 = cy - hb[i2 + 1] / 2, b1 = cy + hb[i2 + 1] / 2;
+          var d = 'M' + x0 + ' ' + t0 + ' C' + xm + ' ' + t0 + ' ' + xm + ' ' + t1 + ' ' + x1 + ' ' + t1 + ' L' + x1 + ' ' + b1 + ' C' + xm + ' ' + b1 + ' ' + xm + ' ' + b0 + ' ' + x0 + ' ' + b0 + 'Z';
+          var rib2 = M.s('path', { d: d, fill: 'url(#' + gid2 + ')', class: 'mz-rib', style: '--d:' + (i2 * 110 + 120), 'aria-hidden': 'true' }); svg.appendChild(rib2); ribs.push(rib2);
+        }
+        for (var j2 = 0; j2 < n; j2++) {
+          var band = M.s('rect', { x: X(j2).toFixed(1), y: (cy - hb[j2] / 2).toFixed(1), width: colW.toFixed(1), height: hb[j2].toFixed(1), rx: Math.min(10, hb[j2] / 2, colW / 2), fill: steps[j2].color, class: 'mz-step mz-band', style: '--d:' + j2 * 110, 'aria-hidden': 'true' });
+          svg.appendChild(band); bands.push(band);
+          var pg2 = M.s('g', { class: 'mz-pillg mz-step', style: '--d:' + j2 * 110, 'aria-hidden': 'true' }, [
+            M.s('rect', { x: (X(j2) + colW / 2 - 20).toFixed(1), y: cy - 10, width: 40, height: 20, rx: 10, class: 'mz-pill' }),
+            M.s('text', { x: (X(j2) + colW / 2).toFixed(1), y: cy + 4, class: 'mz-pilltxt' }, j2 ? fmtShare(j2) : '100%')]);
+          svg.appendChild(pg2); pills.push(pg2);
+        }
+      }
+      items = steps.map(function (s, k) {
+        return { els: [bands[k], pills[k]], mark: [ribs[k - 1], ribs[k]].filter(Boolean), tile: tiles[k], tip: function () {
+          var rows = [{ k: o.unit || 'Times', v: M.num(vals[k]) }, { k: 'Of the first step', v: fmtShare(k) }];
+          if (k) rows.push({ k: 'Kept from the step before', v: kept(k) == null ? 'n/a' : (kept(k) > 100 ? 'More than the step before (repeat steps)' : M.pct(kept(k), kept(k) < 10 ? 1 : 0)) });
+          return { title: s.name, rows: rows };
+        } };
+      });
+      M.vizHover(svg, items);
+      host.appendChild(svg);
+    });
+    var tileBox = M.h('div', { class: 'viz-tiles' });
+    steps.forEach(function (s, i) {
+      var k = kept(i);
+      var t = M.h('div', { class: 'viz-tile', style: '--d:' + i * 110 }, [
+        M.h('div', { class: 'vt-n' }, [M.h('i', { style: 'background:' + s.color }), M.h('span', { text: s.name })]),
+        M.h('div', { class: 'vt-v', text: M.num(vals[i]) }),
+        M.h('div', { class: 'vt-s', text: i === 0 ? 'where everyone starts' : k == null ? '' : k > 100 ? 'more than the step before' : M.pct(k, k < 10 ? 1 : 0) + ' kept from the step before' })]);
+      tiles.push(t); tileBox.appendChild(t);
+    });
+    wrap.appendChild(chart); wrap.appendChild(tileBox);
+    if (M.vizAnimOn()) Array.prototype.forEach.call(tileBox.querySelectorAll('.vt-v'), function (v) { M.inView(v, function () { M.vizCount(v); }); });
+    if (M.tableView) wrap.appendChild(M.tableView([{ k: 'step', label: 'Step' }, { k: 'n', label: o.unit ? o.unit.charAt(0).toUpperCase() + o.unit.slice(1) : 'Times', num: true, fmt: M.num }, { k: 'of', label: 'Of the first step', num: true, fmt: function (v) { return M.pct(v, v < 10 && v > 0 ? 1 : 0); } },
+      { k: 'kept', label: 'Kept from the step before', num: true, fmt: function (v) { return v == null ? '' : v > 100 ? 'more than before' : M.pct(v, v < 10 ? 1 : 0); } }],
+      steps.map(function (s, i) { return { step: s.name, n: vals[i], of: share(i), kept: kept(i) }; }), 'Show the numbers as a table'));
+    return wrap;
+  };
+
+  /* ---------------------------------------------------------------- Sankey */
+  /* the colours follow the donut next to it: the five biggest places walk the palette (Not known is a light grey), every smaller place is the dark grey */
+  M.vizPlaceColors = function (names, valueOf) {
+    var order = names.slice().sort(function (a, b) { return valueOf(b) - valueOf(a); }), col = {}, n = 0, keep = names.length > 6 ? 5 : names.length;
+    order.forEach(function (nm, i) {
+      if (/^not known/i.test(nm)) col[nm] = '#C9C0B4';
+      else if (i >= keep) col[nm] = '#7C7368';
+      else col[nm] = M.DONUTCOL(n++);
+    });
+    return col;
+  };
+  var layout = function (nodes, links, H, nodeW, gap, minH) {
+    var cols = {}; nodes.forEach(function (nd) { (cols[nd.col] = cols[nd.col] || []).push(nd); });
+    var heightAt = function (list, sc) { return list.reduce(function (s, nd) { return s + Math.max(minH, nd.value * sc); }, 0) + gap * (list.length - 1); };
+    var scale = Infinity;
+    Object.keys(cols).forEach(function (c) {
+      var list = cols[c], lo = 0, hi = 50, k;
+      for (k = 0; k < 40; k++) { var mid = (lo + hi) / 2; if (heightAt(list, mid) > H) hi = mid; else lo = mid; }
+      scale = Math.min(scale, lo);
+    });
+    Object.keys(cols).forEach(function (c) {
+      var list = cols[c], y = (H - heightAt(list, scale)) / 2;
+      list.forEach(function (nd) { nd.h = Math.max(minH, nd.value * scale); nd.y = y; y += nd.h + gap; });
+    });
+    var byId = {}; nodes.forEach(function (nd) { byId[nd.id] = nd; nd.out = []; nd.inn = []; });
+    links.forEach(function (l) { l.s = byId[l.from]; l.t = byId[l.to]; l.s.out.push(l); l.t.inn.push(l); });
+    nodes.forEach(function (nd) {
+      nd.out.sort(function (a, b) { return a.t.y - b.t.y || a.ord - b.ord; });
+      nd.inn.sort(function (a, b) { return a.s.y - b.s.y || a.ord - b.ord; });
+      var yo = nd.y, yi = nd.y;
+      nd.out.forEach(function (l) { l.th0 = nd.value ? l.value / nd.value * nd.h : 0; l.y0 = yo; yo += l.th0; });
+      nd.inn.forEach(function (l) { l.th1 = nd.value ? l.value / nd.value * nd.h : 0; l.y1 = yi; yi += l.th1; });
+    });
+    return scale;
+  };
+  M.vizSankey = function (cats, o) {
+    o = o || {};
+    cats = cats.filter(function (c) { return c.visits > 0; }).sort(function (a, b) { return b.visits - a.visits; });
+    if (!cats.length) return M.empty(o.empty || 'No visits in the dates chosen.');
+    cats.forEach(function (c) { c.orders = Math.min(c.orders || 0, c.visits); c.eg = Math.max(Math.min(c.engaged || 0, c.visits), c.orders); });      /* a visit that bought always counts as one that stayed */
+    var tot = cats.reduce(function (a, c) { return { v: a.v + c.visits, e: a.e + c.eg, o: a.o + c.orders }; }, { v: 0, e: 0, o: 0 });
+    var wrap = M.h('div', { class: 'viz-wrap' });
+    var aria = (o.name || 'Visits to orders') + ': ' + M.num(tot.v) + ' visits, ' + M.num(tot.e) + ' stayed and looked around, ' + M.num(tot.o) + ' bought. By place: ' + cats.map(function (c) { return c.name + ' ' + M.num(c.visits) + ' visits, ' + M.num(c.orders) + ' orders'; }).join('; ') + '. The numbers are in the table below.';
+    var chart = M.vizChart(function (host, w) {
+      var three = w >= 560, nodeW = 12, H = 300, gap = cats.length > 6 ? 10 : 14, minH = 6, narrow = w < 560;
+      var LW = narrow ? 84 : 118, RW = narrow ? 92 : 128, x0 = LW, x2 = w - RW - nodeW, xm = (x0 + x2) / 2;
+      var nodes = [], links = [], id = function (a, b) { return a + '|' + b; };
+      cats.forEach(function (c, i) { nodes.push({ id: 'c:' + c.name, col: 0, value: c.visits, color: c.color, label: c.name, cat: c, ord: i }); });
+      var sum = function (f) { return cats.reduce(function (a, c) { return a + f(c); }, 0); };
+      var mkL = function (from, to, value, c, ord) { if (value > 0) links.push({ from: from, to: to, value: value, color: c.color, cat: c, ord: ord }); };
+      if (three) {
+        nodes.push({ id: 'eng', col: 1, value: tot.e, color: M.COLORS.ink, label: 'Stayed and looked around' }, { id: 'left', col: 1, value: tot.v - tot.e, color: M.COLORS.grey, label: 'Left quickly' });
+        nodes.push({ id: 'buy', col: 2, value: tot.o, color: M.COLORS.green, label: 'Bought' }, { id: 'nobuy', col: 2, value: tot.e - tot.o, color: M.COLORS.grey, label: 'Did not buy' });
+        cats.forEach(function (c, i) { mkL('c:' + c.name, 'eng', c.eg, c, i); mkL('c:' + c.name, 'left', c.visits - c.eg, c, i); mkL('eng', 'buy', c.orders, c, i); mkL('eng', 'nobuy', c.eg - c.orders, c, i); });
+      } else {
+        nodes.push({ id: 'left', col: 1, value: tot.v - tot.e, color: M.COLORS.grey, label: 'Left quickly' }, { id: 'nobuy', col: 1, value: tot.e - tot.o, color: M.COLORS.ink, label: 'Looked, did not buy' }, { id: 'buy', col: 1, value: tot.o, color: M.COLORS.green, label: 'Bought' });
+        cats.forEach(function (c, i) { mkL('c:' + c.name, 'left', c.visits - c.eg, c, i); mkL('c:' + c.name, 'nobuy', c.eg - c.orders, c, i); mkL('c:' + c.name, 'buy', c.orders, c, i); });
+      }
+      nodes.forEach(function (nd) { if (nd.value < 0) nd.value = 0; });
+      layout(nodes, links, H, nodeW, gap, minH);
+      var colX = function (col) { return col === 0 ? x0 - nodeW : three ? (col === 1 ? xm - nodeW / 2 : x2) : x2; };
+      var svg = M.s('svg', { viewBox: '0 0 ' + w + ' ' + (H + 8), role: 'img', 'aria-label': aria });
+      var ribEls = {}, ndEls = {}, i;
+      links.forEach(function (l, k) {
+        var xa = colX(l.s.col) + nodeW, xb = colX(l.t.col), xc = (xa + xb) / 2;
+        var d = 'M' + xa + ' ' + l.y0 + ' C' + xc + ' ' + l.y0 + ' ' + xc + ' ' + l.y1 + ' ' + xb + ' ' + l.y1 + ' L' + xb + ' ' + (l.y1 + l.th1) + ' C' + xc + ' ' + (l.y1 + l.th1) + ' ' + xc + ' ' + (l.y0 + l.th0) + ' ' + xa + ' ' + (l.y0 + l.th0) + 'Z';
+        var p = M.s('path', { d: d, fill: l.color, 'fill-opacity': '.36', class: 'mz-rib', style: '--d:' + (l.s.col * 300 + 140) + ';--i:' + k, 'aria-hidden': 'true' });
+        svg.appendChild(p); l.el = p; (ribEls[l.cat.name] = ribEls[l.cat.name] || []).push(p);
+      });
+      nodes.forEach(function (nd) {
+        var r = M.s('rect', { x: colX(nd.col), y: nd.y.toFixed(1), width: nodeW, height: nd.h.toFixed(1), rx: 3, fill: nd.color, class: 'mz-nd mz-step', style: '--d:' + nd.col * 300, 'aria-hidden': 'true' });
+        svg.appendChild(r); ndEls[nd.id] = r;
+        var right = nd.col > 0, tx = right ? colX(nd.col) + nodeW + 8 : colX(0) - 8, mid = nd.y + nd.h / 2;
+        var nm = nd.label, big = nd.h >= 30 || right;
+        var tn = M.s('text', { x: tx, y: (big ? mid - 1 : mid + 4).toFixed(1), 'text-anchor': right ? 'start' : 'end', class: 'mz-lab mz-halo' }, nm + (big ? '' : '  ' + M.num(nd.value)));
+        svg.appendChild(tn);
+        if (big) svg.appendChild(M.s('text', { x: tx, y: (mid + 13).toFixed(1), 'text-anchor': right ? 'start' : 'end', class: 'mz-lab sub mz-halo' }, M.num(nd.value) + (nd.col === 0 ? ' visits' : nd.id === 'buy' ? (nd.value === 1 ? ' order' : ' orders') : ' visits')));
+      });
+      var catItems = cats.map(function (c) {
+        return { els: [ndEls['c:' + c.name]].concat(ribEls[c.name] || []), mark: [], tip: function () {
+          return { title: c.name, rows: [{ k: 'Visits', v: M.num(c.visits) }, { k: 'Share of all visits', v: M.pct(c.visits / tot.v * 100, c.visits / tot.v * 100 < 10 ? 1 : 0) }, { k: 'Stayed and looked around', v: M.num(c.engaged) + ' (' + M.pct(c.engaged / c.visits * 100, 0) + ')' }, { k: 'Orders', v: M.num(c.orders) }] };
+        } };
+      });
+      var nodeItems = nodes.filter(function (nd) { return nd.col > 0; }).map(function (nd) {
+        return { els: [ndEls[nd.id]], mark: nd.inn.concat(nd.out).map(function (l) { return l.el; }), tip: function () {
+          var rows = [{ k: nd.id === 'buy' ? 'Orders' : 'Visits', v: M.num(nd.value) }];
+          var byCat = {}; nd.inn.forEach(function (l) { byCat[l.cat.name] = (byCat[l.cat.name] || 0) + l.value; });
+          Object.keys(byCat).sort(function (a, b) { return byCat[b] - byCat[a]; }).slice(0, 4).forEach(function (k) { rows.push({ k: 'From ' + k, v: M.num(byCat[k]) }); });
+          return { title: nd.label, rows: rows };
+        } };
+      });
+      M.vizHover(svg, catItems.concat(nodeItems));
+      host.appendChild(svg);
+    });
+    wrap.appendChild(chart);
+    wrap.appendChild(M.h('p', { class: 'small muted viz-foot', text: 'Per place we keep visits, visits that stayed and looked around, and orders. The cart and checkout steps are not kept per place, so they are not drawn here: the Shopping steps page has them for all visits together.' }));
+    if (M.tableView) wrap.appendChild(M.tableView([{ k: 'name', label: 'Where from' }, { k: 'visits', label: 'Visits', num: true, fmt: M.num }, { k: 'engaged', label: 'Stayed and looked around', num: true, fmt: M.num }, { k: 'orders', label: 'Orders', num: true, fmt: M.num },
+      { k: 'share', label: 'Share of visits', num: true, fmt: function (v) { return M.pct(v, v < 10 ? 1 : 0); } }], cats.map(function (c) { return { name: c.name, visits: c.visits, engaged: c.engaged, orders: c.orders, share: c.visits / tot.v * 100 }; }), 'Show the numbers as a table'));
+    return wrap;
+  };
+})();
+
+/* mazo dashboard VISUAL LAYER, part 3: charts that show SHAPE and PROGRESS (T877, 3 Nov 2026). Own plain SVG, colours from the dashboard palette only.
+   M.vizRadar(axes, series, o)  a spider chart. axes: [name]; series: [{name, color, vals: [0..1 each, already scaled], raw: [text shown in the tip]}]. Rings at 25, 50, 75 and 100 percent.
+   M.vizGauge(parts, o)         a half circle (speedometer) of stacked parts. parts: [{label, value, color}]; o: {centre, cap, unit, name}. The big figure in the middle is o.centre.
+   M.vizRing(value, max, o)     one progress ring. o: {color, sub, name, fmt, unit}. Over 100 percent the ring is full and the figure still says the real percent.
+   Same rules as the other charts: role=img with the numbers in words, one tooltip (hover, touch, arrow keys), a legend with real names, the numbers as a table, an honest empty state. */
+(function () {
+  var rad = function (deg) { return deg * Math.PI / 180; };
+  var wrapWords = function (s, n) {
+    var out = [], cur = '';
+    String(s).split(' ').forEach(function (w) { if (cur && (cur + ' ' + w).length > n) { out.push(cur); cur = w; } else cur = cur ? cur + ' ' + w : w; });
+    if (cur) out.push(cur);
+    return out;
+  };
+
+  /* ---------------------------------------------------------------- radar */
+  M.vizRadar = function (axes, series, o) {
+    o = o || {};
+    var n = axes.length;
+    if (n < 3 || !series.length) return M.empty(o.empty || 'Not enough to compare yet.');
+    var wrap = M.h('div', { class: 'viz-wrap' }), items = [];
+    var aria = (o.name || 'Profile') + ': ' + series.map(function (s) { return s.name + ' (' + axes.map(function (a, i) { return a + ' ' + (s.raw ? s.raw[i] : M.pct((s.vals[i] || 0) * 100, 0)); }).join(', ') + ')'; }).join('; ') + '. The numbers are in the table below.';
+    var chart = M.vizChart(function (host, w) {
+      var W = 360, H = 330, cx = W / 2, cy = 160, R = 104;
+      var svg = M.s('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': aria, style: 'max-width:' + W + 'px;margin:0 auto' });
+      var ang = function (i) { return -Math.PI / 2 + i * 2 * Math.PI / n; };
+      var pt = function (i, f) { return [cx + Math.cos(ang(i)) * R * f, cy + Math.sin(ang(i)) * R * f]; };
+      [0.25, 0.5, 0.75, 1].forEach(function (f) {
+        svg.appendChild(M.s('polygon', { points: axes.map(function (_, i) { return pt(i, f).map(function (v) { return v.toFixed(1); }).join(','); }).join(' '), fill: f === 1 ? 'rgba(94,18,4,.025)' : 'none', stroke: M.COLORS.grid, 'stroke-width': 1 }));
+      });
+      axes.forEach(function (a, i) {
+        var e = pt(i, 1); svg.appendChild(M.s('line', { x1: cx, y1: cy, x2: e[0].toFixed(1), y2: e[1].toFixed(1), stroke: M.COLORS.grid, 'stroke-width': 1 }));
+        var lp = pt(i, 1.2), c = Math.cos(ang(i)), anchor = Math.abs(c) < 0.25 ? 'middle' : c > 0 ? 'start' : 'end', lines = wrapWords(a, 15);
+        var t = M.s('text', { x: lp[0].toFixed(1), y: (lp[1] + 4 - (lines.length - 1) * 6).toFixed(1), 'text-anchor': anchor, class: 'mz-lab' });
+        lines.forEach(function (ln, k) { t.appendChild(M.s('tspan', { x: lp[0].toFixed(1), dy: k ? 13 : 0 }, ln)); });
+        svg.appendChild(t);
+      });
+      var g = M.s('g', { class: 'mz-radar' }); svg.appendChild(g);
+      series.forEach(function (s, si) {
+        var pts = s.vals.map(function (v, i) { return pt(i, Math.max(0.02, Math.min(1, v || 0))); });
+        var poly = M.s('polygon', { points: pts.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' '), fill: s.color, 'fill-opacity': '.16', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', class: 'mz-pt', style: 'cursor:pointer' });
+        g.appendChild(poly);
+        var dots = pts.map(function (p) { var d = M.s('circle', { cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 3.6, fill: s.color, stroke: '#fff', 'stroke-width': 1.5, class: 'mz-pt', 'pointer-events': 'none' }); g.appendChild(d); return d; });
+        items.push({ els: [poly], mark: dots, tip: function () { return { title: s.name, rows: axes.map(function (a, i) { return { k: a, v: s.raw ? s.raw[i] : M.pct((s.vals[i] || 0) * 100, 0) }; }) }; } });
+      });
+      M.vizHover(svg, items);
+      host.appendChild(svg);
+      host.appendChild(M.legend(series.map(function (s) { return { name: s.name, color: s.color }; })));
+    });
+    wrap.appendChild(chart);
+    if (o.note) wrap.appendChild(M.h('p', { class: 'small muted viz-foot', text: o.note }));
+    if (M.tableView) wrap.appendChild(M.tableView([{ k: 'axis', label: o.axisHead || 'Measure' }].concat(series.map(function (s, i) { return { k: 's' + i, label: s.name, num: true }; })),
+      axes.map(function (a, i) { var r = { axis: a }; series.forEach(function (s, k) { r['s' + k] = s.raw ? s.raw[i] : M.pct((s.vals[i] || 0) * 100, 0); }); return r; }), 'Show the numbers as a table'));
+    return wrap;
+  };
+
+  /* ---------------------------------------------------------------- half gauge */
+  M.vizGauge = function (parts, o) {
+    o = o || {};
+    var ps = parts.filter(function (p) { return +p.value > 0; }), total = parts.reduce(function (a, p) { return a + (+p.value || 0); }, 0);
+    if (!ps.length || total <= 0) return M.empty(o.empty || 'Nothing to show yet.');
+    var fmt = o.fmt || M.num, wrap = M.h('div', { class: 'gauge' }), tiles = [], items = [];
+    var aria = (o.name || 'Gauge') + ': ' + parts.map(function (p) { return p.label + ' ' + fmt(p.value); }).join(', ') + ' (' + fmt(total) + ' ' + (o.unit || 'in all') + ').';
+    var chart = M.vizChart(function (host, w) {
+      var W = 260, H = 150, cx = W / 2, cy = 128, r = 96, sw = 26, gap = ps.length > 1 ? 0.03 : 0, a0 = Math.PI;
+      var svg = M.s('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': aria });
+      var arc = function (a, b) { return 'M' + (cx + r * Math.cos(a)).toFixed(2) + ' ' + (cy + r * Math.sin(a)).toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + (b - a > Math.PI ? 1 : 0) + ' 1 ' + (cx + r * Math.cos(b)).toFixed(2) + ' ' + (cy + r * Math.sin(b)).toFixed(2); };
+      svg.appendChild(M.s('path', { d: arc(Math.PI, 2 * Math.PI), fill: 'none', stroke: 'var(--fill)', 'stroke-width': sw, 'aria-hidden': 'true' }));
+      var els = {};
+      ps.forEach(function (p, i) {
+        var span = (+p.value / total) * Math.PI, s = a0 + (i ? gap / 2 : 0), e = a0 + span - (i < ps.length - 1 ? gap / 2 : 0);
+        var path = M.s('path', { d: arc(s, Math.max(s + 0.001, e)), fill: 'none', stroke: p.color, 'stroke-width': sw, pathLength: 1, class: 'mz-arc dn-seg mz-pt', style: '--d:' + i * 140, 'aria-hidden': 'true' });
+        svg.appendChild(path); els[p.label] = path; a0 += span;
+      });
+      var big = String(o.centre != null ? o.centre : fmt(total));
+      svg.appendChild(M.s('text', { x: cx, y: cy - 22, class: 'mz-ring-c', style: 'font-size:' + (big.length > 5 ? 26 : 38) + 'px' }, big));
+      svg.appendChild(M.s('text', { x: cx, y: cy - 2, class: 'mz-ring-s' }, o.cap || ''));
+      svg.appendChild(M.s('text', { x: cx - r, y: H - 2, 'text-anchor': 'middle', class: 'mz-lab sub' }, '0'));
+      svg.appendChild(M.s('text', { x: cx + r, y: H - 2, 'text-anchor': 'middle', class: 'mz-lab sub' }, fmt(total)));
+      items = ps.map(function (p, i) { return { els: [els[p.label]], tile: tiles[parts.indexOf(p)], tip: function () { return { title: p.label, rows: [{ k: o.unit ? o.unit.charAt(0).toUpperCase() + o.unit.slice(1) : 'Amount', v: fmt(p.value) }, { k: 'Share of the whole', v: M.pct(p.value / total * 100, 0) }].concat(p.note ? [{ k: 'About', v: p.note }] : []) }; } }; });
+      M.vizHover(svg, items);
+      host.appendChild(svg);
+    });
+    var legend = M.h('ul', { class: 'dn-legend' });
+    parts.forEach(function (p) {
+      var li = M.h('li', null, [M.h('i', { style: 'background:' + p.color }), M.h('span', { text: p.label }), M.h('b', { text: fmt(p.value) }), M.h('em', { text: M.pct(p.value / total * 100, 0) })]);
+      tiles.push(li); legend.appendChild(li);
+    });
+    wrap.appendChild(chart); wrap.appendChild(legend);
+    var box = M.h('div', null, [wrap]);
+    if (M.tableView) box.appendChild(M.tableView([{ k: 'label', label: o.what || 'Part' }, { k: 'v', label: o.unit ? o.unit.charAt(0).toUpperCase() + o.unit.slice(1) : 'Amount', num: true, fmt: fmt }, { k: 'share', label: 'Share', num: true, fmt: function (v) { return M.pct(v, 0); } }],
+      parts.map(function (p) { return { label: p.label, v: p.value, share: p.value / total * 100 }; }), 'Show the numbers as a table'));
+    return box;
+  };
+
+  /* ---------------------------------------------------------------- progress ring */
+  M.vizRing = function (value, max, o) {
+    o = o || {};
+    if (!(max > 0) || value == null || isNaN(value)) return M.empty(o.empty || 'No goal set yet.');
+    var f = Math.max(0, Math.min(1, value / max)), pctTxt = o.centre || M.pct(value / max * 100, 0), fmt = o.fmt || M.num, color = o.color || M.COLORS.maroon;
+    var box = M.h('div', { class: 'ring-box' });
+    var chart = M.vizChart(function (host, w) {
+      var S = 160, c = S / 2, r = 62, sw = 16;
+      var svg = M.s('svg', { viewBox: '0 0 ' + S + ' ' + S, role: 'img', 'aria-label': (o.name || 'Progress') + ': ' + fmt(value) + ' of ' + fmt(max) + ' (' + pctTxt + ').' });
+      svg.appendChild(M.s('circle', { cx: c, cy: c, r: r, fill: 'none', stroke: 'var(--fill)', 'stroke-width': sw }));
+      if (f > 0) svg.appendChild(M.s('path', { d: 'M' + c + ' ' + (c - r) + ' A' + r + ' ' + r + ' 0 1 1 ' + c + ' ' + (c + r) + ' A' + r + ' ' + r + ' 0 1 1 ' + c + ' ' + (c - r), fill: 'none', stroke: color, 'stroke-width': sw, 'stroke-linecap': 'round', pathLength: 1, 'stroke-dasharray': f.toFixed(4) + ' 1', class: 'mz-ringfill mz-pt', style: '--f:' + f.toFixed(4) }));
+      svg.appendChild(M.s('text', { x: c, y: c + 4, class: 'mz-ring-c', style: 'font-size:' + (pctTxt.length > 4 ? 24 : 30) + 'px' }, pctTxt));
+      svg.appendChild(M.s('text', { x: c, y: c + 22, class: 'mz-ring-s' }, o.sub || ''));
+      M.vizHover(svg, [{ els: [svg.querySelector('.mz-ringfill') || svg.firstChild], tip: function () { return { title: o.name || 'Progress', rows: [{ k: o.valueLabel || 'So far', v: fmt(value) }, { k: o.maxLabel || 'Goal', v: fmt(max) }, { k: 'Of the goal', v: M.pct(value / max * 100, 0) }] }; } }]);
+      host.appendChild(svg);
+    });
+    box.appendChild(chart);
+    return box;
+  };
+})();
+
+/* mazo dashboard VISUAL LAYER, part 4: charts over TIME (T877, 3 Nov 2026). Drawn in a chart frame (M.chart), so they get the card tools, full screen and the picture export like every other chart.
+   M.vizArea(host, w, o)   a smooth line with a soft gradient under it. o: {buckets, mode, title, h, yfmt, series: [{name, values, color, fmt}], prev: {name, values}}. Used for a running total, where
+                           the filled shape reads as "how much has built up".
+   M.vizCombo(host, w, o)  columns on the LEFT scale and a line on the RIGHT scale, for two measures that have different units (money and a count). Both scales are written on the chart in the
+                           colour of the thing they measure, and the legend says which side is which. o: {buckets, mode, title, h, bars: {name, values, color, fmt, yfmt}, line: {name, values, color, fmt, yfmt, int}}.
+   Both use the shared column hover (M.colHover): a dashed line down the day pointed at, one tooltip, arrow keys, a click or Enter that opens the same facts. */
+(function () {
+  var curve = function (pts) {
+    var d = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
+    for (var i = 1; i < pts.length; i++) { var mx = (pts[i - 1][0] + pts[i][0]) / 2; d += ' C' + mx.toFixed(1) + ' ' + pts[i - 1][1].toFixed(1) + ' ' + mx.toFixed(1) + ' ' + pts[i][1].toFixed(1) + ' ' + pts[i][0].toFixed(1) + ' ' + pts[i][1].toFixed(1); }
+    return d;
+  };
+  var xLabels = function (svg, o, X, pw, H) {
+    var n = o.buckets.length, step = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / 78))));
+    for (var t = 0; t < n; t += step) svg.appendChild(M.s('text', { x: X(t), y: H - 8, 'text-anchor': t === 0 ? 'start' : 'middle' }, M.axisLabel(o.buckets[t], o.buckets[0].from, o.buckets[n - 1].from)));
+  };
+  var gid = 0;
+
+  /* ---------------------------------------------------------------- gradient area */
+  M.vizArea = function (host, w, o) {
+    var n = o.buckets.length, H = M.bigH(host, o.h || 230), L = 52, R = 12, T = 12, B = 26, pw = w - L - R, ph = H - T - B;
+    var all = []; o.series.forEach(function (s) { all = all.concat(s.values); }); if (o.prev) all = all.concat(o.prev.values);
+    var raw = Math.max.apply(null, all.concat([0]));
+    if (!n || raw <= 0) { host.appendChild(M.empty(o.empty || 'No activity in this range yet.')); return; }
+    var ymax = M.nice(raw), X = function (i) { return n === 1 ? L + pw / 2 : L + i / (n - 1) * pw; }, Y = function (v) { return T + ph - v / ymax * ph; };
+    var svg = M.s('svg', { viewBox: '0 0 ' + w + ' ' + H, role: 'img', 'aria-label': (o.title || 'Running total') + ': ' + o.series.map(function (s) { return s.name + ' ends at ' + (s.fmt || M.num)(s.values[n - 1]); }).join('; ') + '. Use the left and right arrow keys to read each day. The numbers are in the table below.' });
+    for (var g = 0; g <= 4; g++) { var gy = Y(ymax * g / 4); svg.appendChild(M.s('line', { x1: L, x2: w - R, y1: gy, y2: gy, class: g === 0 ? 'ax' : 'gl' })); svg.appendChild(M.s('text', { x: L - 6, y: gy + 4, 'text-anchor': 'end' }, (o.yfmt || M.short)(ymax * g / 4))); }
+    var defs = M.s('defs'); svg.appendChild(defs);
+    if (o.prev) svg.appendChild(M.s('path', { d: curve(o.prev.values.map(function (v, i) { return [X(i), Y(v)]; })), fill: 'none', stroke: M.COLORS.grey, 'stroke-width': 2, 'stroke-dasharray': '5 4', 'stroke-linejoin': 'round' }));
+    o.series.forEach(function (s, si) {
+      var id = 'ar' + (++gid), pts = s.values.map(function (v, i) { return [X(i), Y(v)]; });
+      defs.appendChild(M.s('linearGradient', { id: id, x1: 0, y1: 0, x2: 0, y2: 1 }, [M.s('stop', { offset: '0', 'stop-color': s.color, 'stop-opacity': '.34' }), M.s('stop', { offset: '1', 'stop-color': s.color, 'stop-opacity': '.02' })]));
+      var line = n > 1 ? curve(pts) : 'M' + (pts[0][0] - 8) + ' ' + pts[0][1] + ' L' + (pts[0][0] + 8) + ' ' + pts[0][1];
+      svg.appendChild(M.s('path', { d: line + ' L' + pts[n - 1][0].toFixed(1) + ' ' + (T + ph) + ' L' + pts[0][0].toFixed(1) + ' ' + (T + ph) + 'Z', fill: 'url(#' + id + ')', class: 'mz-area', style: '--d:' + si * 120 }));
+      svg.appendChild(M.s('path', { d: line, fill: 'none', stroke: s.color, 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', pathLength: 1, class: 'ln-draw' }));
+      var last = pts[n - 1]; svg.appendChild(M.s('circle', { cx: last[0].toFixed(1), cy: last[1].toFixed(1), r: 4.5, fill: s.color, stroke: '#fff', 'stroke-width': 2 }));
+    });
+    xLabels(svg, o, X, pw, H);
+    var half = n > 1 ? pw / (n - 1) / 2 : pw / 2;
+    M.colHover(svg, w, { n: n, L: L - half, T: T, pw: pw + half * 2, ph: ph, X: X, tip: function (i) {
+      var b = o.buckets[i], rows = o.series.map(function (s) { return { k: s.name, v: (s.fmt || M.num)(s.values[i]) }; });
+      if (o.prev) rows.push({ k: o.prev.name, v: (o.series[0].fmt || M.num)(o.prev.values[i]) });
+      if (o.extra) o.extra(i).forEach(function (r) { rows.push(r); });
+      return { title: b.title || (b.from === b.to ? M.fd(b.from) : M.fd(b.from) + ' to ' + M.fd(b.to)), rows: rows };
+    } });
+    host.appendChild(svg);
+    host.appendChild(M.legend(o.series.map(function (s) { return { name: s.name, color: s.color }; }).concat(o.prev ? [{ name: o.prev.name + ' (dashed)', color: M.COLORS.grey, line: true }] : [])));
+  };
+
+  /* ---------------------------------------------------------------- columns on the left scale, line on the right scale */
+  M.vizCombo = function (host, w, o) {
+    var n = o.buckets.length, H = M.bigH(host, o.h || 240), L = 54, R = 44, T = 26, B = 26, pw = w - L - R, ph = H - T - B, b = o.bars, ln = o.line;
+    var braw = Math.max.apply(null, b.values.concat([0])), lraw = Math.max.apply(null, ln.values.concat([0]));
+    if (!n || (braw <= 0 && lraw <= 0)) { host.appendChild(M.empty(o.empty || 'No activity in this range yet.')); return; }
+    var lmax = M.nice(braw || 1), rmax = ln.int ? Math.max(4, Math.ceil(lraw / 4) * 4) : M.niceTop(lraw || 1);
+    var X = function (i) { return L + (i + 0.5) / n * pw; }, YL = function (v) { return T + ph - v / lmax * ph; }, YR = function (v) { return T + ph - v / rmax * ph; }, bw = Math.max(2, Math.min(36, pw / n * 0.62));
+    var svg = M.s('svg', { viewBox: '0 0 ' + w + ' ' + H, role: 'img', 'aria-label': (o.title || 'Two measures') + ', ' + n + ' ' + (o.mode || 'day') + 's. Columns are ' + b.name + ' on the left scale, the line is ' + ln.name + ' on the right scale. Use the left and right arrow keys to read each one. The numbers are in the table below.' });
+    for (var g = 0; g <= 4; g++) {
+      var gy = T + ph - ph * g / 4;
+      svg.appendChild(M.s('line', { x1: L, x2: w - R, y1: gy, y2: gy, class: g === 0 ? 'ax' : 'gl' }));
+      svg.appendChild(M.s('text', { x: L - 6, y: gy + 4, 'text-anchor': 'end', class: 'combo-axis-l' }, (b.yfmt || M.short)(lmax * g / 4)));
+      svg.appendChild(M.s('text', { x: w - R + 6, y: gy + 4, 'text-anchor': 'start', class: 'combo-axis-r' }, (ln.yfmt || M.short)(rmax * g / 4)));
+    }
+    svg.appendChild(M.s('text', { x: L - 6, y: 12, 'text-anchor': 'end', class: 'combo-axis-l strong' }, b.axis || b.name));
+    svg.appendChild(M.s('text', { x: w - R + 6, y: 12, 'text-anchor': 'start', class: 'combo-axis-r strong' }, ln.axis || ln.name));
+    b.values.forEach(function (v, i) {
+      if (!v) return;
+      var y = YL(v), h = Math.max(1, T + ph - y);
+      svg.appendChild(M.s('rect', { x: (X(i) - bw / 2).toFixed(1), y: y.toFixed(1), width: bw.toFixed(1), height: h.toFixed(1), fill: b.color, 'fill-opacity': '.9', rx: bw > 6 ? 3 : 1, class: n <= 120 ? 'bar' : null, style: '--d:' + Math.min(i * 22, 900) }));
+    });
+    var pts = ln.values.map(function (v, i) { return [X(i), YR(v)]; });
+    var d = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join('');
+    svg.appendChild(M.s('path', { d: d, fill: 'none', stroke: ln.color, 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', pathLength: 1, class: 'ln-draw' }));
+    if (n <= 45) pts.forEach(function (p, i) { if (ln.values[i]) svg.appendChild(M.s('circle', { cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 3.4, fill: ln.color, stroke: '#fff', 'stroke-width': 1.8 })); });
+    xLabels(svg, o, X, pw, H);
+    M.colHover(svg, w, { n: n, L: L, T: T, pw: pw, ph: ph, X: X, tip: function (i) {
+      var bk = o.buckets[i];
+      return { title: bk.title || (bk.from === bk.to ? M.fd(bk.from) : M.fd(bk.from) + ' to ' + M.fd(bk.to)), rows: [{ k: b.name, v: (b.fmt || M.num)(b.values[i]) }, { k: ln.name, v: (ln.fmt || M.num)(ln.values[i]) }] };
+    } });
+    host.appendChild(svg);
+    host.appendChild(M.legend([{ name: b.name + ' (left scale)', color: b.color }, { name: ln.name + ' (right scale)', color: ln.color, line: true }]));
+  };
+})();
+
+/* mazo dashboard VISUAL LAYER, part 5: where each new chart goes (T877, 3 Nov 2026). Every chart is added to its page by wrapping the page's render function (the same way the donuts are in
+   dashboard_35_pies.js), so the page files stay as they are. A chart is drawn only when its data exists; when it does not, nothing is drawn (never an empty frame).
+   Page by page (the full list, with the charts that were rejected and why, is docs/reports/viz-choices-2026-11-03.md):
+     Overview        gradient area "Sales built up" (fills the empty half of the charts grid) | a progress ring inside The goal | sparklines in the headline cards (the page already passes the series)
+     Shopping steps  tapered funnel of the six steps (all devices, or the chosen device) | sparklines for Visits and Viewed a product
+     Channels        Sankey (place -> stayed and looked around -> bought) beside a radar of the biggest places | columns (visits) with a line (orders) on two labelled scales | sparklines
+     Sizes           radar of the size mix: what sold against what is in stock, next to the donut
+     Products        sparklines in the headline cards
+     Team scorecard  half gauge of the jobs: on target, close, needs work, no data yet
+     Shipping        progress ring of the days a parcel took against the promise (only when parcels have been delivered)
+     Email           gradient area of the list over weeks (only from four weekly pictures on) */
+(function () {
+  var COL = M.COLORS;
+
+  /* a headline card by its label, for the pages whose own code does not pass a series */
+  var tile = function (root, label) {
+    var hit = null;
+    Array.prototype.forEach.call(root.querySelectorAll('.kpis .kpi'), function (k) { var l = k.querySelector('.l'); if (!hit && l && l.textContent.trim().indexOf(label) === 0) hit = k; });
+    return hit;
+  };
+  var spark = function (root, label, values) { var k = tile(root, label); if (k) M.vizAttachSpark(k, values, label); };
+
+  /* ---------------------------------------------------------------- Overview */
+  M.vizWrap('overview', function (r, root) {
+    var bs = M.basis(), D = M.defs(bs.b), buckets = M.buckets(r.from, r.to, r.mode), cmp = M.cmpOn(r);
+    var sales = D[0];
+    var grid = root.querySelector(':scope > .grid.wide');
+    if (sales && sales.num && !sales.na && grid && buckets.length > 2) {
+      var cum = function (a) { var t = 0; return a.map(function (v) { t += v || 0; return t; }); };
+      var vals = M.defSeries(sales, buckets), run = cum(vals), pb = cmp ? M.prevBuckets(buckets, r) : null, prev = pb ? cum(M.defSeries(sales, pb)) : null;
+      if (run[run.length - 1] > 0) {
+        var rows = buckets.map(function (b, i) { return { label: b.label, v: vals[i], run: run[i], _from: b.from, _to: b.to }; });
+        grid.appendChild(M.vizCard('Sales built up so far', 'The money added up from the first ' + r.mode + ' to each ' + r.mode + ', ' + M.vizDates(r) + '. The line only goes up; a steeper stretch is a better stretch. The dashed line is the same running total for the period just before, when Compare is on.', [
+          M.vizChart(function (h, w) {
+            M.vizArea(h, w, { buckets: buckets, mode: r.mode, title: 'Net sales built up', yfmt: function (v) { return 'Rs. ' + M.short(v); }, series: [{ name: 'Net sales so far', values: run, color: COL.maroon, fmt: M.inr }],
+              prev: prev ? { name: 'Period before', values: prev } : null, extra: function (i) { return [{ k: 'That ' + r.mode, v: M.inr(vals[i]) }]; } });
+          }),
+          M.tableView([{ k: 'label', label: 'Period' }, { k: 'v', label: 'Net sales that ' + r.mode, num: true, fmt: M.inr }, { k: 'run', label: 'Built up so far', num: true, fmt: M.inr }], rows)]));
+      }
+    }
+    Array.prototype.forEach.call(root.children, function (c) {
+      if (c.nodeName !== 'SECTION' || !/^The goal/.test(M.vizTitle(c))) return;
+      var kp = c.querySelector('.kpis'), gi = M.goalInfo;
+      if (!kp || !gi || !(gi.goal > 0) || c.querySelector('.goal-split')) return;
+      var split = M.h('div', { class: 'goal-split' });
+      kp.parentNode.insertBefore(split, kp);
+      split.appendChild(M.vizRing(gi.now, gi.goal, { name: 'Orders against the goal', sub: 'of the goal', color: COL.maroon, valueLabel: 'Orders in the last 28 days', maxLabel: 'Goal', fmt: M.num }));
+      split.appendChild(kp);
+    });
+  });
+
+  /* ---------------------------------------------------------------- Shopping steps */
+  M.vizWrap('funnel', function (r, root) {
+    var s = M.state, rows = M.rowsIn('funnel_device_daily', r.from, r.to);
+    if (!rows.length) return;
+    var cur = {}; M.STEPS.forEach(function (st) { cur[st[0]] = 0; });
+    rows.forEach(function (x) { if (s.device && x.device !== s.device) return; M.STEPS.forEach(function (st) { cur[st[0]] += +x[st[0]] || 0; }); });
+    if (!(cur.view_item > 0)) return;
+    var steps = M.STEPS.map(function (st) { return { name: st[1], value: cur[st[0]] }; });
+    var card = M.vizCard('The path from looking to buying' + (s.device ? ', ' + s.device : ''), 'The six steps drawn as a funnel: the wider the band, the more people reached it. The white pill is the share of the people who viewed a product. Band height is drawn on a square root scale so the small steps stay visible; the numbers under each band are exact. A step can be larger than the one before it, because the same person can repeat a step. ' + M.vizDates(r) + '.', [
+      M.vizFunnel(steps, { name: 'Shopping steps', unit: 'times' })]);
+    /* the one sentence that answers "where do they leave" comes first, then the picture of it */
+    var leaks = Array.prototype.filter.call(root.children, function (c) { return c.classList && c.classList.contains('fn-leak'); }), k = null;
+    Array.prototype.forEach.call(root.children, function (c) { if (c.classList && c.classList.contains('kpis')) k = c; });
+    var at = k;
+    leaks.forEach(function (p) { root.insertBefore(p, at.nextSibling); at = p; });
+    root.insertBefore(card, at.nextSibling);
+  });
+
+  /* ---------------------------------------------------------------- Channels */
+  M.vizWrap('channels', function (r, root) {
+    var rows = M.channelRows(r, true), by = {};
+    rows.forEach(function (x) {
+      var o = by[x.category] || (by[x.category] = { name: x.category, visits: 0, engaged: 0, carts: 0, orders: 0, revenue: 0 });
+      o.visits += x.visits; o.engaged += x.engaged; o.carts += x.carts; o.orders += x.orders; o.revenue += x.revenue;
+    });
+    var cats = Object.keys(by).map(function (k) { return by[k]; }).filter(function (c) { return c.visits > 0; });
+    if (cats.length) {
+      var colors = M.vizPlaceColors(cats.map(function (c) { return c.name; }), function (n) { return by[n].visits; });
+      cats.forEach(function (c) { c.color = colors[c.name]; });
+      var sk = M.vizCard('From the place they came from to an order', 'Each ribbon is a group of visits. It starts at the place the visitors came from, passes through "stayed and looked around" or "left quickly", and ends at "bought" or "did not buy". A ribbon keeps its colour all the way, so you can follow Social (or any place) to its orders. ' + M.vizDates(r) + '.', [
+        M.vizSankey(cats, { name: 'Visits to orders by place' })]);
+      /* the radar compares the biggest places that have enough visits to say anything */
+      var big = cats.filter(function (c) { return c.visits >= M.MIN_EVENTS; }).sort(function (a, b) { return b.visits - a.visits; }).slice(0, 3), total = cats.reduce(function (a, c) { return a + c.visits; }, 0), node = sk;
+      if (big.length >= 2) {
+        var pct = function (v) { return M.pct(v, v < 10 && v > 0 ? 1 : 0); };
+        var axes = ['Share of all visits', 'Stayed and looked around', 'Added to cart', 'Bought', 'Money per visit'];
+        var raw = function (c) { return [c.visits / total * 100, c.engaged / c.visits * 100, c.carts / c.visits * 100, c.orders / c.visits * 100, c.revenue / c.visits]; };
+        var mx = axes.map(function (_, i) { return Math.max.apply(null, big.map(function (c) { return raw(c)[i]; }).concat([0])); });
+        var rd = M.vizCard('How the biggest places compare', 'Five measures for the places that brought the most visits. On each corner the best of these places reaches the outside edge, so the shape shows who is strong at what, not the size. Places under ' + M.MIN_EVENTS + ' visits are left out because their rates would mislead.', [
+          M.vizRadar(axes, big.map(function (c) { var q = raw(c); return { name: c.name, color: c.color, vals: q.map(function (v, i) { return mx[i] > 0 ? v / mx[i] : 0; }), raw: [pct(q[0]), pct(q[1]), pct(q[2]), pct(q[3]), M.inr(q[4])] }; }), { name: 'Place profile', axisHead: 'Measure' })]);
+        node = M.h('div', { class: 'grid viz-pair' }, [sk, rd]);
+      }
+      M.vizPlace(root, node, /Where visits came from, at a glance/);
+    }
+    /* columns of visits with a line of orders, each on its own labelled scale */
+    var s = M.state, cmap = M.chMap(), keep = function (q) { var mp = cmap[q.source_medium]; if (mp && mp.own_tool === 'yes') return false; if (s.channel && q.source_medium !== s.channel) return false; if (s.ccat && (!mp || mp.category !== s.ccat)) return false; return true; };
+    var buckets = M.buckets(r.from, r.to, r.mode);
+    if (buckets.length > 2) {
+      var vis = M.series({ tab: 'source_daily', col: 'sessions', pred: keep }, buckets), ord = M.series({ tab: 'source_daily', col: 'purchases', pred: keep }, buckets);
+      if (Math.max.apply(null, vis.concat([0])) > 0) {
+        var combo = M.vizCard('Visits and orders together', 'Columns are visits (left scale) and the line is orders (right scale). The two scales are different on purpose: visits are in the hundreds and orders are a handful, so on one scale the orders would be flat. Read the shape: do orders rise when visits rise? ' + M.vizDates(r) + '.', [
+          M.vizChart(function (h, w) {
+            M.vizCombo(h, w, { buckets: buckets, mode: r.mode, title: 'Visits and orders', bars: { name: 'Visits', values: vis, color: COL.mustard, fmt: M.num, axis: 'Visits' }, line: { name: 'Orders', values: ord, color: COL.maroon, fmt: M.num, int: true, axis: 'Orders' } });
+          }),
+          M.tableView([{ k: 'label', label: 'Period' }, { k: 'v', label: 'Visits', num: true, fmt: M.num }, { k: 'o', label: 'Orders', num: true, fmt: M.num }], buckets.map(function (b, i) { return { label: b.label, v: vis[i], o: ord[i], _from: b.from, _to: b.to }; }))]);
+        var anchor = null; Array.prototype.forEach.call(root.children, function (c) { if (/Visits against buying/.test(M.vizTitle(c))) anchor = c; });
+        if (anchor) root.insertBefore(combo, anchor.nextSibling); else root.appendChild(combo);
+      }
+    }
+    var part = function (col) { return M.series({ tab: 'source_daily', col: col, pred: keep }, buckets); };
+    spark(root, 'Visits', part('sessions')); spark(root, 'Orders', part('purchases')); spark(root, 'Revenue', part('revenue'));
+  });
+
+  /* ---------------------------------------------------------------- Sizes */
+  M.vizWrap('sizes', function (r, root) {
+    var order = ['XS', 'S', 'M', 'L', 'XL', 'XXL'], rows = M.stateRows('size_curve').filter(function (x) { return order.indexOf(x.size) >= 0; }).sort(function (a, b) { return order.indexOf(a.size) - order.indexOf(b.size); });
+    if (rows.length < 3) return;
+    var sold = rows.reduce(function (a, x) { return a + (+x.units_sold || 0); }, 0), stock = rows.reduce(function (a, x) { return a + (+x.stock_units || 0); }, 0);
+    if (!(sold > 0) || !(stock > 0)) return;
+    var ps = rows.map(function (x) { return (+x.units_sold || 0) / sold * 100; }), pk = rows.map(function (x) { return (+x.stock_units || 0) / stock * 100; }), mx = Math.max.apply(null, ps.concat(pk));
+    var card = M.vizCard('Sold against in stock, by size', 'Two shapes on the same sizes: the share of pieces sold in the last 90 days and the share of pieces in stock now. Where the maroon shape sticks out past the teal one, that size sells faster than it is stocked. ' + (sold < 30 ? 'Only ' + M.num(sold) + ' pieces were sold in 90 days, so read the shape, not the exact share.' : ''), [
+      M.vizRadar(rows.map(function (x) { return x.size; }), [
+        { name: 'Sold, last 90 days', color: COL.maroon, vals: ps.map(function (v) { return v / mx; }), raw: ps.map(function (v) { return M.pct(v, 0); }) },
+        { name: 'In stock now', color: COL.teal, vals: pk.map(function (v) { return v / mx; }), raw: pk.map(function (v) { return M.pct(v, 0); }) }], { name: 'Size mix', axisHead: 'Size' })]);
+    if (!M.vizPair(root, /Units sold by size/, card)) M.vizPlace(root, card);
+  });
+
+  /* ---------------------------------------------------------------- Products */
+  M.vizWrap('products', function (r, root) {
+    var b = M.buckets(r.from, r.to, r.mode), s = M.state, ok = function (x) { return !M.prodOk || M.prodOk(x.product); };
+    [['Product views', 'views'], ['Added to cart', 'carts'], ['Units sold', 'units'], ['Revenue', 'revenue']].forEach(function (p) { spark(root, p[0], M.series({ tab: 'product_daily', col: p[1], pred: ok }, b)); });
+  });
+
+  /* ---------------------------------------------------------------- Team scorecard */
+  M.vizWrap('functions', function (r, root) {
+    var sum = M.stateRows('function_summary');
+    if (!sum.length) return;
+    var cnt = { GREEN: 0, AMBER: 0, RED: 0, 'NO DATA': 0 }; sum.forEach(function (x) { cnt[x.status] = (cnt[x.status] || 0) + 1; });
+    var names = { GREEN: 'On target', AMBER: 'Close', RED: 'Needs work', 'NO DATA': 'No data yet' }, colors = { GREEN: COL.green, AMBER: COL.mustard, RED: COL.terra, 'NO DATA': '#C9C0B4' };
+    var parts = ['GREEN', 'AMBER', 'RED', 'NO DATA'].map(function (k) { return { label: names[k], value: cnt[k] || 0, color: colors[k] }; });
+    var card = M.vizCard('How the jobs stand today', 'Each job the business has to do is On target, Close or Needs work. The half circle shows all ' + sum.length + ' jobs together: the more green, the better.', [
+      M.vizGauge(parts, { name: 'Jobs by status', centre: (cnt.GREEN || 0) + ' of ' + sum.length, cap: 'jobs on target', unit: 'jobs', what: 'Status' })]);
+    M.vizPlace(root, card);
+  });
+
+  /* ---------------------------------------------------------------- Shipping */
+  M.vizWrap('shipping', function (r, root) {
+    var tab = 'shiprocket_shipments_daily';
+    if (!M.has(tab) || !M.PROMISE) return;
+    var dd = M.rowsIn(tab, r.from, r.to).filter(function (x) { return x.avg_delivery_days != null && x.avg_delivery_days !== ''; });
+    if (!dd.length) return;
+    var avg = dd.reduce(function (a, x) { return a + (+x.avg_delivery_days) * (+x.delivered || 1); }, 0) / dd.reduce(function (a, x) { return a + (+x.delivered || 1); }, 0), P = M.PROMISE.ready;
+    Array.prototype.forEach.call(root.children, function (c) {
+      if (c.nodeName !== 'SECTION' || !/Is the promise kept/.test(M.vizTitle(c)) || c.querySelector('.ring-box')) return;
+      var box = M.vizRing(avg, P[1], { name: 'Days a parcel took against the promise', sub: 'days taken', centre: M.num(avg, 1), color: avg <= P[1] ? COL.green : avg <= P[1] + 2 ? COL.mustard : COL.terra, valueLabel: 'Average days, pickup to the door', maxLabel: 'Promise for ready to ship pieces (most days)', fmt: function (v) { return M.num(v, 1) + ' days'; } });
+      var h3 = c.querySelector(':scope > h3');
+      c.insertBefore(box, h3 ? h3.nextSibling : c.firstChild);
+    });
+  });
+
+  /* ---------------------------------------------------------------- Email */
+  M.vizWrap('email', function (r, root) {
+    var ew = M.rows('email_weekly').filter(function (x) { return x.week && x.subscribers !== '' && x.subscribers != null; }).sort(function (a, b) { return a.week < b.week ? -1 : 1; });
+    if (ew.length < 4) return;
+    var buckets = ew.map(function (x) { return { from: x.week, to: M.add(x.week, 6), label: M.fds(x.week), title: 'Week from ' + M.fd(x.week) }; }), vals = ew.map(function (x) { return +x.subscribers; });
+    var card = M.vizCard('The email list over the weeks', 'People on the email list at the start of each week.', [
+      M.vizChart(function (h, w) { M.vizArea(h, w, { buckets: buckets, mode: 'week', title: 'Email list', series: [{ name: 'People on the list', values: vals, color: COL.teal, fmt: M.num }] }); })]);
+    var hit = null; Array.prototype.forEach.call(root.children, function (c) { if (/List growth by week/.test(M.vizTitle(c))) hit = c; });
+    if (hit) root.insertBefore(card, hit); else root.appendChild(card);
   });
 })();
 
