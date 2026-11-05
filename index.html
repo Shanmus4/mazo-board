@@ -2674,7 +2674,7 @@ M.first = function () {
 M.totalOrders = function () { if (M.D.totals) return M.D.totals.orders || 0; var s = 0; M.rows('money_daily').forEach(function (r) { s += +r.orders || 0; }); return s; };
 
 /* ---------------------------------------------------------------- state (kept in the URL hash) */
-M.DEFAULTS = { page: 'overview', preset: '28d', from: '', to: '', cmp: '1', collection: '', channel: '', product: '', device: '', size: '', snap: '', group: 'auto', sm: 'sold90', sel: '', hsrc: 'kpi_daily', hcol: 'net_sales', hcol2: '', hent: '*', hagg: '', cch: '', ccut: 'topic', cv: '', fs: '', ev: '1' };
+M.DEFAULTS = { page: 'overview', preset: '28d', from: '', to: '', cmp: '1', collection: '', channel: '', product: '', device: '', size: '', snap: '', group: 'auto', sm: 'sold90', sel: '', hsrc: 'kpi_daily', hcol: 'net_sales', hcol2: '', hent: '*', hagg: '', cch: '', ik: '', ccut: 'topic', cv: '', fs: '', ev: '1' };
 M.state = {};
 Object.keys(M.DEFAULTS).forEach(function (k) { M.state[k] = M.DEFAULTS[k]; });
 
@@ -7056,6 +7056,7 @@ M.socialOne = function (root, r, c) {
   if (c.id === 'instagram') M.instagramExtras(root, r, buckets);
   if (c.id === 'youtube') M.youtubeExtras(root, r, buckets);
   if (c.id === 'pinterest') M.pinterestExtras(root, r, buckets);
+  if (M.channelMeasures) M.channelMeasures(root, r, c);      /* T884 (5 Nov 2026): every measure the channel gives, each on its own (dashboard_65_ig_measures.js) */
   /* reach to visits to orders */
   M.reachToOrders(root, r, c, buckets, t.v, vis.v, ord.v);
   /* the posts: best and worst, rhythm, what works */
@@ -7593,6 +7594,7 @@ M.TABLE_WORDS = {
 
   /* the rest of the stored sets, so every one has a plain name (T821) */
   instagram_daily: ['Instagram, each day', 'Reach (different people that day, not to be added up), views, people who engaged, interactions, saves, shares and followers.', 'Social and content'],
+  instagram_format_daily: ['Instagram by kind of post, each day', 'Views, people reached, likes, comments, saves and shares for reels, stories, photo posts and carousels, one row per day and kind.', 'Social and content'],
   instagram_more_daily: ['Instagram profile, each day', 'Profile visits, taps on the link in the bio, likes, comments, new followers and people who left.', 'Social and content'],
   instagram_window: ['Instagram, whole windows', 'Different people reached, views, profile visits, bio link taps and new followers for the last 7, 28 and 90 days, as Instagram counts them.', 'Social and content'],
   pinterest_daily: ['Pinterest, each day', 'Impressions, saves, pin clicks and clicks out to the shop.', 'Social and content'],
@@ -8295,6 +8297,7 @@ M.TERMS = [
       cards.push(M.card('Followers over time', 'The count at the end of each ' + r.mode + ', from the nightly count.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Instagram followers', h: 210, series: [{ name: 'Followers', values: fv, color: M.COLORS.green, type: 'line' }], empty: 'No follower counts in this range.' }); })]));
     }
     root.appendChild(M.grid(cards, 'wide'));
+    if (M.instagramMeasures) M.instagramMeasures(root, r, buckets);      /* T884 (5 Nov 2026): every measure on its own, by kind of post (dashboard_65_ig_measures.js) */
     M.instagramExtras(root, r, buckets);
     M.reachToOrders(root, r, c, buckets, views.v, vis.v, ord.v);
     M.postsCard(root, r, inR, 'instagram', all);
@@ -12584,6 +12587,101 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   };
 })();
 
+/* mazo dashboard: EVERY MEASURE ON ITS OWN (T884, 5 Nov 2026). Owner: "social media Instagram tracking: add reel views, viewers, likes, comments, reposts, saves, shares, instead of one interactions
+   tab. Similarly for the other channels, whatever is applicable. Make sure the data is correct."
+   Instagram: the table instagram_format_daily (scripts/kpi_collectors17.py) holds one row per day and kind of post (Reels, Stories, Photo posts, Carousels) with views, viewers, likes, comments,
+   saves, shares. The card below shows each as its own number and its own chart for the kind the person picks (All, Reels ...). Rules that keep it honest:
+     - Viewers are DIFFERENT people on one day. Added over days they count one person once per day, so the number is called "Viewers, added day by day" and its (i) says so; the real
+       different-people figure for 7 or 28 days stays on the first row of tiles (instagram_window).
+     - Reposts are not split by kind by Instagram: they are a day total (instagram_more_daily.reposts) and are shown for "All" only.
+     - Interactions is the app's own total, shown as a small line under the measures so it can be checked against the parts: likes + comments + saves + shares (+ reposts and replies, not split by kind).
+   Other channels: M.channelMeasures(root, r, c) shows every measure a channel really gives, one tile each, from its own daily table; a measure the channel does not give is not shown at all. */
+(function () {
+  var KINDS = ['All', 'Reels', 'Stories', 'Photo posts', 'Carousels'];
+  var MEAS = [
+    { k: 'views', label: 'Views', color: 'maroon', tip: 'Times it was played or shown. One person can count more than once.' },
+    { k: 'viewers', label: 'Viewers, added day by day', color: 'teal', tip: 'Different people who saw it, counted once per day and once per kind of post. A person who saw a reel on three days counts three times, and a person who saw both a reel and a story counts in each. So the kinds add up to MORE than the account total. For different people counted once overall, use "People reached" for the last 7 or 28 days at the top of the page.' },
+    { k: 'likes', label: 'Likes', color: 'terra', tip: 'Likes on the kind of post you picked.' },
+    { k: 'comments', label: 'Comments', color: 'green', tip: 'Comments on the kind of post you picked.' },
+    { k: 'saves', label: 'Saves', color: 'mustard', tip: 'People who saved it to come back to it. A strong sign of interest.' },
+    { k: 'shares', label: 'Shares', color: 'green', tip: 'Times it was sent to a friend or shared on. The best sign that people want others to see it.' },
+    { k: 'reposts', label: 'Reposts', color: 'grey', tip: 'Times it was reposted. Instagram does not split reposts by kind of post, so this is shown for All only.', allOnly: true }
+  ];
+  var pickKind = function () { var s = M.state.ik; return KINDS.indexOf(s) >= 0 ? s : 'All'; };
+  var cnt = function (v) { return v == null ? '' : M.num(v); };
+
+  M.instagramMeasures = function (root, r, buckets) {
+    if (!M.has('instagram_format_daily')) return;
+    var kind = pickKind(), cmp = M.cmpOn(r);
+    var pred = kind === 'All' ? null : function (x) { return x.format === kind; };
+    var seg = M.h('div', { class: 'seg ch-pick', role: 'group', 'aria-label': 'Kind of post' }, KINDS.map(function (k) {
+      return M.h('button', { type: 'button', 'aria-pressed': k === kind ? 'true' : 'false', text: k, onclick: function () { M.go({ ik: k === 'All' ? '' : k }); } });
+    }));
+    var part = function (col) { return { tab: 'instagram_format_daily', col: col, pred: pred }; };
+    var tiles = M.h('div', { class: 'kpis' }), charts = [];
+    MEAS.forEach(function (m) {
+      var tab = 'instagram_format_daily', col = m.k, p = part(col), fromMore = false;
+      if (m.k === 'reposts') { if (kind !== 'All' || !M.has('instagram_more_daily')) return; tab = 'instagram_more_daily'; p = { tab: tab, col: 'reposts' }; fromMore = true; }
+      var t = M.total(p, r.from, r.to), pv = cmp ? M.total(p, r.pfrom, r.pto) : { v: null }, cf = M.cmpFor(t.v, pv.v, cmp, tab, r);
+      tiles.appendChild(t.v == null ? M.kpiWhy(m.label + (kind === 'All' ? '' : ', ' + kind.toLowerCase()), tab, r) : M.kpi({ label: m.label, value: M.num(t.v), change: cf.change, cmpNote: cf.cmpNote,
+        note: (kind === 'All' ? 'All kinds of post' : kind) + ', ' + M.fd(r.from) + ' to ' + M.fd(r.to) + '.' + (t.days < r.days ? ' ' + t.days + ' of ' + r.days + ' days have data.' : '') }));
+      var vals = M.series(p, buckets);
+      charts.push(M.h('div', { class: 'minichart' }, [M.h('div', { class: 'mc-head' }, [M.h('b', { text: m.label + (t.v == null ? '' : ': ' + M.num(t.v)) }), M.infoMark(m.tip, m.label, 'src-info')]),
+        M.chart('', function (h, w) { M.timeChart(h, w, { noEvents: true, buckets: buckets, mode: r.mode, title: m.label, h: 130, series: [{ name: m.label, values: vals, color: M.COLORS[m.color] }], emptyNode: function () { return M.emptyWhy(tab, r); }, empty: 'No numbers in this range.' }); })]));
+    });
+    var kids = [M.h('div', { class: 'ch-bar' }, [seg]), tiles];
+    /* the check line: the app's interactions against the parts, so the numbers can be added up by eye */
+    var it = M.total(part('interactions'), r.from, r.to), lk = M.total(part('likes'), r.from, r.to), cm = M.total(part('comments'), r.from, r.to), sv = M.total(part('saves'), r.from, r.to), sh = M.total(part('shares'), r.from, r.to);
+    if (it.v != null && lk.v != null) {
+      /* checked on all 293 stored days (5 Nov 2026): Instagram's interactions total = likes + comments + saves + reposts + replies + shares counted TWICE, exactly, every day. Reposts and replies are not
+         split by kind, so for one kind they are what is left after the named parts and the second count of shares. */
+      var left = it.v - (lk.v + cm.v + sv.v + 2 * sh.v);
+      kids.push(M.h('p', { class: 'small muted', text: 'Instagram\'s own total of interactions for ' + (kind === 'All' ? 'all kinds' : kind.toLowerCase()) + ' is ' + M.num(it.v) + ': ' + M.num(lk.v) + ' likes + ' + M.num(cm.v) + ' comments + ' + M.num(sv.v) + ' saves + ' + M.num(sh.v) + ' shares, and Instagram counts each share a second time in this total (' + M.num(sh.v) + ')' + (left > 0 ? ', plus ' + M.num(left) + ' reposts and replies, which it does not split by kind' : '') + '.' }));
+    }
+    kids.push(M.grid(charts, 'wide'));
+    root.appendChild(M.card('Instagram, every measure on its own', 'Pick the kind of post. Each number and chart is one measure, read from Instagram for the same India days. Stored from ' + (M.cover('instagram_format_daily').first ? M.fd(M.cover('instagram_format_daily').first) : 'the first day') + '.', kids));
+  };
+  /* ---------------------------------------------------------------- the other channels
+     Only measures the channel really gives and the nightly job really stores. Each row: [column, label, plain meaning, colour]. A column with no stored value in the chosen dates is not drawn
+     as zero: the tile says so. Nothing is invented: Pinterest gives no likes or comments on the account (only saves, clicks), YouTube gives no comments on the daily account table, Mastodon gives
+     only a snapshot of its last ten posts.  */
+  var CHANNEL = {
+    pinterest: { tab: 'pinterest_daily', rows: [
+      ['impressions', 'Impressions', 'Times a pin was shown on Pinterest.', 'maroon'], ['saves', 'Saves', 'Times someone saved a pin to a board.', 'mustard'],
+      ['pin_clicks', 'Pin clicks', 'Times a pin was opened (closeup).', 'teal'], ['outbound_clicks', 'Clicks to the shop', 'Taps that left Pinterest for the shop link.', 'terra'],
+      ['engagement', 'Engagements', 'Saves plus pin clicks plus other taps, as Pinterest adds them.', 'green']] },
+    youtube: { tab: 'youtube_analytics_daily', rows: [
+      ['views', 'Views', 'Times a video was watched.', 'maroon'], ['minutes_watched', 'Minutes watched', 'Total minutes spent watching.', 'teal'], ['likes', 'Likes', 'Likes on videos.', 'terra'],
+      ['shares', 'Shares', 'Times a video was shared.', 'green'], ['subscribers_gained', 'Subscribers gained', 'New subscribers that day (YouTube\'s own number, before any who left).', 'mustard']] },
+    facebook: { tab: 'facebook_page_daily', rows: [
+      ['views', 'Views', 'Times the Page\'s posts and videos were shown.', 'maroon'], ['video_views', 'Video views', 'Times a video was played.', 'teal'],
+      ['post_engagements', 'Post engagements', 'Reactions, comments, shares and clicks on posts.', 'terra'], ['page_visits', 'Page visits', 'Times the Page was opened.', 'green'],
+      ['new_follows', 'New followers', 'People who started following the Page.', 'mustard'], ['unfollows', 'People who left', 'People who stopped following the Page.', 'grey']] },
+    threads: { tab: 'threads_daily', rows: [
+      ['profile_views', 'Profile views', 'Times the profile was opened.', 'maroon'], ['likes', 'Likes', 'Likes on posts.', 'terra'], ['replies', 'Replies', 'Replies to posts.', 'green'],
+      ['reposts', 'Reposts', 'Times a post was reposted.', 'teal'], ['quotes', 'Quotes', 'Times a post was quoted.', 'mustard']] },
+    linkedin: { tab: 'linkedin_daily', rows: [
+      ['impressions', 'Impressions', 'Times posts were shown (a person can count more than once).', 'maroon'], ['unique_impressions', 'People reached', 'Different people who saw a post, counted once per day.', 'teal'],
+      ['clicks', 'Clicks', 'Clicks on posts.', 'terra'], ['likes', 'Reactions', 'Reactions on posts.', 'green'], ['comments', 'Comments', 'Comments on posts.', 'mustard'], ['reposts', 'Reposts', 'Times a post was shared again.', 'grey'],
+      ['page_views', 'Page views', 'Times the company page was opened.', 'maroon'], ['followers_gained', 'New followers', 'People who started following the page.', 'teal']] }
+  };
+  M.channelMeasures = function (root, r, c) {
+    var cfg = CHANNEL[c.id]; if (!cfg || !M.has(cfg.tab)) return;
+    var buckets = M.buckets(r.from, r.to, r.mode), cmp = M.cmpOn(r), tiles = M.h('div', { class: 'kpis' }), charts = [], shown = 0;
+    cfg.rows.forEach(function (m) {
+      var p = { tab: cfg.tab, col: m[0] }, t = M.total(p, r.from, r.to);
+      if (t.v == null) return;
+      var pv = cmp ? M.total(p, r.pfrom, r.pto) : { v: null }, cf = M.cmpFor(t.v, pv.v, cmp, cfg.tab, r);
+      tiles.appendChild(M.kpi({ label: m[1], value: M.num(t.v), change: cf.change, cmpNote: cf.cmpNote, note: m[2] + (t.days < r.days ? ' ' + t.days + ' of ' + r.days + ' days have data.' : '') }));
+      var vals = M.series(p, buckets); shown++;
+      charts.push(M.h('div', { class: 'minichart' }, [M.h('div', { class: 'mc-head' }, [M.h('b', { text: m[1] + ': ' + M.num(t.v) }), M.infoMark(m[2], m[1], 'src-info')]),
+        M.chart('', function (h, w) { M.timeChart(h, w, { noEvents: true, buckets: buckets, mode: r.mode, title: c.name + ' ' + m[1], h: 130, series: [{ name: m[1], values: vals, color: M.COLORS[m[3]] }], emptyNode: function () { return M.emptyWhy(cfg.tab, r); }, empty: 'No numbers in this range.' }); })]));
+    });
+    if (!shown) return;
+    root.appendChild(M.card(c.name + ', every measure on its own', 'One number and one chart for each measure ' + c.name + ' gives us, for the same India days. A measure the channel does not give is not shown.', [tiles, M.grid(charts, 'wide')]));
+  };
+})();
+
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
    the one file build (docs/reports/dashboard/mazo-dashboard.html) never uses any of this. Plan and design: docs/guides/robust-data-and-hosting-plan.md, scripts/site_crypto.py.
 
@@ -12862,7 +12960,7 @@ M.unlock = function () {
    M.lazy.heals): the missing months are fetched and the page is drawn again, and the audit fails so the line can be written. */
 (function () {
   var SOCIAL = ['instagram_daily', 'pinterest_daily', 'youtube_analytics_daily', 'threads_daily', 'facebook_page_daily', 'linkedin_daily', 'mastodon_daily',     /* the channel picker, so a channel never vanishes */
-                'facebook_daily', 'youtube_daily', 'pinterest_account_daily', 'linkedin_posts_daily', 'instagram_more_daily', 'instagram_window'];               /* followers over time, the post list, the Instagram view */
+                'facebook_daily', 'youtube_daily', 'pinterest_account_daily', 'linkedin_posts_daily', 'instagram_more_daily', 'instagram_window', 'instagram_format_daily'];               /* followers over time, the post list, the Instagram view */
   M.WINDOWS = {
     overview:  [[['money_daily', 'ga4_funnel_daily'], 55]],                                                   /* the goal card: orders of the 28 days and the 28 before */
     funnel:    [],
