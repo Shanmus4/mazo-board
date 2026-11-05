@@ -9964,7 +9964,7 @@ M.glueMarks = function () {
   var checksCard = function (p) {
     var all = M.rows('tax_checks').filter(function (x) { return x.order && x.order !== 'none'; });
     if (!all.length && !M.has('tax_checks')) return null;
-    var open = all.filter(function (x) { return x.status !== 'cleared'; }), closed = all.filter(function (x) { return x.status === 'cleared'; });
+    var open = all.filter(function (x) { return x.status !== 'cleared'; });
     var set = {}; p.months.forEach(function (m) { set[m] = 1; });
     var row = function (x) { return { date: x.date, order: x.order, reason: REASON[x.reason] || x.reason, amount: num(x.amount), rate: x.reason === 'odd_rate' ? num(x.rate_pct) : null, pieces: num(x.pieces), what: x.what_to_do, mine: set[x.month] ? 'Yes' : 'No', _k: x.reason }; };
     var list = open.map(row).sort(function (a, b) { return a.mine !== b.mine ? (a.mine === 'Yes' ? -1 : 1) : (a.date < b.date ? 1 : -1); });      /* this period first, newest first */
@@ -9973,16 +9973,12 @@ M.glueMarks = function () {
       { k: 'amount', label: 'Amount', num: true, fmt: paise }, { k: 'rate', label: 'Rate charged', num: true, fmt: function (v) { return v == null ? '' : M.num(v, 1) + '%'; } }, { k: 'pieces', label: 'Pieces', num: true, fmt: M.num },
       { k: 'what', label: 'What to do', wrap: true }, { k: 'mine', label: 'In the period you chose', render: function (r) { return r.mine === 'Yes' ? M.tag('This period', 'work') : 'Other period'; }, sort: function (r) { return r.mine; } }];
     var kids = [];
-    if (!open.length) kids.push(M.empty('Nothing to check.', 'Every order has GST at the usual rate and an HSN code.'));
+    if (!open.length) kids.push(M.empty('Nothing to check.'));
     else {
       kids.push(M.note(M.num(open.length) + ' order check' + (open.length === 1 ? ' is' : 's are') + ' open in Shopify now' + (inPeriod ? ', ' + M.num(inPeriod) + ' in the period you chose' : ', none in the period you chose') + '. These are in Shopify; this page only shows them. Nothing here is changed by the dashboard. Check with the Accountant before changing any record.', true));
       kids.push(M.table(cols, { rows: list, sortKey: null, empty: 'None.', detail: false, name: 'orders-to-check', limit: 24, keepEmpty: true, group: false, dateKey: false }));
     }
-    if (closed.length) {
-      var ccols = [{ k: 'date', label: 'Order date', fmt: M.fd }, { k: 'order', label: 'Order' }, { k: 'reason', label: 'What was checked' }, { k: 'what', label: 'Why it is closed', wrap: true }];
-      var crow = closed.map(function (x) { return { date: x.date, order: x.order, reason: REASON[x.reason] || x.reason, what: x.what_to_do }; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
-      kids.push(M.fold('Closed checks (' + M.num(closed.length) + '): the problem is gone', [M.table(ccols, { rows: crow, sortKey: null, empty: 'None.', detail: false, name: 'closed-checks', limit: 24, keepEmpty: true, group: false, dateKey: false })]));
-    }
+    /* 6 Nov 2026 (owner: "why would you put a dumb thing like closed checks on the website? remove that section"): closed checks are not shown at all. They stay in the Sheet table tax_checks (status cleared) for the record. */
     var card = M.card('Check these in Shopify', 'Every open check, whatever period is chosen, so a problem is never hidden by the month you are looking at. No tax charged: the order has no GST at all (a customer marked tax exempt in Shopify gives this). Unusual rate: the GST charged is not the usual rate for the price (5 percent up to Rs. 2,500 a piece, 18 percent above; check with the Accountant). No HSN code: the return needs one for every line. When a product was rebuilt after a sale, the code is taken from the same SKU on the current product and the check is closed with that reason. Built every night from the order lines. It shows the order number, the date and the money only: never a name or an address.', kids);
     return withCsv(card, csvIcon('orders-to-check', ['Order date', 'Order', 'What to check', 'Amount', 'Rate charged', 'Pieces', 'What to do', 'In the period you chose'], function () { return list.map(function (o) { return [o.date, o.order, o.reason, r2(o.amount).toFixed(2), o.rate == null ? '' : o.rate, o.pieces, o.what, o.mine]; }); }));
   };
