@@ -9689,8 +9689,12 @@ M.glueMarks = function () {
     var months = {}; rows.forEach(function (x) { months[x.month] = 1; });
     var ms = Object.keys(months).sort(), fys = {}; ms.forEach(function (m) { fys[fyOfMonth(m)] = 1; });
     var fyList = Object.keys(fys).sort().reverse();
-    var s = M.state, fy = s.fy && fys[s.fy] ? s.fy : (s.tm ? fyOfMonth(s.tm) : fyList[0]);
-    var tm = s.tm && isMonth(s.tm) && months[s.tm] ? s.tm : '';
+    /* 5 Nov 2026 (Tech Guy: 'Taxes: see monthly, we need to see the order number and the tax calculation'): with nothing chosen the page opens on the NEWEST MONTH that has sales, so the register
+       (order by order) is the first thing under the figures. 'all' (the Month list's All months) is the whole financial year; a financial year or a quarter chosen by hand keeps its own view. */
+    var s = M.state, wantAll = s.tm === 'all', pickedAny = !!(s.fy || s.tq || wantAll);
+    var tmReq = s.tm && isMonth(s.tm) && months[s.tm] ? s.tm : (!pickedAny && !s.tm && ms.length ? ms[ms.length - 1] : '');
+    var fy = s.fy && fys[s.fy] ? s.fy : (tmReq ? fyOfMonth(tmReq) : fyList[0]);
+    var tm = tmReq;
     var tq = !tm && s.tq && /^Q[1-4]$/.test(s.tq) ? s.tq : '';
     var span = tm ? [tm] : tq ? fyMonths(fy).filter(function (m) { return qOfMonth(m) === tq; }) : fyMonths(fy);
     var label = tm ? mname(tm) : tq ? tq + ' (' + QLABEL[tq] + ') of ' + fy : 'Financial year ' + fy + ' (April ' + fy.slice(0, 4) + ' to March ' + (+fy.slice(0, 4) + 1) + ')';
@@ -9707,10 +9711,10 @@ M.glueMarks = function () {
       s.value = value; s.addEventListener('change', function () { on(s.value); });
       return M.h('div', { class: 'fld' }, [M.h('label', { text: label }), s]);
     };
-    box.appendChild(sel('Financial year', p.fy, p.fyList.map(function (f) { return [f, f + ' (April ' + f.slice(0, 4) + ' to March ' + (+f.slice(0, 4) + 1) + ')']; }), function (v) { M.go({ fy: v, tq: '', tm: '' }); }));
-    box.appendChild(sel('Quarter', p.tq, [['', 'Whole year']].concat(['Q1', 'Q2', 'Q3', 'Q4'].map(function (q) { return [q, q + ': ' + QLABEL[q]]; })), function (v) { M.go({ tq: v, tm: '' }); }));
+    box.appendChild(sel('Financial year', p.fy, p.fyList.map(function (f) { return [f, f + ' (April ' + f.slice(0, 4) + ' to March ' + (+f.slice(0, 4) + 1) + ')']; }), function (v) { M.go({ fy: v, tq: '', tm: 'all' }); }));
+    box.appendChild(sel('Quarter', p.tq, [['', 'Whole year']].concat(['Q1', 'Q2', 'Q3', 'Q4'].map(function (q) { return [q, q + ': ' + QLABEL[q]]; })), function (v) { M.go({ tq: v, tm: v ? '' : 'all' }); }));
     var mo = fyMonths(p.fy).filter(function (m) { return p.monthsWithData.indexOf(m) >= 0; });
-    box.appendChild(sel('Month', p.tm, [['', 'All months']].concat(mo.map(function (m) { return [m, mname(m)]; })), function (v) { M.go({ tm: v, tq: '' }); }));
+    box.appendChild(sel('Month', p.tm || 'all', [['all', 'All months']].concat(mo.map(function (m) { return [m, mname(m)]; })), function (v) { M.go({ tm: v, tq: '' }); }));
     /* a typed month: 2026-10, Oct 2026, October 2026, 10/2026 or a day such as 03/11/2026 (its month is taken). The shared reader (dashboard_47_datepicker.js) is used when it is there. */
     var inp = M.h('input', { type: 'text', 'aria-label': 'Type a month, for example Oct 2026 or 2026-10', placeholder: 'Type a month, e.g. Oct 2026', value: '', autocomplete: 'off', spellcheck: 'false' });
     var tryType = function () {
@@ -11342,11 +11346,7 @@ M.evenHeaders = function (root) {
     return s;
   };
   /* the one off bills that sit in or near the dates: said on their own, never counted */
-  M.billOneOff = function (B) {
-    return B.oneOff.filter(function (o) { return o.date >= B.from && o.date <= B.to; }).map(function (o) {
-      return 'A one off bill of ' + M.inr(o.total) + ' on ' + M.fd(o.date) + ' (reason: fee threshold reached) is not a normal month. What it covers is not known yet, so it is left out of these figures.';
-    });
-  };
+  M.billOneOff = function () { return []; };      /* 5 Nov 2026: the Rs. 19,546.82 bill of 25 Aug was wrong and cancelled (Tech Guy); no bill is left out of the figures any more. Kept so a future special bill (kind one_off in the data sheet) still has a place to be said. */
 })();
 
 /* mazo dashboard MONEY WATERFALL with groups (T884, 4 Nov 2026).
@@ -11418,6 +11418,9 @@ M.evenHeaders = function (root) {
         gp.appendChild(M.s('text', { x: tx, y: r.y + r.h / 2 + 4, 'text-anchor': 'start', class: 'strong mg-val' + (pending ? ' mg-pend' : '') }, (it.kind === 'minus' && it.value ? '-' : '') + short(Math.abs(it.value))));
       }
       gp.appendChild(M.s('rect', { x: 0, y: r.y, width: w, height: r.h, fill: 'transparent' }));
+      /* 5 Nov 2026 (Tech Guy, picture 1: the tooltip covered the CONFIRMED heading): the tip of a bar opens ABOVE the pointer row, to the right of the label column. Each bar row is 36 px and a heading
+         row is 32 px, so a tip that opened below the pointer landed on the next heading. Placed after the shared placement has run (it runs on the same event). */
+      gp.addEventListener('pointermove', function (e) { setTimeout(function () { var tipEl = document.getElementById('tip'); if (!tipEl || tipEl.hidden) return; var b = svg.getBoundingClientRect(), left = Math.min(b.left + L + 16, window.innerWidth - tipEl.offsetWidth - 6), top = e.clientY - tipEl.offsetHeight - 10; tipEl.style.left = Math.max(6, left) + 'px'; tipEl.style.top = Math.max(6, top) + 'px'; }, 0); });
       M.tipFor(gp, function () {
         var rowsT = [{ k: it.kind === 'minus' ? 'Taken off' : 'Amount', v: M.inr(it.value) }];
         if (it.kind === 'minus') rowsT.push({ k: 'Left after this step', v: M.inr(r.after) });
@@ -12247,12 +12250,12 @@ M.annot = (function () {
     it.push({ label: 'Discounts', value: R(t.disc), kind: 'minus', tone: 'sales' });
     it.push({ label: 'GST in the orders', value: R(t.gst), kind: 'minus', tone: 'sales', tip: [{ k: 'What it is', v: 'GST already inside the price. It goes to the government.' }] });
     if (t.refunds) it.push({ label: 'Refunds', value: R(t.refunds), kind: 'minus', tone: 'sales' });
-    it.push({ head: 'CONFIRMED', sub: 'Madhu confirmed these are real' });
+    it.push({ head: 'CONFIRMED' });
     it.push({ label: 'Shopify bill', value: R(t.bill), kind: 'minus', tone: 'confirmed', status: B.known ? 'Confirmed (' + billWord + ')' : 'Confirmed (not known yet)', none: B.known ? null : 'no bill on record',
       tip: B.known && B.planPart != null ? [{ k: 'The plan', v: M.inr(B.planPart) }, { k: 'Shopify\'s charges', v: M.inr(B.chargePart) }] : [] });
     it.push({ label: 'Razorpay charges (estimate)', value: R(t.razor), kind: 'minus', tone: 'confirmed', status: 'Confirmed (estimate)' });
     it.push({ label: 'Left after confirmed costs', value: R(t.confirmed), kind: 'total', tone: 'result', tip: [{ k: 'Note', v: 'Not the profit: the making cost is not taken off yet' }] });
-    it.push({ head: 'NOT CONFIRMED YET', sub: 'placeholders until Madhu gives real numbers' });
+    it.push({ head: 'NOT CONFIRMED YET' });
     it.push({ label: 'Manufacturing and material', value: R(t.making), kind: 'minus', tone: 'pending' });
     it.push({ label: 'Packaging', value: R(t.pack), kind: 'minus', tone: 'pending' });
     it.push({ label: 'Shipping and parcel', value: R(t.parcel), kind: 'minus', tone: 'pending' });
@@ -12269,12 +12272,12 @@ M.annot = (function () {
     var tb = M.h('tbody'), last = '';
     rows.forEach(function (x) {
       if (x.group !== last && x.group !== 'Sales') {
-        var hd = x.group === 'Confirmed' ? ['CONFIRMED', 'Madhu confirmed these are real'] : ['NOT CONFIRMED YET', 'placeholders until Madhu gives real numbers'];
-        tb.appendChild(M.h('tr', { class: 'mg-ghead ' + (x.pending ? 'mg-ghead-pend' : 'mg-ghead-ok') }, M.h('th', { colspan: 2, scope: 'colgroup' }, [M.h('span', { class: 'mg-ghead-t', text: hd[0] }), M.h('span', { class: 'mg-ghead-s', text: hd[1] })])));
+        var hd = x.group === 'Confirmed' ? ['CONFIRMED', ''] : ['NOT CONFIRMED YET', ''];
+        tb.appendChild(M.h('tr', { class: 'mg-ghead ' + (x.pending ? 'mg-ghead-pend' : 'mg-ghead-ok') }, M.h('th', { colspan: 2, scope: 'colgroup' }, [M.h('span', { class: 'mg-ghead-t', text: hd[0] }), hd[1] ? M.h('span', { class: 'mg-ghead-s', text: hd[1] }) : null])));
       }
       last = x.group;
       var tr = M.h('tr', { class: (x.pending ? 'mg-r-pend ' : '') + (x.part ? 'mg-r-part ' : '') + (x.isTotal ? 'mg-r-total' : '') });
-      tr.appendChild(M.h('td', { class: 'mg-name' }, M.h('div', { class: 'mg-cell' }, [M.h('span', { class: 'mg-step', text: x.step }), M.h('span', { class: 'mg-sub-l', text: x.how })])));
+      tr.appendChild(M.h('td', { class: 'mg-name' }, M.h('div', { class: 'mg-cell' }, [M.h('span', { class: 'mg-step', text: x.step })])));      /* 5 Nov 2026 (Tech Guy: 'stop adding hint texts on the dashboard'): the sentence for a step is in the card's (i) tip and in the CSV, not under every row */
       tr.appendChild(M.h('td', { class: 'n mg-amt', text: x.amount == null ? 'not known' : x.none ? 'none recorded' : M.inr(x.amount) }));
       tb.appendChild(tr);
       if (x.isTotal) M.totalRow(tr);
@@ -12296,11 +12299,10 @@ M.annot = (function () {
     kids.push(M.chart('mg-chart', function (h, w) { M.moneyFall(h, w, items(C)); }));
     kids.push(ledger(M.moneyRows(C)));
     var lines = M.h('div', { class: 'mg-lines' });
-    lines.appendChild(M.h('p', { class: 'small mg-how', text: M.billHow(B) }));
-    M.billOneOff(B).forEach(function (s) { lines.appendChild(M.h('p', { class: 'small mg-how mg-oneoff', text: s })); });
-    lines.appendChild(M.h('p', { class: 'small mg-need', text: 'To confirm the grey costs, Madhu gives the real cost of making a piece, of packing a parcel and of sending it (or Razorpay and Shiprocket are connected), and they move up into the confirmed group.' }));
     if (C.covered < C.days) lines.appendChild(M.h('p', { class: 'small mg-how', text: 'Sales are known for ' + M.num(C.covered) + ' of these ' + M.num(C.days) + ' days' + (M.missingWhy ? M.missingWhy('money_daily', r.from, r.to) : '') + '.' }));
-    kids.push(lines);
+    if (B.gapDays || (B.estDays > 35 && B.newestEnd)) lines.appendChild(M.h('p', { class: 'small mg-how', text: B.estDays > 35 && B.newestEnd ? 'The newest Shopify bill on record ended on ' + M.fd(B.newestEnd) + ': a newer bill needs adding.' : M.num(B.gapDays) + ' days have no Shopify bill on record and are not counted.' }));
+    if (lines.childNodes.length) kids.push(lines);
+    why += ' ' + M.billHow(B) + ' To make the grey costs real, Madhu gives the real cost of making a piece, of packing a parcel and of sending it, or Razorpay and Shiprocket are connected.';
     var card = M.card('Where the money goes', why, kids, 'mg-card');
     card._mg = C;
     return card;
@@ -12312,16 +12314,15 @@ M.annot = (function () {
     if (!list.length && pl == null) return null;
     var rows = list.map(function (b) {
       var covers = b.from && b.to ? M.billSpan(b.from, b.to) : b.to ? 'ended ' + M.fd(b.to) : 'not known';
-      return { date: b.date, covers: covers, plan: b.plan, charges: b.fee, other: b.other, total: b.total, status: b.oneOff ? 'Not a normal month: left out of the figures' : 'Counted', note: b.note, oneOff: b.oneOff };
+      return { date: b.date, covers: covers, plan: b.plan, charges: b.fee, other: b.other, total: b.total, status: 'Counted', note: b.note };
     });
     var na = function (v) { return v == null ? 'not read' : M.inr(v); };
     var cols = [{ k: 'date', label: 'Bill date', fmt: M.fd }, { k: 'total', label: 'Bill total', num: true, fmt: M.inr }, { k: 'covers', label: 'Covers', wrap: true }, { k: 'plan', label: 'Plan', num: true, fmt: na },
-      { k: 'charges', label: 'Shopify\'s charges', num: true, fmt: na }, { k: 'status', label: 'In these figures?', render: function (x) { return M.h('span', { class: x.oneOff ? 'mg-oneoff-tag' : '', text: x.status }); } },
+      { k: 'charges', label: 'Shopify\'s charges', num: true, fmt: na }, 
       { k: 'other', label: 'Other (a credit shows as minus)', num: true, hidden: true, fmt: function (v) { return v == null ? '' : M.inr(v); } }, { k: 'note', label: 'Note', wrap: true, hidden: true }];
     var kids = [M.table(cols, { rows: rows, sortKey: 'date', sortDir: -1, detail: false, noTools: false, name: 'shopify-bills', empty: 'No bill is on record yet.' })];
-    kids.push(M.h('p', { class: 'small mg-how', text: (pl != null ? 'The Shopify plan is ' + M.inr(pl) + ' a month (taken from ' + B.planWhere + '). Days that no bill covers yet are estimated from it. ' : '') + 'The yearly cost of the domain is not counted. A new bill is added each month from the Shopify billing page.' }));
     kids.push(M.h('p', { class: 'small' }, [M.h('a', { href: 'https://admin.shopify.com/store/mazolife/settings/billing', target: '_blank', rel: 'noopener', text: 'Open the Shopify billing page' }), ' (needs the Shopify login).']));
-    return M.card('Shopify bills', 'Every bill Shopify has sent, typed in from the Shopify billing page. A bill comes about every 30 days. It is the plan plus 2.0 percent of every order paid through Razorpay. A bill that is not a normal month is listed here and left out of the figures until we know what it covers.', kids, 'mg-card');
+    return M.card('Shopify bills', 'Every bill Shopify has sent, typed in from the Shopify billing page. A bill comes about every 30 days. It is the plan' + (pl != null ? ' (' + M.inr(pl) + ' a month, from ' + B.planWhere + ')' : '') + ' plus 2.0 percent of every order paid through Razorpay. Days that no bill covers yet are estimated from the plan. The yearly cost of the domain is not counted. A new bill is typed in each month.', kids, 'mg-card');
   };
   var monthCard = function (r, C) {
     if (!C.months.length) return null;
