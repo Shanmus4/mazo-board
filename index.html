@@ -904,6 +904,10 @@ th .info-mark .ic{width:14px;height:14px}
 
 /* a card keeps its own height: a short card next to a tall one no longer stretches into an empty block (Funnel, 'six steps' beside 'by device') */
 .grid>.card{align-self:start}
+/* 6 Nov 2026: a redraw on the SAME page (a tab, a filter, a date) is a plain fade of the content, no movement (T883) */
+main.refade>div{animation:mzRefade .16s ease both}
+@keyframes mzRefade{from{opacity:.35}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){main.refade>div{animation:none}}
 
 /* mazo dashboard post links (T822, 1 Nov 2026): the Post and Link columns of the social posts tables and the "not tracked" wording. Small on purpose; the look of tables, buttons and
    the focus ring comes from the shared files. */
@@ -2485,6 +2489,17 @@ M.nice = function (max) {   // a round axis maximum above max
   var p = Math.pow(10, Math.floor(Math.log10(max))), f = max / p;
   return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
 };
+/* 6 Nov 2026 (owner: "why does the Pinterest followers graph have values like 1.3, 1.8? stupid"): the axis top 5 was split into four steps of 1.25. A chart of COUNTS (people, followers, orders)
+   must show whole numbers on its axis. When every value is a whole number the top is chosen so each of the four steps is a whole number too (4 gives 0 1 2 3 4; 10 gives 0 3 6 9 12; 19 gives 0 5 10 15 20). */
+M.wholeTop = function (max) {
+  if (!(max > 0)) return 4;
+  var p = 1, ms = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8];
+  for (var k = 0; k < 12; k++, p *= 10) {
+    for (var i = 0; i < ms.length; i++) { var step = ms[i] * p; if (step !== Math.floor(step)) continue; if (step * 4 >= max) return step * 4; }
+  }
+  return M.nice(max);
+};
+M.allWhole = function (vals) { return vals.length > 0 && vals.every(function (v) { return v == null || (typeof v === 'number' && isFinite(v) && Math.floor(v) === v); }); };
 M.change = function (cur, prev) {   // percent change or null
   if (cur == null || prev == null || prev === 0) return null;
   return (cur - prev) / Math.abs(prev) * 100;
@@ -3234,7 +3249,8 @@ M.timeChart = function (host, w, o) {
   if (o.prev) all = all.concat(o.prev.values);
   var raw = Math.max.apply(null, all.concat([0])), neg = Math.min.apply(null, all.concat([0]));
   if (!n || (raw <= 0 && neg >= 0)) { host.appendChild(M.emptyFor ? M.emptyFor(host, o) : (o.emptyNode ? o.emptyNode() : M.empty(o.empty || 'No activity in this range yet.'))); return; }      /* T817: emptyNode says WHY it is empty (the source starts later) and offers the click that shows the data */
-  var ymax = M.nice(raw), ymin = neg < 0 ? -M.nice(-neg) : 0, yr = ymax - ymin;
+  var whole = neg >= 0 && M.allWhole(all) && raw > 0 && raw <= 1000000;      /* counts: a whole number on every axis step (M.wholeTop) */
+  var ymax = whole ? M.wholeTop(raw) : M.nice(raw), ymin = neg < 0 ? -M.nice(-neg) : 0, yr = ymax - ymin;
   var G = M.chartGaps ? M.chartGaps(o) : null;      /* days with no stored row: hatched band, no bar, broken line (dashboard_08_gaps.js) */
   var X = function (i) { return L + (n === 1 ? pw / 2 : (i + 0.5) / n * pw); }, Y = function (v) { return T + ph - (v - ymin) / yr * ph; };
   var svg = M.s('svg', { viewBox: '0 0 ' + w + ' ' + H, role: 'img', tabindex: '0', 'aria-label': (o.title || 'Chart') + '. ' + n + ' points' + (G && G.any ? ', ' + G.count + ' of them with no data stored' : '') + '. Use the left and right arrow keys to read each point' + (host._frame && host._frame.key && n >= 3 ? '; hold Shift to select a range, then Enter to zoom to it.' : '.') });
@@ -3836,7 +3852,12 @@ M.render = function () {
   M.syncControls();
   M.renderNav();
   M.tipHide();
-  document.body.classList.toggle('anim', M._lastPage !== s.page); M._lastPage = s.page;      /* page content rises in and bars grow only when the page changes */
+  var samePage = M._lastPage === s.page;
+  document.body.classList.toggle('anim', !samePage); M._lastPage = s.page;      /* page content rises in and bars grow only when the page changes */
+  /* 6 Nov 2026 (owner: "if I click one tab and another a weird animation happens where the page scrolls up; a simple fade is enough for tab transitions everywhere"): clearing the page made it
+     shorter for a moment, so the browser jumped the scroll up, and the restore below then ANIMATED back because the page has scroll-behavior:smooth. Now the page keeps its height while it
+     is redrawn, the scroll position is restored instantly, and a redraw on the same page is a plain fade. */
+  main.style.minHeight = main.offsetHeight + 'px';
   M.clear(main);
   M.pending = [];
   try {
@@ -3849,7 +3870,9 @@ M.render = function () {
     main.appendChild(M.empty('This page could not be drawn: ' + (err && err.message ? err.message : 'error') + '. Other pages still work.'));
   }
   M.flush();
-  window.scrollTo(0, y);
+  window.scrollTo({ top: y, left: 0, behavior: 'instant' });
+  if (samePage) { main.classList.remove('refade'); void main.offsetWidth; main.classList.add('refade'); }
+  requestAnimationFrame(function () { main.style.minHeight = ''; });
   M.renderFoot();
   M.syncScrollPad();
 };
@@ -12040,8 +12063,8 @@ M.annot = (function () {
     Promise.all([bundle(), chooseEndpoint()]).then(function (got) {
       run(got[0], got[1]);
       say('Turn off Annotate', st.mode === 'live'
-        ? 'Annotate is on. Notes go to the assistant on this computer, nowhere else. Click to turn it off.'
-        : 'Annotate is on. Notes stay in this browser: press Copy in the toolbar and paste them into the chat. Click to turn it off.');
+        ? 'Annotate is on. Notes go to the assistant on this computer, nowhere else. Option+A (Alt+A) switches the marker mode on and off. Click to turn Annotate off.'
+        : 'Annotate is on. Notes stay in this browser: press Copy in the toolbar and paste them into the chat. Option+A (Alt+A) switches the marker mode on and off. Click to turn Annotate off.');
     }).catch(function (err) { console.error(err); say('Annotate failed. Turn off', (err && err.message ? err.message : 'The toolbar could not load.') + ' Click to turn Annotate off.'); });
   }
   function off() {
@@ -12050,6 +12073,26 @@ M.annot = (function () {
     if (st.btn && st.btn.parentNode) st.btn.parentNode.removeChild(st.btn);
     st.btn = null; st.label = null; st.explicit = false;
   }
+
+  /* 6 Nov 2026 (owner: "none of those shortcuts work, and yes I want a shortcut to quickly enable and disable the marker mode"): the toolbar's own letter keys are OFF on purpose (one of them, X, clears every
+     note). This is ONE key of our own, Option+A on a Mac (Alt+A elsewhere): it presses the toolbar's own "Start feedback mode" / "Exit" button, so the marker mode turns on and off without the mouse.
+     It does nothing while Annotate is off, while a note is being typed (a text box has focus), or on a phone. Escape still leaves the marker mode, as the toolbar does itself. */
+  function toggleMarker() {
+    var host = document.querySelector('agentation-toolbar'), root = host && host.shadowRoot;
+    if (!root) return false;
+    var b = Array.prototype.filter.call(root.querySelectorAll('button'), function (x) { return /^(start feedback mode|exit)$/i.test((x.getAttribute('aria-label') || '').trim()); })[0];
+    if (!b) return false;
+    b.click(); return true;
+  }
+  document.addEventListener('keydown', function (e) {
+    if (!(e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.code === 'KeyA')) return;
+    if (!window.MazoAgentation || !window.MazoAgentation.running()) return;
+    var t = e.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+    var host = document.querySelector('agentation-toolbar'), ae = host && host.shadowRoot && host.shadowRoot.activeElement;
+    if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT')) return;
+    if (toggleMarker()) e.preventDefault();
+  });
 
   /* start after the dashboard has drawn its shell (on the hosted site that is after the passphrase) */
   var baseInit = M.init;
@@ -12662,7 +12705,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       ['page_views', 'Page views', 'Times the company page was opened.', 'maroon'], ['followers_gained', 'New followers', 'People who started following the page.', 'teal']] }
   };
   M.channelMeasures = function (root, r, c) {
-    var cfg = CHANNEL[c.id]; if (!cfg || !M.has(cfg.tab)) return;
+    var cfg = CHANNEL[c.id] || (c.id === 'mastodon' ? { tab: null, rows: [] } : null); if (!cfg || (cfg.tab && !M.has(cfg.tab))) return;      /* Mastodon has no daily table: its card is the post totals only */
     var buckets = M.buckets(r.from, r.to, r.mode), cmp = M.cmpOn(r), tiles = M.h('div', { class: 'kpis' }), charts = [], shown = 0;
     cfg.rows.forEach(function (m) {
       var p = { tab: cfg.tab, col: m[0] }, t = M.total(p, r.from, r.to);
@@ -12673,6 +12716,24 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       charts.push(M.h('div', { class: 'minichart' }, [M.h('div', { class: 'mc-head' }, [M.h('b', { text: m[1] + ': ' + M.num(t.v) }), M.infoMark(m[2], m[1], 'src-info')]),
         M.chart('', function (h, w) { M.timeChart(h, w, { noEvents: true, buckets: buckets, mode: r.mode, title: c.name + ' ' + m[1], h: 130, series: [{ name: m[1], values: vals, color: M.COLORS[m[3]] }], emptyNode: function () { return M.emptyWhy(cfg.tab, r); }, empty: 'No numbers in this range.' }); })]));
     });
+    /* 6 Nov 2026 (owner: "the things you added for Instagram like reposts etc, for other social platforms also, whatever is applicable"): the totals on the POSTS made in the chosen dates, from the post list
+       (post_stats and the LinkedIn post table). Only a measure that at least one post really has is shown; a measure the channel does not give for posts is not drawn as 0. Each post's numbers are as
+       of the last night job, so they keep growing after the post day: the tile says "on posts made in these dates", never "in these dates". */
+    var inR = M.chPosts(c.id).filter(function (p) { return p.date >= r.from && p.date <= r.to; });
+    var PM = { facebook: [['views', 'Views of posts'], ['likes', 'Reactions on posts'], ['comments', 'Comments on posts'], ['shares', 'Shares of posts'], ['clicks', 'Clicks on posts']],
+      pinterest: [['views', 'Views of pins'], ['saves', 'Saves of pins'], ['clicks', 'Pin clicks'], ['outbound', 'Clicks to the shop from pins']],
+      mastodon: [['likes', 'Favourites'], ['comments', 'Replies'], ['shares', 'Boosts']],
+      threads: [['views', 'Views of posts'], ['likes', 'Likes on posts'], ['comments', 'Replies'], ['shares', 'Reposts']],
+      youtube: [['views', 'Views of Shorts'], ['likes', 'Likes on Shorts'], ['comments', 'Comments on Shorts']],
+      linkedin: [['views', 'Impressions of posts'], ['likes', 'Reactions on posts'], ['comments', 'Comments on posts'], ['shares', 'Reposts of posts'], ['clicks', 'Clicks on posts']] }[c.id] || [];
+    var ptiles = M.h('div', { class: 'kpis' }), pn = 0;
+    PM.forEach(function (m) {
+      var have = inR.filter(function (p) { return p[m[0]] !== null && p[m[0]] !== undefined && p[m[0]] !== ''; });
+      if (!have.length) return;
+      var sum = have.reduce(function (a, p) { return a + (+p[m[0]] || 0); }, 0);
+      pn++; ptiles.appendChild(M.kpi({ label: m[1], value: M.num(sum), note: 'On the ' + M.num(have.length) + ' ' + (have.length === 1 ? 'post' : 'posts') + ' made in these dates that report it. Counted up to the last night, so it keeps growing after the post day.' }));
+    });
+    if (pn) { shown++; tiles.appendChild(M.h('div', { class: 'ch-posts-title', style: 'grid-column:1/-1;margin-top:1.4rem' }, [M.h('b', { text: 'On posts made in these dates (' + M.num(inR.length) + ' posts)' })])); ptiles.childNodes.forEach(function (k) { tiles.appendChild(k.cloneNode(true)); }); }
     if (!shown) return;
     root.appendChild(M.card(c.name + ', every measure on its own', 'One number and one chart for each measure ' + c.name + ' gives us, for the same India days. A measure the channel does not give is not shown.', [tiles, M.grid(charts, 'wide')]));
   };
