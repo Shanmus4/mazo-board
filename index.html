@@ -7391,8 +7391,7 @@ M.PAGES.payments.render = function (r) {
         steps: ['Open the Razorpay dashboard and create an API key (Account & Settings, then API Keys).', 'On this Mac, run the one line from the guide and paste the key when it asks. Nothing is shown on screen.', 'That is all. The numbers fill in the next morning, and every past payment is read once.'] }),
       M.previewBox('This is the shape of the page, not real money. Real numbers replace it the morning after you connect.', [M.sampleKpis(['Paid by buyers', 'Razorpay kept', 'Reached the bank', 'Payments that failed']), M.sampleBars(28, 1.2, '#5E1204'), M.sampleRows(['UPI', 'Card', 'Net banking', 'Wallet'])])
     ]));
-    root.appendChild(M.card('What changes in your profit once this is connected', 'Today profit uses a flat guess for the Razorpay fee. After you connect, every day that has a real figure switches to it, and this page says how many days are real and how many are still a guess.', [
-      M.h('p', { class: 'small', text: 'Nothing in the past is changed until real figures exist. The profit on the Overview page keeps its current value today.' })]));
+    root.appendChild(M.card('What changes in your profit once this is connected', 'Today profit uses a flat guess for the Razorpay fee. After you connect, every day that has a real figure switches to it, and this page says how many days are real and how many are still a guess.'));
     return root;
   }
   var tab = 'razorpay_payments_daily', cov = M.cover(tab), days = M.daysCovered(tab, r.from, r.to);
@@ -7461,8 +7460,7 @@ M.PAGES.shipping.render = function (r) {
         steps: ['In Shiprocket, create a separate API user (Settings, then API, then Add New API User).', 'On this Mac, run the one line from the guide and type the API user\'s email and password when it asks.', 'That is all. Past parcels are read once, and the numbers fill in the next morning.'] }),
       M.previewBox('This is the shape of the page, not real parcels. Real numbers replace it the morning after you connect.', [M.sampleKpis(['Parcels sent', 'Cost of sending', 'Average days to deliver', 'Came back']), M.sampleBars(28, 2.4, '#3A7F8C'), M.sampleRows(['Courier one', 'Courier two', 'Courier three'])])
     ]));
-    root.appendChild(M.card('What we know about parcels today', 'Before Shiprocket is connected we only know the dates the shop recorded. Profit uses Rs. 100 a parcel, a guess.', [
-      M.h('p', { class: 'small', text: 'The Customers page already shows delivery days by state from the dates in the shop. The Shipping page adds the real cost, the courier and the returns.' })]));
+    root.appendChild(M.card('What we know about parcels today', 'Before Shiprocket is connected we only know the dates the shop recorded. Profit uses Rs. 100 a parcel, a guess.'));
     return root;
   }
   var tab = 'shiprocket_shipments_daily', days = M.daysCovered(tab, r.from, r.to);
@@ -9260,7 +9258,6 @@ M.glueMarks = function () {
       host.appendChild(svg);
     });
     wrap.appendChild(chart);
-    wrap.appendChild(M.h('p', { class: 'small muted viz-foot', text: 'Per place we keep visits, visits that stayed and looked around, and orders. The cart and checkout steps are not kept per place, so they are not drawn here: the Shopping steps page has them for all visits together.' }));
     if (M.tableView) wrap.appendChild(M.tableView([{ k: 'name', label: 'Where from' }, { k: 'visits', label: 'Visits', num: true, fmt: M.num }, { k: 'engaged', label: 'Stayed and looked around', num: true, fmt: M.num }, { k: 'orders', label: 'Orders', num: true, fmt: M.num },
       { k: 'share', label: 'Share of visits', num: true, fmt: function (v) { return M.pct(v, v < 10 ? 1 : 0); } }], cats.map(function (c) { return { name: c.name, visits: c.visits, engaged: c.engaged, orders: c.orders, share: c.visits / tot.v * 100 }; }), 'Show the numbers as a table'));
     return wrap;
