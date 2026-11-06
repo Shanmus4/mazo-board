@@ -12761,6 +12761,12 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
    The weekly percent change was tried and dropped: with 1 to 3 orders a week it swung to 1,000%, which says nothing. */
 (function () {
   var COL = M.COLORS;
+  /* M.vizWrap wraps a page ONCE (the page already carries the wrapper of dashboard_43); this one always stacks on top of whatever the page does */
+  var addTo = M.addPageCards = function (id, build) {
+    var pg = M.PAGES[id]; if (!pg || !pg.render) return;
+    var base = pg.render;
+    pg.render = function (r) { var root = base.apply(this, arguments); try { build(r, root); } catch (e) { console.error('growth lines (' + id + '):', e); } return root; };
+  };
   M.sp('growth', 'Sales growth', 'Sales growth', 'How fast is the money growing? The running total since the first sale, this period against the one before, and week by week.', [], { dates: true });
   M.ORDER.push('growth');
   /* sit right after Shopping steps in the Sales group */
@@ -12872,7 +12878,8 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
 /* ---------------------------------------------------------------- Reviews over time (Tables page). The card "Reviews" is a table; the number of published reviews and the average rating each have a nightly
    value since 9 Oct (judgeme_daily), so they get a line. Drawn only when at least 3 nights are stored. */
 (function () {
-  M.vizWrap('tables', function (r, root) {
+  var addTo = M.addPageCards;
+  addTo('tables', function (r, root) {
     if (!M.has('judgeme_daily')) return;
     var b = M.buckets(r.from, r.to, r.mode), cnt = M.levelSeries('judgeme_daily', b, 'published_reviews', function () { return 'all'; }).all, rate = M.levelSeries('judgeme_daily', b, 'average_rating', function () { return 'all'; }).all;
     if (!cnt || b.length < 3 || cnt.every(function (v) { return !v; })) return;
@@ -12881,6 +12888,32 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     M.vizPlace(root, card, /^Reviews/);
   });
   function COL_MAROON() { return M.COLORS.maroon; }
+})();
+
+/* ---------------------------------------------------------------- Visits by device over time (Marketing, "Phone, laptop or tablet" is a table) and checkouts left by month (Growth). Each is drawn only when
+   there are at least 3 points; the dashboard never draws an empty frame. */
+(function () {
+  var COL = M.COLORS, addTo = M.addPageCards;
+  addTo('channels', function (r, root) {
+    if (!M.has('place_device_daily')) return;
+    var b = M.buckets(r.from, r.to, r.mode), kinds = [['mobile', 'Phone', COL.maroon], ['desktop', 'Laptop or desktop', COL.teal], ['tablet', 'Tablet', COL.mustard]];
+    var ser = kinds.map(function (k) { return { name: k[1], values: M.series({ tab: 'place_device_daily', col: 'sessions', pred: function (x) { return x.kind === 'device' && x.place === k[0]; } }, b), color: k[2], type: 'line', fmt: M.num }; });
+    if (b.length < 3 || !ser.some(function (s) { return s.values.some(function (v) { return v > 0; }); })) return;
+    var rows = b.map(function (bk, i) { return { label: bk.label, a: ser[0].values[i], b: ser[1].values[i], c: ser[2].values[i] }; });
+    var card = M.card('Visits by device over time', 'Visits per ' + r.mode + ' by the kind of screen, from Google Analytics with our own test visits left out.', [
+      M.chart('', function (h, w) { M.timeChart(h, w, { buckets: b, mode: r.mode, title: 'Visits by device', series: ser, h: 210 }); }),
+      M.tableView([{ k: 'label', label: 'Period' }, { k: 'a', label: 'Phone', num: true, fmt: M.num }, { k: 'b', label: 'Laptop or desktop', num: true, fmt: M.num }, { k: 'c', label: 'Tablet', num: true, fmt: M.num }], rows)]);
+    M.vizPlace(root, card, /^Phone, laptop or tablet/);
+  });
+  addTo('gtm', function (r, root) {
+    var rows = M.has('checkout_recovery') ? M.rows('checkout_recovery') : [];
+    if (rows.length < 3) return;
+    rows = rows.slice().sort(function (a, b) { return a.month < b.month ? -1 : 1; });
+    var mb = rows.map(function (x) { return { from: x.month + '-01', to: x.month + '-28', label: x.month, title: x.month }; });
+    var card = M.vizCard('Checkouts left, month by month', 'People who got to checkout and did not pay: how many each month (line, right scale) and the money in their carts (columns, left scale). Each person counts once. Few people so far, so read the direction only.', [
+      M.vizChart(function (h, w) { M.vizCombo(h, w, { buckets: mb, mode: 'month', title: 'Checkouts left by month', bars: { name: 'Money in the carts', axis: 'Money', values: rows.map(function (x) { return +x.money_in_them || 0; }), color: COL.terra, fmt: M.inr, yfmt: function (v) { return 'Rs. ' + M.short(v); } }, line: { name: 'People who left', axis: 'People', values: rows.map(function (x) { return +x.abandoned || 0; }), color: COL.maroon, fmt: M.num, int: true } }); })]);
+    M.vizPlace(root, card, /^People who left a checkout/);
+  });
 })();
 
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
@@ -13173,7 +13206,7 @@ M.unlock = function () {
     functions: [['function_summary_hist', 'all']],                                                            /* jobs on target, night by night */
     history:   [[function () { return M.state.hsrc; }, 'all']],                                               /* any table, every day stored */
     quality:   [[['data_quality_daily', 'routine_runs_daily'], 7]],                                           /* the newest checks; the last 7 days of routine runs */
-    gtm:       [[['brand_search_daily', 'email_weekly'], 'all'], [['instagram_window'], 125]],         /* Google clicks by week and the date they start (all); Instagram people reached: the last 120 windows */
+    gtm:       [[['brand_search_daily', 'email_weekly', 'checkout_recovery'], 'all'], [['instagram_window'], 125]],         /* Google clicks by week and the date they start (all); Instagram people reached: the last 120 windows */
     channels:  [],
     social:    [[SOCIAL, 'all']],
     search:    [[['competitor_social', 'kpi_daily'], 'all'], [['search_pages_weekly'], 'own']],
