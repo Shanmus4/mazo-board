@@ -4736,6 +4736,7 @@ M.openFolds = function (el) {
 
 M.ALIAS = {
   overview: 'sales revenue net sales sales after discounts total paid by customers sales without GST orders profit profit after everything shopify bill money goes visits conversion summary home headline average order value',
+  growth: 'growth sales growth line graph trend over time since the start from the beginning cumulative running total week by week month by month compared with the period before previous period increase average order value buyers built up',
   funnel: 'shopping steps funnel checkout cart add to cart drop off steps bought payment device leak',
   products: 'product stock inventory verdict sell through views units collection catalogue',
   sizes: 'size stock by size restock reorder lost demand heatmap xs s m l xl xxl next batch',
@@ -5389,13 +5390,13 @@ M.defs = function (b) {
     all: { sales: { tab: 'money_daily', col: 'net_sales' }, orders: { tab: 'money_daily', col: 'orders' }, profit: { tab: 'money_daily', col: 'contribution_profit' }, visits: { tab: 'ga4_funnel_daily', col: 'sessions' }, buys: { tab: 'ga4_funnel_daily', col: 'purchase' }, vi: { tab: 'ga4_funnel_daily', col: 'view_item' }, atc: { tab: 'ga4_funnel_daily', col: 'add_to_cart' } },
     channel: { sales: { tab: 'source_daily', col: 'revenue', pred: function (r) { return r.source_medium === s.channel; } }, orders: { tab: 'source_daily', col: 'purchases', pred: function (r) { return r.source_medium === s.channel; } }, visits: { tab: 'source_daily', col: 'sessions', pred: function (r) { return r.source_medium === s.channel; } } },
     device: { visits: { tab: 'place_device_daily', col: 'sessions', pred: function (r) { return r.kind === 'device' && r.place === s.device; } }, orders: { tab: 'place_device_daily', col: 'purchases', pred: function (r) { return r.kind === 'device' && r.place === s.device; } }, vi: { tab: 'funnel_device_daily', col: 'view_item', pred: function (r) { return r.device === s.device; } }, atc: { tab: 'funnel_device_daily', col: 'add_to_cart', pred: function (r) { return r.device === s.device; } } },
-    product: { sales: { tab: 'product_daily', col: 'revenue', pred: function (r) { return M.prodOk(r.product); } }, orders: { tab: 'product_daily', col: 'units', pred: function (r) { return M.prodOk(r.product); } }, visits: { tab: 'product_daily', col: 'views', pred: function (r) { return M.prodOk(r.product); } }, atc: { tab: 'product_daily', col: 'carts', pred: function (r) { return M.prodOk(r.product); } } }
+    product: { sales: M.has('product_sales_daily') ? { tab: 'product_sales_daily', col: 'gross_sales', pred: function (r) { return M.prodOk(r.product); } } : { tab: 'product_daily', col: 'revenue', pred: function (r) { return M.prodOk(r.product); } }, orders: M.has('product_sales_daily') ? { tab: 'product_sales_daily', col: 'units', pred: function (r) { return M.prodOk(r.product); } } : { tab: 'product_daily', col: 'units', pred: function (r) { return M.prodOk(r.product); } }, visits: { tab: 'product_daily', col: 'views', pred: function (r) { return M.prodOk(r.product); } }, atc: { tab: 'product_daily', col: 'carts', pred: function (r) { return M.prodOk(r.product); } } }
   }[b], D = [];
   var unitWord = b === 'product' ? 'Units sold' : 'Orders', visitWord = b === 'product' ? 'Product views' : 'Visits';
   /* T884 (4 Nov 2026): ONE meaning per word. This figure is the pieces after discounts with the GST inside and the shipping left out. Shopify's own report uses "net sales" for the same thing with the GST
      taken OUT (Rs. 16,652.37 in October 2026, against Rs. 17,485 here), and Madhu read "net sales" as everything customers paid (Rs. 17,725). So the word is not used for it any more: it is "Sales after
      discounts", the sentence under it says what it leaves out, and "Total paid by customers" and "Sales without GST" are the other two figures (dashboard_37_gst.js). The stored column stays net_sales. */
-  D.push({ key: 'sales', label: b === 'product' ? 'Sales before order codes' : b === 'channel' ? 'Sales from this channel' : 'Sales after discounts', what: b === 'product' ? 'items, from Google Analytics; order codes are not taken off' : b === 'channel' ? 'as Google Analytics counts them; not the same as the shop\'s own figure' : 'items only, GST inside, shipping not included', fmt: M.inr, num: P.sales, na: P.sales ? null : 'not split by ' + b });
+  D.push({ key: 'sales', label: b === 'product' ? 'Sales before order codes' : b === 'channel' ? 'Sales from this channel' : 'Sales after discounts', what: b === 'product' ? 'items from the order lines; order codes are not taken off' : b === 'channel' ? 'as Google Analytics counts them; not the same as the shop\'s own figure' : 'items only, GST inside, shipping not included', fmt: M.inr, num: P.sales, na: P.sales ? null : 'not split by ' + b });
   D.push({ key: 'orders', label: unitWord, fmt: M.num, num: P.orders });
   /* T884 (4 Nov 2026): ONE profit number on the Overview. The headline, its change and its trend come from M.moneyCalc (dashboard_56_money.js), the same sum as the last line of Where the money goes:
      money left before costs - Shopify bill - Razorpay charges - making cost - packaging - parcel - other costs. The stored column (money_daily.contribution_profit) takes off Shopify's charge on each
@@ -5633,7 +5634,12 @@ M.productRows = function (r) {
   var led = {}; M.stateRows('product_ledger').forEach(function (x) { led[x.product] = x; });
   var rat = {}; M.stateRows('product_ratings').forEach(function (x) { rat[String(x.product_title || '').toLowerCase()] = x; });      /* T851: Judge.me rating per product, matched on the product name */
   var agg = {};
-  M.rowsIn('product_daily', r.from, r.to).forEach(function (x) { if (!x.product) return; var o = agg[x.product] || (agg[x.product] = { views: 0, carts: 0, units: 0, revenue: 0 }); o.views += +x.views || 0; o.carts += +x.carts || 0; o.units += +x.units || 0; o.revenue += +x.revenue || 0; });
+  /* 6 Nov 2026 (owner: "Sales says 0 units sold in the last 7 days, but Sales by collection shows Rs 7,175 for yesterday, how?"): views and cart adds come from Google Analytics (product_daily), which settles
+     two days late and had counted only 7 of the 37 pieces ever sold. Units and revenue now come from the Shopify order lines (product_sales_daily), the same table Sales by collection reads, so the
+     two always agree and yesterday's order shows at once. Revenue is before order codes (gross). When the order lines are missing the Google numbers are used, as before. */
+  var lines = M.has('product_sales_daily');
+  M.rowsIn('product_daily', r.from, r.to).forEach(function (x) { if (!x.product) return; var o = agg[x.product] || (agg[x.product] = { views: 0, carts: 0, units: 0, revenue: 0 }); o.views += +x.views || 0; o.carts += +x.carts || 0; if (!lines) { o.units += +x.units || 0; o.revenue += +x.revenue || 0; } });
+  if (lines) M.rowsIn('product_sales_daily', r.from, r.to).forEach(function (x) { if (!x.product) return; var o = agg[x.product] || (agg[x.product] = { views: 0, carts: 0, units: 0, revenue: 0 }); o.units += +x.units || 0; o.revenue += +x.gross_sales || 0; });
   var names = {}; Object.keys(led).forEach(function (k) { names[k] = 1; }); Object.keys(agg).forEach(function (k) { names[k] = 1; });
   return Object.keys(names).filter(M.prodOk).map(function (k) {
     var l = led[k] || {}, a = agg[k] || { views: 0, carts: 0, units: 0, revenue: 0 }, rt = rat[String(k).toLowerCase()] || null;
@@ -5677,7 +5683,7 @@ M.productStandsOut = function (rows) {
 };
 M.productDetail = function (r, sel) {
   var box = M.h('div', { class: 'pdetail' });
-  var buckets = M.buckets(r.from, r.to, r.mode), pf = function (c) { return M.series({ tab: 'product_daily', col: c, pred: function (x) { return x.product === sel.product; } }, buckets); };
+  var buckets = M.buckets(r.from, r.to, r.mode), lines = M.has('product_sales_daily'), pf = function (c) { var order = lines && (c === 'units' || c === 'revenue'); return M.series({ tab: order ? 'product_sales_daily' : 'product_daily', col: order && c === 'revenue' ? 'gross_sales' : c, pred: function (x) { return x.product === sel.product; } }, buckets); };
   var mini = function (name, col, color) { var v = pf(col); return M.card(name, null, [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: sel.product + ' ' + name, h: 170, series: [{ name: name, values: v, color: color, fmt: col === 'revenue' ? M.inr : M.num }], empty: 'No ' + name.toLowerCase() + ' for this product in these dates.', yfmt: col === 'revenue' ? function (n) { return 'Rs. ' + M.short(n); } : M.short }); })]); };
   box.appendChild(M.h('h3', { text: sel.product, style: 'margin:1rem 0 .2rem' }));
   box.appendChild(M.h('p', { class: 'small', text: (sel.verdict ? (M.VERDICT_WORD[sel.verdict] || sel.verdict) + ': ' : '') + sel.reason + (sel.price ? ' Price ' + M.inr(sel.price) + ', margin ' + M.pct(sel.margin, 0) + '.' : '') }));
@@ -5739,7 +5745,7 @@ M.productCompare = function (rows) {
 M.PAGES.products.render = function (r) {
   var s = M.state, root = M.h('div'), rows = M.productRows(r), days = M.daysCovered('product_daily', r.from, r.to);
   if (!rows.length) { root.appendChild(M.empty('No products match this filter.', 'Clear the product or collection filter under Filters.')); return root; }
-  if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Only ' + days + ' of these ' + r.days + ' days have product data' + (M.missingWhy ? M.missingWhy('product_daily', r.from, r.to) : ' (it starts on ' + M.fd(M.cover('product_daily').first) + ')') + '.' }));
+  if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Only ' + days + ' of these ' + r.days + ' days have product views and cart adds (units and revenue come from the Shopify orders and are complete)' + (M.missingWhy ? M.missingWhy('product_daily', r.from, r.to) : ' (it starts on ' + M.fd(M.cover('product_daily').first) + ')') + '.' }));
   var tv = rows.reduce(function (a, x) { return a + x.views; }, 0), tc = rows.reduce(function (a, x) { return a + x.carts; }, 0), tu = rows.reduce(function (a, x) { return a + x.units; }, 0), trv = rows.reduce(function (a, x) { return a + x.revenue; }, 0), st = rows.reduce(function (a, x) { return a + (x.stock || 0); }, 0);
   var kp = M.h('div', { class: 'kpis' });
   kp.appendChild(M.kpi({ label: 'Product views', value: M.num(tv) })); kp.appendChild(M.kpi({ label: 'Added to cart', value: M.num(tc), note: tv ? M.pct(tc / tv * 100) + ' of views' : '' })); kp.appendChild(M.kpi({ label: 'Units sold', value: M.num(tu) })); kp.appendChild(M.kpi({ label: 'Revenue before order codes', value: M.inr(trv), note: 'Overview sales after discounts also removes order codes' })); kp.appendChild(M.kpi({ label: 'Pieces in stock now', value: M.num(st), note: rows.some(function (x) { return x.mto; }) ? 'Made to order pieces are not counted: they are made after the order.' : '' }));
@@ -9620,7 +9626,8 @@ M.glueMarks = function () {
   /* ---------------------------------------------------------------- Products */
   M.vizWrap('products', function (r, root) {
     var b = M.buckets(r.from, r.to, r.mode), s = M.state, ok = function (x) { return !M.prodOk || M.prodOk(x.product); };
-    [['Product views', 'views'], ['Added to cart', 'carts'], ['Units sold', 'units'], ['Revenue', 'revenue']].forEach(function (p) { spark(root, p[0], M.series({ tab: 'product_daily', col: p[1], pred: ok }, b)); });
+    var lines = M.has('product_sales_daily');      /* 6 Nov 2026: units and revenue are the Shopify order lines, the same numbers as the tiles; views and cart adds are Google Analytics */
+    [['Product views', 'views'], ['Added to cart', 'carts'], ['Units sold', 'units'], ['Revenue', 'revenue']].forEach(function (p) { var o = lines && (p[1] === 'units' || p[1] === 'revenue'); spark(root, p[0], M.series({ tab: o ? 'product_sales_daily' : 'product_daily', col: o && p[1] === 'revenue' ? 'gross_sales' : p[1], pred: ok }, b)); });
   });
 
   /* ---------------------------------------------------------------- Team scorecard */
@@ -12739,6 +12746,143 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   };
 })();
 
+/* mazo dashboard: SALES GROWTH, line graphs of how the business is growing (T884, 6 Nov 2026).
+   Owner: "I do not have a graph of sales growth! A line graph with compared to previous period, from the beginning of the business how much sales has grown. Analyse and add a lot more graphs."
+   A new page "Sales growth" in the Sales group, built on the same tables the Overview reads (money_daily for money, shopify_daily for new and returning buyers, ga4_funnel_daily for visits), so every figure
+   agrees with the Overview. Cards, top to bottom:
+     1. Sales since the first sale       the running total of sales after discounts from the first day the shop sold anything to the last day stored (not tied to the dates picked).
+     2. Sales, orders and visits each week, this period against the period before    a line for the picked dates and a dashed line for the equal period just before, week by week (Compare on).
+     3. Sales over 4 weeks at a time     the total of the 4 weeks ending each week, from the first sale: a growth line that is not thrown about by one quiet week. The table gives the change against
+                                          the 4 weeks before (a percent is shown only when the 4 weeks before sold something).
+     4. Sales month by month             columns of sales with a line of orders on its own labelled scale.
+     5. Average order value, week by week, and buyers built up since the first sale (new and returning).
+   6. Sales by collection, and visits that bought, week by week.
+   Counts (orders, buyers) are drawn on whole-number axes, never 1.3 or 3.8. Honest limits, written on the page: days with no order are real zeros; a percent from a period with nothing is not shown.
+   The weekly percent change was tried and dropped: with 1 to 3 orders a week it swung to 1,000%, which says nothing. */
+(function () {
+  var COL = M.COLORS;
+  M.sp('growth', 'Sales growth', 'Sales growth', 'How fast is the money growing? The running total since the first sale, this period against the one before, and week by week.', [], { dates: true });
+  M.ORDER.push('growth');
+  /* sit right after Shopping steps in the Sales group */
+  M.GROUPS.forEach(function (g) { if (g[0] === 'Sales' && g[1].indexOf('growth') < 0) g[1].unshift('growth'); });
+
+  var cum = function (a) { var t = 0; return a.map(function (v) { t += v || 0; return t; }); };
+  var weeksOf = function (from, to) {
+    var out = [], cur = M.monday(from);
+    while (cur <= to) { var end = M.add(cur, 6); out.push({ from: cur < from ? from : cur, to: end > to ? to : end, label: 'w/c ' + M.fds(cur), wk: cur }); cur = M.add(cur, 7); }
+    return out;
+  };
+  var inr = function (v) { return M.inr0 ? M.inr0(v) : M.inr(v); };
+  var yRs = function (v) { return 'Rs. ' + M.short(v); };
+
+  M.PAGES.growth.render = function (r) {
+    var root = M.h('div');
+    if (!M.has('money_daily')) { root.appendChild(M.empty('No sales table yet.', 'The nightly job fills it from Shopify.')); return root; }
+    var first = M.cover('money_daily').first, last = M.cover('money_daily').last;
+    var sales = { tab: 'money_daily', col: 'net_sales' }, orders = { tab: 'money_daily', col: 'orders' };
+    var cmp = M.cmpOn(r);
+
+    /* ---- headline numbers */
+    var tot = M.total(sales, r.from, r.to), ord = M.total(orders, r.from, r.to), allT = M.total(sales, first, last);
+    var pv = cmp ? M.total(sales, r.pfrom, r.pto) : { v: null }, cf = M.cmpFor(tot.v, pv.v, cmp, 'money_daily', r);
+    var kp = M.h('div', { class: 'kpis lead' });
+    kp.appendChild(M.kpi({ label: 'Sales in the dates picked', value: tot.v == null ? 'No data' : inr(tot.v), change: cf.change, goodUp: true, cmpNote: cf.cmpNote, hero: true, note: (ord.v == null ? '' : M.num(ord.v) + ' orders, ') + 'after discounts.' }));
+    kp.appendChild(M.kpi({ label: 'Sales since the first sale', value: inr(allT.v || 0), note: 'From ' + M.fd(first) + ' to ' + M.fd(last) + '.' }));
+    var wk = weeksOf(first, last), wv = M.series(sales, wk), recent = wv.slice(-4), before = wv.slice(-8, -4);
+    var r4 = recent.reduce(function (a, b) { return a + b; }, 0), b4 = before.reduce(function (a, b) { return a + b; }, 0);
+    kp.appendChild(M.kpi({ label: 'Last 4 weeks', value: inr(r4), change: before.length === 4 && b4 > 0 ? M.change(r4, b4) : null, goodUp: true, cmpNote: before.length === 4 && b4 > 0 ? '' : 'nothing to compare with', note: 'The 4 weeks before: ' + inr(b4) + '.' }));
+    var best = wv.reduce(function (m, v, i) { return v > m.v ? { v: v, i: i } : m; }, { v: -1, i: 0 });
+    kp.appendChild(M.kpi({ label: 'Best week so far', value: inr(Math.max(0, best.v)), note: wk[best.i] ? wk[best.i].label : '' }));
+    root.appendChild(kp);
+
+    /* ---- 1. since the first sale */
+    var all = M.buckets(first, last, last > first && M.diff(first, last) > 92 ? 'week' : 'day'), allVals = M.series(sales, all), run = cum(allVals);
+    var rowsA = all.map(function (b, i) { return { label: b.label, v: allVals[i], run: run[i], _from: b.from, _to: b.to }; });
+    root.appendChild(M.vizCard('Sales since the first sale', 'The money added up from ' + M.fd(first) + ' to ' + M.fd(last) + ' (sales after discounts). The line only goes up; a steeper stretch is a better stretch.', [
+      M.vizChart(function (h, w) { M.vizArea(h, w, { buckets: all, mode: all.length && all[0].from === all[0].to ? 'day' : 'week', title: 'Sales since the first sale', yfmt: yRs, series: [{ name: 'Sales so far', values: run, color: COL.maroon, fmt: inr }], extra: function (i) { return [{ k: 'That ' + (all[i].from === all[i].to ? 'day' : 'week'), v: inr(allVals[i]) }]; } }); }),
+      M.tableView([{ k: 'label', label: 'Period' }, { k: 'v', label: 'Sales that period', num: true, fmt: inr }, { k: 'run', label: 'Built up so far', num: true, fmt: inr }], rowsA)]));
+
+    /* ---- 2. this period against the period before, week by week: sales, orders, visits */
+    var wb = weeksOf(r.from, r.to), pwk = cmp ? M.prevBuckets(wb, r) : null, grid = M.h('div', { class: 'grid wide' });
+    var weekCard = function (title, part, color, fmt, yfmt, unit) {
+      if (!M.has(part.tab) || wb.length < 2) return;
+      var cur = M.series(part, wb), prev = pwk ? M.series(part, pwk) : null;
+      /* a table that starts later than the period before has no earlier weeks to show: a dashed line of zeros would read as "nothing happened" */
+      if (prev && M.daysCovered(part.tab, r.pfrom, r.pto) < r.days * 0.8) prev = null;
+      if (!cur.some(function (v) { return v > 0; }) && !(prev && prev.some(function (v) { return v > 0; }))) return;
+      var rows = wb.map(function (b, i) { return { label: b.label, v: cur[i], p: prev ? prev[i] : null, ch: prev && prev[i] > 0 ? M.change(cur[i], prev[i]) : null }; });
+      var cols = [{ k: 'label', label: 'Week' }, { k: 'v', label: unit, num: true, fmt: fmt }];
+      if (prev) cols.push({ k: 'p', label: 'Same week before', num: true, fmt: fmt }, { k: 'ch', label: 'Change', num: true, fmt: function (v) { return v == null ? 'n/a' : (v > 0 ? '+' : '') + M.num(v, 1) + '%'; } });
+      grid.appendChild(M.card(title + (prev ? ', against the period before' : ''), 'One point per week (Monday to Sunday). ' + (prev ? 'The dashed line is the same weeks in the period just before ' + M.fds(r.from) + '.' : 'Switch Compare on (top of the page) to see the period before as a dashed line.'), [
+        M.chart('', function (h, w) { M.timeChart(h, w, { buckets: wb, mode: 'week', title: title, yfmt: yfmt, series: [{ name: unit, values: cur, color: color, type: 'line', fmt: fmt }], prev: prev ? { name: 'Period before', values: prev } : null, h: 210 }); }),
+        M.tableView(cols, rows)]));
+    };
+    weekCard('Sales each week', sales, COL.maroon, inr, yRs, 'Sales after discounts');
+    weekCard('Orders each week', orders, COL.teal, M.num, M.short, 'Orders');
+    weekCard('Visits each week', { tab: 'ga4_funnel_daily', col: 'sessions' }, COL.mustard, M.num, M.short, 'Visits');
+    if (grid.children.length) root.appendChild(grid);
+
+    /* ---- 3. sales over 4 weeks at a time, from the first sale */
+    if (wv.length >= 5) {
+      var roll = wv.map(function (v, i) { return i < 3 ? null : wv[i] + wv[i - 1] + wv[i - 2] + wv[i - 3]; });
+      var rowsC = wk.map(function (b, i) { return roll[i] == null ? null : { label: b.label, v: roll[i], ch: i >= 7 && roll[i - 4] > 0 ? M.change(roll[i], roll[i - 4]) : null }; }).filter(Boolean);
+      root.appendChild(M.card('Sales over 4 weeks at a time', 'Each point is the sales of the 4 weeks ending that week, from the first sale. One quiet week does not drag it down, so the slope is the real growth. The table shows the change against the 4 weeks before.', [
+        M.chart('', function (h, w) { M.timeChart(h, w, { buckets: wk, mode: 'week', title: 'Sales over 4 weeks at a time', yfmt: yRs, series: [{ name: 'Sales of the 4 weeks ending this week', values: roll, color: COL.green, type: 'line', fmt: inr }], h: 220 }); }),
+        M.tableView([{ k: 'label', label: 'Week ending' }, { k: 'v', label: 'Sales of the 4 weeks', num: true, fmt: inr }, { k: 'ch', label: 'Change against the 4 weeks before', num: true, fmt: function (v) { return v == null ? 'n/a' : (v > 0 ? '+' : '') + M.num(v, 1) + '%'; } }], rowsC)]));
+    }
+
+    /* ---- 4. sales month by month (columns) with orders (line, own scale) */
+    var mb = M.buckets(first, last, 'month'), ms = M.series(sales, mb), mo = M.series(orders, mb);
+    if (mb.length >= 2 && ms.some(function (v) { return v > 0; })) {
+      root.appendChild(M.vizCard('Sales month by month', 'Columns are the sales after discounts of each month (left scale); the line is the number of orders (right scale). The current month is only part of a month until it ends.', [
+        M.vizChart(function (h, w) { M.vizCombo(h, w, { buckets: mb, mode: 'month', title: 'Sales and orders by month', bars: { name: 'Sales after discounts', axis: 'Sales', values: ms, color: COL.maroon, fmt: inr, yfmt: yRs }, line: { name: 'Orders', axis: 'Orders', values: mo, color: COL.mustard, fmt: M.num, int: true } }); }),
+        M.tableView([{ k: 'label', label: 'Month' }, { k: 'v', label: 'Sales after discounts', num: true, fmt: inr }, { k: 'o', label: 'Orders', num: true, fmt: M.num }], mb.map(function (b, i) { return { label: b.label, v: ms[i], o: mo[i] }; }))]));
+    }
+
+    /* ---- 5. average order value and buyers built up */
+    var small = M.h('div', { class: 'grid wide' }), so = M.series(orders, wk);
+    var aov = wv.map(function (v, i) { return so[i] > 0 ? Math.round(v / so[i]) : null; });
+    if (aov.some(function (v) { return v != null; })) small.appendChild(M.card('Average order value, week by week', 'Sales after discounts divided by orders, per week. A week with no order has no average, so the line stops there.', [
+      M.chart('', function (h, w) { M.timeChart(h, w, { buckets: wk, mode: 'week', title: 'Average order value', yfmt: yRs, series: [{ name: 'Average order value', values: aov, color: COL.terra, type: 'line', fmt: inr }], h: 200 }); })]));
+    if (M.has('shopify_daily')) {
+      var fb = M.buckets(first, last, M.diff(first, last) > 92 ? 'week' : 'day'), nw = cum(M.series({ tab: 'shopify_daily', col: 'new_customers' }, fb)), rt = cum(M.series({ tab: 'shopify_daily', col: 'returning_customers' }, fb));
+      if (nw[nw.length - 1] > 0) small.appendChild(M.card('Buyers built up since the first sale', 'People who have bought so far: first-time buyers added up, and returning buyers added up. Each step up is one more person.', [
+        M.chart('', function (h, w) { M.timeChart(h, w, { buckets: fb, mode: fb.length && fb[0].from === fb[0].to ? 'day' : 'week', title: 'Buyers built up', series: [{ name: 'First-time buyers so far', values: nw, color: COL.maroon, type: 'line', fmt: M.num }, { name: 'Returning buyers so far', values: rt, color: COL.green, type: 'line', fmt: M.num }], h: 200 }); })]));
+    }
+    /* ---- 6. sales by collection and the share of visits that bought, week by week */
+    if (M.has('product_sales_daily')) {
+      var cols = {}, rowsP = M.rowsIn('product_sales_daily', first, last);
+      rowsP.forEach(function (x) { cols[x.collection] = 1; });
+      var names = Object.keys(cols).filter(Boolean).sort(), CC = { 'Jig Jig': COL.teal, 'Madras Theory': COL.maroon };
+      var ser = names.map(function (n, i) { return { name: n, values: M.series({ tab: 'product_sales_daily', col: 'net_sales', pred: function (x) { return x.collection === n; } }, wk), color: CC[n] || M.DONUTCOL(i), type: 'line', fmt: inr }; });
+      if (names.length >= 2 && ser.some(function (s) { return s.values.some(function (v) { return v > 0; }); })) small.appendChild(M.card('Sales by collection, week by week', 'Sales after discounts of each collection per week, from the order lines (the same numbers as Sales by collection on the Products page).', [
+        M.chart('', function (h, w) { M.timeChart(h, w, { buckets: wk, mode: 'week', title: 'Sales by collection', yfmt: yRs, series: ser, h: 200 }); })]));
+    }
+    if (M.has('ga4_funnel_daily')) {
+      var gv = M.series({ tab: 'ga4_funnel_daily', col: 'sessions' }, wk), gp = M.series({ tab: 'ga4_funnel_daily', col: 'purchase' }, wk);
+      var cvw = gv.map(function (v, i) { return v > 0 ? Math.round(gp[i] / v * 1000) / 10 : null; });
+      if (gv.some(function (v) { return v > 0; })) small.appendChild(M.card('Visits that bought, week by week', 'The share of visits that ended in an order. Few orders so far, so one order moves it a lot; read the slope over several weeks. Google Analytics starts on ' + M.fd(M.cover('ga4_funnel_daily').first) + ', so earlier weeks are left out.', [
+        M.chart('', function (h, w) { M.timeChart(h, w, { buckets: wk.filter(function (b, i) { return gv[i] > 0; }), mode: 'week', title: 'Visits that bought', yfmt: function (v) { return M.num(v, 1) + '%'; }, series: [{ name: 'Visits that bought (%)', values: cvw.filter(function (v, i) { return gv[i] > 0; }), color: COL.mustard, type: 'line', fmt: function (v) { return M.num(v, 1) + '%'; } }], h: 200 }); })]));
+    }
+    if (small.children.length) root.appendChild(small);
+    return root;
+  };
+})();
+
+/* ---------------------------------------------------------------- Reviews over time (Tables page). The card "Reviews" is a table; the number of published reviews and the average rating each have a nightly
+   value since 9 Oct (judgeme_daily), so they get a line. Drawn only when at least 3 nights are stored. */
+(function () {
+  M.vizWrap('tables', function (r, root) {
+    if (!M.has('judgeme_daily')) return;
+    var b = M.buckets(r.from, r.to, r.mode), cnt = M.levelSeries('judgeme_daily', b, 'published_reviews', function () { return 'all'; }).all, rate = M.levelSeries('judgeme_daily', b, 'average_rating', function () { return 'all'; }).all;
+    if (!cnt || b.length < 3 || cnt.every(function (v) { return !v; })) return;
+    var card = M.vizCard('Reviews over time', 'Published reviews added up night by night (left) and the average stars (right). Both come from Judge.me and start on ' + M.fd(M.cover('judgeme_daily').first) + '.', [
+      M.vizChart(function (h, w) { M.vizCombo(h, w, { buckets: b, mode: r.mode, title: 'Reviews and stars', bars: { name: 'Published reviews', axis: 'Reviews', values: cnt, color: COL_MAROON(), fmt: M.num }, line: { name: 'Average stars', axis: 'Stars', values: rate, color: M.COLORS.mustard, fmt: function (v) { return M.num(v, 2); }, yfmt: function (v) { return M.num(v, 1); } } }); })]);
+    M.vizPlace(root, card, /^Reviews/);
+  });
+  function COL_MAROON() { return M.COLORS.maroon; }
+})();
+
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
    the one file build (docs/reports/dashboard/mazo-dashboard.html) never uses any of this. Plan and design: docs/guides/robust-data-and-hosting-plan.md, scripts/site_crypto.py.
 
@@ -13021,6 +13165,7 @@ M.unlock = function () {
   M.WINDOWS = {
     overview:  [[['money_daily', 'ga4_funnel_daily'], 55]],                                                   /* the goal card: orders of the 28 days and the 28 before */
     funnel:    [],
+    growth:    [[['money_daily', 'shopify_daily', 'ga4_funnel_daily'], 'all']],                                       /* sales since the first sale, month by month, buyers built up: every stored day */
     products:  [[['stock_daily', 'product_sales_daily', 'product_ledger_hist', 'product_daily'], 'all']],     /* price over time since the first sale; stock night by night; the product in depth */
     sizes:     [[['product_sales_daily', 'size_daily'], 89]],                                                 /* units sold by size and the radar: the last 90 days whatever dates are picked */
     customers: [[['shopify_daily', 'order_sources', 'place_device_daily', 'customers_weekly'], 'all']],       /* buyers week by week, cities, size of an order: all history */
