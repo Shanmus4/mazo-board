@@ -4099,7 +4099,7 @@ M.decorate = function () {
     if (card.querySelector(':scope > .ctools')) return;
     var fr = M.frameOfCard(card);
     /* UX round (1 Nov 2026): a card that holds a table, bar list, heatmap or stack has no chart frame; it gets a light one, so it can also go full screen */
-    if (!fr && card.querySelector('table, .hb, .stack-row, .tblbox, svg[role=img]')) {
+    if (!fr && card.querySelector('table, .hb, .stack-row, .tblbox, svg[role=img], details.tbl-details')) {      /* 7 Nov 2026: a 'Show the numbers' list is built only when opened, so the closed list counts as a table */
       fr = card._pseudo = { pseudo: true, host: card, wrap: card, key: null, kind: 'static', big: false, title: '', paint: function () {} };
       M.keyFor(fr);
     }
@@ -9481,6 +9481,7 @@ M.glueMarks = function () {
     if (!(max > 0) || value == null || isNaN(value)) return M.empty(o.empty || 'No goal set yet.');
     var f = Math.max(0, Math.min(1, value / max)), pctTxt = o.centre || M.pct(value / max * 100, 0), fmt = o.fmt || M.num, color = o.color || M.COLORS.maroon;
     var box = M.h('div', { class: 'ring-box' });
+    box._ringCsv = { name: o.name || 'Progress', rows: [{ measure: o.valueLabel || 'So far', value: value }, { measure: o.maxLabel || 'Goal', value: max }, { measure: 'Share of the goal, percent', value: Math.round(value / max * 1000) / 10 }] };      /* 7 Nov 2026: read by the CSV icon (dashboard_56_csv_cards.js) */
     var chart = M.vizChart(function (host, w) {
       var S = 160, c = S / 2, r = 62, sw = 16;
       var svg = M.s('svg', { viewBox: '0 0 ' + S + ' ' + S, role: 'img', 'aria-label': (o.name || 'Progress') + ': ' + fmt(value) + ' of ' + fmt(max) + ' (' + pctTxt + ').' });
@@ -9551,6 +9552,7 @@ M.glueMarks = function () {
     var n = o.buckets.length, H = M.bigH(host, o.h || 240), L = 54, R = 44, T = 26, B = 26, pw = w - L - R, ph = H - T - B, b = o.bars, ln = o.line;
     var braw = Math.max.apply(null, b.values.concat([0])), lraw = Math.max.apply(null, ln.values.concat([0]));
     if (!n || (braw <= 0 && lraw <= 0)) { host.appendChild(M.empty(o.empty || 'No activity in this range yet.')); return; }
+    host._csvSpec = { buckets: o.buckets, series: [{ name: b.name, values: b.values }, { name: ln.name, values: ln.values }] };      /* 7 Nov 2026: the CSV icon (dashboard_56_csv_cards.js) saves what this chart plots, columns and line */
     var lmax = M.nice(braw || 1), rmax = ln.int ? Math.max(4, Math.ceil(lraw / 4) * 4) : M.niceTop(lraw || 1);
     var X = function (i) { return L + (i + 0.5) / n * pw; }, YL = function (v) { return T + ph - v / lmax * ph; }, YR = function (v) { return T + ph - v / rmax * ph; }, bw = Math.max(2, Math.min(36, pw / n * 0.62));
     var svg = M.s('svg', { viewBox: '0 0 ' + w + ' ' + H, role: 'img', 'aria-label': (o.title || 'Two measures') + ', ' + n + ' ' + (o.mode || 'day') + 's. Columns are ' + b.name + ' on the left scale, the line is ' + ln.name + ' on the right scale. Use the left and right arrow keys to read each one. The numbers are in the table below.' });
@@ -12346,6 +12348,9 @@ M.annot = (function () {
           if (h._csvSpec) part.push(source('chart', nm, fromSpec(function () { return h._csvSpec; })));
           else if (h._frame && h._frame.kind === 'time') { var fr = h._frame; plainTime++; part.push(source('chart', nm, fromSpec(function () { return fr.eff || fr.spec0; }))); }
         });
+        Array.prototype.forEach.call(unit.querySelectorAll('.ring-box'), function (rb) {      /* a progress ring: the value, the goal and the share (7 Nov 2026) */
+          if (rb._ringCsv) part.push(source('kpis', nm, function () { return { cols: [{ k: 'measure', label: 'Measure' }, { k: 'value', label: 'Value', num: true }], rows: rb._ringCsv.rows }; }));
+        });
         if (unit.querySelector('.stack-row')) part.push(source('stacked', nm, fromStacked(unit)));
         if (unit.querySelector('.hb')) part.push(source('bars', nm, fromBars(unit)));
         if (!part.length && unit.querySelector('.kpi')) part.push(source('kpis', nm, fromKpis(unit)));
@@ -13508,7 +13513,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       { k: 'share', label: 'Share of the money', num: true, fmt: function (v) { return v == null ? 'none' : M.pct(v, 2); }, bar: { color: COL.mustard } }, { k: 'avgfee', label: 'Average fee for a payment', num: true, fmt: function (v) { return v == null ? 'none' : R.inr(v); } }],
       { rows: rows, sortKey: 'amount', name: 'Razorpay India and abroad' }));
     if (!abroadN) kids.push(R.small('No payment from outside India went through in these dates, so the second line is empty. The first such payment appears here the night it is read.'));
-    else kids.push(M.donut([{ label: 'From India', value: rows[0].amount }, { label: 'From outside India', value: rows[1].amount }], { name: 'Money from India and abroad', total: 'paid', unit: 'money', fmt: R.inr0 }));
+    else kids.push(M.h('div', { style: 'margin-top:16px' }, [M.donut([{ label: 'From India', value: rows[0].amount }, { label: 'From outside India', value: rows[1].amount }], { name: 'Money from India and abroad', total: 'paid', unit: 'money', fmt: R.inr0 })]));      /* 7 Nov 2026: the audit found the chart touching the table (0 px); 16 px of room */
     return R.card(title, why, kids);
   });
 
