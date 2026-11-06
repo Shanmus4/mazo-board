@@ -3293,7 +3293,9 @@ M.timeChart = function (host, w, o) {
     var b = o.buckets[i], title = b.title || (b.from === b.to ? M.fd(b.from) : M.fd(b.from) + ' to ' + M.fd(b.to));
     if (o.prev && o.prev.values[i] != null) {
       var pv = o.prev.values[i], cur = o.series[0].values[i], f0 = o.series[0].fmt || M.num, ch = (cur != null && pv) ? M.change(cur, pv) : null;
-      rows.push({ k: 'Period before', v: f0(pv) + (ch != null ? '  (' + (ch > 0 ? '+' : '') + M.num(ch, 1) + '%)' : '') });      /* the earlier period's value and the change against it */
+      var pbk = o.prev.buckets && o.prev.buckets[i];      /* 6 Nov 2026: the earlier period is drawn under the new dates, so say which date it stands for */
+      if (!pbk && M.range && M.prevBuckets) { try { var rr = M.range(); if (rr.hasPrev) pbk = M.prevBuckets(o.buckets, rr)[i]; } catch (e) { pbk = null; } }
+      rows.push({ k: 'Period before' + (pbk ? ' (' + (pbk.from === pbk.to ? M.fd(pbk.from) : M.fd(pbk.from) + ' to ' + M.fd(pbk.to)) + ')' : ''), v: f0(pv) + (ch != null ? '  (' + (ch > 0 ? '+' : '') + M.num(ch, 1) + '%)' : '') });      /* the earlier period's value and the change against it */
     }
     M.tipShow(cx, cy, title, rows);
   }
@@ -3329,7 +3331,9 @@ M.timeChart = function (host, w, o) {
   host.appendChild(svg);
   if (host._frame && host._frame.big && M.drawBrush) M.drawBrush(host, host._frame, w);
   var items = o.series.map(function (s) { return { name: s.name, color: s.color, line: s.type === 'line' }; });
-  if (o.prev) items.push({ name: 'Previous period (dashed)', color: M.COLORS.grey, line: true });
+  /* 6 Nov 2026 (owner: "7 day previous period, how so high?"): the dashed line is drawn under the NEW dates, so the legend names the dates it really stands for */
+  var pr = M.range ? M.range() : null, prName = 'Previous period' + (pr && pr.hasPrev && pr.pfrom ? ': ' + M.fd(pr.pfrom) + ' to ' + M.fd(pr.pto) : '');
+  if (o.prev) items.push({ name: prName + ' (dashed)', color: M.COLORS.grey, line: true });
   if (G && G.any) items.push({ name: 'No data stored that day', cls: 'gapkey' });
   if (items.length > 1 || o.prev || (G && G.any)) host.appendChild(M.legend(items));
 };
@@ -9452,12 +9456,13 @@ M.glueMarks = function () {
     var half = n > 1 ? pw / (n - 1) / 2 : pw / 2;
     M.colHover(svg, w, { n: n, L: L - half, T: T, pw: pw + half * 2, ph: ph, X: X, tip: function (i) {
       var b = o.buckets[i], rows = o.series.map(function (s) { return { k: s.name, v: (s.fmt || M.num)(s.values[i]) }; });
-      if (o.prev) rows.push({ k: o.prev.name, v: (o.series[0].fmt || M.num)(o.prev.values[i]) });
+      /* 6 Nov 2026 (owner: "7 day previous period, how so high?"): the dashed line sits under the NEW dates, so the hover names the real date it stands for */
+      if (o.prev) rows.push({ k: o.prev.name + (o.prev.buckets && o.prev.buckets[i] ? ' (' + (o.prev.buckets[i].from === o.prev.buckets[i].to ? M.fd(o.prev.buckets[i].from) : M.fd(o.prev.buckets[i].from) + ' to ' + M.fd(o.prev.buckets[i].to)) + ')' : ''), v: (o.series[0].fmt || M.num)(o.prev.values[i]) });
       if (o.extra) o.extra(i).forEach(function (r) { rows.push(r); });
       return { title: b.title || (b.from === b.to ? M.fd(b.from) : M.fd(b.from) + ' to ' + M.fd(b.to)), rows: rows };
     } });
     host.appendChild(svg);
-    host.appendChild(M.legend(o.series.map(function (s) { return { name: s.name, color: s.color }; }).concat(o.prev ? [{ name: o.prev.name + ' (dashed)', color: M.COLORS.grey, line: true }] : [])));
+    host.appendChild(M.legend(o.series.map(function (s) { return { name: s.name, color: s.color }; }).concat(o.prev ? [{ name: o.prev.name + (o.prev.range ? ': ' + o.prev.range : '') + ' (dashed)', color: M.COLORS.grey, line: true }] : [])));
   };
 
   /* ---------------------------------------------------------------- columns on the left scale, line on the right scale */
@@ -9530,7 +9535,7 @@ M.glueMarks = function () {
         grid.appendChild(M.vizCard('Sales built up so far', 'The money added up from the first ' + r.mode + ' to each ' + r.mode + ', ' + M.vizDates(r) + '. The line only goes up; a steeper stretch is a better stretch. The dashed line is the same running total for the period just before, when Compare is on.', [
           M.vizChart(function (h, w) {
             M.vizArea(h, w, { buckets: buckets, mode: r.mode, title: 'Sales after discounts built up', yfmt: function (v) { return 'Rs. ' + M.short(v); }, series: [{ name: 'Sales after discounts so far', values: run, color: COL.maroon, fmt: M.inr }],
-              prev: prev ? { name: 'Period before', values: prev } : null, extra: function (i) { return [{ k: 'That ' + r.mode, v: M.inr(vals[i]) }]; } });
+              prev: prev ? { name: 'Period before', values: prev, buckets: pb, range: M.fd(r.pfrom) + ' to ' + M.fd(r.pto) + ', Rs. ' + M.num(Math.round(prev[prev.length - 1])) + ' in all' } : null, extra: function (i) { return [{ k: 'That ' + r.mode, v: M.inr(vals[i]) }]; } });
           }),
           M.tableView([{ k: 'label', label: 'Period' }, { k: 'v', label: 'Sales after discounts that ' + r.mode, num: true, fmt: M.inr }, { k: 'run', label: 'Built up so far', num: true, fmt: M.inr }], rows)]));
       }
