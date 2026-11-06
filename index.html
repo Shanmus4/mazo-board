@@ -560,7 +560,7 @@ body.detail-on #fsroot .card.fs{padding-right:var(--s6)}
 .preview-note{margin:var(--sp3) 0 0;color:var(--ink2);font-size:var(--t12)}
 .pay-gap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp4);margin:var(--sp3) 0}
 @media (max-width:640px){.pay-gap{grid-template-columns:1fr}}
-.pay-gap div{padding:var(--sp3) var(--sp4);border:1px solid var(--edge);border-radius:var(--rad2);background:#fff}
+.pay-gap div{padding:var(--sp3) var(--sp4);border:0;border-radius:var(--rad2);background:var(--wash,#F6F1EA)}      /* 6 Nov 2026: a tinted tile, no outline (the layout audit counts every border as a divider line and allows 2 a page) */
 .pay-gap b{display:block;font-size:var(--t20);color:var(--maroon);font-weight:600}
 .pay-gap span{font-size:var(--t12);color:var(--ink2)}
 .verdict{display:inline-flex;align-items:center;gap:var(--sp2);padding:2px var(--sp3);border-radius:999px;font-size:var(--t12);font-weight:600;white-space:nowrap}
@@ -913,6 +913,9 @@ main.refade>div{animation:mzRefade .16s ease both}
 .ctl-why{font-size:var(--fs-sm,.9rem);color:var(--ink2,#6b5e55);line-height:1.35;padding:0 var(--s2,8px);max-width:34ch;align-self:center}
 .ctl-why[hidden]{display:none}
 @media (max-width:749px){ .ctl-why{display:none} }
+
+/* 6 Nov 2026: the ring above the "Is the promise kept?" sentence sat 4px from it (found by the layout audit the first time a parcel had been delivered); the text now has the same 12px as every stacked block in a card */
+.ring-box + p, .ring-box + .small, section.card > .ring-box + * { margin-top: 12px; }
 
 /* mazo dashboard post links (T822, 1 Nov 2026): the Post and Link columns of the social posts tables and the "not tracked" wording. Small on purpose; the look of tables, buttons and
    the focus ring comes from the shared files. */
@@ -7517,35 +7520,38 @@ M.PAGES.shipping.render = function (r) {
   var S = function (c) { return M.sumCol(tab, c, r).v || 0; };
   var n = S('shipments'), fr = S('freight'), rtoc = S('rto_charges'), oth = S('other_charges'), dl = S('delivered'), rto = S('rto');
   var est = n * 100;
+  /* 6 Nov 2026: Shiprocket's order list carries no freight and its statement endpoint returns one blank line, so until the freight is read the cost is NOT zero, it is unknown. The page says so instead of Rs. 0. */
+  var costKnown = (fr + rtoc + oth) > 0;
   var dd = M.rowsIn(tab, r.from, r.to).filter(function (x) { return x.avg_delivery_days != null && x.avg_delivery_days !== ''; });
   var avgDays = dd.length ? dd.reduce(function (a, x) { return a + (+x.avg_delivery_days) * (+x.delivered || 1); }, 0) / dd.reduce(function (a, x) { return a + (+x.delivered || 1); }, 0) : null;
   var kp = M.h('div', { class: 'kpis lead' });
   kp.appendChild(M.kpi({ label: 'Parcels sent', value: M.num(n), hero: true, note: M.num(dl) + ' delivered, ' + M.num(Math.max(0, n - dl - rto)) + ' on the way' }));
-  kp.appendChild(M.kpi({ label: 'Cost of sending', value: M.inr(fr + rtoc + oth), note: n ? M.inr((fr + rtoc + oth) / n) + ' a parcel' : '' }));
+  kp.appendChild(costKnown ? M.kpi({ label: 'Cost of sending', value: M.inr(fr + rtoc + oth), note: n ? M.inr((fr + rtoc + oth) / n) + ' a parcel' : '' })
+    : M.kpi({ label: 'Cost of sending', na: 'Not read yet', note: 'Shiprocket does not hand over what each parcel cost. The bills are on its Bills page; reading them is the next step.' }));
   kp.appendChild(M.kpi({ label: 'Days to deliver', value: avgDays == null ? 'not tracked' : M.num(avgDays, 1), note: 'from pickup to the door, average' }));
   kp.appendChild(M.kpi({ label: 'Came back', value: M.num(rto), note: n ? M.pct(rto / n * 100, 1) + ' of parcels' : '' }));
   root.appendChild(kp);
   var cbl = M.costBasisLine('shiprocket'); if (cbl) root.appendChild(cbl);
-  var buckets = M.buckets(r.from, r.to, r.mode), seriesFor = function (c) { return M.series({ tab: tab, col: c }, buckets); };
+  var buckets = M.buckets(r.from, r.to, r.mode), seriesFor = function (c) { return Array.prototype.slice.call(M.series({ tab: tab, col: c }, buckets)); };      /* 6 Nov 2026: this table has a row only on days a parcel was picked up, so a quiet day is a real zero, not 'no data stored' */
   var cnt = seriesFor('shipments'), frS = seriesFor('freight');
   root.appendChild(M.grid([
     M.card('Parcels each ' + r.mode, 'The parcels the couriers picked up. The line is the average of the last few ' + r.mode + 's.', [
       M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Parcels', series: [{ name: 'Parcels', values: cnt, color: M.COLORS.teal, fmt: M.num }] }); }),
       M.tableView([{ k: 'label', label: 'Period' }, { k: 'n', label: 'Parcels', num: true }], buckets.map(function (b, i) { return { label: b.label, n: cnt[i], _from: b.from, _to: b.to }; }))]),
-    M.card('What the parcels cost each ' + r.mode, 'Rupees paid to the couriers: freight, charges for parcels that came back, and extra charges.', [
+    !costKnown ? null : M.card('What the parcels cost each ' + r.mode, 'Rupees paid to the couriers: freight, charges for parcels that came back, and extra charges.', [
       M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Cost of sending', yfmt: function (v) { return 'Rs. ' + M.short(v); }, series: [{ name: 'Cost of sending', values: frS, color: M.COLORS.maroon, fmt: M.inr }] }); }),
       M.tableView([{ k: 'label', label: 'Period' }, { k: 'c', label: 'Cost', num: true, fmt: M.inr }], buckets.map(function (b, i) { return { label: b.label, c: frS[i], _from: b.from, _to: b.to }; }))]),
-    M.card('Real cost against the Rs. 100 guess', 'Profit used Rs. 100 a parcel before Shiprocket was connected. This shows how far off that guess was.', [
+    !costKnown ? null : M.card('Real cost against the Rs. 100 guess', 'Profit used Rs. 100 a parcel before Shiprocket was connected. This shows how far off that guess was.', [
       M.h('div', { class: 'pay-gap' }, [
         M.h('div', null, [M.h('b', { text: M.inr(fr + rtoc + oth) }), M.h('span', { text: 'what the parcels really cost' })]),
         M.h('div', null, [M.h('b', { text: M.inr(est) }), M.h('span', { text: 'what the Rs. 100 guess says' })]),
         M.h('div', null, [M.h('b', { text: ((fr + rtoc + oth - est) > 0 ? '+' : '') + M.inr(fr + rtoc + oth - est) }), M.h('span', { text: 'real minus the guess' })])]),
       rtoc || oth ? M.h('p', { class: 'small', text: 'Inside the real cost: ' + M.inr(fr) + ' freight, ' + M.inr(rtoc) + ' for parcels that came back, ' + M.inr(oth) + ' for extra weight and other charges.' }) : null])
-  ], 'wide'));
+  ].filter(Boolean), 'wide'));
   /* couriers */
   var cour = M.stateRows('shiprocket_courier');
   root.appendChild(M.card('Which courier is best', 'Every courier Shiprocket used in the last 180 days. A courier with under 10 parcels is too few to judge.', [
-    cour.length ? M.table([{ k: 'courier', label: 'Courier', wrap: true }, { k: 'shipments', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'avg_freight', label: 'Cost a parcel', num: true, fmt: M.inr }, { k: 'avg_days', label: 'Days to deliver', num: true, fmt: function (v) { return v == null ? 'not tracked' : M.num(v, 1); } },
+    cour.length ? M.table([{ k: 'courier', label: 'Courier', wrap: true }, { k: 'shipments', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'avg_freight', label: 'Cost a parcel', num: true, fmt: function (v) { return +v > 0 ? M.inr(v) : 'not read'; } }, { k: 'avg_days', label: 'Days to deliver', num: true, fmt: function (v) { return v == null ? 'not tracked' : M.num(v, 1); } },
       { k: 'rto_rate_pct', label: 'Came back', num: true, fmt: function (v) { return v == null ? 'not tracked' : M.pct(v, 1); } }, { k: 'read', label: 'Verdict', render: function (x) { return x.shipments < 10 ? M.tag('too few to read', 'thin') : M.verdict(x.rto_rate_pct > 10 ? 'work' : x.rto_rate_pct > 4 ? 'close' : 'ok'); }, sort: function (x) { return x.rto_rate_pct; } }],
       { rows: cour.map(function (x) { return x; }), sortKey: 'shipments', empty: 'No couriers yet.', limit: 20 }) : M.empty('No courier data yet.')]));
   /* promise: made to order and ready to ship */
@@ -7610,6 +7616,7 @@ M.TABLE_WORDS = {
   queries_weekly: ['Customer questions, week by week', 'How many questions came in on each topic and how many were answered the same day (typed in by Madhu).', 'Business tables'],
   compliance_dates: ['Dates the business owes', 'Renewals, tokens, filings and checks, each with a due date and who owns it.', 'Business tables'],
   range_calendar: ['Seasons coming up', 'Festivals and seasons ahead, with the dates to shoot, stock and post by.', 'Business tables'],
+  shipping_invoices: ['Shiprocket tax invoices', 'Every tax invoice Shiprocket has billed us (freight and services), with the GST on it. Typed in from the invoice. The GST is input credit for the Accountant to confirm.', 'Business tables'],
   shopify_bills: ['Shopify bills', 'Every bill Shopify has sent, typed in from the Shopify billing page: the plan, Shopify\'s charges, the total and what dates it covers. A bill that is not a normal month is marked and left out of the figures.', 'Overview'],
   human_inputs: ['Numbers Madhu typed in', 'Parcel cost, packaging cost, Razorpay fee, Shopify plan and Shopify fee, and other numbers that only a person knows.', 'Business tables'],
   gst_filing: ['GST filing view', 'One row for each month and state of delivery: what customers paid, the taxable value and the GST split into CGST, SGST and IGST, built from the tax lines of every real order.', 'Taxes'],
@@ -10074,6 +10081,7 @@ M.glueMarks = function () {
       return root;
     }
     var p = periodOf(all), rows = inSpan(all, p);
+    M.taxPeriodNow = function () { return p; };      /* 6 Nov 2026: the period chosen on this page, for the shipping GST cards (dashboard_67_tax_shipping.js) */
     root.appendChild(M.h('div', { class: 'tax-bar' }, [chooser(p), M.h('p', { class: 'tax-period', text: 'Showing ' + p.label + '. ' + (p.kind === 'year' ? 'Pick a quarter or a month to see the figures for one return.' : '') })]));
     var h = headline(rows, p);
     root.appendChild(h.node);
@@ -12938,6 +12946,90 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       M.vizChart(function (h, w) { M.vizCombo(h, w, { buckets: mb, mode: 'month', title: 'Checkouts left by month', bars: { name: 'Money in the carts', axis: 'Money', values: rows.map(function (x) { return +x.money_in_them || 0; }), color: COL.terra, fmt: M.inr, yfmt: function (v) { return 'Rs. ' + M.short(v); } }, line: { name: 'People who left', axis: 'People', values: rows.map(function (x) { return +x.abandoned || 0; }), color: COL.maroon, fmt: M.num, int: true } }); })]);
     M.vizPlace(root, card, /^People who left a checkout/);
   });
+})();
+
+/* mazo dashboard: GST ON SHIPPING, SHOWN SEPARATELY (T884, 6 Nov 2026).
+   Owner: "for shipping tax I want it to be separate, do not include it in the total tax, and show it. Understand the shipping tax rules first: CGST, IGST, SGST." The rules are written in
+   docs/guides/gst-on-shipping.md (shipping sold with goods takes the goods' rate; CGST + SGST inside Karnataka, IGST to another state; GST we pay to Shiprocket is input credit).
+   Two cards on the Taxes page, for the period chosen on that page:
+     1. GST on shipping we charged    per month: shipping charged, its taxable value, CGST, SGST, IGST, total, and the number of orders that charged shipping with NO GST recorded. All of it is
+                                      read from tax_orders (columns ship_cgst, ship_sgst, ship_igst = Shopify's own tax lines of the shipping line, kpi_collectors20.py).
+     2. GST we paid on shipping       the Shiprocket tax invoices (tab shipping_invoices when it exists). Shown as input credit for the Accountant to confirm; it never reduces the tax to pay.
+   The headline "Tax to pay" above stays what the return carries (goods + shipping); this card says how much of it is shipping. */
+(function () {
+  var num = function (v) { return v == null || v === '' || isNaN(+v) ? 0 : +v; };
+  var P = function (v) { return Math.round((+v || 0) * 100 + (v >= 0 ? 1e-7 : -1e-7)); };
+  var rs2 = function (paise) { var a = Math.abs(paise); return (paise < 0 && a ? '-' : '') + 'Rs. ' + M.num(a / 100, 2); };
+  var mname = function (m) { var p = String(m).split('-'); return M.MON[+p[1] - 1] + ' ' + p[0]; };
+
+  var shippingCard = function (p) {
+    if (!M.has('tax_orders') || !p || !p.months) return null;
+    var set = {}; p.months.forEach(function (m) { set[m] = 1; });
+    var rows = M.rows('tax_orders').filter(function (x) { return x.kind !== 'void' && typeof x.date === 'string' && set[x.date.slice(0, 7)] && x.ship_cgst !== undefined; });
+    if (!rows.length) return null;
+    var by = {};
+    rows.forEach(function (x) {
+      var m = x.date.slice(0, 7), o = by[m] || (by[m] = { month: m, charged: 0, taxable: 0, c: 0, s: 0, i: 0, orders: 0, none: 0 });
+      var sh = P(x.shipping_taxable), gst = P(x.ship_cgst) + P(x.ship_sgst) + P(x.ship_igst);
+      o.charged += sh; o.c += P(x.ship_cgst); o.s += P(x.ship_sgst); o.i += P(x.ship_igst); o.taxable += sh - gst;
+      if (x.kind === 'sale' && sh > 0) { o.orders++; if (!gst) o.none++; }
+    });
+    var list = Object.keys(by).sort().map(function (m) { return by[m]; });
+    var tot = list.reduce(function (a, o) { ['charged', 'taxable', 'c', 's', 'i', 'orders', 'none'].forEach(function (k) { a[k] += o[k]; }); return a; }, { charged: 0, taxable: 0, c: 0, s: 0, i: 0, orders: 0, none: 0 });
+    if (!tot.charged) return null;
+    var kp = M.h('div', { class: 'kpis lead tax-kpis' });
+    kp.appendChild(M.kpi({ label: 'GST on shipping', value: rs2(tot.c + tot.s + tot.i), hero: true, note: 'on ' + rs2(tot.charged) + ' of shipping charged, ' + M.num(tot.orders) + ' order' + (tot.orders === 1 ? '' : 's') }));
+    kp.appendChild(M.kpi({ label: 'Shipping CGST + SGST', value: rs2(tot.c + tot.s), note: 'CGST ' + rs2(tot.c) + ', SGST ' + rs2(tot.s) + ': shipping inside Karnataka' }));
+    kp.appendChild(M.kpi({ label: 'Shipping IGST', value: rs2(tot.i), note: 'shipping to another state' }));
+    kp.appendChild(M.kpi({ label: 'Shipping without GST recorded', value: M.num(tot.none), note: tot.none ? 'orders that charged shipping before the shop taxed it (5 Sep 2026)' : 'every shipping charge carries its GST' }));
+    var cols = [{ k: 'label', label: 'Month' }, { k: 'orders', label: 'Orders with shipping', num: true, fmt: M.num }, { k: 'charged', label: 'Shipping charged', num: true, fmt: rs2 }, { k: 'taxable', label: 'Taxable value', num: true, fmt: rs2 },
+      { k: 'c', label: 'CGST', num: true, fmt: rs2 }, { k: 's', label: 'SGST', num: true, fmt: rs2 }, { k: 'i', label: 'IGST', num: true, fmt: rs2 }, { k: 'gst', label: 'GST on shipping', num: true, fmt: rs2 },
+      { k: 'none', label: 'Orders with no GST recorded', num: true, fmt: M.num }];
+    var trs = list.map(function (o) { return { label: mname(o.month), orders: o.orders, charged: o.charged, taxable: o.taxable, c: o.c, s: o.s, i: o.i, gst: o.c + o.s + o.i, none: o.none }; });
+    var card = M.card('GST on shipping', 'Shown on its own. It is already inside "Tax to pay" above, because the return carries the GST on the shipping fee too; this says how much of that figure is shipping. Shipping sold with goods takes the goods\' rate; inside Karnataka it splits into CGST and SGST, to another state it is IGST. Free shipping carries no GST.', [kp, M.table(cols, { rows: trs, empty: 'No shipping was charged in this period.', noTools: true, name: 'gst_on_shipping' })]);
+    card._shipGst = tot.c + tot.s + tot.i;
+    return card;
+  };
+
+  var paidCard = function () {
+    if (!M.has('shipping_invoices')) return null;
+    var rows = M.rows('shipping_invoices').filter(function (x) { return x.invoice; });
+    if (!rows.length) return null;
+    var tot = { taxable: 0, c: 0, s: 0, i: 0, total: 0 };
+    rows.forEach(function (x) { tot.taxable += P(x.taxable_value); tot.c += P(x.cgst); tot.s += P(x.sgst); tot.i += P(x.igst); tot.total += P(x.total); });
+    var gst = tot.c + tot.s + tot.i;
+    var kp = M.h('div', { class: 'kpis lead tax-kpis' });
+    kp.appendChild(M.kpi({ label: 'GST paid to Shiprocket', value: rs2(gst), hero: true, note: 'on ' + rs2(tot.taxable) + ' of shipping bills. Input credit: the Accountant confirms it.' }));
+    kp.appendChild(M.kpi({ label: 'Shipping bills, GST included', value: rs2(tot.total), note: M.num(rows.length) + ' invoice' + (rows.length === 1 ? '' : 's') }));
+    var cols = [{ k: 'invoice', label: 'Invoice' }, { k: 'date', label: 'Date' }, { k: 'kind', label: 'For' }, { k: 'taxable_value', label: 'Taxable value', num: true, fmt: function (v) { return rs2(P(v)); } },
+      { k: 'cgst', label: 'CGST', num: true, fmt: function (v) { return rs2(P(v)); } }, { k: 'sgst', label: 'SGST', num: true, fmt: function (v) { return rs2(P(v)); } }, { k: 'igst', label: 'IGST', num: true, fmt: function (v) { return rs2(P(v)); } },
+      { k: 'total', label: 'Total', num: true, fmt: function (v) { return rs2(P(v)); } }, { k: 'buyer_gstin', label: 'mazo GSTIN on it' }];
+    return M.card('GST paid on shipping (input credit)', 'What Shiprocket charged us for freight, with the GST on it. This GST can come back as input tax credit only when the invoice carries mazo\'s GSTIN and shows in the GST portal. It is NOT taken off the tax to pay above: only the Accountant can claim it.', [kp, M.table(cols, { rows: rows, empty: 'No invoice yet.', noTools: true, name: 'shipping_invoices' })]);
+  };
+
+  var wrapped = false;
+  var wrap = function () {
+    var pg = M.PAGES && M.PAGES.tax; if (!pg || !pg.render || wrapped) return;
+    wrapped = true;
+    var base = pg.render;
+    pg.render = function (r) {
+      var root = base.apply(this, arguments);
+      try {
+        var p = M.taxPeriodNow ? M.taxPeriodNow() : null;
+        var c1 = shippingCard(p), c2 = paidCard();
+        /* the headline tile says how much of "Tax to pay" is shipping, so the split is visible where the number is */
+        if (c1 && c1._shipGst != null) {
+          var tile = root.querySelector('.tax-kpis .kpi');
+          if (tile && !tile.querySelector('.ship-part')) tile.appendChild(M.h('div', { class: 'ctx ship-part', text: 'of which GST on shipping ' + rs2(c1._shipGst) + ', shown on its own below' }));
+        }
+        var anchor = null;
+        Array.prototype.forEach.call(root.children, function (k) { if (!anchor && k.nodeName === 'SECTION' && /Sales register/i.test((k.querySelector('h3') || {}).textContent || '')) anchor = k; });
+        [c1, c2].forEach(function (c) { if (!c) return; if (anchor) root.insertBefore(c, anchor); else root.appendChild(c); });
+      } catch (e) { console.error('tax shipping:', e); }
+      return root;
+    };
+  };
+  wrap();
 })();
 
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
