@@ -909,6 +909,11 @@ main.refade>div{animation:mzRefade .16s ease both}
 @keyframes mzRefade{from{opacity:.35}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){main.refade>div{animation:none}}
 
+/* 6 Nov 2026 (owner: "where have the filters gone on top? date and stuff?"): the quiet line in the top bar that says why the date range and Compare are not shown on a page that does not use them */
+.ctl-why{font-size:var(--fs-sm,.9rem);color:var(--ink2,#6b5e55);line-height:1.35;padding:0 var(--s2,8px);max-width:34ch;align-self:center}
+.ctl-why[hidden]{display:none}
+@media (max-width:749px){ .ctl-why{display:none} }
+
 /* mazo dashboard post links (T822, 1 Nov 2026): the Post and Link columns of the social posts tables and the "not tracked" wording. Small on purpose; the look of tables, buttons and
    the focus ring comes from the shared files. */
 .postcap{display:block;width:24ch;max-width:24ch;line-height:1.35}
@@ -3757,6 +3762,16 @@ M.syncControls = function () {
   var nOrders = M.totalOrders(), first = M.first();
   c.line.textContent = dateUsed ? M.fd(r.from) + ' to ' + M.fd(r.to) + ' (' + M.num(r.days) + ' days)' + (r.clamped ? '. The data starts here.' : '') : '';
   c.dateTxt.textContent = dateUsed ? (s.preset === 'custom' ? M.fds(r.from) + ' to ' + M.fd(r.to) : r.label) : 'No date range';
+  /* 6 Nov 2026 (owner: "where have the filters gone on top? date and stuff?"): on a page that does not follow the dates (Taxes, Customers, Sizes, Forecast, Email, Growth ...) the date and Compare controls
+     are hidden, and nothing said why, so the bar looked empty. A quiet line now says which part of the bar this page uses. It is text only, never a control. */
+  var why = document.getElementById('ctl-why');
+  if (!why && c.dateWrap && c.dateWrap.parentNode) { why = M.h('span', { id: 'ctl-why', class: 'ctl-why', 'data-ux': '1' }); c.dateWrap.parentNode.insertBefore(why, c.dateWrap); }
+  if (why) {
+    var anyFilter = !!(nUsed || (pg && pg.snap));
+    var own = s.page === 'tax' ? 'Taxes: pick the month, quarter or year on this page.' : (pg && pg.snap ? 'This page shows how things stand now, so it has no date range.' : 'This page does not follow the date range.');
+    why.textContent = dateUsed ? '' : own;
+    why.hidden = dateUsed;
+  }
   c.dateBtn.title = dateUsed ? M.fd(r.from) + ' to ' + M.fd(r.to) + ' (' + M.num(r.days) + ' days)' : 'This page does not follow the date range';
   /* T817: the long "Data 19 May to 31 Oct. 28 orders. Built ..." block left the sidebar. One quiet line sits at the right of the toolbar; the full detail is on the Data quality page and in the hover title. */
   c.fresh.textContent = (M.D.kind === 'year' ? 'Year ' + M.D.year + ' only. ' : '') + 'Data up to ' + M.fd(M.D.anchor);
@@ -12784,6 +12799,9 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     return out;
   };
   var inr = function (v) { return M.inr0 ? M.inr0(v) : M.inr(v); };
+  /* 6 Nov 2026 (owner: "charts seem broken?"): the order lines table holds a row only on a day something sold, so M.series read every quiet week as "no data stored" and drew hatched bands. A week with no
+     sale is a real zero, so for tables that exist only on sale days the series carries no gap recipe. */
+  var plain = function (part, buckets) { var a = M.series(part, buckets); return Array.prototype.slice.call(a); };
   var yRs = function (v) { return 'Rs. ' + M.short(v); };
 
   M.PAGES.growth.render = function (r) {
@@ -12852,9 +12870,10 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
 
     /* ---- 5. average order value and buyers built up */
     var small = M.h('div', { class: 'grid wide' }), so = M.series(orders, wk);
-    var aov = wv.map(function (v, i) { return so[i] > 0 ? Math.round(v / so[i]) : null; });
-    if (aov.some(function (v) { return v != null; })) small.appendChild(M.card('Average order value, week by week', 'Sales after discounts divided by orders, per week. A week with no order has no average, so the line stops there.', [
-      M.chart('', function (h, w) { M.timeChart(h, w, { buckets: wk, mode: 'week', title: 'Average order value', yfmt: yRs, series: [{ name: 'Average order value', values: aov, color: COL.terra, type: 'line', fmt: inr }], h: 200 }); })]));
+    /* 6 Nov 2026: a week with 0 or 1 order gave loose dots. The average of the 4 weeks ending each week (sales divided by orders of those 4 weeks) is one smooth line that still moves when baskets get bigger. */
+    var aov = wv.map(function (v, i) { if (i < 3) return null; var s4 = wv[i] + wv[i - 1] + wv[i - 2] + wv[i - 3], o4 = so[i] + so[i - 1] + so[i - 2] + so[i - 3]; return o4 > 0 ? Math.round(s4 / o4) : null; });
+    if (aov.some(function (v) { return v != null; })) small.appendChild(M.card('Average order value', 'Sales after discounts divided by orders, for the 4 weeks ending each week, so one quiet week does not break the line.', [
+      M.chart('', function (h, w) { M.timeChart(h, w, { buckets: wk, mode: 'week', title: 'Average order value', yfmt: yRs, series: [{ name: 'Average order value (4 weeks)', values: aov, color: COL.terra, type: 'line', fmt: inr }], h: 200 }); })]));
     if (M.has('shopify_daily')) {
       var fb = M.buckets(first, last, M.diff(first, last) > 92 ? 'week' : 'day'), nw = cum(M.series({ tab: 'shopify_daily', col: 'new_customers' }, fb)), rt = cum(M.series({ tab: 'shopify_daily', col: 'returning_customers' }, fb));
       if (nw[nw.length - 1] > 0) small.appendChild(M.card('Buyers built up since the first sale', 'People who have bought so far: first-time buyers added up, and returning buyers added up. Each step up is one more person.', [
@@ -12865,7 +12884,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var cols = {}, rowsP = M.rowsIn('product_sales_daily', first, last);
       rowsP.forEach(function (x) { cols[x.collection] = 1; });
       var names = Object.keys(cols).filter(Boolean).sort(), CC = { 'Jig Jig': COL.teal, 'Madras Theory': COL.maroon };
-      var ser = names.map(function (n, i) { return { name: n, values: M.series({ tab: 'product_sales_daily', col: 'net_sales', pred: function (x) { return x.collection === n; } }, wk), color: CC[n] || M.DONUTCOL(i), type: 'line', fmt: inr }; });
+      var ser = names.map(function (n, i) { return { name: n, values: plain({ tab: 'product_sales_daily', col: 'net_sales', pred: function (x) { return x.collection === n; } }, wk), color: CC[n] || M.DONUTCOL(i), type: 'line', fmt: inr }; });
       if (names.length >= 2 && ser.some(function (s) { return s.values.some(function (v) { return v > 0; }); })) small.appendChild(M.card('Sales by collection, week by week', 'Sales after discounts of each collection per week, from the order lines (the same numbers as Sales by collection on the Products page).', [
         M.chart('', function (h, w) { M.timeChart(h, w, { buckets: wk, mode: 'week', title: 'Sales by collection', yfmt: yRs, series: ser, h: 200 }); })]));
     }
