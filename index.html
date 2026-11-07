@@ -6310,7 +6310,7 @@ M.histRollup = function (r, srcs, src) {
   var s = M.state, root = M.h('div'), t = M.tab(src), month = src === 'rollup_monthly', periods = M.rollupPeriods(src, r);
   var nums = t.cols.filter(function (c) { return c !== 'week' && c !== 'month' && c !== 'profit_read' && t.rows.some(function (x) { return typeof x[c] === 'number'; }); });
   var col = nums.indexOf(s.hcol) >= 0 ? s.hcol : 'net_sales', col2 = nums.indexOf(s.hcol2) >= 0 && s.hcol2 !== col ? s.hcol2 : '';
-  var label = function (c) { return c.replace(/^net_sales$/, 'sales after discounts').replace(/_/g, ' ').replace('est fees parcel packaging', 'fees, parcel and packaging (estimate)').replace('profit est', 'profit before the Shopify bill (estimate)').replace('profit after plan', 'profit after the Shopify plan only (estimate)').replace('shopify fee est', 'Shopify\'s charges on orders (estimate)'); };
+  var label = function (c) { return c.replace(/^net_sales$/, 'sales after discounts').replace(/_/g, ' ').replace('est fees parcel packaging', 'fees, parcel and packaging').replace('profit est', 'profit before the Shopify bill (estimate)').replace('profit after plan', 'profit after the Shopify plan only (estimate)').replace('shopify fee est', 'Shopify\'s charges on orders (estimate)'); };
   root.appendChild(M.card('Choose what to look at', 'Each bar is one stored ' + (month ? 'month' : 'week') + '. A period is included when any of its days fall in the date range, and it is shown whole, so the first ' + (month ? 'month' : 'week') + ' can start before the data does. The compare switch and chart steps do not apply here: every bar is already a full period. Choose "All time" in the date range to see everything stored.', [M.h('div', { class: 'row-ctl' }, [
     M.histSel('h-src', 'Table', srcs.map(function (x) { return [x.id, x.label]; }), src, 'hsrc'),
     M.histSel('h-col', 'Measure', nums.map(function (c) { return [c, label(c)]; }), col, 'hcol'),
@@ -7500,22 +7500,11 @@ M.PAGES.payments.render = function (r) {
      so the chart no longer hatches those days as "No data stored that day" (the same rule as dashboard_66_growth_lines.js). */
   var seriesFor = function (col) { return Array.prototype.slice.call(M.series({ tab: tab, col: col }, buckets)); };
   var amtS = seriesFor('amount'), feeS = seriesFor('fee');
-  root.appendChild(M.grid([
-    M.card('Money paid, and what Razorpay kept', 'Bars are the money buyers paid each ' + r.mode + '. The line is the part Razorpay kept (its fee, GST included).', [
+  /* 7 Nov 2026 (Tech Guy: 'the cards here look ugly and different from the rest'): the older 'How buyers paid', 'Why payments failed', 'Does Razorpay agree with the shop?' and 'Refunds' cards are gone, because the
+     newer cards (dashboard_68_razorpay*.js) show the same facts in the page's chart style: how buyers paid in detail, payments that failed and why, Razorpay against the shop day by day, refunds and disputes. */
+  root.appendChild(M.card('Money paid, and what Razorpay kept', 'Bars are the money buyers paid each ' + r.mode + '. The line is the part Razorpay kept (its fee, GST included).', [
       M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Money paid', yfmt: function (v) { return 'Rs. ' + M.short(v); }, series: [{ name: 'Paid by buyers', values: amtS, color: M.COLORS.maroon, fmt: M.inr }, { name: 'Razorpay kept', values: feeS, color: M.COLORS.mustard, type: 'line', fmt: M.inr }] }); }),
-      M.tableView([{ k: 'label', label: 'Period' }, { k: 'a', label: 'Paid', num: true, fmt: M.inr }, { k: 'f', label: 'Kept by Razorpay', num: true, fmt: M.inr }], buckets.map(function (b, i) { return { label: b.label, a: amtS[i], f: feeS[i], _from: b.from, _to: b.to }; }))]),
-    M.card('How buyers paid', 'Payments that went through, by the way the buyer paid. Cards from abroad are counted inside Card.', (function () {
-      var parts = [['UPI', S('upi')], ['Card', S('card')], ['Net banking', S('netbanking')], ['Wallet', S('wallet')], ['Other', S('other')]].filter(function (p) { return p[1] > 0; });
-      var tot = parts.reduce(function (a, p) { return a + p[1]; }, 0);
-      return [M.bars(parts.map(function (p) { return { label: p[0], value: p[1], text: M.num(p[1]) + ' (' + M.pct(p[1] / tot * 100, 0) + ')' }; }), { empty: 'No payments in these dates.' }), S('international') ? M.h('p', { class: 'small', text: M.num(S('international')) + ' of them were cards from outside India.' }) : null];
-    })())
-  ], 'wide'));
-  /* failures */
-  var fr = M.rowsIn('razorpay_failures', r.from, r.to), by = {};
-  fr.forEach(function (x) { var k = x.reason || 'no reason given'; by[k] = (by[k] || 0) + (+x.count || 0); });
-  var frl = Object.keys(by).map(function (k) { return { reason: k, count: by[k] }; }).sort(function (a, b) { return b.count - a.count; });
-  root.appendChild(M.card('Why payments failed', 'In the words Razorpay gives. A buyer who cancels is not a fault in the shop; a bank that declines or a payment that times out is worth looking at.', [
-    frl.length ? M.bars(frl.slice(0, 8).map(function (x) { return { label: x.reason, value: x.count, text: M.num(x.count) + ' (' + M.pct(x.count / Math.max(1, fail) * 100, 0) + ')' }; }), {}) : M.empty(fail ? 'Razorpay gave no reasons for these failures.' : 'No failed payments in these dates.')]));
+      M.tableView([{ k: 'label', label: 'Period' }, { k: 'a', label: 'Paid', num: true, fmt: M.inr }, { k: 'f', label: 'Kept by Razorpay', num: true, fmt: M.inr }], buckets.map(function (b, i) { return { label: b.label, a: amtS[i], f: feeS[i], _from: b.from, _to: b.to }; }))]));
   /* payouts */
   var setl = M.rowsIn('razorpay_settlements', r.from, r.to).slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
   var paidOut = setl.reduce(function (a, x) { return a + (+x.amount || 0); }, 0);
@@ -7523,19 +7512,6 @@ M.PAGES.payments.render = function (r) {
     setl.length ? M.table([{ k: 'date', label: 'Paid out on', fmt: M.fd }, { k: 'amount', label: 'Amount', num: true, fmt: M.inr, bar: { color: M.COLORS.teal } }, { k: 'fees', label: 'Fees taken', num: true, fmt: M.inr }, { k: 'tax', label: 'GST on fees', num: true, fmt: M.inr }, { k: 'status', label: 'Status' }, { k: 'utr_tail', label: 'Bank ref (last 4)' }], { rows: setl, sortKey: 'date', empty: 'No payouts in these dates.', limit: 20 })
          : M.empty('No payouts in these dates yet. Razorpay pays out a day or two after a payment.'),
     setl.length ? M.h('p', { class: 'small', text: M.inr(paidOut) + ' reached the bank in these dates.' }) : null]));
-  /* do the books agree? Shopify's paid orders against Razorpay's captured payments */
-  var shopOrders = M.sumCol('money_daily', 'orders', r).v || 0, shopPaid = (M.sumCol('money_daily', 'net_sales', r).v || 0) + (M.sumCol('money_daily', 'shipping_charged', r).v || 0);      /* items after discounts (GST inside) plus shipping charged = the total buyers paid, as in the metric dictionary */
-  var gapAmt = amt - shopPaid, gapN = cap - shopOrders;
-  var ok = Math.abs(gapAmt) < 1 && gapN === 0, close = Math.abs(gapAmt) < Math.max(500, shopPaid * 0.02);
-  root.appendChild(M.card('Does Razorpay agree with the shop?', 'The shop says what orders were paid; Razorpay says what payments it collected. They should match. A small gap on the last day is normal while a payment is still settling.', [
-    M.h('div', { class: 'pay-gap' }, [
-      M.h('div', null, [M.h('b', { text: M.inr(shopPaid) }), M.h('span', { text: 'paid by buyers, per the shop (' + M.num(shopOrders) + ' orders, shipping included)' })]),
-      M.h('div', null, [M.h('b', { text: M.inr(amt) }), M.h('span', { text: 'collected by Razorpay (' + M.num(cap) + ' payments)' })]),
-      M.h('div', null, [M.h('b', { text: (gapAmt > 0 ? '+' : '') + M.inr(gapAmt) }), M.h('span', { text: 'difference' })])]),
-    M.h('p', null, [M.verdict(ok ? 'ok' : close ? 'close' : 'work'), ' ', M.h('span', { class: 'small', text: ok ? 'The shop and Razorpay agree to the rupee.' : close ? 'A small difference. Check again tomorrow.' : 'The totals are far apart. Open the Data quality page to see which days differ.' })])]));
-  /* refunds */
-  var rf = M.rowsIn('razorpay_refunds', r.from, r.to);
-  if (rf.length) root.appendChild(M.card('Refunds', 'Money sent back to buyers through Razorpay.', [M.table([{ k: 'date', label: 'Date', fmt: M.fd }, { k: 'amount', label: 'Amount', num: true, fmt: M.inr }, { k: 'status', label: 'Status' }, { k: 'speed', label: 'Speed' }], { rows: rf, sortKey: 'date', limit: 20 })]));
   return root;
 };
 
@@ -7598,9 +7574,32 @@ M.PAGES.shipping.render = function (r) {
       { rows: cour.map(function (x) { return x; }), sortKey: 'shipments', empty: 'No couriers yet.', limit: 20 }) : M.empty('No courier data yet.')]));
   /* promise: made to order and ready to ship */
   var P = M.PROMISE;
-  root.appendChild(M.card('Is the promise kept?', 'The shop promises ' + P.ready[0] + ' to ' + P.ready[1] + ' working days for ready to ship pieces and about 20 days for pieces made to order. This compares the days a parcel really took.', [
-    avgDays == null ? M.empty('Not enough delivered parcels yet to compare with the promise.') :
-      M.h('p', null, [M.verdict(avgDays <= P.ready[1] ? 'ok' : avgDays <= P.ready[1] + 2 ? 'close' : 'work'), ' ', M.h('span', { text: 'On average a parcel took ' + M.num(avgDays, 1) + ' days with the courier, from the pickup to the door. The days before the pickup, and the days Google Merchant Center shows as the delivery time, are different clocks: see "Three clocks" above.' })])]));
+  /* 7 Nov 2026 (Tech Guy: 'on Google Merchant Center it says 10 days'): the promise is kept or broken from the BUYER's side, so the days that count are order to the door (the courier days alone are 2.5 and
+     hide the wait before the pickup). Ready to ship pieces promise 3 to 7 days, made to order pieces about 20. Merchant Center's one 'Delivery time' (10.7 days on 6 Nov) is the two promises blended by
+     item count (32 ready items at 3 to 7 days, 18 made to order at 15 to 20), not a measurement; the card says so. */
+  var Pm = M.PROMISE, door = (M.has('shiprocket_parcels') ? M.rows('shiprocket_parcels') : []).filter(function (x) { return x.status === 'delivered' && x.ordered_at && x.delivered_at && x.delivered_at.slice(0, 10) >= r.from && x.delivered_at.slice(0, 10) <= r.to; })
+    .map(function (x) { return { order: x.order, coll: x.collection, days: M.hoursBetween ? M.hoursBetween(x.ordered_at, x.delivered_at) / 24 : null, at: x.delivered_at.slice(0, 10) }; }).filter(function (x) { return x.days != null && !isNaN(x.days); });
+  var kept = function (list, hi) { return list.filter(function (x) { return x.days <= hi; }).length; };
+  var madeRows = door.filter(function (x) { return x.coll === 'Jig Jig'; }), readyRows = door.filter(function (x) { return x.coll !== 'Jig Jig'; });
+  var promiseKids = [];
+  if (!door.length) promiseKids.push(M.empty('No parcel in these dates has been delivered with both an order time and a delivered time yet.'));
+  else {
+    var line = function (name, list, promised, hi) {
+      if (!list.length) return null;
+      var n = list.length, k = kept(list, hi), avg = list.reduce(function (a, x) { return a + x.days; }, 0) / n, sorted = list.map(function (x) { return x.days; }).sort(function (p, q) { return p - q; }), med = sorted[Math.floor((n - 1) / 2)];
+      return M.kpi({ label: name, value: M.pct(k / n * 100, 0) + ' on time', note: M.num(k) + ' of ' + M.num(n) + ' delivered within ' + hi + ' calendar days (promise: ' + promised + '; weekends are counted, so this is the strict reading). Half arrived within ' + M.num(med, 1) + ' days, the average is ' + M.num(avg, 1) + '.' });
+    };
+    var k1 = line('Ready to ship pieces', readyRows, Pm.ready[0] + ' to ' + Pm.ready[1] + ' working days', Pm.ready[1]), k2 = line('Made to order pieces', madeRows, 'about 20 days', 20);
+    promiseKids.push(M.h('div', { class: 'kpis' }, [k1, k2].filter(Boolean)));
+    var worst = door.slice().sort(function (p, q) { return q.days - p.days; })[0];
+    promiseKids.push(M.h('p', { class: 'small', text: 'Days counted from the order to the door. The courier alone takes ' + (avgDays == null ? 'about 2 to 3' : M.num(avgDays, 1)) + ' days; the rest is the wait before the pickup. The slowest delivered parcel is ' + worst.order + ' at ' + M.num(worst.days, 0) + ' days.' }));
+  }
+  var gm = M.has('shiprocket_promise') ? M.rows('shiprocket_promise').filter(function (x) { return x.kind !== 'express'; }) : [];
+  if (gm.length) {
+    var tot = gm.reduce(function (a, x) { return a + (+x.items || 0); }, 0), mid = gm.reduce(function (a, x) { return a + (+x.promised_mid || 0) * (+x.items || 0); }, 0) / Math.max(1, tot);
+    promiseKids.push(M.h('p', { class: 'small', text: 'Google Merchant Center shows one "Delivery time" for the shop (10.7 days on 6 Nov 2026). It is not measured. It blends the shop\'s promises by the number of items: ' + gm.map(function (x) { return M.num(x.items) + ' ' + (/^made/.test(x.kind) ? 'made to order' : 'ready to ship') + ' items promise ' + x.promised_min + ' to ' + x.promised_max + ' days'; }).join(' and ') + ', which averages about ' + M.num(mid, 1) + ' days. Merchant Center replaces it with real times only after 100 clicks.' }));
+  }
+  root.appendChild(M.card('Is the promise kept?', 'The shop promises ' + Pm.ready[0] + ' to ' + Pm.ready[1] + ' working days for ready to ship pieces and about 20 days for pieces made to order. This compares what buyers really waited, from the order to the door.', promiseKids));
   /* failed delivery tries */
   var nd = M.rowsIn('shiprocket_rto', r.from, r.to);
   root.appendChild(M.card('Parcels that could not be delivered', 'A failed try is a courier visit where nobody took the parcel. The reason is in the courier\'s words. No names, phone numbers or addresses are kept.', [
@@ -7632,7 +7631,7 @@ M.PAGES.shipping.render = function (r) {
 
 /* name, what it is in everyday words, where it lives. The key is the stored table name. */
 M.TABLE_WORDS = {
-  money_daily: ['Money each day', 'Orders, sales, discounts, GST, cost, estimated fees and profit for every day.', 'Overview'],
+  money_daily: ['Money each day', 'Orders, sales, discounts, GST, cost, the payment fee and parcel cost (real where Razorpay and Shiprocket have them) and profit for every day.', 'Overview'],
   kpi_daily: ['Everything each day', 'One row a day with the main numbers of the shop and every channel side by side.', 'History'],
   shopify_daily: ['Orders each day (from Shopify)', 'Orders, units, sales and new against returning buyers for every day, straight from Shopify.', 'Customers'],
   ga4_funnel_daily: ['Visits and steps each day', 'Visits, and how many looked at a product, added to cart, started checkout and paid.', 'Shopping steps'],
@@ -7654,7 +7653,7 @@ M.TABLE_WORDS = {
   review_themes: ['What reviews talk about', 'How often reviews mention delivery, fit, fabric and so on.', 'Business tables'],
   customers_weekly: ['Customers, week by week', 'Contacts, new buyers, buyers who came back, average order.', 'Customers'],
   email_weekly: ['Email list, week by week', 'Subscribers, new subscribers and people who left.', 'Email'],
-  finance_monthly: ['Money in the bank, month by month', 'What reached the bank, the real fees and the monthly fixed cost (the Shopify plan today). The fixed cost is filled; the bank and fee columns fill when Razorpay is connected.', 'Business tables'],
+  finance_monthly: ['Money in the bank, month by month', 'What reached the bank, the real fees and the monthly fixed cost (the Shopify plan today). The bank money and the fees come from Razorpay; the fixed cost is typed in.', 'Business tables'],
   queries_weekly: ['Customer questions, week by week', 'How many questions came in on each topic and how many were answered the same day. Counted by hand.', 'Business tables'],
   compliance_dates: ['Dates the business owes', 'Renewals, tokens, filings and checks, each with a due date and who owns it.', 'Business tables'],
   range_calendar: ['Seasons coming up', 'Festivals and seasons ahead, with the dates to shoot, stock and post by.', 'Business tables'],
@@ -7750,10 +7749,10 @@ M.TABLE_WORDS = {
   gtm_scorecard: ['Growth questions', 'Plain questions with a number as the answer.', 'Growth'],
   rollup_weekly: ['Totals by week', 'Orders, sales, cost and profit for each week.', 'History'],
   rollup_monthly: ['Totals by month', 'Orders, sales, cost and profit for each month.', 'History'],
-  razorpay_payments_daily: ['Payments each day (Razorpay)', 'Payments taken, failed, fees and money in. Fills when Razorpay is connected.', 'Payments'],
-  razorpay_failures: ['Why payments failed', 'Reasons payments did not go through. Fills when Razorpay is connected.', 'Payments'],
-  razorpay_settlements: ['Payouts to the bank', 'Each payout with date and amount. Fills when Razorpay is connected.', 'Payments'],
-  razorpay_refunds: ['Refunds paid out', 'Refunds through Razorpay. Fills when Razorpay is connected.', 'Payments'],
+  razorpay_payments_daily: ['Payments each day (Razorpay)', 'Payments taken, failed, fees and money in, one row a day with a payment.', 'Payments'],
+  razorpay_failures: ['Why payments failed', 'Reasons payments did not go through.', 'Payments'],
+  razorpay_settlements: ['Payouts to the bank', 'Each payout with date, amount, fees and GST.', 'Payments'],
+  razorpay_refunds: ['Refunds paid out', 'Refunds through Razorpay.', 'Payments'],
   razorpay_payments: ['Every payment (Razorpay)', 'One row for each time a buyer tried to pay: the way of paying, the fee and the GST in it, the reason a try failed, the shop order, and the day the money reached the bank. No name, phone, card or UPI id.', 'Payments'],
   razorpay_orders: ['Checkouts at the payment step (Razorpay)', 'One row each time the payment step opened, with how that checkout ended: paid on the first try, paid on a later try, left after trying, or left without trying.', 'Payments'],
   razorpay_recon: ['Payments inside each payout (Razorpay)', 'One row for each payment in a payout: the day it reached the bank, the fee and GST taken, and the days it took.', 'Payments'],
@@ -7761,9 +7760,9 @@ M.TABLE_WORDS = {
   razorpay_months: ['Razorpay by month', 'Payments, money, fees, the GST inside the fees, the checkouts left and the money paid to the bank, month by month.', 'Payments'],
   razorpay_balance_daily: ['Money waiting at Razorpay, by day', 'What Razorpay held for the shop at the end of each day, from the payments and the payout days, with Razorpay\'s own balance on the nights it was saved.', 'Payments'],
   razorpay_disputes: ['Disputes (Razorpay)', 'Payments a buyer\'s bank asked to take back. Empty while Razorpay lists none.', 'Payments'],
-  shiprocket_shipments_daily: ['Parcels each day (Shiprocket)', 'Parcels sent, freight charged, delivered and returned. Fills when Shiprocket is connected.', 'Shipping'],
-  shiprocket_courier: ['Couriers (Shiprocket)', 'Cost, days and returns for each courier. Fills when Shiprocket is connected.', 'Shipping'],
-  shiprocket_rto: ['Parcels returned to us', 'Parcels that came back. Fills when Shiprocket is connected.', 'Shipping'],
+  shiprocket_shipments_daily: ['Parcels each day (Shiprocket)', 'Parcels sent, freight charged, delivered and returned, one row a day with a pickup.', 'Shipping'],
+  shiprocket_courier: ['Couriers (Shiprocket)', 'Cost, days and returns for each courier.', 'Shipping'],
+  shiprocket_rto: ['Parcels returned to us', 'Parcels that came back.', 'Shipping'],
   shiprocket_parcels: ['Every parcel (Shiprocket)', 'One row per parcel: cost, extra weight, exact pickup and delivered times, weight, size and zone. No buyer details.', 'Shipping'],
   shiprocket_tracking: ['Each parcel\'s journey', 'The exact time of every scan of each parcel, from the label to the door, and the hours between them.', 'Shipping'],
   shiprocket_attempts: ['Failed tries and missed pickups', 'Each failed delivery try and missed pickup, with the reason in the courier\'s words.', 'Shipping'],
@@ -7808,7 +7807,18 @@ M.PAGES.tables.render = function () {
   /* 2. money in the bank, numbers typed in */
   var fm = M.rows('finance_monthly'), hi = M.rows('human_inputs');
   var k3 = [];
-  if (fm.length) k3.push(M.card('Money in the bank, month by month', 'What actually reached the bank and the real fees. Empty because the payout figures from Razorpay are not recorded here; profit uses the estimates listed on the right.', [M.table([{ k: 'month', label: 'Month' }, { k: 'settled_to_bank', label: 'Reached the bank', num: true, fmt: function (v) { return v == null ? 'not yet' : M.inr(v); } }, { k: 'est_payment_fees', label: 'Fees (estimate)', num: true, fmt: function (v) { return v == null ? 'not yet' : M.inr(v); } }, { k: 'real_payment_fees', label: 'Fees (real)', num: true, fmt: function (v) { return v == null ? 'not yet' : M.inr(v); } }, { k: 'advances_to_suppliers', label: 'Paid to makers ahead', num: true, fmt: function (v) { return v == null ? 'not yet' : M.inr(v); } }, { k: 'monthly_fixed_cost', label: 'Fixed cost', num: true, fmt: M.inr }, { k: 'note', label: 'Note', wrap: true }], { rows: fm, sortKey: 'month', sortDir: -1, empty: 'No months yet.', noTools: true })]));
+  /* 7 Nov 2026 (Tech Guy, Tables page: 'this table needs an update'): Razorpay is connected, so the bank money and the real fee for each month come from razorpay_months (paid_to_bank, fee taken from payouts,
+     fee charged on the month's payments), joined to the hand-typed fixed cost in finance_monthly. A month with no payout yet says 'not yet'. */
+  var rzm = M.has('razorpay_months') ? M.rows('razorpay_months') : [], byM = {};
+  rzm.forEach(function (x) { byM[x.month] = x; });
+  fm.forEach(function (x) { byM[x.month] = byM[x.month] || {}; });
+  var monthsAll = Object.keys(byM).sort().reverse();
+  var fixedOf = {}; fm.forEach(function (x) { fixedOf[x.month] = x; });
+  if (monthsAll.length) {
+    var bank = monthsAll.map(function (m) { var z = byM[m] || {}, f = fixedOf[m] || {}; return { month: m, paid: z.amount !== '' && z.amount != null ? +z.amount : null, bank: z.paid_to_bank !== '' && z.paid_to_bank != null && +z.paid_to_bank > 0 ? +z.paid_to_bank : null, feeCharged: z.fee !== '' && z.fee != null ? +z.fee : null, feeTaken: z.fee_taken !== '' && z.fee_taken != null && +z.fee_taken > 0 ? +z.fee_taken : null, ahead: f.advances_to_suppliers === '' || f.advances_to_suppliers == null ? null : +f.advances_to_suppliers, fixed: f.monthly_fixed_cost === '' || f.monthly_fixed_cost == null ? null : +f.monthly_fixed_cost, note: f.note || '' }; });
+    var ny = function (v) { return v == null ? 'not yet' : M.inr(v); };
+    k3.push(M.card('Money in the bank, month by month', 'What buyers paid through Razorpay, what Razorpay paid into the bank, and the fee it kept, from Razorpay itself. A payment made late in a month is paid out in the next one, so a month can show more bank money than payments. The fixed cost and the money paid to the makers ahead are typed in by hand.', [M.table([{ k: 'month', label: 'Month', fmt: function (v) { return /^\d{4}-\d{2}$/.test(v) ? M.MON[+v.slice(5, 7) - 1] + ' ' + v.slice(0, 4) : v; } }, { k: 'paid', label: 'Paid by buyers', num: true, fmt: ny }, { k: 'bank', label: 'Reached the bank', num: true, fmt: ny }, { k: 'feeCharged', label: 'Fee on the month\'s payments', num: true, fmt: ny }, { k: 'feeTaken', label: 'Fee taken from payouts', num: true, fmt: ny }, { k: 'ahead', label: 'Paid to makers ahead', num: true, fmt: ny }, { k: 'fixed', label: 'Fixed cost', num: true, fmt: ny }, { k: 'note', label: 'Note', wrap: true }], { rows: bank, sortKey: 'month', sortDir: -1, empty: 'No months yet.', noTools: true })]));
+  }
   if (hi.length) k3.push(M.card('Numbers written in by hand', 'Numbers only a person knows, written in by hand. Profit uses them. A blank means the default is used, and a change here changes past profit on purpose.', [M.table([{ k: 'key', label: 'What', render: function (x) { return M.h('span', { text: String(x.key || '').replace(/_/g, ' ') }); } }, { k: 'value', label: 'Value', num: true, fmt: function (v) { return v == null || v === '' ? 'blank' : String(v); } }, { k: 'date', label: 'Given on', fmt: M.fd }, { k: 'given_by', label: 'By' }, { k: 'note', label: 'Meaning', wrap: true }], { rows: hi, sortKey: 'date', sortDir: -1, empty: 'None yet.', noTools: true })]));
   if (k3.length) root.appendChild(M.grid(k3, 'one'));
   /* 3. what the business owes in dates, and the seasons coming */
@@ -7945,9 +7955,9 @@ M.TERMS = [
   ['sales without GST', 'Sales after discounts minus the GST on the pieces. This is what Shopify\'s own sales report calls "net sales".'],
   ['net sales', 'A word with three meanings, so the dashboard avoids it. Shopify\'s report: sales without the GST. Madhu: everything customers paid. Here: sales after discounts, GST inside.'],
   ['gross sales', 'The full price of everything sold before discounts.'],
-  ['profit after everything', 'What is left of the money from sales after every cost: GST, the Shopify bill, the Razorpay charges, what the pieces cost us, packaging and the parcel. The Shopify bill is real for the days Shopify has billed and an estimate after that. The costs Madhu has not confirmed are placeholders, so read it as a good guide.'],
+  ['profit after everything', 'What is left of the money from sales after every cost: GST, the Shopify bill, the Razorpay charges, what the pieces cost us, packaging and the parcel. The Shopify bill is real for the days Shopify has billed and an estimate after that. The Razorpay charge and the parcel cost are the real figures wherever Razorpay and Shiprocket have them. The making and packing costs Madhu has not confirmed are placeholders, so read it as a good guide.'],
   ['profit before the shopify bill', 'The profit worked out for each order and added up: sales after discounts minus GST, what the pieces cost us, the payment fee, Shopify\'s charge on that order, the parcel and the packaging. The Shopify plan is not taken off.'],
-  ['profit estimate', 'Sales after discounts minus GST, what the pieces cost us, the payment fee, Shopify\'s charge on that order, the parcel and the packaging. The Shopify plan is not taken off. Estimates until Razorpay and Shiprocket are connected.'],
+  ['profit estimate', 'Sales after discounts minus GST, what the pieces cost us, the payment fee, Shopify\'s charge on that order, the parcel and the packaging. The Shopify plan is not taken off. A day with a Razorpay payment uses Razorpay\'s real fee, and a parcel Shiprocket knows uses its real freight; any other day uses the stated rates.'],
   ['contribution profit', 'Sales after discounts minus GST, what the pieces cost us, the payment fee, Shopify\'s charge on that order, the parcel and the packaging. The Shopify plan is not taken off.'],
   ['gst', 'Goods and Services Tax. It is inside the price the customer pays, and we pass it on to the government, so it is not our money.'],
   ['break even', 'The number of orders a month we need so that profit covers the monthly costs (the Shopify plan).'],
@@ -9732,14 +9742,16 @@ M.glueMarks = function () {
 
   /* ---------------------------------------------------------------- Shipping */
   M.vizWrap('shipping', function (r, root) {
-    var tab = 'shiprocket_shipments_daily';
-    if (!M.has(tab) || !M.PROMISE) return;
-    var dd = M.rowsIn(tab, r.from, r.to).filter(function (x) { return x.avg_delivery_days != null && x.avg_delivery_days !== ''; });
-    if (!dd.length) return;
-    var avg = dd.reduce(function (a, x) { return a + (+x.avg_delivery_days) * (+x.delivered || 1); }, 0) / dd.reduce(function (a, x) { return a + (+x.delivered || 1); }, 0), P = M.PROMISE.ready;
+    /* 7 Nov 2026 (Tech Guy: 'on Google Merchant Center it says 10 days'): the ring shows the days a buyer really waited, from the order to the door, against the promise for ready to ship pieces. It used to show the
+       courier days alone (2.5), which left out the wait before the pickup and so never matched the 10 days Merchant Center shows. The card under it names the two promises Merchant Center blends. */
+    if (!M.has('shiprocket_parcels') || !M.PROMISE || !M.hoursBetween) return;
+    var door = M.rows('shiprocket_parcels').filter(function (x) { return x.status === 'delivered' && x.ordered_at && x.delivered_at && x.delivered_at.slice(0, 10) >= r.from && x.delivered_at.slice(0, 10) <= r.to; })
+      .map(function (x) { return M.hoursBetween(x.ordered_at, x.delivered_at) / 24; }).filter(function (v) { return !isNaN(v); });
+    if (!door.length) return;
+    var avg = door.reduce(function (a, v) { return a + v; }, 0) / door.length, P = M.PROMISE.ready;
     Array.prototype.forEach.call(root.children, function (c) {
       if (c.nodeName !== 'SECTION' || !/Is the promise kept/.test(M.vizTitle(c)) || c.querySelector('.ring-box')) return;
-      var box = M.vizRing(avg, P[1], { name: 'Days a parcel took against the promise', sub: 'days taken', centre: M.num(avg, 1), color: avg <= P[1] ? COL.green : avg <= P[1] + 2 ? COL.mustard : COL.terra, valueLabel: 'Average days, pickup to the door', maxLabel: 'Promise for ready to ship pieces (most days)', fmt: function (v) { return M.num(v, 1) + ' days'; } });
+      var box = M.vizRing(avg, P[1], { name: 'Days from the order to the door against the promise', sub: 'days, order to door', centre: M.num(avg, 1), color: avg <= P[1] ? COL.green : avg <= P[1] + 2 ? COL.mustard : COL.terra, valueLabel: 'Average days, order to the door', maxLabel: 'Promise for ready to ship pieces (most days)', fmt: function (v) { return M.num(v, 1) + ' days'; } });
       var h3 = c.querySelector(':scope > h3');
       c.insertBefore(box, h3 ? h3.nextSibling : c.firstChild);
     });
@@ -12402,10 +12414,10 @@ M.annot = (function () {
       var gross = s.gross_sales, net = s.net_sales, disc = gross - net;      /* discounts = gross - net, so the rows always add up even if a day was rounded a paisa apart */
       var left = net - s.gst_included - s.refunds;
       var bill = pc(bm.total), raz = s.est_payment_fee;
-      var conf = left - bill - raz;
       var mk = s.product_cost, pk = s.est_packaging, pa = s.est_parcel_cost, ot = om;
+      var conf = left - bill - raz - pa;      /* 7 Nov 2026: the parcel cost is Shiprocket's own billed charge for the parcels it knows, so it sits with the confirmed costs */
       return { gross: gross, disc: disc, gst: s.gst_included, refunds: s.refunds, left: left, bill: bill, billReal: pc(bm.real), billEst: pc(bm.est), razor: raz, confirmed: conf, making: mk, pack: pk, parcel: pa, other: ot,
-        pending: mk + pk + pa + ot, profit: conf - mk - pk - pa - ot, charges: s.est_shopify_fee, orders: s.orders, net: net, ship: s.shipping_charged, gstShip: s.gst_on_shipping };
+        pending: mk + pk + ot, profit: conf - mk - pk - ot, charges: s.est_shopify_fee, orders: s.orders, net: net, ship: s.shipping_charged, gstShip: s.gst_on_shipping };
     };
     var otherOf = function (d) { return Math.round(pc(other) * d / B.cycle); };
     var all = line(tot, { total: B.total, real: B.real, est: B.est }, otherOf(days));
@@ -12420,7 +12432,7 @@ M.annot = (function () {
   /* ---------------------------------------------------------------- the chart items and the table rows from one calculation */
   var R = function (p) { return rs(p); };
   var packText = function (C) { return C.packFee > 0 ? 'Rs. ' + M.num(C.packFee, C.packFee % 1 ? 2 : 0) + ' a parcel, the figure Madhu gave. Not checked against real bills.' : 'A default figure per parcel. Not checked against real bills.'; };
-  var parcelText = function (C) { return C.parcelFee > 0 ? 'Rs. ' + M.num(C.parcelFee, C.parcelFee % 1 ? 2 : 0) + ' a parcel, the figure Madhu gave, until Shiprocket is connected and the real courier charge is read.' : 'A default figure per parcel, until Shiprocket is connected.'; };
+  var parcelText = function (C) { return 'The courier charge Shiprocket billed for each parcel it knows (freight, charges for a parcel that came back, extra weight). A parcel Shiprocket does not know yet counts' + (C.parcelFee > 0 ? ' Rs. ' + M.num(C.parcelFee, C.parcelFee % 1 ? 2 : 0) + ' (the figure Madhu gave).' : ' at a default figure.'); };
   var basisWord = function (B) { return B.real && B.est ? 'real and estimate' : B.real ? 'real' : B.est ? 'estimate' : 'not known'; };
   M.moneyRows = function (C) {
     var t = C.t, B = C.B, rows = [], billWord = basisWord(B);
@@ -12437,13 +12449,13 @@ M.annot = (function () {
     } else if (B.known) {
       add({ step: 'of which the plan and Shopify\'s charges', amount: null, group: 'Confirmed', part: true, how: 'Some of the real bills were read as a total only, so the two parts are not known for these dates.' });
     }
-    add({ step: 'Razorpay charges (estimate)', amount: -R(t.razor), group: 'Confirmed', how: (C.razorPct > 0 ? M.num(C.razorPct, C.razorPct % 1 ? 1 : 0) + ' percent' : 'A set percent') + ' of what customers paid. An estimate until Razorpay is connected and its real charges are read.' });
-    add({ step: 'Left after confirmed costs', amount: R(t.confirmed), group: 'Confirmed', how: 'Money left before costs, minus the Shopify bill and the Razorpay charges. This is not the profit: the making cost is not taken off yet.', isTotal: true });
+    add({ step: 'Razorpay charges', amount: -R(t.razor), group: 'Confirmed', how: 'For every day Razorpay has paid for, its own charge with the GST inside it. For a day it has not, ' + (C.razorPct > 0 ? M.num(C.razorPct, C.razorPct % 1 ? 1 : 0) + ' percent' : 'a set percent') + ' of what went through Razorpay (an order marked paid by hand pays Razorpay nothing).' });
+    add({ step: 'Shipping and parcel', amount: -R(t.parcel), group: 'Confirmed', how: parcelText(C) });
+    add({ step: 'Left after confirmed costs', amount: R(t.confirmed), group: 'Confirmed', how: 'Money left before costs, minus the Shopify bill, the Razorpay charges and the parcel cost. This is not the profit: the making cost is not taken off yet.', isTotal: true });
     add({ step: 'Manufacturing and material', amount: -R(t.making), group: 'Not confirmed yet', pending: true, how: 'The cost price typed in Shopify for each piece sold (cloth, tailoring and labour together). Madhu has not confirmed the real figures.' });
     add({ step: 'Packaging', amount: -R(t.pack), group: 'Not confirmed yet', pending: true, how: packText(C) });
-    add({ step: 'Shipping and parcel', amount: -R(t.parcel), group: 'Not confirmed yet', pending: true, how: parcelText(C) });
     add({ step: 'Other costs', amount: t.other ? -R(t.other) : 0, none: !t.other, group: 'Not confirmed yet', pending: true, how: t.other ? 'Another monthly cost typed in the data sheet, shared by days.' : 'None recorded. Anything else Madhu pays is not in these figures.' });
-    add({ step: 'Profit after everything', amount: R(t.profit), group: 'Not confirmed yet', pending: true, how: 'Left after confirmed costs, minus the four costs above. Some of them are not confirmed, so read it as a good guide.', isTotal: true });
+    add({ step: 'Profit after everything', amount: R(t.profit), group: 'Not confirmed yet', pending: true, how: 'Left after confirmed costs, minus the costs below. Some of them are not confirmed, so read it as a good guide.', isTotal: true });
     return rows;
   };
   var items = function (C) {
@@ -12455,12 +12467,12 @@ M.annot = (function () {
     it.push({ head: 'CONFIRMED' });
     it.push({ label: 'Shopify bill', value: R(t.bill), kind: 'minus', tone: 'confirmed', status: B.known ? 'Confirmed (' + billWord + ')' : 'Confirmed (not known yet)', none: B.known ? null : 'no bill on record',
       tip: B.known && B.planPart != null ? [{ k: 'The plan', v: M.inr(B.planPart) }, { k: 'Shopify\'s charges', v: M.inr(B.chargePart) }] : [] });
-    it.push({ label: 'Razorpay charges (estimate)', value: R(t.razor), kind: 'minus', tone: 'confirmed', status: 'Confirmed (estimate)' });
+    it.push({ label: 'Razorpay charges', value: R(t.razor), kind: 'minus', tone: 'confirmed', status: 'Confirmed' });
+    it.push({ label: 'Shipping and parcel', value: R(t.parcel), kind: 'minus', tone: 'confirmed', status: 'Confirmed' });
     it.push({ label: 'Left after confirmed costs', value: R(t.confirmed), kind: 'total', tone: 'result', tip: [{ k: 'Note', v: 'Not the profit: the making cost is not taken off yet' }] });
     it.push({ head: 'NOT CONFIRMED YET' });
     it.push({ label: 'Manufacturing and material', value: R(t.making), kind: 'minus', tone: 'pending' });
     it.push({ label: 'Packaging', value: R(t.pack), kind: 'minus', tone: 'pending' });
-    it.push({ label: 'Shipping and parcel', value: R(t.parcel), kind: 'minus', tone: 'pending' });
     it.push({ label: 'Other costs', value: R(t.other), kind: 'minus', tone: 'pending', none: t.other ? null : 'none recorded' });
     it.push({ label: 'Profit after everything', value: R(t.profit), kind: 'total', tone: 'final' });
     return it;
@@ -12494,7 +12506,7 @@ M.annot = (function () {
   };
   M.moneyCard = function (r) {
     var C = M.moneyCalc(r), t = C.t, B = C.B;
-    var why = 'From what customers were charged to what is left. The first group holds the confirmed costs: the Shopify bill and the Razorpay charges. The second group holds placeholders, because the real cost of making, packing and sending a piece is not recorded, so the last line is a good guide, not accounts. A bill is spread evenly over the days it covers. There are only ' + M.num(M.totalOrders()) + ' orders so far, so one order moves a percentage a lot. Sales are counted from ' + M.fd(M.cover('money_daily').first) + '.';
+    var why = 'From what customers were charged to what is left. The first group holds the confirmed costs: the Shopify bill, the Razorpay charges and the parcel cost. The second group holds placeholders, because the real cost of making and packing a piece is not recorded, so the last line is a good guide, not accounts. A bill is spread evenly over the days it covers. There are only ' + M.num(M.totalOrders()) + ' orders so far, so one order moves a percentage a lot. Sales are counted from ' + M.fd(M.cover('money_daily').first) + '.';
     if (!C.covered && !B.known) return M.card('Where the money goes', why, [M.emptyWhy ? M.emptyWhy('money_daily', r) : M.empty('No sales in this range, so there is nothing to split.')]);
     if (!C.hasSales && !t.bill) return M.card('Where the money goes', why, [M.empty('No sales in this range, so there is nothing to split.')]);
     var kids = [];
@@ -12504,7 +12516,7 @@ M.annot = (function () {
     if (C.covered < C.days) lines.appendChild(M.h('p', { class: 'small mg-how', text: 'Sales are known for ' + M.num(C.covered) + ' of these ' + M.num(C.days) + ' days' + (M.missingWhy ? M.missingWhy('money_daily', r.from, r.to) : '') + '.' }));
     if (B.gapDays || (B.estDays > 35 && B.newestEnd)) lines.appendChild(M.h('p', { class: 'small mg-how', text: B.estDays > 35 && B.newestEnd ? 'The newest Shopify bill on record ended on ' + M.fd(B.newestEnd) + ': no newer bill is recorded.' : M.num(B.gapDays) + ' days have no Shopify bill on record and are not counted.' }));
     if (lines.childNodes.length) kids.push(lines);
-    why += ' ' + M.billHow(B) + ' The grey costs are placeholders until the real cost of making a piece, of packing a parcel and of sending it is recorded.';
+    why += ' ' + M.billHow(B) + ' The grey costs are placeholders until the real cost of making a piece and of packing a parcel is recorded.';
     var card = M.card('Where the money goes', why, kids, 'mg-card');
     card._mg = C;
     return card;
@@ -12529,13 +12541,13 @@ M.annot = (function () {
   var monthCard = function (r, C) {
     if (!C.months.length) return null;
     var word = function (b) { return b === 'Real and estimate' ? 'Real and estimated' : b === 'Estimate' ? 'Estimated' : b; };
-    var rows = C.months.map(function (m) { return { month: m.ym, days: m.days, left: R(m.left), bill: m.bill ? -R(m.bill) : 0, razor: -R(m.razor), confirmed: R(m.confirmed), pending: -R(m.pending), profit: R(m.profit), basis: word(m.basis) }; });
+    var rows = C.months.map(function (m) { return { month: m.ym, days: m.days, left: R(m.left), bill: m.bill ? -R(m.bill) : 0, razor: -R(m.razor), parcel: -R(m.parcel), confirmed: R(m.confirmed), pending: -R(m.pending), profit: R(m.profit), basis: word(m.basis) }; });
     var mix = function (rs2) { var set = {}; rs2.forEach(function (x) { set[x.basis] = 1; }); var k = Object.keys(set); return k.length === 1 ? k[0] : 'Mixed'; };
     var cols = [{ k: 'month', label: 'Month' }, { k: 'days', label: 'Days in these dates', num: true, hidden: true, fmt: M.num }, { k: 'left', label: 'Money left before costs', num: true, fmt: M.inr }, { k: 'bill', label: 'Shopify bill', num: true, fmt: M.inr },
-      { k: 'razor', label: 'Razorpay charges (estimate)', num: true, fmt: M.inr }, { k: 'confirmed', label: 'Left after confirmed costs', num: true, fmt: M.inr },
+      { k: 'razor', label: 'Razorpay charges', num: true, fmt: M.inr }, { k: 'parcel', label: 'Shipping and parcel', num: true, fmt: M.inr }, { k: 'confirmed', label: 'Left after confirmed costs', num: true, fmt: M.inr },
       { k: 'pending', label: 'Costs not confirmed yet', num: true, fmt: M.inr }, { k: 'profit', label: 'Profit after everything', num: true, fmt: M.inr },
       { k: 'basis', label: 'Shopify bill is', entity: false, groupText: mix }];
-    var tot = function (rs2) { var o = { _label: 'Total' }; ['days', 'left', 'bill', 'razor', 'confirmed', 'pending', 'profit'].forEach(function (k) { var v = rs2.reduce(function (a, x) { return a + (+x[k] || 0); }, 0); o[k] = k === 'days' ? M.num(v) : M.inr(Math.round(v * 100) / 100); }); o.basis = mix(rs2); return o; };
+    var tot = function (rs2) { var o = { _label: 'Total' }; ['days', 'left', 'bill', 'razor', 'parcel', 'confirmed', 'pending', 'profit'].forEach(function (k) { var v = rs2.reduce(function (a, x) { return a + (+x[k] || 0); }, 0); o[k] = k === 'days' ? M.num(v) : M.inr(Math.round(v * 100) / 100); }); o.basis = mix(rs2); return o; };
     return M.card('Month by month', 'The same steps for each month of the dates you picked: the Shopify bill is different every month, and so is the rest. A month that your dates cut shows only the days inside them.',
       [M.table(cols, { rows: rows, sortKey: 'month', sortDir: -1, detail: false, name: 'money-month-by-month', totals: rows.length > 1 ? tot : null, empty: 'No months in these dates.' })], 'mg-card');
   };
@@ -13539,6 +13551,38 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     return R.card(title, why, kids);
   });
 
+  /* ================================================================ 11b. where the money came from (7 Nov 2026, Tech Guy: "I remember Madhu got some payment from Google also, so create some sort of data viz showing where the money came from")
+     Every order the shop took, by HOW IT WAS PAID: through Razorpay, marked paid by hand (a draft order, gateway "manual"), or paid before the Razorpay account was live. The three add up to the total
+     buyers paid, to the paisa. Read from razorpay_match, which counts each order once. Shopify does not record the way a hand paid order was paid (no note, no tag), so the card says what is
+     known, and never names Google Pay or any other route for those orders. */
+  R.cards.push(function sources(c) {
+    var title = 'Where the money came from', M0 = c.MAT;
+    var why = 'Every order, by the way it was paid. "Through Razorpay" is money Razorpay collected. "Marked paid by hand" is an order Madhu entered in Shopify herself as paid (a draft order); Shopify does not record how that money reached her. "Before Razorpay was live" is the first orders, paid before the Razorpay account existed. The three add up to what buyers paid in the shop.';
+    if (!M0.length) return R.card(title, why, [M.emptyWhy(R.T.mat, c.r)]);
+    var S = function (col) { return R.sum(M0, col); };
+    var rz = S('shop_amount'), hand = S('manual_amount'), nR = S('shop_orders'), nH = S('manual_orders'), nB = S('before_live');
+    var tot = M.sumCol('money_daily', 'net_sales', c.r).v + M.sumCol('money_daily', 'shipping_charged', c.r).v, nAll = M.sumCol('money_daily', 'orders', c.r).v;
+    var early = Math.round((tot - rz - hand) * 100) / 100;      /* the rest: orders paid before Razorpay's live account, which Razorpay has no record of */
+    if (!(tot > 0)) return R.card(title, why, [R.nodata(c, 'No order was paid in these dates.')]);
+    var parts = [{ label: 'Through Razorpay', value: rz, n: nR }, { label: 'Marked paid by hand', value: hand, n: nH }, { label: 'Before Razorpay was live', value: Math.max(0, early), n: nB }].filter(function (x) { return x.value > 0; });
+    var box = M.h('div', null, [M.donut(parts.map(function (x) { return { label: x.label, value: x.value }; }), { name: 'Where the money came from', total: 'paid', unit: 'money', fmt: R.inr0 })]);
+    var tiles = M.h('div', { class: 'kpis rz' }, parts.map(function (x) { return M.kpi({ label: x.label, value: R.inr(x.value), note: M.num(x.n) + (x.n === 1 ? ' order' : ' orders') + ', ' + R.pct(x.value, tot, 0) + ' of the money' }); }));
+    var kids = [M.grid([box, tiles], 'wide')];
+    /* week by week: the three routes stacked, so a day the money came a different way is visible */
+    var sp = mode0(c), G = R.spread(M0, sp.B, 'date');
+    var a = G.map(function (g) { return R.sum(g, 'shop_amount'); }), h = G.map(function (g) { return R.sum(g, 'manual_amount'); });
+    /* the rest of each period is the money paid before Razorpay was live: what the shop took in the period, minus the two routes above */
+    var P2 = R.spread(M.has('money_daily') ? M.rowsIn('money_daily', c.r.from, c.r.to) : [], sp.B, 'date');
+    var e = P2.map(function (g, i) { var t = R.sum(g, 'net_sales') + R.sum(g, 'shipping_charged'); return Math.max(0, Math.round((t - a[i] - h[i]) * 100) / 100); });
+    if (hand > 0 || early > 0) {
+      kids.push(R.sub('Week by week'));
+      kids.push(R.tc(sp.B, sp.mode, 'Where the money came from', [{ name: 'Through Razorpay', values: a, color: COL.maroon, fmt: R.inr }, { name: 'Marked paid by hand', values: h, color: COL.mustard, fmt: R.inr }, { name: 'Before Razorpay was live', values: e, color: COL.terra, fmt: R.inr }], { yfmt: R.yRs, h: 170 }));
+    }
+    if (hand > 0) kids.push(R.small('The ' + M.num(nH) + (nH === 1 ? ' order' : ' orders') + ' marked paid by hand (' + R.inr(hand) + ') carry no Razorpay fee and no Shopify charge on the payment, and Razorpay shows no payment for them. Shopify holds no note on how that money was received.'));
+    if (nB) kids.push(R.small('The ' + M.num(nB) + ' first orders (' + R.inr(Math.max(0, early)) + ', 19 May) were paid before the Razorpay account was live, so Razorpay has no record of them either.'));
+    return R.card(title, why, kids);
+  });
+
   /* ================================================================ 12. Razorpay against the shop, day by day */
   R.cards.push(function match(c) {
     var title = 'Razorpay against the shop, day by day';
@@ -14492,7 +14536,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       cards.push(card('Orders waiting before the courier came', 'The days between an order being placed and the courier taking the parcel. Part of it is the making of a made to order piece; the rest is booking, the wallet and missed pickups.', [
         M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Average wait', value: d1(mean(W.map(function (x) { return x.days; }))) + ' days', note: M.num(W.length) + ' parcels' }), M.kpi({ label: 'Madras Theory', value: rtsW.length ? d1(mean(rtsW.map(function (x) { return x.days; }))) + ' days' : 'n/a', note: M.num(rtsW.length) + ' parcels' }),
           M.kpi({ label: 'Jig Jig', value: mtoW.length ? d1(mean(mtoW.map(function (x) { return x.days; }))) + ' days' : 'n/a', note: M.num(mtoW.length) + ' parcels' })]),
-        M.bars(rows, { max: W.length }), M.tableView([{ k: 'ordered', label: 'Ordered', fmt: M.fd }, { k: 'order', label: 'Order' }, { k: 'collection', label: 'Collection' }, { k: 'courier', label: 'Courier' }, { k: 'days', label: 'Days before pickup', num: true, fmt: d1 }], W.sort(function (a, b2) { return b2.days - a.days; }), 'Show the longest waits first', { name: 'Orders waiting before pickup' })]));
+        M.bars(rows, { max: W.length }), M.tableView([{ k: 'ordered', label: 'Ordered', fmt: M.fd }, { k: 'order', label: 'Order' }, { k: 'collection', label: 'Collection' }, { k: 'courier', label: 'Courier' }, { k: 'days', label: 'Days before pickup', num: true, fmt: d1 }], W.sort(function (a, b2) { return b2.days - a.days; }), 'Show the longest waits first', { name: 'Orders waiting before pickup', dateKey: 'ordered' })]));
     })();
 
     /* ============================================================ 8. weight slabs */
@@ -14873,7 +14917,7 @@ M.unlock = function () {
     search:    [[['competitor_social', 'kpi_daily', 'shopify_visits_split_daily', 'visits_joined_daily'], 'all'], [['search_pages_weekly'], 'own']],      /* visits from AI assistants: Shopify's split before 5 Oct, and the date of the first one */
     email:     [['email_weekly', 'all']],
     payments:  [[['razorpay_payments_daily', 'razorpay_payments', 'razorpay_orders', 'razorpay_recon', 'razorpay_match', 'razorpay_balance_daily', 'money_daily'], 'all']],      /* T707: money waiting, success by method, left checkouts and the match with the shop look at every day since the first payment */
-    shipping:  [],
+    shipping:  [[['money_daily', 'shiprocket_rate_check'], 'all']],      /* 7 Nov 2026: the line 'N of 24 sales days use real costs' counts every sales day, and 'Could a cheaper courier have carried it?' reads every parcel's check */
     tables:    [[['finance_monthly', 'judgeme_daily', 'order_sources', 'queries_weekly', 'returns_weekly', 'review_weekly'], 'all']],
     health:    [[['vitals_daily', 'ux_daily', 'data_trust_daily', 'clarity_weekly', 'speed_weekly'], 'all']],
     tax:       [[['tax_orders'], 'own']]                                                                      /* dashboard_98_taxload.js opens the months of the chosen period */
