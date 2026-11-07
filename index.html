@@ -3214,6 +3214,7 @@ M.downIsGood = function (label) { return M.DOWNGOOD.test(String(label || '')); }
 M.kpi = function (o) {
   // o: label, value (text), change (percent or null), goodUp (bool), note, cmpNote, na (text)
   var box = M.h('div', { class: 'kpi' + (o.na ? ' na' : '') + (o.hero ? ' hero' : '') }, [M.h('div', { class: 'l', text: o.label })]);
+  box.setAttribute('data-testid', 'tile: ' + String(o.label || '').replace(/\s+/g, ' ').slice(0, 80));      /* 8 Nov 2026: a headline tile names itself for Agentation notes, like a card does */
   if (o.na) {
     box.appendChild(M.h('div', { class: 'na-row' }, [M.s('svg', { class: 'ic kpi-ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#i-empty' })]), M.h('div', { class: 'v', text: o.na })]));
     if (o.note) box.appendChild(M.h('div', { class: 'ctx nodata-why', text: o.note }));      /* same class the page hook M.kpiWhyAdd looks for, so the reason is never printed twice */
@@ -6625,6 +6626,8 @@ M.GROW_IDEAS = [
   {"id": "G60", "lever": "later", "idea": "Marketplaces such as Myntra", "status": "parked", "y": 1, "proof": "Marketplace orders (not tracked)", "when": "Only if you ask", "why": "You said no to Myntra.", "cost": "Fees and stock", "who": "Tech Guy decides", "first": "T120"},
   {"id": "G61", "lever": "later", "idea": "Shipping abroad on request", "status": "parked", "y": 1, "proof": "Orders outside India (Customers page, states)", "when": "When enquiries come", "why": "Done by hand today. Opening it fully means rates, rules and tax checks.", "cost": "Shipping costs", "who": "Tech Guy decides", "first": "Store facts; change triggers"},
   {"id": "G62", "lever": "later", "idea": "Pinterest Verified Merchant Program", "status": "parked", "y": 0, "proof": "Pinterest clicks (Social page)", "when": "When Pinterest opens it and the account is 3 months old", "why": "Pinterest has not opened it in India.", "cost": "Free", "who": "Agent", "first": "ROADMAP section 4"},
+  {"id": "G63", "lever": "back", "idea": "Store credit instead of a refund or exchange: the buyer gets credit in their account to spend on the next order", "status": "idea", "y": 1, "proof": "Orders paid with store credit and the share of credit that comes back as a new order (Customers page, once built)", "when": "After you decide the returns rule", "why": "Today it is exchange only within 7 days. Credit lets a buyer who cannot find a size keep the money with us, and a buyer who comes back for a second order is the thing we lack (0 repeat buyers so far). The risk is credit that nobody uses and a tax and accounting line for the Accountant. Shopify supports it, but our API user has no store credit access yet (checked 8 Nov: access denied), so it would be added by hand per buyer first.", "cost": "Free to run; the credit is money we owe", "who": "Tech Guy decides; Agent sets up", "first": "8 Nov 2026, owner"},
+  {"id": "G64", "lever": "later", "idea": "Retargeting: show a person the exact products they looked at, on Instagram, Facebook and Google (what Myntra does)", "status": "parked", "y": 1, "proof": "Orders from Meta and Google ads (Channels page); cost per order", "when": "When there are about 20 orders in 28 days and you say yes; the money rule is in G55", "why": "It works by a small tracking tag on the shop (Meta pixel, Google tag) that notes which products a person viewed or added to the bag, matched to the product list we already send to Meta and Google (catalogue). Our tag and catalogue are already live and healthy, so the groundwork is done; only ad money and your yes are missing. At 20 to 25 real visits a day the groups are tiny, so it is a later step, not a first one.", "cost": "Ad money (Rs 300 a day in the G55 plan)", "who": "Tech Guy decides", "first": "8 Nov 2026, owner question"},
 ];
 
 /* mazo dashboard, Marketing pages (T830, 1 Nov 2026): Channels (where website visits come from), Social and content (every social channel, its posts and what works), Search and market, Email.
@@ -8754,7 +8757,7 @@ M.glueMarks = function () {
           Search                   Google clicks by week, for the name and for other words (brand_search_daily)
           The shop                 shopping steps over the last 28 days (ga4_funnel_daily)
           Delivery promise         share of delivered orders that arrived inside their promise (shipping_daily)
-     2. "Ideas by area and status" the idea board: a split of the 62 ideas by status and by area, the next three to start with how we will know they worked, and the proof of each running idea.
+     2. "Ideas by area and status" the idea board: a split of the 64 ideas by status and by area, the next three to start with how we will know they worked, and the proof of each running idea.
      3. "Which channel paid back" visits, carts, orders and revenue per channel group over the last 28 days, with the campaign names that sent the visits (channel_groups, campaign_daily).
    Every figure is read from a stored table, never typed here. A small chart with too little history says so in one plain line instead of drawing a line through two points.
    Everything added carries data-ux="1". Checked live where a source exists: scripts/mcheck_growth.py. */
@@ -10260,7 +10263,10 @@ M.glueMarks = function () {
     var out = [];
     M.rows('tax_orders').forEach(function (x) {
       var day = typeof x.date === 'string' ? x.date.slice(0, 10) : '';
-      if (x.kind === 'void' || !day || !set[day.slice(0, 7)]) return;      /* a cancelled order that was never paid is a row of zeros: it is not a sale */
+      if (!day || !set[day.slice(0, 7)]) return;
+      /* 8 Nov 2026 (owner: "the Accountant wants cancelled orders also, in the same table, because he wants one CSV only"): a cancelled order that was never refunded is a row of zeros in the Sheet (kind void).
+         It is now a line of the register with the Type "Cancelled" and all amounts 0.00, so it is listed and counted nowhere in the money. Orders are counted by `orders`, which is 0 for it. */
+      var cancelled = x.kind === 'void';
       var refund = x.kind === 'refund', folded = !x.order;      /* an offline copy adds up months older than 13 months: no order number is left */
       /* everything below is whole paise. Shipping GST is what Shopify's own tax lines of the shipping line say (an early order has none recorded: shipping GST stays 0, nothing is added).
          Goods = the order minus its shipping, so goods + shipping is the order to the paisa. */
@@ -10269,12 +10275,12 @@ M.glueMarks = function () {
       var gc = P(x.cgst) - sc, gs = P(x.sgst) - ss, gi = P(x.igst) - si, gg = gc + gs + gi, gtax = taxable - stax;
       var ok = gtax + gg + stax + sg === paid && P(x.cgst) + P(x.sgst) + P(x.igst) === gst && taxable + gst === paid && P(x.items_value) === gtax + gg;
       var st = x.state || 'unknown';
-      out.push({ order: x.order || '', date: day, state: st, scode: K().stateCode(st), type: refund ? 'Refund' : 'Sale',
-        taxtype: gst === 0 ? 'No GST recorded' : (P(x.cgst) + P(x.sgst) !== 0 ? 'CGST + SGST' : 'IGST'),
+      out.push({ order: x.order || '', date: day, state: st, scode: K().stateCode(st), type: refund ? 'Refund' : cancelled ? 'Cancelled' : 'Sale',
+        taxtype: cancelled ? 'Cancelled, no tax' : gst === 0 ? 'No GST recorded' : (P(x.cgst) + P(x.sgst) !== 0 ? 'CGST + SGST' : 'IGST'),
         rate: x.rate_pct == null || x.rate_pct === '' ? null : num(x.rate_pct), hsn: x.hsn == null ? '' : String(x.hsn), hsn_source: x.hsn_source || '',
         items: (gtax + gg) / 100, g_tax: gtax / 100, g_cgst: gc / 100, g_sgst: gs / 100, g_igst: gi / 100, g_gst: gg / 100,
         sh_charged: ship / 100, sh_tax: stax / 100, sh_cgst: sc / 100, sh_sgst: ss / 100, sh_igst: si / 100, sh_gst: sg / 100,
-        taxable: taxable / 100, gst: gst / 100, paid: paid / 100, orders: refund || folded ? 0 : 1, folded: folded, _ok: ok });
+        taxable: taxable / 100, gst: gst / 100, paid: paid / 100, orders: refund || folded || cancelled ? 0 : 1, folded: folded, cancelled: cancelled, _ok: ok });
     });
     out.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : String(a.order).localeCompare(String(b.order), undefined, { numeric: true }); });
     return out;
@@ -10388,7 +10394,7 @@ M.glueMarks = function () {
     var cols = [
       { k: 'order', label: 'Order no', groupHide: true, sort: function (r) { return orderNo(r); }, fmt: function (v, r) { return v || 'Month total'; } },
       { k: 'date', label: 'Date', fmt: dmy },
-      { k: 'type', label: 'Type', groupHide: true, render: function (r) { return r.type === 'Refund' ? M.tag('Refund', 'work') : 'Sale'; } },
+      { k: 'type', label: 'Type', groupHide: true, render: function (r) { return r.type === 'Refund' ? M.tag('Refund', 'work') : r.type === 'Cancelled' ? M.tag('Cancelled', 'thin') : 'Sale'; } },
       { k: 'state', label: 'Place of supply', csvLabel: 'Place of supply (delivery state)', groupHide: true },
       { k: 'scode', label: 'State code', groupHide: true },
       { k: 'taxtype', label: 'Type of tax', groupHide: true },
@@ -12204,7 +12210,7 @@ M.evenHeaders = function (root) {
          page policy. Guide: docs/guides/agentation-on-the-dashboard.md . Test: scripts/dashboard_audit_annotate.js */
 M.annot = (function () {
   var KEY = 'mazo-annotate', ENDPOINT = 'http://localhost:4747';
-  var st = { btn: null, label: null, mode: 'live', explicit: false, copyBtn: null, copyLabel: null, copyTimer: null, copyPoll: null };
+  var st = { btn: null, label: null, mode: 'live', explicit: false, flashTimer: null };
 
   function read() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
   function write(on) { try { if (on) localStorage.setItem(KEY, '1'); else localStorage.removeItem(KEY); } catch (e) { /* a browser that refuses storage cannot keep the switch */ } }
@@ -12249,7 +12255,19 @@ M.annot = (function () {
     });
   }
 
+  /* 8 Nov 2026 (owner: "copied ones still remain, I still see 12 notes from previous prompts"): the toolbar has its own setting "Clear on copy" and it is OFF by default, so notes stay after Copy and come
+     back in the next Copy. It is switched ON once, the first time Annotate starts in a browser (a person can switch it off in the toolbar's own settings; it is not forced again). */
+  function defaultClearOnCopy() {
+    try {
+      var K2 = 'feedback-toolbar-settings', cur = JSON.parse(localStorage.getItem(K2) || '{}');
+      if (cur.mazoClearSet) return;
+      cur.autoClearAfterCopy = true; cur.mazoClearSet = true;
+      localStorage.setItem(K2, JSON.stringify(cur));
+    } catch (e) { /* storage refused: the toolbar keeps its own default */ }
+  }
+
   function run(js, endpoint) {
+    defaultClearOnCopy();
     if (!window.MazoAgentation) { var s = document.createElement('script'); s.textContent = js; document.head.appendChild(s); }
     if (!window.MazoAgentation) throw new Error('The toolbar did not start.');
     st.mode = endpoint ? 'live' : 'copy';
@@ -12277,7 +12295,7 @@ M.annot = (function () {
     if (!window.MAZO_HOSTED && !document.getElementById('mazo-annotate') && !st.explicit) return;      /* the switch was left on in this browser but this copy has no toolbar: stay quiet */
     say('Annotate: loading', 'Loading the toolbar.');
     Promise.all([bundle(), chooseEndpoint()]).then(function (got) {
-      run(got[0], got[1]); copyEntry();
+      run(got[0], got[1]);
       say('Turn off Annotate', st.mode === 'live'
         ? 'Annotate is on. Notes go to the assistant on this computer, nowhere else. Option+A (Alt+A) switches the marker mode on and off. Click to turn Annotate off.'
         : 'Annotate is on. Notes stay in this browser: press Copy in the toolbar and paste them into the chat. Option+A (Alt+A) switches the marker mode on and off. Click to turn Annotate off.');
@@ -12287,8 +12305,6 @@ M.annot = (function () {
     write(false);
     try { if (window.MazoAgentation) window.MazoAgentation.stop(); } catch (e) { /* already gone */ }
     if (st.btn && st.btn.parentNode) st.btn.parentNode.removeChild(st.btn);
-    if (st.copyBtn && st.copyBtn.parentNode) st.copyBtn.parentNode.removeChild(st.copyBtn);
-    clearInterval(st.copyPoll); st.copyBtn = null; st.copyLabel = null;
     st.btn = null; st.label = null; st.explicit = false;
   }
 
@@ -12322,6 +12338,11 @@ M.annot = (function () {
     lastStamp = t;
     var c = t.closest('section.card'), h = c && c.querySelector('h3 .h3t, h3');
     if (h) t.setAttribute('data-card', (h.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 100));
+    else {      /* not inside a card: a headline tile (it names itself) or the page head; the page name is stamped so the note still says where it is */
+      var k = t.closest('.kpi'), pg = document.querySelector('#main h2, #main .page-title, h1');
+      if (k && k.getAttribute('data-testid')) t.setAttribute('data-card', k.getAttribute('data-testid').replace(/^tile: /, 'tile: '));
+      else if (pg) t.setAttribute('data-card', 'page: ' + (pg.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60));
+    }
   }
   window.addEventListener('pointermove', stamp, true);
   window.addEventListener('pointerdown', stamp, true);
@@ -12362,22 +12383,31 @@ M.annot = (function () {
       try { document.execCommand('copy') ? resolve() : reject(new Error('copy refused')); } catch (e) { reject(e); } finally { document.body.removeChild(ta); }
     });
   }
-  function copyAll() {
+  /* the same copy-all, with no button on the dashboard (owner, 8 Nov 2026: "I do not want this on the UI, is there any other way?"): Option+Shift+A (Alt+Shift+A) copies the notes of EVERY page in one go,
+     then clears them from this browser so they are not copied again. A short message shows in the toolbar line at the bottom left for two seconds. */
+  document.addEventListener('keydown', function (e) {
+    if (!(e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyA')) return;
+    if (!window.MazoAgentation || !window.MazoAgentation.running()) return;
+    var t = e.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+    e.preventDefault();
     var n = allNotes().length;
-    if (!n) { sayCopy('No notes yet'); return; }
-    copyText(allNotesText()).then(function () { sayCopy('Copied ' + n + ' note' + (n === 1 ? '' : 's')); }, function () { sayCopy('Copy was refused'); });
+    if (!n) { flash('No notes to copy'); return; }
+    copyText(allNotesText()).then(function () { clearAllNotes(); flash('Copied ' + n + ' note' + (n === 1 ? '' : 's') + ' from all pages'); }, function () { flash('Copy was refused'); });
+  });
+  function clearAllNotes() {
+    try {
+      var del = [];
+      for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf(NOTE_PREFIX) === 0) del.push(k); }
+      del.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) { /* storage refused */ }
+    try { if (window.MazoAgentation) { window.MazoAgentation.stop(); setTimeout(function () { if (read()) window.MazoAgentation.start({ endpoint: st.mode === 'live' ? ENDPOINT : '' }); }, 50); } } catch (e) { /* the dots disappear on the next page change */ }
   }
-  function sayCopy(msg) { if (!st.copyBtn) return; st.copyLabel.textContent = msg; clearTimeout(st.copyTimer); st.copyTimer = setTimeout(refreshCopy, 2200); }
-  function refreshCopy() { if (!st.copyBtn) return; var n = allNotes().length; st.copyLabel.textContent = n ? 'Copy notes from all pages (' + n + ')' : 'Copy notes from all pages'; st.copyBtn.title = n ? 'Copies the ' + n + ' note' + (n === 1 ? '' : 's') + ' you left on every page of the dashboard, so you can paste them into the chat in one go.' : 'You have not left a note yet.'; }
-  function copyEntry() {
-    var rf = document.getElementById('rail-foot'); if (!rf || st.copyBtn) return;
-    st.copyLabel = M.h('span', { text: 'Copy notes from all pages' });
-    st.copyBtn = M.h('button', { type: 'button', class: 'rf-signout', id: 'annot-copyall', onclick: copyAll }, [
-      M.s('svg', { class: 'ic', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, [M.s('path', { d: 'M9 9h10v11H9zM5 15V4h10', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.6', 'stroke-linejoin': 'round', 'stroke-linecap': 'round' })]),
-      st.copyLabel]);
-    rf.appendChild(st.copyBtn);
-    refreshCopy();
-    st.copyPoll = setInterval(refreshCopy, 2000);
+  function flash(msg) {
+    var old = st.label ? st.label.textContent : '';
+    if (!st.label) return;
+    st.label.textContent = msg; clearTimeout(st.flashTimer);
+    st.flashTimer = setTimeout(function () { if (st.label) st.label.textContent = 'Turn off Annotate'; }, 2200);
   }
 
   /* start after the dashboard has drawn its shell (on the hosted site that is after the passphrase) */
