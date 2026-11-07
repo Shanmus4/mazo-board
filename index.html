@@ -7461,7 +7461,7 @@ M.costBasisLine = function (source) {
   var st = M.connState(source), rows = M.has('money_daily') ? M.rows('money_daily') : [], sold = rows.filter(function (x) { return +x.orders > 0; }), real = sold.filter(function (x) { return x.cost_basis === 'real'; }).length, part = sold.filter(function (x) { return x.cost_basis === 'partly real'; }).length;
   var bits = [];
   if (st.checked) bits.push('Last read ' + st.checked.slice(0, 16).replace(' ', ' at ') + '.');
-  if (sold.length && rows[0] && rows[0].cost_basis !== undefined) bits.push(M.num(real) + ' of ' + M.num(sold.length) + ' sales days use real costs in profit' + (part ? ', ' + M.num(part) + ' partly' : '') + '; the rest still use the guess.');
+  if (sold.length && rows[0] && rows[0].cost_basis !== undefined) bits.push(M.num(real) + ' of ' + M.num(sold.length) + ' sales days use real costs in profit' + (part ? ', ' + M.num(part) + ' partly' : '') + '; the other ' + M.num(sold.length - real - part) + ' are days before Razorpay and Shiprocket were connected, which use the stated rates.');
   return bits.length ? M.h('p', { class: 'small muted', text: bits.join(' ') }) : null;
 };
 
@@ -7534,7 +7534,6 @@ M.PAGES.shipping.render = function (r) {
   if (!days) { root.appendChild(M.emptyWhy(tab, r)); return root; }
   var S = function (c) { return M.sumCol(tab, c, r).v || 0; };
   var n = S('shipments'), fr = S('freight'), rtoc = S('rto_charges'), oth = S('other_charges'), dl = S('delivered'), rto = S('rto');
-  var est = n * 100;
   /* 6 Nov 2026: Shiprocket's order list carries no freight and its statement endpoint returns one blank line, so until the freight is read the cost is NOT zero, it is unknown. The page says so instead of Rs. 0. */
   var costKnown = (fr + rtoc + oth) > 0;
   var dd = M.rowsIn(tab, r.from, r.to).filter(function (x) { return x.avg_delivery_days != null && x.avg_delivery_days !== ''; });
@@ -7558,13 +7557,7 @@ M.PAGES.shipping.render = function (r) {
       M.tableView([{ k: 'label', label: 'Period' }, { k: 'n', label: 'Parcels', num: true }], buckets.map(function (b, i) { return { label: b.label, n: cnt[i], _from: b.from, _to: b.to }; }))]),
     !costKnown ? null : M.card('What the parcels cost each ' + r.mode, 'Rupees paid to the couriers: freight, charges for parcels that came back, and extra charges.', [
       M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Cost of sending', yfmt: function (v) { return 'Rs. ' + M.short(v); }, series: [{ name: 'Cost of sending', values: frS, color: M.COLORS.maroon, fmt: M.inr }] }); }),
-      M.tableView([{ k: 'label', label: 'Period' }, { k: 'c', label: 'Cost', num: true, fmt: M.inr }], buckets.map(function (b, i) { return { label: b.label, c: frS[i], _from: b.from, _to: b.to }; }))]),
-    !costKnown ? null : M.card('Real cost against the Rs. 100 guess', 'Profit used Rs. 100 a parcel before Shiprocket was connected. This shows how far off that guess was.', [
-      M.h('div', { class: 'pay-gap' }, [
-        M.h('div', null, [M.h('b', { text: M.inr(fr + rtoc + oth) }), M.h('span', { text: 'what the parcels really cost' })]),
-        M.h('div', null, [M.h('b', { text: M.inr(est) }), M.h('span', { text: 'what the Rs. 100 guess says' })]),
-        M.h('div', null, [M.h('b', { text: ((fr + rtoc + oth - est) > 0 ? '+' : '') + M.inr(fr + rtoc + oth - est) }), M.h('span', { text: 'real minus the guess' })])]),
-      rtoc || oth ? M.h('p', { class: 'small', text: 'Inside the real cost: ' + M.inr(fr) + ' freight, ' + M.inr(rtoc) + ' for parcels that came back, ' + M.inr(oth) + ' for extra weight and other charges.' }) : null])
+      M.tableView([{ k: 'label', label: 'Period' }, { k: 'c', label: 'Cost', num: true, fmt: M.inr }], buckets.map(function (b, i) { return { label: b.label, c: frS[i], _from: b.from, _to: b.to }; }))])
   ].filter(Boolean), 'wide'));
   /* couriers */
   var cour = M.stateRows('shiprocket_courier');
@@ -7577,22 +7570,34 @@ M.PAGES.shipping.render = function (r) {
   /* 7 Nov 2026 (Tech Guy: 'on Google Merchant Center it says 10 days'): the promise is kept or broken from the BUYER's side, so the days that count are order to the door (the courier days alone are 2.5 and
      hide the wait before the pickup). Ready to ship pieces promise 3 to 7 days, made to order pieces about 20. Merchant Center's one 'Delivery time' (10.7 days on 6 Nov) is the two promises blended by
      item count (32 ready items at 3 to 7 days, 18 made to order at 15 to 20), not a measurement; the card says so. */
-  var Pm = M.PROMISE, door = (M.has('shiprocket_parcels') ? M.rows('shiprocket_parcels') : []).filter(function (x) { return x.status === 'delivered' && x.ordered_at && x.delivered_at && x.delivered_at.slice(0, 10) >= r.from && x.delivered_at.slice(0, 10) <= r.to; })
-    .map(function (x) { return { order: x.order, coll: x.collection, days: M.hoursBetween ? M.hoursBetween(x.ordered_at, x.delivered_at) / 24 : null, at: x.delivered_at.slice(0, 10) }; }).filter(function (x) { return x.days != null && !isNaN(x.days); });
+  var Pm = M.PROMISE, nowD = (M.D && M.D.anchor) || r.to;
+  var allP = M.has('shiprocket_parcels') ? M.rows('shiprocket_parcels').filter(function (x) { return x.ordered_at && x.courier !== 'Self fulfilled'; }) : [];
+  /* 7 Nov 2026 (Tech Guy: 'one order for Prapti is taking too long and does not seem to be accounted; Google promised 3 to 7 days from order to delivery; the Kamala order is also a little late'):
+     the card used to count DELIVERED parcels only, so a parcel stuck for 19 days (#MZ1026) left every average untouched and the promise looked better than the buyers' experience. Every order that is NOT
+     delivered yet now counts as late the day its wait passes the promise; its days so far are shown. A parcel whose pickup was cancelled and that is handed over by hand (#MZ1030) has no courier
+     clock and is listed apart. */
+  var rowsAll = allP.map(function (x) {
+    var done = x.status === 'delivered' && x.delivered_at, days = M.hoursBetween(x.ordered_at, done ? x.delivered_at : nowD + ' 23:59') / 24;
+    return { order: x.order, coll: x.collection, days: days, done: !!done, hand: /cancel/i.test(x.status || ''), status: x.status, at: (done ? x.delivered_at : x.ordered_at).slice(0, 10) };
+  }).filter(function (x) { return !isNaN(x.days) && (x.done ? (x.at >= r.from && x.at <= r.to) : x.at <= r.to); });
+  var door = rowsAll.filter(function (x) { return x.done; }), openAll = rowsAll.filter(function (x) { return !x.done && !x.hand; }), byHand = rowsAll.filter(function (x) { return !x.done && x.hand; });
   var kept = function (list, hi) { return list.filter(function (x) { return x.days <= hi; }).length; };
-  var madeRows = door.filter(function (x) { return x.coll === 'Jig Jig'; }), readyRows = door.filter(function (x) { return x.coll !== 'Jig Jig'; });
   var promiseKids = [];
-  if (!door.length) promiseKids.push(M.empty('No parcel in these dates has been delivered with both an order time and a delivered time yet.'));
+  if (!rowsAll.length) promiseKids.push(M.empty('No order in these dates has a courier record yet.'));
   else {
     var line = function (name, list, promised, hi) {
       if (!list.length) return null;
-      var n = list.length, k = kept(list, hi), avg = list.reduce(function (a, x) { return a + x.days; }, 0) / n, sorted = list.map(function (x) { return x.days; }).sort(function (p, q) { return p - q; }), med = sorted[Math.floor((n - 1) / 2)];
-      return M.kpi({ label: name, value: M.pct(k / n * 100, 0) + ' on time', note: M.num(k) + ' of ' + M.num(n) + ' delivered within ' + hi + ' calendar days (promise: ' + promised + '; weekends are counted, so this is the strict reading). Half arrived within ' + M.num(med, 1) + ' days, the average is ' + M.num(avg, 1) + '.' });
+      var n = list.length, k = kept(list, hi), openN = list.filter(function (x) { return !x.done; }).length, dn = list.filter(function (x) { return x.done; }), avg = dn.length ? dn.reduce(function (a, x) { return a + x.days; }, 0) / dn.length : null;
+      return M.kpi({ label: name, value: M.pct(k / n * 100, 0) + ' on time', note: M.num(k) + ' of ' + M.num(n) + ' within ' + hi + ' calendar days (promise: ' + promised + '). ' + (openN ? M.num(openN) + ' still on the way and counted as late once past the promise. ' : '') + (avg == null ? '' : 'Delivered ones took ' + M.num(avg, 1) + ' days on average.') });
     };
-    var k1 = line('Ready to ship pieces', readyRows, Pm.ready[0] + ' to ' + Pm.ready[1] + ' working days', Pm.ready[1]), k2 = line('Made to order pieces', madeRows, 'about 20 days', 20);
+    var isMade = function (x) { return x.coll === 'Jig Jig'; };
+    var k1 = line('Ready to ship pieces', rowsAll.filter(function (x) { return !isMade(x) && !x.hand; }), Pm.ready[0] + ' to ' + Pm.ready[1] + ' working days', Pm.ready[1]), k2 = line('Made to order pieces', rowsAll.filter(function (x) { return isMade(x) && !x.hand; }), 'about 20 days', 20);
     promiseKids.push(M.h('div', { class: 'kpis' }, [k1, k2].filter(Boolean)));
-    var worst = door.slice().sort(function (p, q) { return q.days - p.days; })[0];
-    promiseKids.push(M.h('p', { class: 'small', text: 'Days counted from the order to the door. The courier alone takes ' + (avgDays == null ? 'about 2 to 3' : M.num(avgDays, 1)) + ' days; the rest is the wait before the pickup. The slowest delivered parcel is ' + worst.order + ' at ' + M.num(worst.days, 0) + ' days.' }));
+    var promOf = function (x) { return isMade(x) ? 20 : Pm.ready[1]; };
+    var waiting = openAll.slice().sort(function (p, q) { return q.days - p.days; });
+    if (waiting.length) promiseKids.push(M.h('p', { class: 'small', text: 'Not delivered yet: ' + waiting.map(function (x) { return x.order + ' (' + M.num(x.days, 0) + ' days since the order, ' + (x.status || 'on the way') + (x.days > promOf(x) ? ', PAST the ' + promOf(x) + ' day promise' : ', promise ' + promOf(x) + ' days') + ')'; }).join('; ') + '.' }));
+    if (byHand.length) promiseKids.push(M.h('p', { class: 'small', text: 'Handed over by hand, so no courier clock: ' + byHand.map(function (x) { return x.order + ' (' + M.num(x.days, 0) + ' days since the order)'; }).join('; ') + '. Mark it delivered in Shopify once it is handed over, and it joins the count.' }));
+    promiseKids.push(M.h('p', { class: 'small', text: 'Days are counted from the order to the door. The courier alone takes ' + (avgDays == null ? 'about 2 to 3' : M.num(avgDays, 1)) + ' days; the rest is the wait before the pickup.' }));
   }
   var gm = M.has('shiprocket_promise') ? M.rows('shiprocket_promise').filter(function (x) { return x.kind !== 'express'; }) : [];
   if (gm.length) {
@@ -7819,7 +7824,24 @@ M.PAGES.tables.render = function () {
     var ny = function (v) { return v == null ? 'not yet' : M.inr(v); };
     k3.push(M.card('Money in the bank, month by month', 'What buyers paid through Razorpay, what Razorpay paid into the bank, and the fee it kept, from Razorpay itself. A payment made late in a month is paid out in the next one, so a month can show more bank money than payments. The fixed cost and the money paid to the makers ahead are typed in by hand.', [M.table([{ k: 'month', label: 'Month', fmt: function (v) { return /^\d{4}-\d{2}$/.test(v) ? M.MON[+v.slice(5, 7) - 1] + ' ' + v.slice(0, 4) : v; } }, { k: 'paid', label: 'Paid by buyers', num: true, fmt: ny }, { k: 'bank', label: 'Reached the bank', num: true, fmt: ny }, { k: 'feeCharged', label: 'Fee on the month\'s payments', num: true, fmt: ny }, { k: 'feeTaken', label: 'Fee taken from payouts', num: true, fmt: ny }, { k: 'ahead', label: 'Paid to makers ahead', num: true, fmt: ny }, { k: 'fixed', label: 'Fixed cost', num: true, fmt: ny }, { k: 'note', label: 'Note', wrap: true }], { rows: bank, sortKey: 'month', sortDir: -1, empty: 'No months yet.', noTools: true })]));
   }
-  if (hi.length) k3.push(M.card('Numbers written in by hand', 'Numbers only a person knows, written in by hand. Profit uses them. A blank means the default is used, and a change here changes past profit on purpose.', [M.table([{ k: 'key', label: 'What', render: function (x) { return M.h('span', { text: String(x.key || '').replace(/_/g, ' ') }); } }, { k: 'value', label: 'Value', num: true, fmt: function (v) { return v == null || v === '' ? 'blank' : String(v); } }, { k: 'date', label: 'Given on', fmt: M.fd }, { k: 'given_by', label: 'By' }, { k: 'note', label: 'Meaning', wrap: true }], { rows: hi, sortKey: 'date', sortDir: -1, empty: 'None yet.', noTools: true })]));
+  /* 7 Nov 2026 (Tech Guy, Tables page: 'Numbers written in by hand needs to be updated since we get actual data now'): beside each typed number, the REAL figure now read from Razorpay, Shiprocket, Shopify
+     or the returns log, so the typed guess and the actual are side by side. A row with no real source (making cost, units per design, goals, ads) says 'no source yet'. */
+  var realFor = (function () {
+    var out = {}, sumOf = function (tab, col) { return M.has(tab) ? M.rows(tab).reduce(function (a, x) { return a + (+x[col] || 0); }, 0) : null; };
+    var amt = sumOf('razorpay_payments_daily', 'amount'), fee = sumOf('razorpay_payments_daily', 'fee');
+    if (amt > 0 && fee != null) out.payment_fee_pct = { v: fee / amt * 100, t: M.num(fee / amt * 100, 2) + ' percent', n: 'Razorpay\'s own fee with GST on ' + M.inr(amt) + ' of payments' };
+    if (M.has('shiprocket_parcels')) {
+      var pc = M.rows('shiprocket_parcels').filter(function (x) { return x.courier !== 'Self fulfilled'; }).map(function (x) { return (+x.freight || 0) + (+x.rto_charges || 0) + (+x.other_charges || 0); }).filter(function (v) { return v > 0; });
+      if (pc.length) out.parcel_cost = { v: pc.reduce(function (a, v) { return a + v; }, 0) / pc.length, t: M.inr(pc.reduce(function (a, v) { return a + v; }, 0) / pc.length), n: 'Shiprocket\'s billed charge, average of ' + pc.length + ' parcels' };
+    }
+    var ex = sumOf('returns_weekly', 'exchanges_logged'); if (ex != null) out.exchanges_so_far = { v: ex, t: M.num(ex), n: 'logged in Shopify Returns' };
+    if (M.has('shopify_bills')) { var bl = M.rows('shopify_bills').filter(function (b) { return +b.plan_fee > 0; }).sort(function (a, b) { return a.bill_date < b.bill_date ? 1 : -1; })[0]; if (bl) out.shopify_monthly_fee = { v: +bl.plan_fee, t: M.inr(+bl.plan_fee), n: 'plan fee on the Shopify bill of ' + M.fd(bl.bill_date) }; }
+    var ar = M.has('shopify_bills') ? M.rows('shopify_bills').filter(function (b) { return +b.transaction_fees > 0; }) : [];
+    if (ar.length) out.shopify_txn_fee_pct = { v: null, t: 'matches the bills', n: 'proved on the bills of ' + ar.map(function (b) { return M.fd(b.bill_date); }).join(' and ') };
+    return out;
+  })();
+  var hiRows = hi.map(function (x) { var k = String(x.key || ''), rf = realFor[k]; var o = {}; Object.keys(x).forEach(function (c) { o[c] = x[c]; }); o.real = rf ? rf.t : 'no source yet'; o.real_note = rf ? rf.n : ''; return o; });
+  if (hi.length) k3.push(M.card('Numbers written in by hand', 'Numbers only a person knows, typed in. "Real figure now" is what Razorpay, Shiprocket, Shopify or the returns log say today, where they say anything. Profit uses the real figure for every day and parcel they cover, and the typed number for the rest.', [M.table([{ k: 'key', label: 'What', render: function (x) { return M.h('span', { text: String(x.key || '').replace(/_/g, ' ') }); } }, { k: 'value', label: 'Typed value', num: true, fmt: function (v) { return v == null || v === '' ? 'blank' : String(v); } }, { k: 'real', label: 'Real figure now', render: function (x) { return M.h('span', { text: x.real, title: x.real_note }); } }, { k: 'real_note', label: 'Where the real figure comes from', wrap: true, hidden: true }, { k: 'date', label: 'Given on', fmt: M.fd }, { k: 'given_by', label: 'By' }, { k: 'note', label: 'Meaning', wrap: true }], { rows: hiRows, sortKey: 'date', sortDir: -1, empty: 'None yet.', noTools: true })]));
   if (k3.length) root.appendChild(M.grid(k3, 'one'));
   /* 3. what the business owes in dates, and the seasons coming */
   var cd = M.rows('compliance_dates'), rc = M.rows('range_calendar');
@@ -9745,13 +9767,14 @@ M.glueMarks = function () {
     /* 7 Nov 2026 (Tech Guy: 'on Google Merchant Center it says 10 days'): the ring shows the days a buyer really waited, from the order to the door, against the promise for ready to ship pieces. It used to show the
        courier days alone (2.5), which left out the wait before the pickup and so never matched the 10 days Merchant Center shows. The card under it names the two promises Merchant Center blends. */
     if (!M.has('shiprocket_parcels') || !M.PROMISE || !M.hoursBetween) return;
-    var door = M.rows('shiprocket_parcels').filter(function (x) { return x.status === 'delivered' && x.ordered_at && x.delivered_at && x.delivered_at.slice(0, 10) >= r.from && x.delivered_at.slice(0, 10) <= r.to; })
-      .map(function (x) { return M.hoursBetween(x.ordered_at, x.delivered_at) / 24; }).filter(function (v) { return !isNaN(v); });
+    var nowD = (M.D && M.D.anchor) || r.to;      /* an order not delivered yet counts with its days so far (7 Nov 2026: a parcel stuck for 19 days must pull the average up, not vanish from it) */
+    var door = M.rows('shiprocket_parcels').filter(function (x) { return x.ordered_at && x.courier !== 'Self fulfilled' && !/cancel/i.test(x.status || '') && (x.status === 'delivered' && x.delivered_at ? (x.delivered_at.slice(0, 10) >= r.from && x.delivered_at.slice(0, 10) <= r.to) : x.ordered_at.slice(0, 10) <= r.to); })
+      .map(function (x) { return M.hoursBetween(x.ordered_at, x.status === 'delivered' && x.delivered_at ? x.delivered_at : nowD + ' 23:59') / 24; }).filter(function (v) { return !isNaN(v); });
     if (!door.length) return;
     var avg = door.reduce(function (a, v) { return a + v; }, 0) / door.length, P = M.PROMISE.ready;
     Array.prototype.forEach.call(root.children, function (c) {
       if (c.nodeName !== 'SECTION' || !/Is the promise kept/.test(M.vizTitle(c)) || c.querySelector('.ring-box')) return;
-      var box = M.vizRing(avg, P[1], { name: 'Days from the order to the door against the promise', sub: 'days, order to door', centre: M.num(avg, 1), color: avg <= P[1] ? COL.green : avg <= P[1] + 2 ? COL.mustard : COL.terra, valueLabel: 'Average days, order to the door', maxLabel: 'Promise for ready to ship pieces (most days)', fmt: function (v) { return M.num(v, 1) + ' days'; } });
+      var box = M.vizRing(avg, P[1], { name: 'Days from the order to the door against the promise (parcels not yet delivered count their days so far)', sub: 'days, order to door', centre: M.num(avg, 1), color: avg <= P[1] ? COL.green : avg <= P[1] + 2 ? COL.mustard : COL.terra, valueLabel: 'Average days, order to the door', maxLabel: 'Promise for ready to ship pieces (most days)', fmt: function (v) { return M.num(v, 1) + ' days'; } });
       var h3 = c.querySelector(':scope > h3');
       c.insertBefore(box, h3 ? h3.nextSibling : c.firstChild);
     });
