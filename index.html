@@ -2236,6 +2236,11 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
   .kpis.rz .kpi .v { font-size: 20px; }
 }
 
+/* 7 Nov 2026 night: boxes of fixed height for the parts of a card that grow with the years of data; every row stays, the card does not get taller */
+.cal-scroll{max-height:300px;overflow:auto;overscroll-behavior:contain}
+.reach-scroll{max-height:640px;overflow:auto;overscroll-behavior:contain}
+.cal-scroll:focus-visible,.reach-scroll:focus-visible{outline:2px solid var(--maroon,#5E1204);outline-offset:2px}
+
 /* mazo dashboard: look of the history notes (6 Nov 2026). The one line under a card title that says where Shopify's count hands over to Google Analytics, or why a line sits at 0
    (dashboard_69_history.js). It uses the same size, colour and room as the filter note (.fnote) so the two read as one family. */
 .card > .seamnote, .minichart > .leadnote { color: var(--ink2, #5C5247); font-size: var(--fs-sm, 13px); line-height: 1.45; margin: var(--sp2, 8px) 0 var(--sp3, 12px); max-width: 70ch; }
@@ -2911,6 +2916,10 @@ M.card = function (title, why, kids, cls) {
   }
   var sec = M.h('section', { class: 'card' + (cls ? ' ' + cls : '') }, [h3, p].concat(kids || []));
   if (why) sec._why = String(why);
+  /* 7 Nov 2026 night (Tech Guy: 'the place I select on Agentation is not showing to you correctly'): Agentation names a clicked thing only by its CSS class, and every card is just 'section.card',
+     so a note on 'Numbers written in by hand' reached the assistant as 'the card in the grid' and the wrong card was read. The title is now written on the card as data-testid, which Agentation
+     captures and prints in the note (the page, the title, the box). No effect on how the card looks. */
+  if (title) sec.setAttribute('data-testid', 'card: ' + String(title).replace(/\s+/g, ' ').slice(0, 100));
   return sec;
 };
 M.grid = function (kids, cls) { return M.h('div', { class: 'grid' + (cls ? ' ' + cls : '') }, kids); };
@@ -5268,6 +5277,9 @@ M.table = function (cols, o) {
   cols.forEach(function (c, i) { if (c.hidden && i > 0) hide[c.k] = true; });      /* hide: columns the user switched off with the Columns button */
   var col = function (k) { return cols.filter(function (c) { return c.k === k; })[0]; };
   function val(c, r) { return c.sort ? c.sort(r) : r[c.k]; }
+  /* 7 Nov 2026 night (T938, Tech Guy: 'fix it and find the cause'): two rows with the SAME sort value kept the order they arrived in, and the hosted copy opens month files in a different order from the
+     full file, so a table cut to 12 rows showed a different 12th row (Which pages Google shows: 321 clicks against 319, both pages shown 155 times). Equal values now fall back to the first column's text, so every copy shows the same rows. */
+  function tie(a, b) { var k = cols[0] && cols[0].k, x = a[k], y = b[k]; x = x == null ? '' : String(x); y = y == null ? '' : String(y); return x.localeCompare(y); }
   function text(c, r) { var v = r[c.k], t = c.fmt ? c.fmt(v, r) : (v == null ? '' : String(v)); return typeof v === 'string' && !c.fmt ? M.plain(t) : t; }
   function dimOf(c, r) {
     if (c.dim === false || c.render) return null;
@@ -5345,10 +5357,11 @@ M.table = function (cols, o) {
       var c = col(st.key);
       rows.sort(function (a, b) {
         var x = val(c, a), y = val(c, b);
-        if (x == null && y == null) return 0;
+        if (x == null && y == null) return tie(a, b);
         if (x == null) return 1;
         if (y == null) return -1;
-        return (typeof x === 'string' ? x.localeCompare(y) : x - y) * st.dir;
+        var d = (typeof x === 'string' ? x.localeCompare(y) : x - y) * st.dir;
+        return d || tie(a, b);
       });
     }
     view = rows;
@@ -7071,7 +7084,10 @@ M.socialAll = function (root, r, chs) {
       M.timeChart(h, w, { noEvents: true, buckets: buckets, mode: r.mode, title: c.name, h: 140, series: [{ name: c.name, values: v, color: c.color }], emptyNode: function () { return M.emptyWhy(c.tab, r); }, empty: 'No ' + c.name + ' numbers in this range.' });
     }), M.leadLine ? M.leadLine(M.leadNote(c.tab, buckets, v, c.name, M.CHSTART && M.CHSTART[c.id])) : null]);
   });
-  root.appendChild(M.card('Reach over time, one chart per channel', 'One bar per ' + r.mode + '. Each chart has its own scale.', [M.grid(cards, 'wide')]));
+  /* 7 Nov 2026 night (Tech Guy: 'these are important, fix without breaking, I need years and years of data'): one small chart per channel makes this card as tall as the number of channels. The charts keep their
+     full size and every channel, and sit in a box of fixed height that scrolls, so the card is the same height at 7 channels or 30 and the page stays short. */
+  var reachBox = M.h('div', { class: 'reach-scroll', tabindex: '0', role: 'region', 'aria-label': 'Reach over time, one chart per channel (scrolls)' }, [M.grid(cards, 'wide')]);
+  root.appendChild(M.card('Reach over time, one chart per channel', 'One bar per ' + r.mode + '. Each chart has its own scale. Scroll inside the box for the other channels.', [reachBox]));
   /* the same piece on several channels */
   M.copiesCard(root, r);
   /* posts of every channel, best and worst overall */
@@ -7571,40 +7587,44 @@ M.PAGES.shipping.render = function (r) {
      hide the wait before the pickup). Ready to ship pieces promise 3 to 7 days, made to order pieces about 20. Merchant Center's one 'Delivery time' (10.7 days on 6 Nov) is the two promises blended by
      item count (32 ready items at 3 to 7 days, 18 made to order at 15 to 20), not a measurement; the card says so. */
   var Pm = M.PROMISE, nowD = (M.D && M.D.anchor) || r.to;
-  var allP = M.has('shiprocket_parcels') ? M.rows('shiprocket_parcels').filter(function (x) { return x.ordered_at && x.courier !== 'Self fulfilled'; }) : [];
-  /* 7 Nov 2026 (Tech Guy: 'one order for Prapti is taking too long and does not seem to be accounted; Google promised 3 to 7 days from order to delivery; the Kamala order is also a little late'):
-     the card used to count DELIVERED parcels only, so a parcel stuck for 19 days (#MZ1026) left every average untouched and the promise looked better than the buyers' experience. Every order that is NOT
-     delivered yet now counts as late the day its wait passes the promise; its days so far are shown. A parcel whose pickup was cancelled and that is handed over by hand (#MZ1030) has no courier
-     clock and is listed apart. */
-  var rowsAll = allP.map(function (x) {
-    var done = x.status === 'delivered' && x.delivered_at, days = M.hoursBetween(x.ordered_at, done ? x.delivered_at : nowD + ' 23:59') / 24;
-    return { order: x.order, coll: x.collection, days: days, done: !!done, hand: /cancel/i.test(x.status || ''), status: x.status, at: (done ? x.delivered_at : x.ordered_at).slice(0, 10) };
-  }).filter(function (x) { return !isNaN(x.days) && (x.done ? (x.at >= r.from && x.at <= r.to) : x.at <= r.to); });
-  var door = rowsAll.filter(function (x) { return x.done; }), openAll = rowsAll.filter(function (x) { return !x.done && !x.hand; }), byHand = rowsAll.filter(function (x) { return !x.done && x.hand; });
+  /* 7 Nov 2026 night (Tech Guy: 'everywhere in shipping please check every delivery, I see a lot of inconsistency, all deliveries must be counted for this page'): the page used to read three different lists (Shiprocket's
+     parcels, Shopify's fulfilled orders, and a 'collection' guess for made to order), so cards disagreed (3 of 3 ready to ship here, 12 of 18 in my earlier check). ONE list now feeds the promise card, the status card and
+     the 'Every order' table: the shop's own record of every real order (table shipping_daily, one row per order that is not cancelled and not a test), with the promise the buyer was given when ordering (`kind`: ready or made).
+     An order not sent yet is in the list and counts as late once past the promise. An order handed over by hand (a Shiprocket pickup that was cancelled) has no courier clock and is listed apart. */
+  var sd = M.has('shipping_daily') ? M.rows('shipping_daily').filter(function (x) { return x.ordered_at && !/test order/i.test(x.note || ''); }) : [];
+  var handSet = {}; (M.has('shiprocket_parcels') ? M.rows('shiprocket_parcels') : []).forEach(function (x) { if (/cancel/i.test(x.status || '')) handSet[x.order] = 1; });
+  var rowsAll = sd.map(function (x) {
+    var done = !!x.delivered, day0 = String(x.ordered_at).slice(0, 10), end = done ? x.delivered : nowD;
+    var days = (Date.UTC.apply(null, String(end).slice(0, 10).split('-').map(function (v, i) { return i === 1 ? +v - 1 : +v; })) - Date.UTC.apply(null, day0.split('-').map(function (v, i) { return i === 1 ? +v - 1 : +v; }))) / 864e5;
+    var stat = done ? 'delivered' : !x.dispatched ? 'not sent yet' : /ATTEMPTED/i.test(x.status || '') ? 'delivery failed' : /IN_TRANSIT|OUT_FOR/i.test(x.status || '') ? 'on the way' : handSet[x.order] ? 'handed over by hand' : 'sent';
+    return { order: x.order, kind: x.kind, coll: x.collection, days: days, done: done, hand: !done && !!handSet[x.order], status: stat, at: day0, sent: x.dispatched || '', carrier: x.carrier || '', delivered: x.delivered || '' };
+  }).filter(function (x) { return !isNaN(x.days) && x.at >= r.from && x.at <= r.to; });
+  var door = rowsAll.filter(function (x) { return x.done; }), openAll = rowsAll.filter(function (x) { return !x.done && !x.hand; }), byHand = rowsAll.filter(function (x) { return x.hand; });
   var kept = function (list, hi) { return list.filter(function (x) { return x.days <= hi; }).length; };
   var promiseKids = [];
-  if (!rowsAll.length) promiseKids.push(M.empty('No order in these dates has a courier record yet.'));
+  if (!rowsAll.length) promiseKids.push(M.empty('No order was placed in these dates.'));
   else {
     var line = function (name, list, promised, hi) {
       if (!list.length) return null;
       var n = list.length, k = kept(list, hi), openN = list.filter(function (x) { return !x.done; }).length, dn = list.filter(function (x) { return x.done; }), avg = dn.length ? dn.reduce(function (a, x) { return a + x.days; }, 0) / dn.length : null;
-      return M.kpi({ label: name, value: M.pct(k / n * 100, 0) + ' on time', note: M.num(k) + ' of ' + M.num(n) + ' within ' + hi + ' calendar days (promise: ' + promised + '). ' + (openN ? M.num(openN) + ' still on the way and counted as late once past the promise. ' : '') + (avg == null ? '' : 'Delivered ones took ' + M.num(avg, 1) + ' days on average.') });
+      return M.kpi({ label: name, value: M.pct(k / n * 100, 0) + ' on time', note: M.num(k) + ' of ' + M.num(n) + ' orders within ' + hi + ' calendar days (promise: ' + promised + '). ' + (openN ? M.num(openN) + ' not delivered yet, counted as late once past the promise. ' : '') + (avg == null ? '' : 'Delivered ones took ' + M.num(avg, 1) + ' days on average.') });
     };
-    var isMade = function (x) { return x.coll === 'Jig Jig'; };
+    var isMade = function (x) { return x.kind === 'made'; };
     var k1 = line('Ready to ship pieces', rowsAll.filter(function (x) { return !isMade(x) && !x.hand; }), Pm.ready[0] + ' to ' + Pm.ready[1] + ' working days', Pm.ready[1]), k2 = line('Made to order pieces', rowsAll.filter(function (x) { return isMade(x) && !x.hand; }), 'about 20 days', 20);
     promiseKids.push(M.h('div', { class: 'kpis' }, [k1, k2].filter(Boolean)));
     var promOf = function (x) { return isMade(x) ? 20 : Pm.ready[1]; };
     var waiting = openAll.slice().sort(function (p, q) { return q.days - p.days; });
-    if (waiting.length) promiseKids.push(M.h('p', { class: 'small', text: 'Not delivered yet: ' + waiting.map(function (x) { return x.order + ' (' + M.num(x.days, 0) + ' days since the order, ' + (x.status || 'on the way') + (x.days > promOf(x) ? ', PAST the ' + promOf(x) + ' day promise' : ', promise ' + promOf(x) + ' days') + ')'; }).join('; ') + '.' }));
+    if (waiting.length) promiseKids.push(M.h('p', { class: 'small', text: 'Not delivered yet: ' + waiting.map(function (x) { return x.order + ' (' + M.num(x.days, 0) + ' days since the order, ' + x.status + (x.days > promOf(x) ? ', PAST the ' + promOf(x) + ' day promise' : ', promise ' + promOf(x) + ' days') + ')'; }).join('; ') + '.' }));
     if (byHand.length) promiseKids.push(M.h('p', { class: 'small', text: 'Handed over by hand, so no courier clock: ' + byHand.map(function (x) { return x.order + ' (' + M.num(x.days, 0) + ' days since the order)'; }).join('; ') + '. Mark it delivered in Shopify once it is handed over, and it joins the count.' }));
-    promiseKids.push(M.h('p', { class: 'small', text: 'Days are counted from the order to the door. The courier alone takes ' + (avgDays == null ? 'about 2 to 3' : M.num(avgDays, 1)) + ' days; the rest is the wait before the pickup.' }));
+    promiseKids.push(M.h('p', { class: 'small', text: 'Days are counted from the order to the door. ' + M.num(rowsAll.length) + ' orders in these dates: ' + M.num(door.length) + ' delivered, ' + M.num(openAll.length) + ' on the way or not sent yet, ' + M.num(byHand.length) + ' handed over by hand. The courier alone takes ' + (avgDays == null ? 'about 2 to 3' : M.num(avgDays, 1)) + ' days; the rest is the wait before the pickup.' }));
   }
-  var gm = M.has('shiprocket_promise') ? M.rows('shiprocket_promise').filter(function (x) { return x.kind !== 'express'; }) : [];
-  if (gm.length) {
-    var tot = gm.reduce(function (a, x) { return a + (+x.items || 0); }, 0), mid = gm.reduce(function (a, x) { return a + (+x.promised_mid || 0) * (+x.items || 0); }, 0) / Math.max(1, tot);
-    promiseKids.push(M.h('p', { class: 'small', text: 'Google Merchant Center shows one "Delivery time" for the shop (10.7 days on 6 Nov 2026). It is not measured. It blends the shop\'s promises by the number of items: ' + gm.map(function (x) { return M.num(x.items) + ' ' + (/^made/.test(x.kind) ? 'made to order' : 'ready to ship') + ' items promise ' + x.promised_min + ' to ' + x.promised_max + ' days'; }).join(' and ') + ', which averages about ' + M.num(mid, 1) + ' days. Merchant Center replaces it with real times only after 100 clicks.' }));
-  }
+  /* every order, one line each, from the same list: the owner can check any delivery against Shopify and Shiprocket */
+  var everyOrder = rowsAll.length ? M.card('Every order and where it is', 'One line for every real order placed in these dates (cancelled and test orders are left out). The cards above all count these same orders.', [
+    M.table([{ k: 'order', label: 'Order' }, { k: 'at', label: 'Ordered', fmt: M.fd }, { k: 'kindName', label: 'Kind' }, { k: 'carrier', label: 'Courier', wrap: true }, { k: 'sent', label: 'Sent', fmt: function (v) { return v ? M.fd(v) : 'not yet'; } },
+      { k: 'delivered', label: 'Delivered', fmt: function (v) { return v ? M.fd(v) : ''; } }, { k: 'days', label: 'Days since the order', num: true, fmt: function (v) { return M.num(v, 0); } }, { k: 'status', label: 'Where it is' }, { k: 'late', label: 'Against the promise', render: function (x) { return M.tag(x.late, x.late === 'late' ? 'thin' : 'ok'); } }],
+      { rows: rowsAll.map(function (x) { var hi = x.kind === 'made' ? 20 : Pm.ready[1]; return { order: x.order, at: x.at, kindName: x.kind === 'made' ? 'made to order' : 'ready to ship', carrier: x.carrier || (x.done ? 'by hand or self' : ''), sent: x.sent, delivered: x.delivered, days: x.days, status: x.status, late: x.hand ? 'no courier clock' : x.days > hi ? 'late' : x.done ? 'on time' : 'inside the promise' }; }), sortKey: 'at', limit: 40, name: 'every order and where it is' })]) : null;
   root.appendChild(M.card('Is the promise kept?', 'The shop promises ' + Pm.ready[0] + ' to ' + Pm.ready[1] + ' working days for ready to ship pieces and about 20 days for pieces made to order. This compares what buyers really waited, from the order to the door.', promiseKids));
+  if (everyOrder) root.appendChild(everyOrder);
   /* failed delivery tries */
   var nd = M.rowsIn('shiprocket_rto', r.from, r.to);
   root.appendChild(M.card('Parcels that could not be delivered', 'A failed try is a courier visit where nobody took the parcel. The reason is in the courier\'s words. No names, phone numbers or addresses are kept.', [
@@ -8319,7 +8339,8 @@ M.TERMS = [
   wrap('shipping', function () {
     var sd = M.rows('shipping_daily');
     if (!sd.length) return [];
-    var st = {}; sd.forEach(function (x) { st[x.status || 'unknown'] = (st[x.status || 'unknown'] || 0) + 1; });
+    sd = sd.filter(function (x) { return !/test order/i.test(x.note || ''); });      /* 7 Nov 2026: the same list as the promise card (every real order, tests left out) */
+    var st = {}; sd.forEach(function (x) { var k = x.delivered ? 'DELIVERED' : !x.dispatched ? 'NOT SENT YET' : (x.status || 'unknown'); st[k] = (st[k] || 0) + 1; });
     var back = (st.RTO || 0) + (st.RETURNED || 0) + (st.RETURNED_TO_ORIGIN || 0) + (st.RTO_DELIVERED || 0);
     var rows = Object.keys(st).map(function (k) { return { status: k.replace(/_/g, ' ').toLowerCase(), parcels: st[k] }; }).sort(function (a, b) { return b.parcels - a.parcels; });
     return [M.card('Where every parcel is now', 'The shop\'s own record of each parcel. A parcel that comes back to us would appear as returned. ' + (back ? M.num(back) + ' came back.' : 'None has come back so far.'), [
@@ -12183,7 +12204,7 @@ M.evenHeaders = function (root) {
          page policy. Guide: docs/guides/agentation-on-the-dashboard.md . Test: scripts/dashboard_audit_annotate.js */
 M.annot = (function () {
   var KEY = 'mazo-annotate', ENDPOINT = 'http://localhost:4747';
-  var st = { btn: null, label: null, mode: 'live', explicit: false };
+  var st = { btn: null, label: null, mode: 'live', explicit: false, copyBtn: null, copyLabel: null, copyTimer: null, copyPoll: null };
 
   function read() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
   function write(on) { try { if (on) localStorage.setItem(KEY, '1'); else localStorage.removeItem(KEY); } catch (e) { /* a browser that refuses storage cannot keep the switch */ } }
@@ -12256,7 +12277,7 @@ M.annot = (function () {
     if (!window.MAZO_HOSTED && !document.getElementById('mazo-annotate') && !st.explicit) return;      /* the switch was left on in this browser but this copy has no toolbar: stay quiet */
     say('Annotate: loading', 'Loading the toolbar.');
     Promise.all([bundle(), chooseEndpoint()]).then(function (got) {
-      run(got[0], got[1]);
+      run(got[0], got[1]); copyEntry();
       say('Turn off Annotate', st.mode === 'live'
         ? 'Annotate is on. Notes go to the assistant on this computer, nowhere else. Option+A (Alt+A) switches the marker mode on and off. Click to turn Annotate off.'
         : 'Annotate is on. Notes stay in this browser: press Copy in the toolbar and paste them into the chat. Option+A (Alt+A) switches the marker mode on and off. Click to turn Annotate off.');
@@ -12266,6 +12287,8 @@ M.annot = (function () {
     write(false);
     try { if (window.MazoAgentation) window.MazoAgentation.stop(); } catch (e) { /* already gone */ }
     if (st.btn && st.btn.parentNode) st.btn.parentNode.removeChild(st.btn);
+    if (st.copyBtn && st.copyBtn.parentNode) st.copyBtn.parentNode.removeChild(st.copyBtn);
+    clearInterval(st.copyPoll); st.copyBtn = null; st.copyLabel = null;
     st.btn = null; st.label = null; st.explicit = false;
   }
 
@@ -12288,6 +12311,74 @@ M.annot = (function () {
     if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT')) return;
     if (toggleMarker()) e.preventDefault();
   });
+
+  /* 7 Nov 2026 night (Tech Guy: 'the place I select on Agentation is not showing to you correctly'): Agentation names a clicked thing only by its CSS class, and all 13 cards of a page are 'section.card', so a note on
+     a table reached the assistant as 'a card in the grid' and the wrong card could be read. Whatever is under the pointer is now stamped with the title of the card it sits in (data-card), BEFORE the toolbar reads it
+     (this listener is on the window, in the capture phase, so it runs first). The toolbar is told to read data-card and data-testid (scripts/agentation_dash_entry.js) and prints them in the note's address. */
+  var lastStamp = null;
+  function stamp(e) {
+    if (!window.MazoAgentation || !window.MazoAgentation.running()) return;
+    var t = e.target; if (!t || t === lastStamp || t.nodeType !== 1 || !t.closest) return;
+    lastStamp = t;
+    var c = t.closest('section.card'), h = c && c.querySelector('h3 .h3t, h3');
+    if (h) t.setAttribute('data-card', (h.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 100));
+  }
+  window.addEventListener('pointermove', stamp, true);
+  window.addEventListener('pointerdown', stamp, true);
+
+  /* 7 Nov 2026 night (Tech Guy: 'if I select stuff in Operations, then switch to Taxes and select stuff there and press Copy, only the Taxes part comes'): the toolbar keeps notes per page and its Copy button copies the page you
+     are on. This button, under the Annotate line in the sidebar, copies the notes of EVERY page in one go (they are all in this browser's storage, kept 7 days), each under its page address and its card title. */
+  var NOTE_PREFIX = 'feedback-annotations-';
+  function allNotes() {
+    var out = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i); if (!k || k.indexOf(NOTE_PREFIX) !== 0) continue;
+        var arr = []; try { arr = JSON.parse(localStorage.getItem(k)) || []; } catch (e) { arr = []; }
+        arr.forEach(function (a) { if (a && a.comment) out.push({ page: k.slice(NOTE_PREFIX.length), a: a }); });
+      }
+    } catch (e) { /* storage refused */ }
+    out.sort(function (x, y) { return (x.a.timestamp || 0) - (y.a.timestamp || 0); });
+    return out;
+  }
+  function allNotesText() {
+    var list = allNotes(), pages = {}, order = [];
+    list.forEach(function (n) { if (!pages[n.page]) { pages[n.page] = []; order.push(n.page); } pages[n.page].push(n.a); });
+    var txt = '## Page Feedback: all pages (' + list.length + ' note' + (list.length === 1 ? '' : 's') + ' on ' + order.length + ' page' + (order.length === 1 ? '' : 's') + ')\n**App:** mazo dashboard\n**Viewport:** ' + window.innerWidth + 'x' + window.innerHeight + '\n';
+    order.forEach(function (pg) {
+      txt += '\n### Page: ' + pg + '\n';
+      pages[pg].forEach(function (a, i) {
+        var at = a.attributes || {}, card = at['data-card'] || at['data-testid'] || '';
+        txt += '\n#### ' + (i + 1) + '. ' + (a.element || 'item') + (card ? ' (' + String(card).replace(/^card: /, '') + ')' : '') + '\n**Location:** ' + (a.elementPath || '') + '\n**Feedback:** ' + a.comment + '\n' + (a.nearbyText ? '**Near:** ' + String(a.nearbyText).slice(0, 160) + '\n' : '') + (a.boundingBox ? '**Box:** ' + Math.round(a.boundingBox.width) + 'x' + Math.round(a.boundingBox.height) + ' at ' + Math.round(a.boundingBox.x) + ',' + Math.round(a.boundingBox.y) + '\n' : '');
+      });
+    });
+    return txt;
+  }
+  function copyText(txt) {
+    if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) return navigator.clipboard.writeText(txt);
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy') ? resolve() : reject(new Error('copy refused')); } catch (e) { reject(e); } finally { document.body.removeChild(ta); }
+    });
+  }
+  function copyAll() {
+    var n = allNotes().length;
+    if (!n) { sayCopy('No notes yet'); return; }
+    copyText(allNotesText()).then(function () { sayCopy('Copied ' + n + ' note' + (n === 1 ? '' : 's')); }, function () { sayCopy('Copy was refused'); });
+  }
+  function sayCopy(msg) { if (!st.copyBtn) return; st.copyLabel.textContent = msg; clearTimeout(st.copyTimer); st.copyTimer = setTimeout(refreshCopy, 2200); }
+  function refreshCopy() { if (!st.copyBtn) return; var n = allNotes().length; st.copyLabel.textContent = n ? 'Copy notes from all pages (' + n + ')' : 'Copy notes from all pages'; st.copyBtn.title = n ? 'Copies the ' + n + ' note' + (n === 1 ? '' : 's') + ' you left on every page of the dashboard, so you can paste them into the chat in one go.' : 'You have not left a note yet.'; }
+  function copyEntry() {
+    var rf = document.getElementById('rail-foot'); if (!rf || st.copyBtn) return;
+    st.copyLabel = M.h('span', { text: 'Copy notes from all pages' });
+    st.copyBtn = M.h('button', { type: 'button', class: 'rf-signout', id: 'annot-copyall', onclick: copyAll }, [
+      M.s('svg', { class: 'ic', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, [M.s('path', { d: 'M9 9h10v11H9zM5 15V4h10', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.6', 'stroke-linejoin': 'round', 'stroke-linecap': 'round' })]),
+      st.copyLabel]);
+    rf.appendChild(st.copyBtn);
+    refreshCopy();
+    st.copyPoll = setInterval(refreshCopy, 2000);
+  }
 
   /* start after the dashboard has drawn its shell (on the hosted site that is after the passphrase) */
   var baseInit = M.init;
@@ -12487,7 +12578,7 @@ M.annot = (function () {
     it.push({ label: 'Discounts', value: R(t.disc), kind: 'minus', tone: 'sales' });
     it.push({ label: 'GST in the orders', value: R(t.gst), kind: 'minus', tone: 'sales', tip: [{ k: 'What it is', v: 'GST already inside the price. It goes to the government.' }] });
     if (t.refunds) it.push({ label: 'Refunds', value: R(t.refunds), kind: 'minus', tone: 'sales' });
-    it.push({ head: 'CONFIRMED' });
+    /* 7 Nov 2026 night (Tech Guy: 'remove the confirmed label, let the not confirmed label be there; why a separate confirmed label when discounts and GST are also confirmed'): only the NOT CONFIRMED YET heading is drawn. */
     it.push({ label: 'Shopify bill', value: R(t.bill), kind: 'minus', tone: 'confirmed', status: B.known ? 'Confirmed (' + billWord + ')' : 'Confirmed (not known yet)', none: B.known ? null : 'no bill on record',
       tip: B.known && B.planPart != null ? [{ k: 'The plan', v: M.inr(B.planPart) }, { k: 'Shopify\'s charges', v: M.inr(B.chargePart) }] : [] });
     it.push({ label: 'Razorpay charges', value: R(t.razor), kind: 'minus', tone: 'confirmed', status: 'Confirmed' });
@@ -12508,8 +12599,8 @@ M.annot = (function () {
   var ledger = function (rows) {
     var tb = M.h('tbody'), last = '';
     rows.forEach(function (x) {
-      if (x.group !== last && x.group !== 'Sales') {
-        var hd = x.group === 'Confirmed' ? ['CONFIRMED', ''] : ['NOT CONFIRMED YET', ''];
+      if (x.group !== last && x.group === 'Not confirmed yet') {
+        var hd = ['NOT CONFIRMED YET', ''];
         tb.appendChild(M.h('tr', { class: 'mg-ghead ' + (x.pending ? 'mg-ghead-pend' : 'mg-ghead-ok') }, M.h('th', { colspan: 2, scope: 'colgroup' }, [M.h('span', { class: 'mg-ghead-t', text: hd[0] }), hd[1] ? M.h('span', { class: 'mg-ghead-s', text: hd[1] }) : null])));
       }
       last = x.group;
@@ -12529,7 +12620,7 @@ M.annot = (function () {
   };
   M.moneyCard = function (r) {
     var C = M.moneyCalc(r), t = C.t, B = C.B;
-    var why = 'From what customers were charged to what is left. The first group holds the confirmed costs: the Shopify bill, the Razorpay charges and the parcel cost. The second group holds placeholders, because the real cost of making and packing a piece is not recorded, so the last line is a good guide, not accounts. A bill is spread evenly over the days it covers. There are only ' + M.num(M.totalOrders()) + ' orders so far, so one order moves a percentage a lot. Sales are counted from ' + M.fd(M.cover('money_daily').first) + '.';
+    var why = 'From what customers were charged to what is left. The costs above the Not confirmed yet line are real: the Shopify bill, the Razorpay charges and the parcel cost. The costs below it are placeholders, because the real cost of making and packing a piece is not recorded, so the last line is a good guide, not accounts. A bill is spread evenly over the days it covers. There are only ' + M.num(M.totalOrders()) + ' orders so far, so one order moves a percentage a lot. Sales are counted from ' + M.fd(M.cover('money_daily').first) + '.';
     if (!C.covered && !B.known) return M.card('Where the money goes', why, [M.emptyWhy ? M.emptyWhy('money_daily', r) : M.empty('No sales in this range, so there is nothing to split.')]);
     if (!C.hasSales && !t.bill) return M.card('Where the money goes', why, [M.empty('No sales in this range, so there is nothing to split.')]);
     var kids = [];
@@ -13410,18 +13501,23 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var days = Object.keys(perDay).sort(), weeks = [], seen = {};
       for (var w = M.monday(days[0]); w <= days[days.length - 1]; w = M.add(w, 7)) if (!seen[w]) { seen[w] = 1; weeks.push(w); }
       var WD = M.WEEKDAYS || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      /* 7 Nov 2026 night (Tech Guy: 'fix without breaking, I need years and years of data'): one row a week means 52 rows a year and a card that grows for ever. The calendar sits in a box of fixed height that
+         scrolls, newest week at the bottom, so every week is kept and the card never gets taller. */
       kids.push(R.sub('Payout calendar: money that reached the bank each day'));
       var lab = weeks.map(function (w2) { return 'w/c ' + M.fds(w2) + (w2.slice(0, 4) !== days[days.length - 1].slice(0, 4) ? ' ' + w2.slice(0, 4) : ''); });
-      kids.push(M.heat(lab, WD, function (rowLabel, col) {
+      var calBox = M.h('div', { class: 'cal-scroll', tabindex: '0', role: 'region', 'aria-label': 'Payout calendar, one row a week (scrolls)' }, [M.heat(lab, WD, function (rowLabel, col) {
         var day = M.add(weeks[lab.indexOf(rowLabel)], WD.indexOf(col)), p = perDay[day];
         return p ? { v: p.net, text: M.short(p.net), tip: { title: M.fd(day), rows: [{ k: 'Reached the bank', v: R.inr(p.net) }, { k: 'Payments in the payout', v: M.num(p.n) }] } } : { v: null, text: '·' };
-      }, { rowHead: 'Week', legendText: 'Rupees paid out' }));
+      }, { rowHead: 'Week', legendText: 'Rupees paid out' })]);
+      kids.push(calBox);
+      setTimeout(function () { calBox.scrollTop = calBox.scrollHeight; }, 0);
       kids.push(M.tableView([{ k: 'date', label: 'Paid out on', fmt: M.fd }, { k: 'paid_date', label: 'Payment made on', fmt: M.fd }, { k: 'method', label: 'Way of paying' }, { k: 'amount', label: 'Paid by buyer', num: true, fmt: R.inr }, { k: 'fee', label: 'Razorpay kept', num: true, fmt: R.inr }, { k: 'net', label: 'Reached the bank', num: true, fmt: R.inr }, { k: 'days_to_settle', label: 'Days to the bank', num: true, fmt: function (v) { return R.has(v) ? M.num(+v, 1) : 'not read'; } }, { k: 'utr_tail', label: 'Bank ref (last 4)' }],
         rec.slice().sort(R.byDate), 'Show every payment that was paid out', { name: 'Razorpay payouts by payment' }));
     }
     kids.push(R.sub('Payments not paid out yet'));
+    /* 7 Nov 2026 night: the payments not paid out yet are few by nature, but this table was drawn open at its full height. It sits in the same fixed-height box as the calendar. */
     kids.push(wait.length ? M.table([{ k: 'date', label: 'Paid on', fmt: M.fd }, { k: 'hour', label: 'Hour (India)' }, { k: 'shop_order', label: 'Shop order' }, { k: 'amount', label: 'Paid by buyer', num: true, fmt: R.inr }, { k: 'net', label: 'Will reach the bank', num: true, fmt: R.inr }, { k: 'waiting', label: 'Days waiting', num: true }],
-      { rows: wait.map(function (x) { var o = {}; Object.keys(x).forEach(function (k) { o[k] = x[k]; }); o.waiting = M.diff(String(x.date).slice(0, 10), c.today); return o; }), sortKey: 'date', limit: 10, name: 'Razorpay payments not paid out yet' })
+      { rows: wait.map(function (x) { var o = {}; Object.keys(x).forEach(function (k) { o[k] = x[k]; }); o.waiting = M.diff(String(x.date).slice(0, 10), c.today); return o; }), sortKey: 'date', limit: 5, name: 'Razorpay payments not paid out yet' })
       : R.small('Every payment made so far has been paid out.'));
     return R.card(title, why, kids);
   });
@@ -14432,10 +14528,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       tiles.appendChild(items.length ? M.kpi({ label: 'Days promised on Google', value: M.num(lo, 1) + ' to ' + M.num(hiSum, 1), note: 'A blend of the promises in the shipping settings, weighted by items: the middle of each promise to the longest.' })
         : M.kpi({ label: 'Days promised on Google', na: 'Not read yet', note: 'The promised days are saved every night from the shipping settings.' }));
       kids.push(tiles);
-      /* the plain explanation, in the owner's words */
-      var gm = items.length ? 'Google Merchant Center shows one "Delivery time" for the shop (10.7 days on 6 Nov 2026). That figure is not measured. It is the days the shop PROMISES in its shipping settings: ' + (ready ? M.num(ready.items) + ' ready to ship items promise ' + ready.promised_min + ' to ' + ready.promised_max + ' days' : '') +
-        (mto.length ? ' and ' + mto.map(function (x) { return M.num(x.items) + ' made to order items promise ' + x.promised_min + ' to ' + x.promised_max + ' days'; }).join(', ') : '') + '. Google blends them into one number, and it does not say how. Merchant Center measures real delivery times only after 100 clicks, and it has fewer.' : '';
-      kids.push(M.h('p', { class: 'small', text: 'These are four different numbers, because they answer four different questions. ' + gm }));
+      /* 7 Nov 2026 night (Tech Guy: 'no need for this text'): the paragraph that explained Google Merchant Center's one Delivery time is gone. */
       /* the bars: one row per clock */
       var rows = [{ label: 'Waited before the courier came', value: mean(waited) || 0, text: d1(mean(waited)) + ' days', color: COL.mustard }, { label: 'Courier days', value: mean(courierDays) || 0, text: d1(mean(courierDays)) + ' days', color: COL.teal },
         { label: 'Order to the door', value: mean(door) || 0, text: d1(mean(door)) + ' days', color: COL.maroon }];
@@ -14940,7 +15033,7 @@ M.unlock = function () {
     search:    [[['competitor_social', 'kpi_daily', 'shopify_visits_split_daily', 'visits_joined_daily'], 'all'], [['search_pages_weekly'], 'own']],      /* visits from AI assistants: Shopify's split before 5 Oct, and the date of the first one */
     email:     [['email_weekly', 'all']],
     payments:  [[['razorpay_payments_daily', 'razorpay_payments', 'razorpay_orders', 'razorpay_recon', 'razorpay_match', 'razorpay_balance_daily', 'money_daily'], 'all']],      /* T707: money waiting, success by method, left checkouts and the match with the shop look at every day since the first payment */
-    shipping:  [[['money_daily', 'shiprocket_rate_check'], 'all']],      /* 7 Nov 2026: the line 'N of 24 sales days use real costs' counts every sales day, and 'Could a cheaper courier have carried it?' reads every parcel's check */
+    shipping:  [[['money_daily', 'shiprocket_rate_check', 'shipping_daily', 'shiprocket_parcels'], 'all']],      /* 7 Nov 2026 night: the promise card, the status card and the 'Every order' table all read the one list of orders (shipping_daily) and the hand-delivered parcels */      /* 7 Nov 2026: the line 'N of 24 sales days use real costs' counts every sales day, and 'Could a cheaper courier have carried it?' reads every parcel's check */
     tables:    [[['finance_monthly', 'judgeme_daily', 'order_sources', 'queries_weekly', 'returns_weekly', 'review_weekly'], 'all']],
     health:    [[['vitals_daily', 'ux_daily', 'data_trust_daily', 'clarity_weekly', 'speed_weekly'], 'all']],
     tax:       [[['tax_orders'], 'own']]                                                                      /* dashboard_98_taxload.js opens the months of the chosen period */
