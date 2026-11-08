@@ -821,6 +821,12 @@ td.c.has-tip:hover{outline:none;box-shadow:inset 0 0 0 1.5px rgba(94,18,4,.45)}
 .kpis.rates{margin-top:var(--sp3)}
 .kpis .kpi.na,.kpi.na{background:#FDFBF8;border:0;box-shadow:0 0 0 .5px var(--edge)}
 .kpi .vs[title]{cursor:help;text-decoration:underline dotted #B7AB9B;text-underline-offset:3px}
+/* "vs before" is a button now (8 Nov 2026): it looks as before, the same dotted underline, and shows the compare popover on hover, focus and click */
+.kpi button.vs{background:none;border:0;padding:0;margin:0;font:inherit;color:var(--ink2);cursor:help;text-decoration:underline dotted #B7AB9B;text-underline-offset:3px;min-height:0}
+.kpi button.vs:hover{color:var(--maroon)}
+/* a finger needs a bigger target than the words: padding that takes no room in the layout (negative margin gives it back) */
+@media (pointer:coarse),(max-width:640px){.kpi button.vs{padding:14px 10px;margin:-14px -10px;position:relative}}
+.kpi button.vs:focus-visible{outline:2px solid var(--maroon);outline-offset:2px;border-radius:3px}
 .kpi.hero{background:linear-gradient(180deg,#fff 0,#FDFAF6 100%)}
 
 /* ---------- 3b. cards: flush tables, the explanation behind a small (i) ---------- */
@@ -1779,6 +1785,9 @@ html.still .cb svg path.ln-draw,html.still .kpi .sp-line,html.still .viz-chart .
 .tax-pick .fld label { font-size: var(--h-label, 13px); color: var(--muted, #6b625a); }
 .tax-pick .fld select, .tax-pick .fld input { min-height: 40px; padding: 0 12px; background: var(--chip, #f3ede6); color: var(--ink, #2a2a2a); border: 0; font: inherit; border-radius: var(--cr-ctl, 6px); }
 .tax-pick .fld input { min-width: 210px; }
+.tax-pick .fld .seg { padding: 0; align-self: flex-start; }
+.tax-pick .fld .seg button { min-height: 38px; height: 38px; padding-top: 0; padding-bottom: 0; }      /* 8 Nov 2026: with its border the "Look at" choice is 40 px, the same as the drop-downs beside it, so the labels line up */
+@media (max-width: 640px) { .tax-pick .fld .seg { width: 100%; } .tax-pick .fld .seg button { min-height: 42px; height: 42px; flex: 1 1 0; padding-left: 4px; padding-right: 4px; } .tax-pick .fld:nth-child(2) { grid-column: 1 / -1; } }
 .tax-pick .fld select:focus-visible, .tax-pick .fld input:focus-visible { outline: 2px solid var(--maroon, #5e1204); outline-offset: 2px; }
 .tax-period { flex: 1 1 100%; margin: 0; color: var(--muted, #6b625a); }
 .tax-page h4.sub { font-size: var(--h-sub, 16px); margin: var(--gap-in, 16px) 0 8px; }
@@ -1845,7 +1854,13 @@ html.still .cb svg path.ln-draw,html.still .kpi .sp-line,html.still .viz-chart .
 .tax-page table.has-bands thead tr.band-row td.b-shipping { background: #F1E8DC; color: var(--mustard-t, #7d5208); }
 .tax-page table.has-bands thead tr.band-row td.b-total { background: #5E1204; color: #F0EDE7; }
 .tax-page table.has-bands thead tr:not(.band-row) th { top: 28px; }
-.tax-page table.has-bands thead tr.band-row td:first-child { position: static; }      /* the empty band over the first eight columns scrolls away; it must not pin itself over the Goods band */
+/* 8 Nov 2026 (owner, image of the register: "the table content is seen behind and above the header, fix these kinds of tables"): the empty band over the first eight columns was left to scroll away, so the rows
+   showed through above the headings on the left and in the gap over the first eight columns. Every band cell now stays pinned and opaque. The empty one is pinned at the top only (it is eight columns wide, so
+   it scrolls sideways with the table and never covers the Goods band). The row also carries the fill, because a sticky cell paints only its own box. */
+.tax-page table.has-bands thead tr.band-row { background: #FBF8F4; }
+.tax-page table.has-bands thead tr.band-row td.band:empty { position: sticky; top: 0; z-index: 3; box-shadow: none; }
+.tax-page table.has-bands thead tr.band-row td:first-child { position: sticky; left: auto; top: 0; z-index: 3; }      /* pinned at the top only: it is eight columns wide and must scroll sideways under the Goods band */
+.tax-page table.has-bands thead tr:not(.band-row) th { box-shadow: 0 1px 0 var(--line, #e8e1d8); }
 .tax-page table.has-bands tbody td.n { font-variant-numeric: tabular-nums; }
 .tax-register .tax-check { margin-top: 8px; }
 @media (max-width: 640px) { .tax-page table.has-bands thead tr.band-row td { font-size: 11px; padding: 3px 6px; } }
@@ -2213,6 +2228,12 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
 /* ---------- the two small tables under the card: a number never breaks across two lines ---------- */
 .mg-card table:not(.mg-table) td:not(.wrap),.mg-card table:not(.mg-table) tfoot td{white-space:nowrap}
 .mg-card table:not(.mg-table) td .mg-oneoff-tag{white-space:normal;min-width:11em}
+
+/* 8 Nov 2026 (owner: line from the label to the value; calmer hover): a dotted guide from the label to the bar, a faint band over the row you point at, and the guide turns solid maroon */
+.mg-chart svg .mg-lead{stroke:#7A7A7A;stroke-opacity:.45;stroke-width:1.5;stroke-dasharray:1.5 4;stroke-linecap:round;fill:none;pointer-events:none}
+.mg-chart svg g.mg-row:hover .mg-lead,.mg-chart svg g.mg-row:focus .mg-lead{stroke:var(--maroon);stroke-dasharray:none;stroke-opacity:.55}
+.mg-chart svg g.mg-row .mg-hit{transition:fill .12s var(--ease,ease)}
+.mg-chart svg g.mg-row:hover .mg-hit,.mg-chart svg g.mg-row:focus .mg-hit{fill:rgba(94,18,4,.045)}
 
 /* F2 (4 Nov 2026): two cards side by side keep the same height, and on a phone their tables use tighter cells so the useful columns fit the card without sideways scrolling.
    Loads after dashboard_48_parts.css (which sets align-self:start on a pair card) and wins by order. */
@@ -2969,6 +2990,7 @@ M.tipPlace = function (clientX, clientY) {
 };
 M.tipShow = function (clientX, clientY, title, rows) {
   tipEl = tipEl || document.getElementById('tip');
+  tipEl.__owner = null;      /* a mark that wants to keep the box while the pointer moves inside it sets this right after (M.tipFor) */
   M.clear(tipEl);
   tipEl.classList.remove('tip-text');
   if (title) tipEl.appendChild(M.h('div', { class: 't0', text: title }));
@@ -3014,9 +3036,12 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && M.
 /* bind a mark: fn() -> {title, rows}. UX round (1 Nov 2026): a click or Enter on the mark also opens the same facts as a pinned detail panel (works on touch, stays open), or runs
    `act.onClick` when the mark means an action (apply a filter). The class has-tip gives the pointer cursor and a hover outline. */
 M.tipFor = function (el, fn, act) {
-  var show = function (e) { var d = fn(); if (d) M.tipShow(e.clientX, e.clientY, d.title, d.rows); };
+  var show = function (e) { var d = fn(); if (d) { M.tipShow(e.clientX, e.clientY, d.title, d.rows); tipEl.__owner = el; } };
+  /* 8 Nov 2026 (owner: the tooltip stutters): the facts of a mark do not depend on where inside it the pointer is, so moving within the same mark only moves the box, it does not clear and rebuild it
+     on every pointer event (that rebuild is what flickered). The facts are built again when the pointer enters a mark. */
+  var move = function (e) { if (tipEl && !tipEl.hidden && tipEl.__owner === el) M.tipPlace(e.clientX, e.clientY); else show(e); };
   el.addEventListener('pointerenter', show);
-  el.addEventListener('pointermove', show);
+  el.addEventListener('pointermove', move);
   el.addEventListener('pointerleave', M.tipHide);
   el.addEventListener('focus', function () {
     var d = fn(), r = el.getBoundingClientRect();
@@ -3210,7 +3235,10 @@ M.arrow = function (dir) {
 };
 /* measures that are good when they go DOWN (a headline figure the page did not mark with goodUp) */
 M.DOWNGOOD = /\b(bounces?|refunds?|refunded|returns?|exchanges?|cancel\w*|disputes?|days to (send|deliver|dispatch)|delivery days|dispatch days|late|left checkouts?|abandon\w*|errors?|costs?|fees?|discounts?|stock ?outs?|out of stock|missed|unsubscribes?|complaints?)\b/i;
-M.downIsGood = function (label) { return M.DOWNGOOD.test(String(label || '')); };
+/* 8 Nov 2026 (owner, image of "Sales after discounts", up 18.2% shown in the bad colour): the word list above saw "discounts" and treated a rise in SALES as bad. These are measures of money coming in, so a rise is
+   good whatever else the title says. They are checked first. Found by listing every tile title the list matches (15 of 146). */
+M.UPGOOD = /^\s*(sales|net sales|gross sales|collected|revenue|email list)\b/i;
+M.downIsGood = function (label) { var s = String(label || ''); return !M.UPGOOD.test(s) && M.DOWNGOOD.test(s); };
 M.kpi = function (o) {
   // o: label, value (text), change (percent or null), goodUp (bool), note, cmpNote, na (text)
   var box = M.h('div', { class: 'kpi' + (o.na ? ' na' : '') + (o.hero ? ' hero' : '') }, [M.h('div', { class: 'l', text: o.label })]);
@@ -3228,7 +3256,13 @@ M.kpi = function (o) {
     var up = o.change > 0.5, down = o.change < -0.5, good = low ? down : up, bad = low ? up : down;
     d.appendChild(M.h('span', { class: 'chip-d ' + (good ? 'up' : bad ? 'down' : 'flat'), title: up ? 'Went up' : down ? 'Went down' : 'About the same' }, [M.arrow(up ? 'up' : down ? 'down' : 'flat'), M.pct(Math.abs(o.change), 1)]));
     d.appendChild(document.createTextNode(' '));
-    d.appendChild(M.h('span', { class: 'vs', text: 'vs before', title: M.compareNote || 'Compared with the period just before the one you picked' }));
+    /* 8 Nov 2026 (owner: "in none of the cards does hovering or clicking on 'vs before' do anything"): it used to carry only a browser tooltip that waits a second and never shows on touch. It is now a button that uses the
+       dashboard's own info popover: hover, keyboard focus and click or tap show which dates it is compared with, what the figure was then and what it is now. */
+    var vsTip = function () {
+      var dir = up ? 'up' : down ? 'down' : 'about the same', pc = M.pct(Math.abs(o.change), 1);
+      return (M.compareNote || 'Compared with the period just before the one you picked.') + ' ' + (o.prev ? 'Then: ' + o.prev + '. Now: ' + o.value + '. ' : '') + (up || down ? 'That is ' + dir + ' ' + pc + '.' : 'That is ' + dir + '.');
+    };
+    d.appendChild(M.infoBind(M.h('button', { type: 'button', class: 'vs', text: 'vs before' }), vsTip, 'Compared with before'));
   } else if (o.cmpNote) d.appendChild(M.h('span', { class: 'vs', text: o.cmpNote }));
   if (d.firstChild) box.appendChild(d);
   if (o.note) box.appendChild(M.h('div', { class: 'ctx', text: o.note }));
@@ -5541,7 +5575,7 @@ M.PAGES.overview.render = function (r) {
     var thin = cmp && prev !== null ? M.prevThin([d.num && d.num.tab, d.den && d.den.tab], r) : null;      /* 3 Nov 2026: no percent against a period that was only partly tracked */
     if (d.money && cmp && prev !== null && M.moneyPrevNote) thin = M.moneyPrevNote(r) || thin;      /* T884: no percent against a period with days that have no Shopify bill: the two numbers would mean different things */
     if (thin) chv = null;
-    put({ label: d.label, value: d.fmt(cur), change: chv, cmpNote: cmp ? (prev === null ? 'nothing to compare with' : thin ? thin : prev === 0 ? 'was 0 before' : '') : '', note: cov, extra: d.what, spark: { values: M.defSeries(d, buckets), color: M.COLORS.maroon } });
+    put({ label: d.label, value: d.fmt(cur), prev: cmp && prev !== null && prev !== undefined && !thin ? d.fmt(prev) : null, change: chv, cmpNote: cmp ? (prev === null ? 'nothing to compare with' : thin ? thin : prev === 0 ? 'was 0 before' : '') : '', note: cov, extra: d.what, spark: { values: M.defSeries(d, buckets), color: M.COLORS.maroon } });
   });
   root.appendChild(kp);
   if (kp2.children.length) root.appendChild(kp2);
@@ -9893,10 +9927,21 @@ M.glueMarks = function () {
       s.value = value; s.addEventListener('change', function () { on(s.value); });
       return M.h('div', { class: 'fld' }, [M.h('label', { text: label }), s]);
     };
-    box.appendChild(sel('Financial year', p.fy, p.fyList.map(function (f) { return [f, f + ' (April ' + f.slice(0, 4) + ' to March ' + (+f.slice(0, 4) + 1) + ')']; }), function (v) { M.go({ fy: v, tq: '', tm: 'all' }); }));
-    box.appendChild(sel('Quarter', p.tq, [['', 'Whole year']].concat(['Q1', 'Q2', 'Q3', 'Q4'].map(function (q) { return [q, q + ': ' + QLABEL[q]]; })), function (v) { M.go({ tq: v, tm: v ? '' : 'all' }); }));
+    /* 8 Nov 2026 (owner: "the filters on the tax page on top do not even make sense, whole year, month and so on, it is not set properly"): three drop-downs sat side by side and could contradict each other
+       (Quarter "Whole year" next to Month "November 2026"). Now one choice leads to the next: the financial year, then HOW to look at it (one month, one quarter or the whole year), then only the list that
+       applies. The state is the same as before (fy, tq, tm), so links and the register code are unchanged. */
     var mo = fyMonths(p.fy).filter(function (m) { return p.monthsWithData.indexOf(m) >= 0; });
-    box.appendChild(sel('Month', p.tm || 'all', [['all', 'All months']].concat(mo.map(function (m) { return [m, mname(m)]; })), function (v) { M.go({ tm: v, tq: '' }); }));
+    var qs = ['Q1', 'Q2', 'Q3', 'Q4'].filter(function (q) { return mo.some(function (m) { return qOfMonth(m) === q; }); });
+    var lastMo = mo.length ? mo[mo.length - 1] : '';
+    box.appendChild(sel('Financial year', p.fy, p.fyList.map(function (f) { return [f, f + ' (April ' + f.slice(0, 4) + ' to March ' + (+f.slice(0, 4) + 1) + ')']; }), function (v) { M.go({ fy: v, tq: '', tm: 'all' }); }));
+    box.appendChild(M.h('div', { class: 'fld' }, [M.h('label', { text: 'Look at' }), M.segment('Look at one month, one quarter or the whole financial year', [['month', 'One month'], ['quarter', 'One quarter'], ['year', 'Whole year']], p.kind, function (k) {
+      if (k === p.kind) return;
+      if (k === 'month') M.go({ tm: p.tm || lastMo, tq: '' });
+      else if (k === 'quarter') M.go({ tq: p.tq || (lastMo ? qOfMonth(lastMo) : 'Q1'), tm: '' });
+      else M.go({ tm: 'all', tq: '' });
+    })]));
+    if (p.kind === 'month') box.appendChild(sel('Month', p.tm, mo.map(function (m) { return [m, mname(m)]; }), function (v) { M.go({ tm: v, tq: '' }); }));
+    if (p.kind === 'quarter') box.appendChild(sel('Quarter', p.tq, qs.map(function (q) { return [q, q + ': ' + QLABEL[q]]; }), function (v) { M.go({ tq: v, tm: '' }); }));
     /* a typed month: 2026-10, Oct 2026, October 2026, 10/2026 or a day such as 03/11/2026 (its month is taken). The shared reader (dashboard_47_datepicker.js) is used when it is there. */
     var inp = M.h('input', { type: 'text', 'aria-label': 'Type a month, for example Oct 2026 or 2026-10', placeholder: 'Type a month, e.g. Oct 2026', value: '', autocomplete: 'off', spellcheck: 'false' });
     var tryType = function () {
@@ -10209,7 +10254,7 @@ M.glueMarks = function () {
     }
     var p = periodOf(all), rows = inSpan(all, p);
     M.taxPeriodNow = function () { return p; };      /* 6 Nov 2026: the period chosen on this page, for the shipping GST cards (dashboard_67_tax_shipping.js) */
-    root.appendChild(M.h('div', { class: 'tax-bar' }, [chooser(p), M.h('p', { class: 'tax-period', text: 'Showing ' + p.label + '. ' + (p.kind === 'year' ? 'Pick a quarter or a month to see the figures for one return.' : '') })]));
+    root.appendChild(M.h('div', { class: 'tax-bar' }, [chooser(p), M.h('p', { class: 'tax-period', text: 'Showing ' + p.label + '. ' + (p.kind === 'year' ? 'Choose One month or One quarter to see the figures for one return.' : '') })]));
     var h = headline(rows, p);
     root.appendChild(h.node);
     var lastMonth = p.monthsWithData[p.monthsWithData.length - 1];
@@ -10399,7 +10444,7 @@ M.glueMarks = function () {
     var cols = [
       { k: 'order', label: 'Order no', groupHide: true, sort: function (r) { return orderNo(r); }, fmt: function (v, r) { return v || 'Month total'; } },
       { k: 'date', label: 'Date', fmt: dmy },
-      { k: 'type', label: 'Type', groupHide: true, render: function (r) { return r.type === 'Refund' ? M.tag('Refund', 'work') : r.type === 'Cancelled' ? M.tag('Cancelled', 'thin') : 'Sale'; } },
+      { k: 'type', label: 'Type', groupHide: true },      /* 8 Nov 2026 (owner: "UI shows Cancelled with some dot on the left, make it consistent with the rest of the table"): plain text like every other column; the tag chip carried a dot */
       { k: 'state', label: 'Place of supply', csvLabel: 'Place of supply (delivery state)', groupHide: true },
       { k: 'scode', label: 'State code', groupHide: true },
       { k: 'taxtype', label: 'Type of tax', groupHide: true },
@@ -11462,6 +11507,11 @@ M.evenHeaders = function (root) {
      3  Days AFTER the newest bill's last day are not billed yet. They are ESTIMATED: the plan x days / 30, plus 2.0 percent of the Razorpay orders of those days (money_daily est_shopify_fee).
      4  Days before the newest bill that no bill covers are NOT counted and not estimated. The card says how many.
      5  A bill marked one_off is not a normal month. It is never counted and never used for the estimate. It is listed on its own line with the reason.
+     3b 8 Nov 2026 (owner: "why so much estimate, you can easily fetch the bill value and the transaction charges"): Shopify has no way to read the store's own bills (checked: the Admin API holds only the plan's
+        name, no bill or invoice query), so every bill is read from its own page and typed once, with ALL its parts (plan, transaction fees, credits, tax, paid on). The billing page also shows the
+        charges SO FAR of the cycle in progress ("Rs. 405.97, next bill in 15 days"). When that figure is on record (human_inputs, key shopify_open_fees, with the date it was read) the days after the newest
+        bill are no longer a guess about the fee: the fee part is that real figure, up to the day it was read; only the days after that day still use 2.0 percent of the day's Razorpay orders. The plan
+        part of the open cycle stays plan x days / 30 until the bill comes, because Shopify bills the plan when the cycle ends.
      6  The 2.0 percent charge is INSIDE every bill. On days a bill covers, the per order charge is never added again. On estimated days it is the only place the charge appears.
    Money is worked in whole paise, so the months of a range add up to the range to the paisa. */
 (function () {
@@ -11501,6 +11551,12 @@ M.evenHeaders = function (root) {
     return v != null ? { amount: v, where: 'the plan page' } : null;
   };
 
+  /* the charges so far of the cycle in progress, typed from the top of the billing page (tab human_inputs, key shopify_open_fees: value = rupees, date = the day it was read). The newest line wins. */
+  M.openCycle = function () {
+    var best = null;
+    M.rows('human_inputs').forEach(function (x) { if (x.key === 'shopify_open_fees' && num(x.value) != null && day(x.date) && (!best || day(x.date) >= best.on)) best = { on: day(x.date), amount: num(x.value) }; });
+    return best;
+  };
   M.bill = function (from, to) {
     var list = M.billList(), normal = list.filter(function (b) { return !b.oneOff; });
     var pl = M.billPlan(), plan = pl ? pl.amount : null;
@@ -11548,7 +11604,20 @@ M.evenHeaders = function (root) {
       estPlanP = Math.round(paise(plan) * De / CYCLE);
       var pieces = split(estPlanP, mde.map(function (x) { return x.d; }));
       mde.forEach(function (x, i) { var m = mo[x.ym]; m.estPlanP += pieces[i]; m.estDays += x.d; });
-      fees.forEach(function (v, d) { var fp = paise(v); mo[d.slice(0, 7)].estFeeP += fp; estFeeP += fp; });
+      /* the charges so far, as the billing page showed them on a day: spread over the days from the newest bill's end to that day in proportion to each day's own 2.0 percent figure (the day's Razorpay orders),
+         so a range that cuts the open cycle takes its real share. Days after that day keep the 2.0 percent of the day's orders. */
+      var oc = M.openCycle ? M.openCycle() : null, realFee = null;
+      if (oc && newest && oc.on > newest) {
+        var upto = oc.on < to ? oc.on : to, all = M.dailyMap({ tab: 'money_daily', col: 'est_shopify_fee' }, M.add(newest, 1), oc.on), sumAll = 0;
+        all.forEach(function (v) { sumAll += paise(v); });
+        realFee = { on: oc.on, amountP: paise(oc.amount), basisP: sumAll, upto: upto };
+        out.openOn = oc.on; out.openAmount = oc.amount;
+      }
+      fees.forEach(function (v, d) {
+        var fp = paise(v);
+        if (realFee && d <= realFee.on && realFee.basisP > 0) fp = Math.round(realFee.amountP * fp / realFee.basisP);      /* the day's share of the real charges so far */
+        mo[d.slice(0, 7)].estFeeP += fp; estFeeP += fp;
+      });
       out.estDays = De; out.estFrom = ea; out.estTo = to;
     }
     order.forEach(function (k) {
@@ -11585,7 +11654,7 @@ M.evenHeaders = function (root) {
       });
     } else if (B.bills.length) bits.push(M.num(B.bills.length) + ' real bills, ' + M.inr(B.real) + ' together' + (B.cut ? ' (a bill cut by the first or last date counts only its days inside)' : ''));
     if (B.estDays) bits.push(B.estDays === 1 ? M.fd(B.estFrom) : M.billSpan(B.estFrom, B.estTo)) ;
-    if (B.estDays) bits[bits.length - 1] += ' is not billed yet, so it is estimated: the plan ' + M.inr(B.plan) + ' x ' + B.estDays + '/' + B.cycle + ' = ' + M.inr(B.estPlan) + ' plus 2.0 percent of the Razorpay orders of those days, ' + M.inr(B.estFee) + ', which is ' + M.inr(B.est);
+    if (B.estDays) bits[bits.length - 1] += ' is not billed yet: the plan ' + M.inr(B.plan) + ' x ' + B.estDays + '/' + B.cycle + ' = ' + M.inr(B.estPlan) + ' (Shopify bills the plan when the cycle ends) plus ' + (B.openOn ? 'Shopify\'s own charges so far, ' + M.inr(B.openAmount) + ' (read from the billing page on ' + M.fd(B.openOn) + ')' + (B.estTo > B.openOn ? ' and 2.0 percent of the Razorpay orders after that day' : '') : '2.0 percent of the Razorpay orders of those days, ' + M.inr(B.estFee)) + ', which is ' + M.inr(B.est);
     var s = bits.length ? 'How the Shopify bill was built: ' + bits.join('; ') + '.' : 'No Shopify bill covers these dates.';
     if (B.estDays > 35 && B.newestEnd) s += ' The newest bill on record ended on ' + M.fd(B.newestEnd) + ', more than a month before the last day shown, so a newer bill has probably been issued but is not recorded yet.';
     if (B.gapDays) s += ' ' + M.num(B.gapDays) + (B.gapDays === 1 ? ' day has' : ' days have') + ' no bill on record and ' + (B.gapDays === 1 ? 'is' : 'are') + ' not counted.';
@@ -11659,21 +11728,41 @@ M.evenHeaders = function (root) {
         gp.appendChild(M.s('text', { x: X(0) + 8, y: r.y + r.h / 2 + 4, class: 'mg-none' }, it.none));
       } else {
         var x0 = X(r.lo), bw = Math.max(2, X(r.hi) - x0);
+        /* 8 Nov 2026 (owner: "draw a line from the label to the value indicator"): a dotted guide from the end of the label to the start of its bar, so a bar that hangs off the running total can be read back to its
+           name. It turns solid maroon with the row hover. A bar that starts at the label column has nothing to join, so no line. */
+        if (x0 - (L - 4) > 10) gp.appendChild(M.s('line', { x1: L - 4, x2: (x0 - 2).toFixed(1), y1: r.y + r.h / 2, y2: r.y + r.h / 2, class: 'mg-lead', 'aria-hidden': 'true' }));
         gp.appendChild(M.s('rect', { x: x0.toFixed(1), y: r.y + 6, width: bw.toFixed(1), height: r.h - 12, fill: fill, rx: 2, class: pending ? 'mg-bar mg-bar-pend' : 'mg-bar' }));
         var tx = Math.min(w - 2, X(r.hi) + 6);
         gp.appendChild(M.s('text', { x: tx, y: r.y + r.h / 2 + 4, 'text-anchor': 'start', class: 'strong mg-val' + (pending ? ' mg-pend' : '') }, (it.kind === 'minus' && it.value ? '-' : '') + short(Math.abs(it.value))));
       }
-      gp.appendChild(M.s('rect', { x: 0, y: r.y, width: w, height: r.h, fill: 'transparent' }));
-      /* 5 Nov 2026 (Tech Guy, picture 1: the tooltip covered the CONFIRMED heading): the tip of a bar opens ABOVE the pointer row, to the right of the label column. Each bar row is 36 px and a heading
-         row is 32 px, so a tip that opened below the pointer landed on the next heading. Placed after the shared placement has run (it runs on the same event). */
-      gp.addEventListener('pointermove', function (e) { setTimeout(function () { var tipEl = document.getElementById('tip'); if (!tipEl || tipEl.hidden) return; var b = svg.getBoundingClientRect(), left = Math.min(b.left + L + 16, window.innerWidth - tipEl.offsetWidth - 6), top = e.clientY - tipEl.offsetHeight - 10; tipEl.style.left = Math.max(6, left) + 'px'; tipEl.style.top = Math.max(6, top) + 'px'; }, 0); });
-      M.tipFor(gp, function () {
+      gp.appendChild(M.s('rect', { x: 0, y: r.y, width: w, height: r.h, fill: 'transparent', class: 'mg-hit' }));
+      /* 8 Nov 2026 (owner: "when I hover, the tooltip stutters a lot between cards of different rows"): before, every pointer move built the tip again, placed it at the cursor and, a moment later, moved it above the row,
+         so it jumped twice per move and again at every row. Now it is built and placed ONCE when the pointer enters a row (or the row gets keyboard focus), sits above that row to the right of the label column,
+         and does not move while the pointer stays in the row. When there is no room above (the first rows) it opens below the row. Click or Enter still opens the same facts as a pinned panel. */
+      var facts = function () {
         var rowsT = [{ k: it.kind === 'minus' ? 'Taken off' : 'Amount', v: M.inr(it.value) }];
         if (it.kind === 'minus') rowsT.push({ k: 'Left after this step', v: M.inr(r.after) });
         (it.tip || []).forEach(function (x) { rowsT.push(x); });
         rowsT.push({ k: 'Status', v: pending ? 'Not confirmed yet' : tone === 'confirmed' ? (it.status || 'Confirmed') : tone === 'sales' ? 'From Shopify orders' : 'Worked out' });
         return { title: it.label, rows: rowsT };
-      });
+      };
+      var openTip = function () {
+        var d = facts(); M.tipShow(0, 0, d.title, d.rows);
+        var tipEl = document.getElementById('tip'); if (!tipEl) return;
+        var b = svg.getBoundingClientRect(), k = b.width / w, ry = b.top + r.y * k, rh = r.h * k;
+        var left = Math.max(6, Math.min(b.left + L * k + 16, window.innerWidth - tipEl.offsetWidth - 6));
+        var top = ry - tipEl.offsetHeight - 6;
+        if (top < 6) top = Math.max(6, Math.min(ry + rh + 6, window.innerHeight - tipEl.offsetHeight - 6));
+        tipEl.style.left = Math.round(left) + 'px'; tipEl.style.top = Math.round(top) + 'px';
+      };
+      gp.addEventListener('pointerenter', openTip);
+      gp.addEventListener('focus', openTip);
+      gp.addEventListener('pointerleave', M.tipHide);
+      gp.addEventListener('blur', M.tipHide);
+      gp.classList.add('has-tip');
+      var pin = function () { M.tipHide(); var d = facts(); if (d && M.detail) M.detail.open({ title: d.title, rows: d.rows, opener: gp }); };
+      gp.addEventListener('click', pin);
+      gp.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target === gp) { e.preventDefault(); pin(); } });
       svg.appendChild(gp);
     });
     host.appendChild(svg);
@@ -12234,7 +12323,7 @@ M.annot = (function () {
   }
   fromAddress();
   /* a change that only touches the part after the # does not reload the page, so the address is read again then (this runs before the dashboard's own hash handler) */
-  window.addEventListener('hashchange', function () { var v = fromAddress(); if (v === '1') on(); else if (v === '0') off(); });
+  window.addEventListener('hashchange', function () { var v = fromAddress(); if (v === '1') { if (window.MazoAgentation && window.MazoAgentation.running() && !document.querySelector('agentation-toolbar')) showToolbar(); else on(); } else if (v === '0') off(); });
 
   /* where the toolbar sends notes: the agentation server on THIS computer if it answers, else nowhere (the toolbar then keeps the notes in the browser for its Copy button).
      No answer is the normal case on a phone, on a page opened from a file (the server refuses file pages), in Safari on the hosted site (it blocks a secure page from calling http://localhost)
@@ -12271,7 +12360,13 @@ M.annot = (function () {
     } catch (e) { /* storage refused: the toolbar keeps its own default */ }
   }
 
+  /* 8 Nov 2026 (owner: "agentation disappeared, it is not coming back even with ?agentation=1"): the toolbar has its own switch in its settings, "Hide Until Restart", that hides it for the rest of the tab. It is kept in
+     sessionStorage (agentation-session-toolbar-hidden), which this page's own flag cannot reach, so the toolbar stayed gone with our line still saying "Turn off Annotate". Reproduced in Chromium: switch on, reload,
+     still gone. Fix: the hide flag is cleared every time Annotate is started, so ?agentation=1 and a reload always bring the toolbar back; Option+Shift+H brings it back at once without a reload (below). */
+  function clearToolbarHidden() { try { sessionStorage.removeItem('agentation-session-toolbar-hidden'); } catch (e) { /* storage refused */ } }
+
   function run(js, endpoint) {
+    clearToolbarHidden();
     defaultClearOnCopy();
     if (!window.MazoAgentation) { var s = document.createElement('script'); s.textContent = js; document.head.appendChild(s); }
     if (!window.MazoAgentation) throw new Error('The toolbar did not start.');
@@ -12399,6 +12494,18 @@ M.annot = (function () {
     var n = allNotes().length;
     if (!n) { flash('No notes to copy'); return; }
     copyText(allNotesText()).then(function () { clearAllNotes(); flash('Copied ' + n + ' note' + (n === 1 ? '' : 's') + ' from all pages'); }, function () { flash('Copy was refused'); });
+  });
+  /* Option+Shift+H (Alt+Shift+H): bring the toolbar back if it was hidden with its own "Hide Until Restart" switch; restarts it with the notes kept. Works whenever Annotate is on. */
+  function showToolbar() {
+    clearToolbarHidden();
+    try { if (window.MazoAgentation) { window.MazoAgentation.stop(); setTimeout(function () { if (read()) window.MazoAgentation.start({ endpoint: st.mode === 'live' ? ENDPOINT : '' }); flash('Toolbar is back'); }, 50); } } catch (e) { /* nothing to restart */ }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (!(e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyH')) return;
+    if (!read()) return;
+    var t = e.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+    e.preventDefault(); showToolbar();
   });
   function clearAllNotes() {
     try {
@@ -12685,7 +12792,7 @@ M.annot = (function () {
       { k: 'other', label: 'Other (a credit shows as minus)', num: true, hidden: true, fmt: function (v) { return v == null ? '' : M.inr(v); } }, { k: 'note', label: 'Note', wrap: true, hidden: true }];
     var kids = [M.table(cols, { rows: rows, sortKey: 'date', sortDir: -1, detail: false, noTools: false, name: 'shopify-bills', empty: 'No bill is on record yet.' })];
     kids.push(M.h('p', { class: 'small' }, [M.h('a', { href: 'https://admin.shopify.com/store/mazolife/settings/billing', target: '_blank', rel: 'noopener', text: 'Open the Shopify billing page' }), ' (needs the Shopify login).']));
-    return M.card('Shopify bills', 'Every bill Shopify has sent, typed in from the Shopify billing page. A bill comes about every 30 days. It is the plan' + (pl != null ? ' (' + M.inr(pl) + ' a month, from ' + B.planWhere + ')' : '') + ' plus 2.0 percent of every order paid through Razorpay. Days that no bill covers yet are estimated from the plan. The yearly cost of the domain is not counted. A new bill is typed in each month.', kids, 'mg-card');
+    return M.card('Shopify bills', 'Every bill Shopify has sent, typed in from the Shopify billing page. A bill comes about every 30 days. It is the plan' + (pl != null ? ' (' + M.inr(pl) + ' a month, from ' + B.planWhere + ')' : '') + ' plus 2.0 percent of every order paid through Razorpay. Shopify gives no way to read its bills automatically, so the night check opens the billing page, reads the charges so far of the bill in progress and any new bill with all its parts, and records them. Days after the newest bill use those charges so far; only the plan part of the open bill is worked out until the bill comes. The yearly cost of the domain is not counted.', kids, 'mg-card');
   };
   var monthCard = function (r, C) {
     if (!C.months.length) return null;
