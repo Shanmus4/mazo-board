@@ -10231,12 +10231,12 @@ M.glueMarks = function () {
       ['Income tax: scheme in use and advance tax paid', has(/advance|income/i), 'Only the Accountant can give this.']
     ];
     var rowsT = check.map(function (c) { return { item: c[0], status: c[1] ? 'Have it' : 'Needed', how: c[2] }; });
-    var card = M.card('From the Accountant', 'What the dashboard cannot know. Type each into the Sheet tab "tax_inputs" (one row per item: month like 2026-10, the item, the amount in rupees, the reference or challan number, who gave it) and it appears here the next morning.', [
+    var card = M.card('From the Accountant', 'What the dashboard cannot know. Type each into the Google Sheet, on the sheet named tax_inputs (one row per item: month like 2026-10, the item, the amount in rupees, the reference or challan number, who gave it) and it appears here the next morning.', [
       M.table([{ k: 'item', label: 'Item', wrap: true }, { k: 'status', label: 'Status', render: function (x) { return M.tag(x.status, x.status === 'Have it' ? 'ok' : 'thin'); }, sort: function (x) { return x.status; } }, { k: 'how', label: 'Where it comes from', wrap: true }],
         { rows: rowsT, sortKey: null, empty: 'None.', detail: false, noTools: true, name: 'hand-over-list' }),
       mine.length ? M.table([{ k: 'month', label: 'Month' }, { k: 'item', label: 'Item', wrap: true }, { k: 'amount', label: 'Rs.', num: true, fmt: paise }, { k: 'reference', label: 'Reference', wrap: true }, { k: 'given_by', label: 'Given by' }],
         { rows: mine, sortKey: 'month', empty: 'None.', detail: false, name: 'tax-inputs' }) : M.h('p', { class: 'small muted', text: 'Nothing has been typed for this period yet.' }),
-      M.h('p', { class: 'small' }, ['Type them in the ', M.h('a', { href: 'https://docs.google.com/spreadsheets/d/1hxTaW0YmHooEY2JazWcZe9nQQpZ8JEVcmYGPJ_vOfeE/edit', target: '_blank', rel: 'noopener' }, 'Google Sheet'), ', tab "tax_inputs".'])]);
+      M.h('p', { class: 'small' }, ['Type them in the ', M.h('a', { href: 'https://docs.google.com/spreadsheets/d/1hxTaW0YmHooEY2JazWcZe9nQQpZ8JEVcmYGPJ_vOfeE/edit', target: '_blank', rel: 'noopener' }, 'Google Sheet'), ', on the sheet named tax_inputs (the name is what you click at the bottom of the Google Sheet).'])]);
     return card;
   };
 
@@ -10455,7 +10455,7 @@ M.glueMarks = function () {
       { k: 'scode', label: 'State code', groupHide: true, hidden: true },
       { k: 'taxtype', label: 'Tax type', csvLabel: 'Type of tax', groupHide: true },
       { k: 'hsn', label: 'HSN code', groupHide: true, sort: function (r) { return r.hsn; }, render: function (r) {
-        return r.hsn_source === SKU_SRC ? M.h('span', { title: 'The product was rebuilt after this sale, so the code is taken from the same SKU on the current product.', text: r.hsn + ' *' }) : (r.hsn || ''); } },
+        return r.hsn_source === SKU_SRC ? M.h('span', { title: 'The product was rebuilt after this sale, so the code is taken from the same product as it is today.', text: r.hsn + ' *' }) : (r.hsn || ''); } },
       { k: 'rate', label: 'GST rate', csvLabel: 'GST rate (%)', num: true, groupHide: true, fmt: function (v) { return v == null || v === '' ? '' : M.pct(v); } }
     ].concat(splitCols(true), [money('taxable', 'Taxable total', 'Total', 'Total taxable value'), money('gst', 'Total GST', 'Total'), money('paid', 'Invoice value', 'Total', 'Invoice value (total paid by the customer)'),
       { k: 'orders', label: 'Orders', num: true, groupOnly: true, fmt: M.num, agg: 'sum' },
@@ -10473,7 +10473,7 @@ M.glueMarks = function () {
     var table = M.table(cols, { rows: list, sortKey: 'date', sortDir: 1, empty: 'None.', detail: false, name: 'sales-register', keepEmpty: true, totals: totalsFn(MONEY), limit: 50, fiscal: true });
     withBands(table, bandMap(cols));
     var kids = [table];
-    if (list.some(function (r) { return r.hsn_source === SKU_SRC; })) kids.push(M.h('p', { class: 'small muted', text: '* The product was rebuilt after this sale, so the HSN code is taken from the same SKU on the current product.' }));
+    if (list.some(function (r) { return r.hsn_source === SKU_SRC; })) kids.push(M.h('p', { class: 'small muted', text: '* The product was rebuilt after this sale, so the HSN code is taken from the same product as it is today.' }));
     /* the checks, in whole paise: every line, then the register total against the monthly figures above */
     var badLines = list.filter(function (r) { return !r._ok; }), R = sums(list, MONEY).paise, off = [];
     if (summaryRows && summaryRows.length) PAIRS.forEach(function (pr) {
@@ -10486,7 +10486,8 @@ M.glueMarks = function () {
     else if (list.length && !list.some(function (r) { return r.folded; })) kids.push(M.h('p', { class: 'small muted tax-check', text: 'Every line adds up to the paisa (goods taxable value + goods GST + shipping taxable value + shipping GST = invoice value), and the register total equals the monthly figures above.' }));
     if (list.some(function (r) { return r.folded; })) kids.push(M.note('Orders older than 13 months are added up by month in this offline copy. The hosted dashboard keeps every order.', false));
     var card = M.card('Sales register for the Accountant', 'One line for every order of the period you chose, with goods and shipping side by side: the goods (taxable value, CGST, SGST, IGST), the shipping (charged, taxable value, CGST, SGST, IGST) and the total of the line. The tax comes from the tax Shopify stored on the order; every amount is in rupees with paise. A refund is a line of its own with minus amounts, on the day it was made. Orders that were cancelled and never paid, and test orders, are left out. The icon at the top saves the table as an Excel file (CSV): it holds the rows shown, with a total row. ' + K().CHECK, kids, 'tax-register');
-    var extra = [{ label: 'HSN code source', get: function (r) { return r.hsn_source === SKU_SRC ? 'same SKU on the current product' : r.hsn_source === 'variant' ? 'Shopify variant' : r.hsn_source || ''; } }];
+    /* 8 Nov 2026 (owner: 'when I download the CSV the HSN says shopify source code'): the file named the system the code came from, which means nothing to an Accountant. It now says, in plain words, whether the code was on the product when it was sold or had to be taken from the same product as it is today. */
+    var extra = [{ label: 'HSN code note', get: function (r) { return r.hsn_source === SKU_SRC ? 'Code taken from the same product as it is today (the product was rebuilt after this sale)' : r.hsn_source === 'variant' ? 'Code was on the product when it was sold' : r.hsn_source === 'missing' ? 'No code found' : r.hsn_source || ''; } }];
     var file = 'mazo-sales-register-' + tagOf(p) + '.csv';
     WRITERS['sales-register'] = { keys: MONEY, kinds: kinds, extra: extra, file: file };
     return K().withCsv(card, csvButton('the sales register', file, function () { return csvText(table.cols, table.view(), MONEY, kinds, extra); }));
