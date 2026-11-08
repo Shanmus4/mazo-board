@@ -1825,7 +1825,7 @@ html.still .cb svg path.ln-draw,html.still .kpi .sp-line,html.still .viz-chart .
 
 /* 4 Nov 2026: the sales register for the Accountant has 14 columns. Tight cells and headings that wrap keep the money columns (up to Total paid) inside a laptop card; Type and HSN code sit
    after them and the box scrolls sideways for those. The order number column stays in view while the box scrolls. */
-.tax-register th, .tax-register td { padding-left: 8px; padding-right: 8px; }
+.tax-register th, .tax-register td { padding-left: 6px; padding-right: 6px; }      /* 8 Nov 2026: 6 px each side (was 8) so the register scrolls less sideways */
 .tax-register th:first-child, .tax-register td:first-child { padding-left: 12px; }
 .tax-register th { white-space: normal; line-height: 1.25; vertical-align: bottom; }
 .tax-register th button { text-align: right; white-space: normal; }
@@ -1864,6 +1864,12 @@ html.still .cb svg path.ln-draw,html.still .kpi .sp-line,html.still .viz-chart .
 .tax-page table.has-bands tbody td.n { font-variant-numeric: tabular-nums; }
 .tax-register .tax-check { margin-top: 8px; }
 @media (max-width: 640px) { .tax-page table.has-bands thead tr.band-row td { font-size: 11px; padding: 3px 6px; } }
+
+/* the Remark column holds the word Note and a mark inside the dashboard's own text-plus-mark row (.mk-row), so it is aligned by the shared rule like every other mark (8 Nov 2026) */
+
+/* headings of the register sit on the same baseline whatever their length (8 Nov 2026). The info mark of a two line heading stays on its FIRST line: the dashboard rule, checked by the icons audit */
+.tax-register th { vertical-align: bottom; }
+.tax-register thead tr:not(.band-row) th { height: 52px; }
 
 /* mazo dashboard DATE RANGE PICKER styles (T883, 3 Nov 2026). See dashboard_47_datepicker.js. Uses only the dashboard's own scales: 6px controls, 12px panel, maroon for the chosen range, a tint
    (not a rule) for the days between, 44px days on touch. No divider lines: the groups are separated by space and a tinted side column. */
@@ -10330,7 +10336,7 @@ M.glueMarks = function () {
         rate: x.rate_pct == null || x.rate_pct === '' ? null : num(x.rate_pct), hsn: x.hsn == null ? '' : String(x.hsn), hsn_source: x.hsn_source || '',
         items: (gtax + gg) / 100, g_tax: gtax / 100, g_cgst: gc / 100, g_sgst: gs / 100, g_igst: gi / 100, g_gst: gg / 100,
         sh_charged: ship / 100, sh_tax: stax / 100, sh_cgst: sc / 100, sh_sgst: ss / 100, sh_igst: si / 100, sh_gst: sg / 100,
-        taxable: taxable / 100, gst: gst / 100, paid: paid / 100, orders: refund || folded || cancelled ? 0 : 1, folded: folded, cancelled: cancelled, _ok: ok });
+        taxable: taxable / 100, gst: gst / 100, paid: paid / 100, orders: refund || folded || cancelled ? 0 : 1, folded: folded, cancelled: cancelled, remark: x.remark || '', _ok: ok });
     });
     out.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : String(a.order).localeCompare(String(b.order), undefined, { numeric: true }); });
     return out;
@@ -10431,9 +10437,9 @@ M.glueMarks = function () {
   var splitCols = function (withItems) {
     var out = [];
     if (withItems) out.push(money('items', 'Items after discounts', 'Goods', 'Items after discounts (incl. GST)'));
-    return out.concat([money('g_tax', 'Goods taxable value', 'Goods'), money('g_cgst', 'Goods CGST', 'Goods'), money('g_sgst', 'Goods SGST', 'Goods'), money('g_igst', 'Goods IGST', 'Goods'), money('g_gst', 'Goods GST total', 'Goods'),
-      money('sh_charged', 'Shipping charged', 'Shipping', 'Shipping charged (incl. GST)'), money('sh_tax', 'Shipping taxable value', 'Shipping'), money('sh_cgst', 'Shipping CGST', 'Shipping'), money('sh_sgst', 'Shipping SGST', 'Shipping'),
-      money('sh_igst', 'Shipping IGST', 'Shipping'), money('sh_gst', 'Shipping GST total', 'Shipping')]);
+    return out.concat([money('g_tax', 'Goods taxable', 'Goods', 'Goods taxable value'), money('g_cgst', 'Goods CGST', 'Goods'), money('g_sgst', 'Goods SGST', 'Goods'), money('g_igst', 'Goods IGST', 'Goods'), money('g_gst', 'Goods GST', 'Goods', 'Goods GST total'),
+      money('sh_charged', 'Ship charged', 'Shipping', 'Shipping charged (incl. GST)'), money('sh_tax', 'Shipping taxable value', 'Shipping'), money('sh_cgst', 'Shipping CGST', 'Shipping'), money('sh_sgst', 'Shipping SGST', 'Shipping'),
+      money('sh_igst', 'Shipping IGST', 'Shipping'), money('sh_gst', 'Ship GST', 'Shipping', 'Shipping GST total')]);
   };
   var bandMap = function (cols) { var m = {}; cols.forEach(function (c) { if (c.band) m[c.label] = c.band; }); return m; };
   var kindsOf = function () { var k = { rate: 'plain', orders: 'plain', date: 'date' }; MONEY.forEach(function (m) { k[m] = 'money'; }); return k; };
@@ -10445,15 +10451,22 @@ M.glueMarks = function () {
       { k: 'order', label: 'Order no', groupHide: true, sort: function (r) { return orderNo(r); }, fmt: function (v, r) { return v || 'Month total'; } },
       { k: 'date', label: 'Date', fmt: dmy },
       { k: 'type', label: 'Type', groupHide: true },      /* 8 Nov 2026 (owner: "UI shows Cancelled with some dot on the left, make it consistent with the rest of the table"): plain text like every other column; the tag chip carried a dot */
-      { k: 'state', label: 'Place of supply', csvLabel: 'Place of supply (delivery state)', groupHide: true },
-      { k: 'scode', label: 'State code', groupHide: true },
-      { k: 'taxtype', label: 'Type of tax', groupHide: true },
+      { k: 'state', label: 'Place of supply', csvLabel: 'Place of supply (delivery state)', groupHide: true, fmt: function (v, r) { return v && r.scode ? v + ' (' + r.scode + ')' : (v || ''); } },      /* on screen the state code sits beside the state; the file keeps its own column */
+      { k: 'scode', label: 'State code', groupHide: true, hidden: true },
+      { k: 'taxtype', label: 'Tax type', csvLabel: 'Type of tax', groupHide: true },
       { k: 'hsn', label: 'HSN code', groupHide: true, sort: function (r) { return r.hsn; }, render: function (r) {
         return r.hsn_source === SKU_SRC ? M.h('span', { title: 'The product was rebuilt after this sale, so the code is taken from the same SKU on the current product.', text: r.hsn + ' *' }) : (r.hsn || ''); } },
       { k: 'rate', label: 'GST rate', csvLabel: 'GST rate (%)', num: true, groupHide: true, fmt: function (v) { return v == null || v === '' ? '' : M.pct(v); } }
-    ].concat(splitCols(true), [money('taxable', 'Total taxable value', 'Total'), money('gst', 'Total GST', 'Total'), money('paid', 'Invoice value (customer paid)', 'Total', 'Invoice value (total paid by the customer)'),
-      { k: 'orders', label: 'Orders', num: true, groupOnly: true, fmt: M.num, agg: 'sum' }]);
+    ].concat(splitCols(true), [money('taxable', 'Taxable total', 'Total', 'Total taxable value'), money('gst', 'Total GST', 'Total'), money('paid', 'Invoice value', 'Total', 'Invoice value (total paid by the customer)'),
+      { k: 'orders', label: 'Orders', num: true, groupOnly: true, fmt: M.num, agg: 'sum' },
+      { k: 'remark', label: 'Remark', csvLabel: 'Remark', groupHide: true, sort: function (r) { return r.remark ? 0 : 1; }, render: function (r) {
+        return r.remark ? M.h('span', { class: 'mk-row' }, [M.h('span', { class: 'mk-text', text: 'Note' }), M.infoMark(r.remark, 'Remark for the Accountant')]) : M.h('span', { class: 'muted', text: '' }); } }]);      /* on screen a small note mark opens the text (no width); the CSV holds the full words */      /* 8 Nov 2026 (owner: add a remark in the table and the CSV that #MZ1031 and #MZ1038 are one sale): the Accountant's note on a line, empty for most */
     cols.forEach(function (c) { if (c.k === 'items') c.hidden = true; });      /* the Columns menu brings it back; the file always holds it */
+    /* 8 Nov 2026 (owner: "the horizontal scroll is too much"): 22 columns were 2,036 px wide, so a laptop scrolled 956 px sideways. The screen now opens on the columns a person reads first and the rest are one tick away
+       in the Columns menu: the three tax-type columns that are empty for most orders (Goods CGST, Goods SGST, Goods IGST, Shipping CGST, SGST, IGST: an order has CGST + SGST or IGST, never both, and 15 of 35 orders have
+       no CGST at all) and the two columns that repeat what the band says (HSN code source is already in the file). THE FILE ALWAYS HOLDS EVERY COLUMN: this changes only what is open on screen. */
+    var QUIET = ['hsn', 'g_cgst', 'g_sgst', 'g_igst', 'sh_cgst', 'sh_sgst', 'sh_igst', 'sh_tax'];
+    cols.forEach(function (c) { if (QUIET.indexOf(c.k) >= 0 && !c.keepOpen) c.hidden = true; });
     var kinds = kindsOf();
     /* a phone shows the four columns that matter at a glance (order, date, total GST, invoice value); the Columns menu brings the rest back and the CSV always holds every column */
     if (window.innerWidth <= 640) cols.forEach(function (c) { if (['order', 'date', 'gst', 'paid', 'orders'].indexOf(c.k) < 0) c.hidden = true; });
@@ -12297,14 +12310,14 @@ M.evenHeaders = function (root) {
 })();
 
 /* mazo dashboard, ANNOTATE (T894, 4 Nov 2026): the switch for the Agentation note toolbar. OFF for everyone; with the flag off this file does nothing and makes no request.
-   ON  : ?agentation=1 in the address keeps a flag in this browser (localStorage 'mazo-annotate') and is taken out of the address. OFF: ?agentation=0, or the sidebar line 'Turn off Annotate'.
+   ON  : ?agentation=1 in the address keeps a flag in this browser (localStorage 'mazo-annotate') and is taken out of the address. OFF: ?agentation=0 only (8 Nov 2026: the sidebar line 'Turn off Annotate' is gone, the toolbar is always on screen for the one browser that has it).
    LOAD: the toolbar is one script (scripts/dashboard/assets/agentation-toolbar.min.js, built by scripts/agentation_dash_build.js). Hosted site: one more encrypted file, fetched only after the
          switch is on. Test copy: built with dashboard_html.py --annotate (packed inside the file). Run as an inline script, so the page policy needs no new script source.
    SEND: notes go to http://localhost:4747 (the agentation server on this computer) if it answers, else they stay in the browser for the toolbar's Copy button. No other address is allowed by the
          page policy. Guide: docs/guides/agentation-on-the-dashboard.md . Test: scripts/dashboard_audit_annotate.js */
 M.annot = (function () {
   var KEY = 'mazo-annotate', ENDPOINT = 'http://localhost:4747';
-  var st = { btn: null, label: null, mode: 'live', explicit: false, flashTimer: null };
+  var st = { btn: null, label: null, toast: null, status: '', mode: 'live', explicit: false, flashTimer: null };
 
   function read() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
   function write(on) { try { if (on) localStorage.setItem(KEY, '1'); else localStorage.removeItem(KEY); } catch (e) { /* a browser that refuses storage cannot keep the switch */ } }
@@ -12374,38 +12387,42 @@ M.annot = (function () {
     window.MazoAgentation.start({ endpoint: endpoint });
   }
 
-  /* the one line in the sidebar footer: it exists only while the switch is on, and it is the way to turn it off */
-  function entry() {
-    var rf = document.getElementById('rail-foot');
-    if (!rf) return;
-    if (!st.btn) {
-      st.label = M.h('span', { text: 'Annotate' });
-      st.btn = M.h('button', { type: 'button', class: 'rf-signout', id: 'annot-entry', onclick: off }, [
-        M.s('svg', { class: 'ic', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, [M.s('path', { d: 'M5 5h14a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-8l-4.5 3.5v-3.5H5A1.5 1.5 0 0 1 3.5 15V6.5A1.5 1.5 0 0 1 5 5z', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.6', 'stroke-linejoin': 'round' })]),
-        st.label]);
-      rf.appendChild(st.btn);
+  /* 8 Nov 2026 (owner: "remove the Turn off Annotate from the webpage then; it should always be visible for me, just me, because only I have Agentation enabled"): there is NO line in the sidebar any
+     more and no button on the page to switch Annotate off. The toolbar is the only thing on screen. It is on for this browser once `?agentation=1` was opened, and off only with `?agentation=0`.
+     `say()` keeps a short status for the tests and for the two-second message after Option+Shift+A (a small note at the bottom left that fades by itself). */
+  function say(label, title) {
+    st.status = label;
+    if (!st.toast) {
+      st.toast = M.h('div', { id: 'annot-toast', role: 'status', 'aria-live': 'polite', hidden: true });
+      st.toast.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:70;background:#2A2A2A;color:#F0EDE7;padding:8px 14px;border-radius:8px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.25);pointer-events:none';
+      document.body.appendChild(st.toast);
     }
-    return st.btn;
+    st.toast.setAttribute('data-title', title || '');
   }
-  function say(label, title) { if (entry()) { st.label.textContent = label; st.btn.title = title; } }
+  function toast(msg) {
+    say(msg);
+    if (!st.toast) return;
+    st.toast.textContent = msg; st.toast.hidden = false;
+    clearTimeout(st.flashTimer); st.flashTimer = setTimeout(function () { if (st.toast) st.toast.hidden = true; }, 2200);
+  }
 
   function on() {
     if (window.MazoAgentation && window.MazoAgentation.running()) return;
     if (window.MAZO_HOSTED && !(M.lazy && M.lazy.enc)) return;      /* still on the lock screen: the start after the passphrase picks the switch up */
     if (!window.MAZO_HOSTED && !document.getElementById('mazo-annotate') && !st.explicit) return;      /* the switch was left on in this browser but this copy has no toolbar: stay quiet */
-    say('Annotate: loading', 'Loading the toolbar.');
+    say('Annotate: loading', 'Loading the toolbar.');      /* silent: the toolbar appears by itself */
     Promise.all([bundle(), chooseEndpoint()]).then(function (got) {
       run(got[0], got[1]);
       say('Turn off Annotate', st.mode === 'live'
-        ? 'Annotate is on. Notes go to the assistant on this computer, nowhere else. Option+A (Alt+A) switches the marker mode on and off. Click to turn Annotate off.'
-        : 'Annotate is on. Notes stay in this browser: press Copy in the toolbar and paste them into the chat. Option+A (Alt+A) switches the marker mode on and off. Click to turn Annotate off.');
-    }).catch(function (err) { console.error(err); say('Annotate failed. Turn off', (err && err.message ? err.message : 'The toolbar could not load.') + ' Click to turn Annotate off.'); });
+        ? 'Annotate is on. Notes go to the assistant on this computer, nowhere else. Option+A (Alt+A) switches the marker mode on and off.'
+        : 'Annotate is on. Notes stay in this browser: press Copy in the toolbar and paste them into the chat. Option+A (Alt+A) switches the marker mode on and off.');
+    }).catch(function (err) { console.error(err); toast('Annotate could not start: ' + (err && err.message ? err.message : 'the toolbar did not load') + ' Use ?agentation=0 to switch it off.'); });
   }
   function off() {
     write(false);
     try { if (window.MazoAgentation) window.MazoAgentation.stop(); } catch (e) { /* already gone */ }
-    if (st.btn && st.btn.parentNode) st.btn.parentNode.removeChild(st.btn);
-    st.btn = null; st.label = null; st.explicit = false;
+    if (st.toast && st.toast.parentNode) st.toast.parentNode.removeChild(st.toast);
+    st.toast = null; st.explicit = false;
   }
 
   /* 6 Nov 2026 (owner: "none of those shortcuts work, and yes I want a shortcut to quickly enable and disable the marker mode"): the toolbar's own letter keys are OFF on purpose (one of them, X, clears every
@@ -12515,12 +12532,17 @@ M.annot = (function () {
     } catch (e) { /* storage refused */ }
     try { if (window.MazoAgentation) { window.MazoAgentation.stop(); setTimeout(function () { if (read()) window.MazoAgentation.start({ endpoint: st.mode === 'live' ? ENDPOINT : '' }); }, 50); } } catch (e) { /* the dots disappear on the next page change */ }
   }
-  function flash(msg) {
-    var old = st.label ? st.label.textContent : '';
-    if (!st.label) return;
-    st.label.textContent = msg; clearTimeout(st.flashTimer);
-    st.flashTimer = setTimeout(function () { if (st.label) st.label.textContent = 'Turn off Annotate'; }, 2200);
-  }
+  function flash(msg) { toast(msg); }
+
+  /* 8 Nov 2026 (owner: "it should be always visible for me"): the toolbar has a settings switch "Hide Until Restart" that removes it for the rest of the tab. While Annotate is on it is put back within
+     two seconds, by clearing that flag and starting the toolbar again, so a stray click never leaves the dashboard without it. Cheap: one element lookup every 2 seconds, only while Annotate is on. */
+  setInterval(function () {
+    if (!read() || !window.MazoAgentation || !window.MazoAgentation.running()) return;
+    if (document.querySelector('agentation-toolbar')) return;
+    if (st.healing) return;
+    st.healing = true; clearToolbarHidden();
+    try { window.MazoAgentation.stop(); setTimeout(function () { if (read()) window.MazoAgentation.start({ endpoint: st.mode === 'live' ? ENDPOINT : '' }); st.healing = false; }, 80); } catch (e) { st.healing = false; }
+  }, 2000);
 
   /* start after the dashboard has drawn its shell (on the hosted site that is after the passphrase) */
   var baseInit = M.init;
