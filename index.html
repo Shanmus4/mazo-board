@@ -1871,6 +1871,17 @@ html.still .cb svg path.ln-draw,html.still .kpi .sp-line,html.still .viz-chart .
 .tax-register th { vertical-align: bottom; }
 .tax-register thead tr:not(.band-row) th { height: 52px; }
 
+/* 9 Nov 2026 (T1015, owner note on the register header: "please align the header items better"). Measured on the live page: (1) the headings did not share one baseline: a plain heading sat in a
+   48 px tall button with its text in the middle (last line ended 34 px down), a heading with an (i) mark had a 0 padding button and ended 51 px down; (2) on every number column with a mark the heading
+   ended 24 px LEFT of the numbers under it, because the mark took the right edge. Now: on a mouse screen every heading button is as tall as its text, the last line of every heading ends the same
+   10 px above the bottom edge, and the (i) mark of a number heading sits on the LEFT of its text (still on the first line), so the text ends exactly where the numbers end. A touch screen keeps the
+   44 px tap rule of the shared code. */
+@media (hover: hover) and (pointer: fine) {
+  .tax-register thead tr:not(.band-row) th { padding-bottom: 10px; }
+  .tax-register thead tr:not(.band-row) th button { min-height: 0; padding: 0; }
+}
+.tax-register th.n > .mk-row { flex-direction: row-reverse; justify-content: flex-start; }
+
 /* mazo dashboard DATE RANGE PICKER styles (T883, 3 Nov 2026). See dashboard_47_datepicker.js. Uses only the dashboard's own scales: 6px controls, 12px panel, maroon for the chosen range, a tint
    (not a rule) for the days between, 44px days on touch. No divider lines: the groups are separated by space and a tinted side column. */
 
@@ -11721,6 +11732,7 @@ M.evenHeaders = function (root) {
       if (it.head) return row;
       var a, b;
       if (it.kind === 'minus') { a = run - it.value; b = run; run = a; }
+      else if (it.kind === 'plus') { a = run; b = run + it.value; run = b; }      /* 9 Nov 2026: money that comes back (the GST credit): a bar that hangs UP from the running total */
       else { a = 0; b = it.value; run = it.value; }
       row.lo = Math.min(a, b); row.hi = Math.max(a, b); row.after = run;
       return row;
@@ -11745,7 +11757,7 @@ M.evenHeaders = function (root) {
       var tone = it.tone || 'confirmed', pending = tone === 'pending';
       var fill = tone === 'sales' ? M.COLORS.maroon : tone === 'final' ? M.COLORS.green : tone === 'result' ? M.COLORS.teal : pending ? 'url(#' + id + ')' : M.COLORS.terra;
       var amt = it.kind === 'minus' ? -it.value : it.value;
-      var gp = M.s('g', { tabindex: '0', class: 'mk mg-row ' + 'mg-' + tone, role: 'img', 'aria-label': it.label + ': ' + (it.none || (it.kind === 'minus' ? 'taken off ' : '') + M.inr(it.value)) + (pending ? ', not confirmed yet' : '') });
+      var gp = M.s('g', { tabindex: '0', class: 'mk mg-row ' + 'mg-' + tone, role: 'img', 'aria-label': it.label + ': ' + (it.none || (it.kind === 'minus' ? 'taken off ' : it.kind === 'plus' ? 'added back ' : '') + M.inr(it.value)) + (pending ? ', not confirmed yet' : '') });
       var lines = wrap(it.label, chars), cy = r.y + r.h / 2 + 4 - (lines.length - 1) * 7;
       var t = M.s('text', { x: L - 8, y: cy, 'text-anchor': 'end', class: 'strong mg-lab' + (pending ? ' mg-pend' : '') });
       lines.forEach(function (ln, i) { t.appendChild(M.s('tspan', { x: L - 8, dy: i ? 14 : 0 }, ln)); });
@@ -11759,15 +11771,15 @@ M.evenHeaders = function (root) {
         if (x0 - (L - 4) > 10) gp.appendChild(M.s('line', { x1: L - 4, x2: (x0 - 2).toFixed(1), y1: r.y + r.h / 2, y2: r.y + r.h / 2, class: 'mg-lead', 'aria-hidden': 'true' }));
         gp.appendChild(M.s('rect', { x: x0.toFixed(1), y: r.y + 6, width: bw.toFixed(1), height: r.h - 12, fill: fill, rx: 2, class: pending ? 'mg-bar mg-bar-pend' : 'mg-bar' }));
         var tx = Math.min(w - 2, X(r.hi) + 6);
-        gp.appendChild(M.s('text', { x: tx, y: r.y + r.h / 2 + 4, 'text-anchor': 'start', class: 'strong mg-val' + (pending ? ' mg-pend' : '') }, (it.kind === 'minus' && it.value ? '-' : '') + short(Math.abs(it.value))));
+        gp.appendChild(M.s('text', { x: tx, y: r.y + r.h / 2 + 4, 'text-anchor': 'start', class: 'strong mg-val' + (pending ? ' mg-pend' : '') }, (it.kind === 'minus' && it.value ? '-' : it.kind === 'plus' && it.value ? '+' : '') + short(Math.abs(it.value))));
       }
       gp.appendChild(M.s('rect', { x: 0, y: r.y, width: w, height: r.h, fill: 'transparent', class: 'mg-hit' }));
       /* 8 Nov 2026 (owner: "when I hover, the tooltip stutters a lot between cards of different rows"): before, every pointer move built the tip again, placed it at the cursor and, a moment later, moved it above the row,
          so it jumped twice per move and again at every row. Now it is built and placed ONCE when the pointer enters a row (or the row gets keyboard focus), sits above that row to the right of the label column,
          and does not move while the pointer stays in the row. When there is no room above (the first rows) it opens below the row. Click or Enter still opens the same facts as a pinned panel. */
       var facts = function () {
-        var rowsT = [{ k: it.kind === 'minus' ? 'Taken off' : 'Amount', v: M.inr(it.value) }];
-        if (it.kind === 'minus') rowsT.push({ k: 'Left after this step', v: M.inr(r.after) });
+        var rowsT = [{ k: it.kind === 'minus' ? 'Taken off' : it.kind === 'plus' ? 'Added back' : 'Amount', v: M.inr(it.value) }];
+        if (it.kind === 'minus' || it.kind === 'plus') rowsT.push({ k: it.kind === 'plus' ? 'Total after this step' : 'Left after this step', v: M.inr(r.after) });
         (it.tip || []).forEach(function (x) { rowsT.push(x); });
         rowsT.push({ k: 'Status', v: pending ? 'Not confirmed yet' : tone === 'confirmed' ? (it.status || 'Confirmed') : tone === 'sales' ? 'From Shopify orders' : 'Worked out' });
         return { title: it.label, rows: rowsT };
@@ -12680,7 +12692,7 @@ M.annot = (function () {
    The sums, in whole paise so every row adds up to the paisa:
      money left before costs      = gross sales - discounts - GST in the orders - refunds
      left after confirmed costs   = that - Shopify bill - Razorpay charges
-     profit after everything      = that - manufacturing and material - packaging - shipping and parcel - other costs
+     profit after everything      = that - manufacturing and material - packaging - other costs + the GST credit on the Razorpay fee and the parcel cost (9 Nov 2026, T1016)
    The stored profit estimate (money_daily) takes off Shopify's per order charge instead of the bill, so: profit after everything = stored profit + per order charges - Shopify bill.
    Known and left as it is (finding for Tech Guy): the stored profit does not add the shipping customers paid (Rs. 240 in October) and takes off the GST inside it.
    Whole shop only, as before: a collection, product, channel or device filter hides the card and the page says why (dashboard_50_filters.js). */
@@ -12690,6 +12702,23 @@ M.annot = (function () {
   var COLS = ['orders', 'gross_sales', 'discounts', 'net_sales', 'gst_included', 'shipping_charged', 'refunds', 'product_cost', 'est_payment_fee', 'est_parcel_cost', 'est_packaging', 'est_shopify_fee', 'gst_on_shipping'];
   var zero = function () { var o = {}; COLS.forEach(function (c) { o[c] = 0; }); return o; };
   var inputs = function () { var hi = {}; M.rows('human_inputs').forEach(function (x) { if (x.key && x.value !== '' && x.value != null && !isNaN(+x.value)) hi[x.key] = +x.value; }); return hi; };
+
+  /* 9 Nov 2026 (T1016): Shiprocket charges Rs. 5 + 18 percent GST for every WhatsApp tracking message and bills it on its OWN invoice (SAC 998593) on the 3rd of the next month, for the month before
+     (checked 9 Nov: the invoices of 3 Jul and 3 Sep hold 3 and 4 messages, exactly the 3 parcels sent in June and the 4 sent in August; the other two invoices do not match a parcel count one for one, so the
+     month is an inference from those two). It is a real cost that was never in the profit. Each invoice is spread over the days of the month before its date; a range takes the days inside it. Whole
+     paise. The invoice for a month that has just ended arrives on the 3rd, so the newest month has none yet. */
+  var monthEnd = function (ym) { var y = +ym.slice(0, 4), m = +ym.slice(5, 7); return M.add((m === 12 ? (y + 1) + '-01' : y + '-' + String(m + 1).padStart(2, '0')) + '-01', -1); };
+  var whatsApp = function (from, to) {
+    if (!M.has('shipping_invoices')) return 0;
+    var tot = 0;
+    M.rows('shipping_invoices').forEach(function (x) {
+      if (!x.invoice || !/service/i.test(x.kind || '') || typeof x.date !== 'string') return;
+      var um = M.add(x.date.slice(0, 7) + '-01', -1).slice(0, 7), a = um + '-01', b = monthEnd(um), lo = a > from ? a : from, hi = b < to ? b : to;
+      if (hi < lo) return;
+      tot += Math.round(pc(x.total) * (M.diff(lo, hi) + 1) / (M.diff(a, b) + 1));
+    });
+    return tot;
+  };
 
   /* ---------------------------------------------------------------- the numbers of one set of dates (everything in paise inside; rupees out) */
   M.moneyCalc = function (r) {
@@ -12701,19 +12730,27 @@ M.annot = (function () {
     });
     var other = hi.monthly_fixed_cost > 0 ? hi.monthly_fixed_cost : 0;      /* another monthly cost, only if one is ever typed in the data sheet */
     var days = M.diff(from, to) + 1;
-    var line = function (s, bm, om) {      /* every figure of one set of sums (the whole range or one month) in paise */
+    var line = function (s, bm, om, wa) {      /* every figure of one set of sums (the whole range or one month) in paise; wa = the WhatsApp tracking fee of those dates */
       var gross = s.gross_sales, net = s.net_sales, disc = gross - net;      /* discounts = gross - net, so the rows always add up even if a day was rounded a paisa apart */
       var left = net - s.gst_included - s.refunds;
       var bill = pc(bm.total), raz = s.est_payment_fee;
-      var mk = s.product_cost, pk = s.est_packaging, pa = s.est_parcel_cost, ot = om;
+      var mk = s.product_cost, pk = s.est_packaging, pa = s.est_parcel_cost + wa, ot = om;
+      /* 9 Nov 2026 (T1016, owner: "these charges should be applied for profit calculation too, in the Overview"): the Razorpay fee and the courier charge both have 18 percent GST INSIDE them (a fee or a
+         freight of Rs. 118 is Rs. 100 plus Rs. 18). That GST is input credit the shop takes off the GST it owes, so it is not a lasting cost. The Shopify bill is paid under reverse charge and claimed in the
+         same month, so it adds nothing. The credit = the GST inside the Razorpay fee and the parcel cost = 18/118 of each, in whole paise, and it is an ESTIMATE until the invoices show in GSTR-2B. */
+      var cR = Math.round(raz * 18 / 118), cP = Math.round(pa * 18 / 118), credit = cR + cP;      /* pa already holds the WhatsApp tracking fee, which also carries 18 percent GST */
       var conf = left - bill - raz - pa;      /* 7 Nov 2026: the parcel cost is Shiprocket's own billed charge for the parcels it knows, so it sits with the confirmed costs */
       return { gross: gross, disc: disc, gst: s.gst_included, refunds: s.refunds, left: left, bill: bill, billReal: pc(bm.real), billEst: pc(bm.est), razor: raz, confirmed: conf, making: mk, pack: pk, parcel: pa, other: ot,
-        pending: mk + pk + ot, profit: conf - mk - pk - ot, charges: s.est_shopify_fee, orders: s.orders, net: net, ship: s.shipping_charged, gstShip: s.gst_on_shipping };
+        credit: credit, creditRazor: cR, creditParcel: cP, whatsapp: wa,
+        pending: mk + pk + ot, profit: conf - mk - pk - ot + credit, charges: s.est_shopify_fee, orders: s.orders, net: net, ship: s.shipping_charged, gstShip: s.gst_on_shipping };
     };
     var otherOf = function (d) { return Math.round(pc(other) * d / B.cycle); };
-    var all = line(tot, { total: B.total, real: B.real, est: B.est }, otherOf(days));
-    var months = B.months.map(function (bm) { var s = mo[bm.ym] || zero(), l = line(s, bm, otherOf(M.diff(bm.from, bm.to) + 1)); l.ym = bm.ym; l.from = bm.from; l.to = bm.to; l.days = M.diff(bm.from, bm.to) + 1; l.basis = bm.basis; l.estDays = bm.estDays; l.gap = bm.gap; return l; });
+    var waMonths = B.months.map(function (bm) { return whatsApp(bm.from, bm.to); }), waAll = waMonths.reduce(function (a, b) { return a + b; }, 0);      /* the range takes the sum of its months, so they add up to it */
+    var all = line(tot, { total: B.total, real: B.real, est: B.est }, otherOf(days), waAll);
+    var months = B.months.map(function (bm, i) { var s = mo[bm.ym] || zero(), l = line(s, bm, otherOf(M.diff(bm.from, bm.to) + 1), waMonths[i]); l.ym = bm.ym; l.from = bm.from; l.to = bm.to; l.days = M.diff(bm.from, bm.to) + 1; l.basis = bm.basis; l.estDays = bm.estDays; l.gap = bm.gap; return l; });
     /* the months add up to the range, to the paisa (a month's share of "other" is rounded, so the last month takes the remainder) */
+    var cs = months.reduce(function (t, m) { return t + m.credit; }, 0);
+    if (months.length && cs !== all.credit) { var lm = months[months.length - 1], dc = all.credit - cs; lm.credit += dc; lm.profit += dc; }      /* the credit is rounded per month: the last month takes the paisa that is left */
     var o2 = months.reduce(function (t, m) { return t + m.other; }, 0);
     if (months.length && o2 !== all.other) { var last = months[months.length - 1]; last.other += all.other - o2; last.pending += all.other - o2; last.profit -= all.other - o2; }
     return { r: r, days: days, B: B, t: all, months: months, hasSales: tot.orders > 0 || tot.gross_sales > 0, otherMonthly: other, razorPct: hi.payment_fee_pct, packFee: hi.packaging_cost, parcelFee: hi.parcel_cost,
@@ -12723,7 +12760,7 @@ M.annot = (function () {
   /* ---------------------------------------------------------------- the chart items and the table rows from one calculation */
   var R = function (p) { return rs(p); };
   var packText = function (C) { return C.packFee > 0 ? 'Rs. ' + M.num(C.packFee, C.packFee % 1 ? 2 : 0) + ' a parcel, the figure Madhu gave. Not checked against real bills.' : 'A default figure per parcel. Not checked against real bills.'; };
-  var parcelText = function (C) { return 'The courier charge Shiprocket billed for each parcel it knows (freight, charges for a parcel that came back, extra weight). A parcel Shiprocket does not know yet counts' + (C.parcelFee > 0 ? ' Rs. ' + M.num(C.parcelFee, C.parcelFee % 1 ? 2 : 0) + ' (the figure Madhu gave).' : ' at a default figure.'); };
+  var parcelText = function (C) { return 'The courier charge Shiprocket billed for each parcel it knows (freight, charges for a parcel that came back, extra weight), plus its WhatsApp tracking fee. A parcel Shiprocket does not know yet counts' + (C.parcelFee > 0 ? ' Rs. ' + M.num(C.parcelFee, C.parcelFee % 1 ? 2 : 0) + ' (the figure Madhu gave).' : ' at a default figure.'); };
   var basisWord = function (B) { return B.real && B.est ? 'real and estimate' : B.real ? 'real' : B.est ? 'estimate' : 'not known'; };
   M.moneyRows = function (C) {
     var t = C.t, B = C.B, rows = [], billWord = basisWord(B);
@@ -12742,11 +12779,13 @@ M.annot = (function () {
     }
     add({ step: 'Razorpay charges', amount: -R(t.razor), group: 'Confirmed', how: 'For every day Razorpay has paid for, its own charge with the GST inside it. For a day it has not, ' + (C.razorPct > 0 ? M.num(C.razorPct, C.razorPct % 1 ? 1 : 0) + ' percent' : 'a set percent') + ' of what went through Razorpay (an order marked paid by hand pays Razorpay nothing).' });
     add({ step: 'Shipping and parcel', amount: -R(t.parcel), group: 'Confirmed', how: parcelText(C) });
+    if (t.whatsapp) add({ step: 'of which Shiprocket\'s WhatsApp tracking fee', amount: R(t.whatsapp), group: 'Confirmed', part: true, how: 'Rs. 5 plus GST for each tracking message, billed on Shiprocket\'s own invoice on the 3rd of the next month for the month before. Part of the line above. Not taken off again.' });
     add({ step: 'Left after confirmed costs', amount: R(t.confirmed), group: 'Confirmed', how: 'Money left before costs, minus the Shopify bill, the Razorpay charges and the parcel cost. This is not the profit: the making cost is not taken off yet.', isTotal: true });
     add({ step: 'Manufacturing and material', amount: -R(t.making), group: 'Not confirmed yet', pending: true, how: 'The cost price typed in Shopify for each piece sold (cloth, tailoring and labour together). Madhu has not confirmed the real figures.' });
     add({ step: 'Packaging', amount: -R(t.pack), group: 'Not confirmed yet', pending: true, how: packText(C) });
     add({ step: 'Other costs', amount: t.other ? -R(t.other) : 0, none: !t.other, group: 'Not confirmed yet', pending: true, how: t.other ? 'Another monthly cost typed in the data sheet, shared by days.' : 'None recorded. Anything else Madhu pays is not in these figures.' });
-    add({ step: 'Profit after everything', amount: R(t.profit), group: 'Not confirmed yet', pending: true, how: 'Left after confirmed costs, minus the costs below. Some of them are not confirmed, so read it as a good guide.', isTotal: true });
+    add({ step: 'GST credit on these costs', amount: R(t.credit), group: 'Not confirmed yet', pending: true, plus: true, how: 'Razorpay\'s fee and the courier\'s charge each have 18 percent GST inside. The shop pays it, then takes the same amount off the GST it owes, so it comes back. An estimate: it counts once the invoice shows in the GST portal. The Shopify bill adds nothing: its GST is paid and claimed in the same month.' });
+    add({ step: 'Profit after everything', amount: R(t.profit), group: 'Not confirmed yet', pending: true, how: 'Left after confirmed costs, minus the costs not confirmed yet, plus the GST credit. Some of these are not confirmed, so read it as a good guide.', isTotal: true });
     return rows;
   };
   var items = function (C) {
@@ -12759,12 +12798,13 @@ M.annot = (function () {
     it.push({ label: 'Shopify bill', value: R(t.bill), kind: 'minus', tone: 'confirmed', status: B.known ? 'Confirmed (' + billWord + ')' : 'Confirmed (not known yet)', none: B.known ? null : 'no bill on record',
       tip: B.known && B.planPart != null ? [{ k: 'The plan', v: M.inr(B.planPart) }, { k: 'Shopify\'s charges', v: M.inr(B.chargePart) }] : [] });
     it.push({ label: 'Razorpay charges', value: R(t.razor), kind: 'minus', tone: 'confirmed', status: 'Confirmed' });
-    it.push({ label: 'Shipping and parcel', value: R(t.parcel), kind: 'minus', tone: 'confirmed', status: 'Confirmed' });
+    it.push({ label: 'Shipping and parcel', value: R(t.parcel), kind: 'minus', tone: 'confirmed', status: 'Confirmed', tip: t.whatsapp ? [{ k: 'Courier charges', v: M.inr(R(t.parcel - t.whatsapp)) }, { k: 'WhatsApp tracking fee', v: M.inr(R(t.whatsapp)) }] : [] });
     it.push({ label: 'Left after confirmed costs', value: R(t.confirmed), kind: 'total', tone: 'result', tip: [{ k: 'Note', v: 'Not the profit: the making cost is not taken off yet' }] });
     it.push({ head: 'NOT CONFIRMED YET' });
     it.push({ label: 'Manufacturing and material', value: R(t.making), kind: 'minus', tone: 'pending' });
     it.push({ label: 'Packaging', value: R(t.pack), kind: 'minus', tone: 'pending' });
     it.push({ label: 'Other costs', value: R(t.other), kind: 'minus', tone: 'pending', none: t.other ? null : 'none recorded' });
+    it.push({ label: 'GST credit on these costs', value: R(t.credit), kind: 'plus', tone: 'pending', tip: [{ k: 'On the Razorpay fee', v: M.inr(R(t.creditRazor)) }, { k: 'On the courier charges', v: M.inr(R(t.creditParcel)) }, { k: 'Why', v: 'GST paid inside these costs is taken off the GST owed' }] });
     it.push({ label: 'Profit after everything', value: R(t.profit), kind: 'total', tone: 'final' });
     return it;
   };
@@ -12832,13 +12872,13 @@ M.annot = (function () {
   var monthCard = function (r, C) {
     if (!C.months.length) return null;
     var word = function (b) { return b === 'Real and estimate' ? 'Real and estimated' : b === 'Estimate' ? 'Estimated' : b; };
-    var rows = C.months.map(function (m) { return { month: m.ym, days: m.days, left: R(m.left), bill: m.bill ? -R(m.bill) : 0, razor: -R(m.razor), parcel: -R(m.parcel), confirmed: R(m.confirmed), pending: -R(m.pending), profit: R(m.profit), basis: word(m.basis) }; });
+    var rows = C.months.map(function (m) { return { month: m.ym, days: m.days, left: R(m.left), bill: m.bill ? -R(m.bill) : 0, razor: -R(m.razor), parcel: -R(m.parcel), confirmed: R(m.confirmed), pending: -R(m.pending), credit: R(m.credit), profit: R(m.profit), basis: word(m.basis) }; });
     var mix = function (rs2) { var set = {}; rs2.forEach(function (x) { set[x.basis] = 1; }); var k = Object.keys(set); return k.length === 1 ? k[0] : 'Mixed'; };
     var cols = [{ k: 'month', label: 'Month' }, { k: 'days', label: 'Days in these dates', num: true, hidden: true, fmt: M.num }, { k: 'left', label: 'Money left before costs', num: true, fmt: M.inr }, { k: 'bill', label: 'Shopify bill', num: true, fmt: M.inr },
       { k: 'razor', label: 'Razorpay charges', num: true, fmt: M.inr }, { k: 'parcel', label: 'Shipping and parcel', num: true, fmt: M.inr }, { k: 'confirmed', label: 'Left after confirmed costs', num: true, fmt: M.inr },
-      { k: 'pending', label: 'Costs not confirmed yet', num: true, fmt: M.inr }, { k: 'profit', label: 'Profit after everything', num: true, fmt: M.inr },
+      { k: 'pending', label: 'Costs not confirmed yet', num: true, fmt: M.inr }, { k: 'credit', label: 'GST credit on costs', num: true, fmt: M.inr }, { k: 'profit', label: 'Profit after everything', num: true, fmt: M.inr },
       { k: 'basis', label: 'Shopify bill is', entity: false, groupText: mix }];
-    var tot = function (rs2) { var o = { _label: 'Total' }; ['days', 'left', 'bill', 'razor', 'parcel', 'confirmed', 'pending', 'profit'].forEach(function (k) { var v = rs2.reduce(function (a, x) { return a + (+x[k] || 0); }, 0); o[k] = k === 'days' ? M.num(v) : M.inr(Math.round(v * 100) / 100); }); o.basis = mix(rs2); return o; };
+    var tot = function (rs2) { var o = { _label: 'Total' }; ['days', 'left', 'bill', 'razor', 'parcel', 'confirmed', 'pending', 'credit', 'profit'].forEach(function (k) { var v = rs2.reduce(function (a, x) { return a + (+x[k] || 0); }, 0); o[k] = k === 'days' ? M.num(v) : M.inr(Math.round(v * 100) / 100); }); o.basis = mix(rs2); return o; };
     return M.card('Month by month', 'The same steps for each month of the dates you picked: the Shopify bill is different every month, and so is the rest. A month that your dates cut shows only the days inside them.',
       [M.table(cols, { rows: rows, sortKey: 'month', sortDir: -1, detail: false, name: 'money-month-by-month', totals: rows.length > 1 ? tot : null, empty: 'No months in these dates.' })], 'mg-card');
   };
@@ -13895,7 +13935,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   /* ================================================================ 11. GST paid on the fees (input credit) */
   R.cards.push(function gst(c) {
     var title = 'GST paid on Razorpay fees (input credit)', r = c.r;
-    var why = 'Razorpay\'s fee carries GST. This is the GST the shop pays on the fee, not GST collected from buyers, and it is separate from the GST paid to Shiprocket on the Taxes page. It is shown by the month of the payment and by the month Razorpay took the fee from a payout.';
+    var why = 'Razorpay\'s fee carries 18 percent GST (Razorpay bills from Karnataka, so it is CGST and SGST in two halves, with mazo\'s GSTIN on the invoice). This is the GST the shop pays on the fee, not GST collected from buyers. The shop takes it off the GST it owes, so the Overview adds it back when it works out profit, and the Taxes page lists it under input credit. The proof is the monthly tax invoice Razorpay emails at the end of the month (Razorpay, Reports, Monthly Invoice Report lists every payment against it). It is shown by the month of the payment and by the month Razorpay took the fee from a payout.';
     if (!c.C.length && !M.has(R.T.mon)) return R.card(title, why, [R.nodata(c, 'No payment went through in these dates, so no fee was charged.')]);
     var fee = R.sum(c.C, 'fee'), tax = R.sum(c.C, 'gst_on_fee'), amt = R.sum(c.C, 'amount');
     var kids = [M.h('div', { class: 'kpis rz' }, [M.kpi({ label: 'GST paid on Razorpay fees', value: R.inr(tax), note: 'Inside ' + R.inr(fee) + ' of fees on payments made in these dates.' }),
@@ -14964,16 +15004,30 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       }
     })();
 
-    /* ============================================================ 13. GST inside freight */
+    /* ============================================================ 13. GST inside freight, and what Shiprocket bills on top (rebuilt 9 Nov 2026, T1016)
+       Owner, 9 Nov 2026: "these charges should be applied for profit, and the Razorpay and Shiprocket pages also need updating". Shiprocket bills two kinds of tax invoice, both 18 percent IGST:
+       FREIGHT (SAC 996812: freight, extra weight, return to origin, failed delivery and re-attempt charges, all billed as freight) and a SERVICE (SAC 998593: the WhatsApp tracking message, Rs. 5 each).
+       The parcel table holds the freight WITH its GST, so GST inside = 18/118 of it. Invoices come about every two weeks, so the newest parcels have none yet. */
     (function () {
       if (!P.length) return none(cards, 'GST inside the shipping charges', 'Shiprocket charges 18 percent IGST on freight.');
       var paid = P.reduce(function (a, x) { return a + money(x); }, 0), inside = paid * IGST / (100 + IGST);
-      var inv = M.has('shipping_invoices') ? M.rows('shipping_invoices').filter(function (x) { return x.invoice && x.date >= r.from && x.date <= r.to; }) : [];
-      var kids = [M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Paid to couriers through Shiprocket', value: inr2(paid), note: M.num(P.length) + ' parcels, freight and extra weight' }), M.kpi({ label: 'GST inside it (IGST ' + IGST + '%)', value: inr2(inside), note: 'The charge includes 18 percent IGST: ' + inr2(paid - inside) + ' before tax. Checked on the 15 Oct tax invoice: Rs. 173.19 plus Rs. 31.17 IGST is Rs. 204.36, the freight of one parcel.' })])];
-      var invFreight = M.has('shipping_invoices') ? M.rows('shipping_invoices').filter(function (x) { return x.invoice && /freight/i.test(x.kind || ''); }) : [];
-      if (invFreight.length) kids.push(M.h('p', { class: 'small', text: 'Tax invoices on file for freight: ' + M.num(invFreight.length) + ', Rs. ' + M.num(invFreight.reduce(function (a, x) { return a + (+x.total || 0); }, 0), 2) + ' in all. Shiprocket sends an invoice about every two weeks, so the newest parcels have none yet.' }));
+      var all = M.has('shipping_invoices') ? M.rows('shipping_invoices').filter(function (x) { return x.invoice; }) : [];
+      var inv = all.filter(function (x) { return x.date >= r.from && x.date <= r.to; });
+      var isSvc = function (x) { return /service/i.test(x.kind || ''); };
+      var sum = function (rows, k) { return rows.reduce(function (a, x) { return a + (+x[k] || 0); }, 0); };
+      var fr = inv.filter(function (x) { return !isSvc(x); }), sv = inv.filter(isSvc);
+      var gstInv = sum(inv, 'igst') + sum(inv, 'cgst') + sum(inv, 'sgst');
+      var kids = [M.h('div', { class: 'kpis lead' }, [
+        M.kpi({ label: 'GST on the tax invoices of these dates', value: inr2(gstInv), hero: true, note: inv.length ? M.num(inv.length) + ' invoice' + (inv.length === 1 ? '' : 's') + ': ' + inr2(sum(inv, 'total')) + ' with GST. Credit the Accountant can claim.' : 'No tax invoice is dated in these dates.' }),
+        M.kpi({ label: 'Freight and extra charges billed', value: inr2(sum(fr, 'total')), note: M.num(fr.length) + ' invoice' + (fr.length === 1 ? '' : 's') + ', GST ' + inr2(sum(fr, 'igst')) }),
+        M.kpi({ label: 'WhatsApp tracking fees billed', value: inr2(sum(sv, 'total')), note: M.num(sv.length) + ' invoice' + (sv.length === 1 ? '' : 's') + ', GST ' + inr2(sum(sv, 'igst')) + '. Rs. 5 + GST a message, billed on the 3rd for the month before.' }),
+        M.kpi({ label: 'GST inside the parcel charges', value: inr2(inside), note: 'Of ' + inr2(paid) + ' paid to couriers through Shiprocket in these dates (' + inr2(paid - inside) + ' before tax), worked out as 18/118.' })])];
+      /* freight booked on parcels (all of them) against freight invoiced so far (all of them): what is still to be billed */
+      var booked = allP.reduce(function (a, x) { return a + money(x); }, 0), billed = sum(all.filter(function (x) { return !isSvc(x); }), 'total'), left = booked - billed;
+      if (left > 0.5) kids.push(M.note('Shiprocket has booked ' + inr2(booked) + ' of freight and extra charges on parcels so far and billed ' + inr2(billed) + '. The ' + inr2(left) + ' not yet billed carries about ' + inr2(left * IGST / (100 + IGST)) + ' of GST that arrives on the next invoices.', false));
+      kids.push(M.h('p', { class: 'small', text: 'The Overview takes this GST off the cost of sending when it works out profit, because the shop claims it back against the GST it owes. A charge for extra weight, a failed delivery, a re-attempt or a return to origin is billed as freight with the same 18 percent. If a weight dispute is won, Shiprocket sends a credit note and the credit for it is taken back.' }));
       if (inv.length) kids.push(M.tableView([{ k: 'date', label: 'Invoice date', fmt: M.fd }, { k: 'invoice', label: 'Invoice' }, { k: 'kind', label: 'What' }, { k: 'taxable_value', label: 'Before tax', num: true, fmt: inr2 }, { k: 'igst', label: 'IGST', num: true, fmt: inr2 }, { k: 'total', label: 'Total', num: true, fmt: inr2 }], inv, 'Show the tax invoices', { name: 'Shiprocket tax invoices' }));
-      cards.push(card('GST inside the shipping charges', 'Shiprocket charges 18 percent IGST on freight. The tax invoices are on the Taxes page, with the input credit the Accountant can claim.', kids));
+      cards.push(card('GST inside the shipping charges', 'Shiprocket charges 18 percent IGST on freight and on its WhatsApp tracking service. The tax invoices are listed here for the dates you picked and on the Taxes page, with the input credit the Accountant can claim.', kids));
     })();
 
     cards.forEach(function (c) { root.appendChild(c); });
