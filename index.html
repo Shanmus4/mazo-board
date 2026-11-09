@@ -10185,7 +10185,7 @@ M.glueMarks = function () {
 
   /* ---------------------------------------------------------------- 6 the filing calendar and the hand-over list */
   var calendarCard = function () {
-    var rows = M.rows('tax_calendar').filter(function (x) { return M.isDate(x.due_date); });
+    var rows = M.rows('tax_calendar').filter(function (x) { return M.isDate(x.due_date) && !/quarterly/.test(x.form); });   /* 9 Nov 2026 (owner): the shop files monthly, so the quarterly rows are left out */
     if (!rows.length) return M.card('Filing calendar', 'The dates the returns are due.', [M.empty('The calendar fills in the first night after the tax tables are switched on.')]);
     var today = M.D.anchor && M.isDate(M.D.anchor) ? M.add(M.D.anchor, 1) : new Date().toISOString().slice(0, 10);
     var monthly = rows.filter(function (x) { return !/quarterly/.test(x.form) && x.form !== 'Income tax advance tax' && x.form !== 'ITR' && x.form !== 'GSTR-9'; });
@@ -10194,7 +10194,7 @@ M.glueMarks = function () {
     var cols = [{ k: 'date', label: 'Due', fmt: M.fd }, { k: 'left', label: 'Days left', num: true, fmt: function (v) { return v === 0 ? 'today' : M.num(v); } }, { k: 'form', label: 'Return', wrap: true }, { k: 'period', label: 'For', wrap: true },
       { k: 'what', label: 'What it is', wrap: true }, { k: 'who', label: 'Who', wrap: true }, { k: 'note', label: 'Note', wrap: true, hidden: true }];
     var all = rows.map(function (x) { return { date: x.due_date, left: M.diff(today, x.due_date), form: x.form, period: x.period, what: x.what, who: x.who, note: x.note, fy: x.financial_year }; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
-    var card = M.card('What is due next', 'The usual due dates from the GST portal help pages and the income tax rules. The Government often moves a date by notification, so open the GST portal before relying on one. The quarterly rows apply only if the shop chose the quarterly option; ask the Accountant which one is in use.', [
+    var card = M.card('What is due next', 'The usual due dates from the GST portal help pages and the income tax rules. The Government often moves a date by notification, so open the GST portal before relying on one. The shop files its returns every month, so only the monthly dates are listed.', [
       items.length ? M.table(cols, { rows: items, sortKey: 'date', sortDir: 1, empty: 'None.', detail: false, noTools: true, dateKey: false, name: 'filing-calendar-next' }) : M.empty('No later date in the calendar.'),
       M.fold('Every date in the calendar (' + M.num(all.length) + ' rows, newest first)', [M.table(cols.concat([{ k: 'fy', label: 'Financial year' }]), { rows: all, sortKey: 'date', empty: 'None.', detail: false, name: 'filing-calendar', limit: 24 })])]);
     return withCsv(card, csvIcon('filing-calendar', ['Due date', 'Financial year', 'For', 'Return', 'What it is', 'Who', 'Note'], function () { return all.slice().reverse().map(function (x) { return [x.date, x.fy, x.period, x.form, x.what, x.who, x.note]; }); }));
@@ -10249,7 +10249,7 @@ M.glueMarks = function () {
       ['8. Bank statement of the account Razorpay pays into', has(/bank/i), 'Madhu. It proves what reached the bank after the Razorpay fee.'],
       ['9. Orders cancelled or returned and how the money went back (outside Shopify too, for example Google Pay)', nVoid === 0 || has(/cancel|refund|return/i), nVoid ? M.num(nVoid) + ' order' + (nVoid === 1 ? '' : 's') + ' in the register shown as cancelled or not a sale, with a remark. Madhu confirms how the money went back.' : 'None in this period.'],
       ['10. Tax already paid by challan for the month', has(/paid|challan/i), 'Only the Accountant can give this: it shows how much of the tax to pay is already paid.'],
-      ['11. Whether the shop files monthly or quarterly (QRMP) (one time). GST registration date: 14 May 2026, on record', false, 'Ask the Accountant for the monthly or quarterly choice; it changes the due dates in the calendar. Credit counts from invoices dated 14 May 2026 or later.'],
+      ['11. Filing choice and registration date (one time): the shop files GST returns monthly; registered on 14 May 2026', true, 'Both are on record. The calendar lists the monthly dates only. Credit counts from invoices dated 14 May 2026 or later.'],
       ['12. Income tax: scheme in use and advance tax paid', has(/advance|income/i), 'Only the Accountant can give this.']
     ];
     var rowsT = check.map(function (c) { return { item: c[0], status: c[1] ? 'Have it' : 'Needed', how: c[2] }; });
