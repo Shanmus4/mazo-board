@@ -1881,6 +1881,13 @@ html.still .cb svg path.ln-draw,html.still .kpi .sp-line,html.still .viz-chart .
   .tax-register thead tr:not(.band-row) th button { min-height: 0; padding: 0; }
 }
 .tax-register th.n > .mk-row { flex-direction: row-reverse; justify-content: flex-start; }
+/* 9 Nov 2026 (owner Annotate note 15:22, "only this is not aligned", on the heading "Taxable total" between "Ship GST" and "Total GST"): with the (i) marks, "Ship GST" and "Total GST" broke onto two
+   lines while "Taxable total" stayed on one, so the (i) of "Total GST" floated nearer to "Taxable total" than to its own text. Every register heading is now ONE line (the table already scrolls sideways),
+   so each mark sits against its own text and all headings share one baseline. */
+.tax-register thead tr:not(.band-row) th, .tax-register thead tr:not(.band-row) th .mk-text, .tax-register thead tr:not(.band-row) th button { white-space: nowrap; }
+/* the mark box (20 px) is taller than the one line of text (15 px) and its top margin is negative, so a heading WITH a mark ended 2.5 px higher than a plain one; pull the row down by the same amount */
+@media (hover: hover) and (pointer: fine) { .tax-register thead tr:not(.band-row) th > .mk-row { margin-bottom: calc((1lh - var(--mkh)) / 2); } }
+@media (pointer: coarse) { .tax-register thead tr:not(.band-row) th > .mk-row { margin-bottom: 8px; } }   /* touch: the 44 px button row ends 8 px lower than a plain heading's 60 px button */
 
 /* mazo dashboard DATE RANGE PICKER styles (T883, 3 Nov 2026). See dashboard_47_datepicker.js. Uses only the dashboard's own scales: 6px controls, 12px panel, maroon for the chosen range, a tint
    (not a rule) for the days between, 44px days on touch. No divider lines: the groups are separated by space and a tinted side column. */
