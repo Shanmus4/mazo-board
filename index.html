@@ -10249,7 +10249,7 @@ M.glueMarks = function () {
       ['8. Bank statement of the account Razorpay pays into', has(/bank/i), 'Madhu. It proves what reached the bank after the Razorpay fee.'],
       ['9. Orders cancelled or returned and how the money went back (outside Shopify too, for example Google Pay)', nVoid === 0 || has(/cancel|refund|return/i), nVoid ? M.num(nVoid) + ' order' + (nVoid === 1 ? '' : 's') + ' in the register shown as cancelled or not a sale, with a remark. Madhu confirms how the money went back.' : 'None in this period.'],
       ['10. Tax already paid by challan for the month', has(/paid|challan/i), 'Only the Accountant can give this: it shows how much of the tax to pay is already paid.'],
-      ['11. Whether the shop files monthly or quarterly (QRMP), and the GST registration date (one time)', false, 'Ask the Accountant; it changes the due dates in the calendar and says from which month credit counts.'],
+      ['11. Whether the shop files monthly or quarterly (QRMP) (one time). GST registration date: 14 May 2026, on record', false, 'Ask the Accountant for the monthly or quarterly choice; it changes the due dates in the calendar. Credit counts from invoices dated 14 May 2026 or later.'],
       ['12. Income tax: scheme in use and advance tax paid', has(/advance|income/i), 'Only the Accountant can give this.']
     ];
     var rowsT = check.map(function (c) { return { item: c[0], status: c[1] ? 'Have it' : 'Needed', how: c[2] }; });
@@ -13453,6 +13453,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
                  Karnataka, so the tax splits in two halves (CGST and SGST). The monthly tax invoice is the proof; the figure here is worked out from Razorpay's own payment figures.
      Shopify     plan and transaction fees (tab shopify_bills). Shopify bills from outside India and the bill carries mazo's GSTIN and NO tax line, so mazo pays 18 percent IGST itself under reverse charge
                  (GSTR-3B table 3.1(d), paid in cash, month of payment) and claims the same amount back as credit (table 4A(3)). The two cancel; the cash goes out first.
+   REGISTRATION (owner, 9 Nov 2026: "14 May 2026"): credit counts only for a bill, invoice or fee dated on or after 14 May 2026. Nothing in the records is earlier except one Shopify bill of 28 Apr 2026.
    Facts and an estimate, never an instruction. The Taxes tiles above are NOT changed: "Tax to pay" stays the tax on sales. The Accountant files the real figure. */
 (function () {
   var num = function (v) { return v == null || v === '' || isNaN(+v) ? 0 : +v; };
@@ -13464,6 +13465,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   var MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   var mname = function (m) { return MON[+m.slice(5, 7) - 1] + ' ' + m.slice(0, 4); };
   var RCM = 0.18;      /* the rate on online services bought from outside India (IGST, the same 18 percent as on the other two suppliers) */
+  var REGISTERED = '2026-05-14';      /* 9 Nov 2026 (owner: "14 may 2026"): mazo registered for GST on this day. Credit counts only for a document dated on or after it (the April 2026 Shopify bill of Rs. 23.60, with Rs. 3.60 IGST, is before it) */
 
   /* ---------------------------------------------------------------- the lines of the period (one object per bill, all in whole paise) */
   var lines = function (p) {
@@ -13471,7 +13473,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var out = [];
     /* 1 Shiprocket: one line per tax invoice dated in the period */
     (M.has('shipping_invoices') ? M.rows('shipping_invoices') : []).forEach(function (x) {
-      if (!x.invoice || typeof x.date !== 'string' || !set[x.date.slice(0, 7)]) return;
+      if (!x.invoice || typeof x.date !== 'string' || !set[x.date.slice(0, 7)] || x.date < REGISTERED) return;
       var c = P(x.cgst), s = P(x.sgst), i = P(x.igst), t = P(x.taxable_value);
       out.push({ who: 'Shiprocket', doc: x.invoice, date: x.date, what: x.kind || 'Freight', taxable: t, cgst: c, sgst: s, igst: i, gst: c + s + i, total: P(x.total), how: 'claim', proof: 'Tax invoice (Bills page)', month: x.date.slice(0, 7),
         mine: x.buyer_gstin === '29GSUPM4389G1ZO' });
@@ -13481,7 +13483,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     if (M.has('razorpay_payments_daily')) {
       var first = p.months[0] + '-01', last = p.months[p.months.length - 1] + '-31';
       M.rowsIn('razorpay_payments_daily', first, last).forEach(function (x) {
-        var m = String(x.date).slice(0, 7); if (!set[m] || x.tax === '' || x.tax == null) return;
+        var m = String(x.date).slice(0, 7); if (!set[m] || x.tax === '' || x.tax == null || String(x.date) < REGISTERED) return;
         var o = rz[m] || (rz[m] = { fee: 0, tax: 0, n: 0 }); o.fee += P(x.fee); o.tax += P(x.tax); o.n += num(x.captured) || 0;
       });
     }
@@ -13493,7 +13495,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     /* 3 Shopify: one line per bill paid in the period; no tax on the bill, so the tax is paid by the shop (reverse charge) */
     (M.has('shopify_bills') ? M.rows('shopify_bills') : []).forEach(function (b) {
       var day = String(b.paid_on || b.bill_date || ''); var m = day.slice(0, 7);
-      if (!set[m]) return;
+      if (!set[m] || String(b.bill_date || day) < REGISTERED) return;
       var base = P(b.plan_fee) + P(b.transaction_fees) + P(b.other_charges);
       if (base <= 0) return;
       var taxed = P(b.other_charges) > 0 && /tax|igst/i.test(String(b.note || ''));      /* April 2026: the bill itself carried IGST, so nothing is owed under reverse charge */
