@@ -6187,14 +6187,20 @@ M.PAGES.customers.render = function (r) {
   ], 'wide'));
   /* states + loyalty + baskets */
   var geo = M.stateRows('geo_board'), cour = M.stateRows('courier_scorecard');
+  /* T1036: name the orders behind each State line (the tax register's sale lines carry the delivery state) and each Courier line (the shipping list carries the carrier; its state comes from the parcel list) */
+  var byState = {}, byCour = {}, stOf = {};
+  if (M.has('tax_orders')) M.rows('tax_orders').forEach(function (x) { if (x.kind === 'sale' && x.order && x.state) { (byState[x.state] = byState[x.state] || []).push(x.order); stOf[x.order] = x.state; } });
+  if (M.has('shipping_daily')) M.rows('shipping_daily').forEach(function (x) { if (!x.order || /test order/i.test(x.note || '')) return; var k = (x.carrier || 'unknown') + '|' + (stOf[x.order] || 'unknown'); (byCour[k] = byCour[k] || []).push(x.order); });
+  geo = geo.map(function (x) { var w = byState[x.state] || []; return Object.assign({}, x, { which_list: w, which: M.refList('order', w) }); });
+  cour = cour.map(function (x) { var w = byCour[String(x.carrier).replace(/Delhivery/i, 'Delhivery') + '|' + x.state] || byCour[x.carrier + '|' + x.state] || []; return Object.assign({}, x, { which_list: w, which: M.refList('order', w) }); });
   root.appendChild(M.grid([
-    M.card('States', 'Orders and revenue by delivery state (state level only, never an address). Delivery days run from shipped to delivered.', [M.table([{ k: 'state', label: 'State' }, { k: 'orders', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.teal } }, { k: 'avg_delivery_days', label: 'Delivery days', num: true, fmt: function (v, x) { return v == null ? '' : M.num(v, 1) + (x.orders < 10 ? ' *' : ''); } }], { rows: geo, sortKey: 'orders', empty: 'No state table yet.' }), M.h('p', { class: 'small muted', text: '* under 10 orders: too few to read the delivery time.' })]),
+    M.card('States', 'Orders and revenue by delivery state (state level only, never an address). Delivery days run from shipped to delivered.', [M.table([{ k: 'state', label: 'State' }, { k: 'orders', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.teal } }, { k: 'avg_delivery_days', label: 'Delivery days', num: true, fmt: function (v, x) { return v == null ? '' : M.num(v, 1) + (x.orders < 10 ? ' *' : ''); } }, M.refsCol('order', 'which', 'Which orders', { title: function (r) { return r.state + ': the orders'; } })], { rows: geo, sortKey: 'orders', empty: 'No state table yet.' }), M.h('p', { class: 'small muted', text: '* under 10 orders: too few to read the delivery time.' })]),
     M.card('Coming back', 'How many buyers ordered again, and how long it took.', [M.table([{ k: 'measure', label: 'Measure' }, { k: 'value', label: 'Value', num: true, fmt: function (v) { return v == null ? 'not available' : M.num(v, v % 1 ? 1 : 0); } }, { k: 'read', label: 'Read', wrap: true }], { rows: M.stateRows('loyalty'), empty: 'No loyalty table yet.' })])
   ], 'wide'));
   var bp = M.stateRows('basket_pairs');
   root.appendChild(M.grid([
     M.card('Baskets: products bought together', 'Two products that were in the same order. "Bought together vs by chance" says how much more often than chance. Only a few orders held two products, so treat every row as a hint, not a fact.', [M.table([{ k: 'product_a', label: 'Product A', wrap: true }, { k: 'product_b', label: 'Product B', wrap: true }, { k: 'orders_together', label: 'Together', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'lift', label: 'Bought together vs by chance', num: true, drop: 1, fmt: function (v) { return v == null ? '' : M.num(v, 2); } }, { k: 'read', label: 'Read', hidden: true, render: function (x) { return x.read ? M.tag(x.read, /few/.test(x.read) ? 'thin' : '') : null; } }], { rows: bp, sortKey: 'orders_together', empty: 'No product pairs yet: no order held two products.' })]),
-    M.card('Couriers', 'Parcels, days to send and days to deliver, by courier and state. Under 10 parcels is too few to read.', [M.table([{ k: 'carrier', label: 'Carrier', wrap: true }, { k: 'state', label: 'State', drop: 2 }, { k: 'parcels', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'avg_delivery_days', label: 'Delivery days', num: true, drop: 3, fmt: function (v) { return v == null ? '' : M.num(v, 1); } }, { k: 'late', label: 'Late', num: true, drop: 1, fmt: M.num }], { rows: cour, sortKey: 'parcels', limit: 8, empty: 'No courier table yet.' })])
+    M.card('Couriers', 'Parcels, days to send and days to deliver, by courier and state. Under 10 parcels is too few to read.', [M.table([{ k: 'carrier', label: 'Carrier', wrap: true }, { k: 'state', label: 'State', drop: 2 }, { k: 'parcels', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'avg_delivery_days', label: 'Delivery days', num: true, drop: 3, fmt: function (v) { return v == null ? '' : M.num(v, 1); } }, { k: 'late', label: 'Late', num: true, drop: 1, fmt: M.num }, M.refsCol('order', 'which', 'Which orders', { title: function (r) { return r.carrier + ' to ' + r.state + ': the orders'; } })], { rows: cour, sortKey: 'parcels', limit: 8, empty: 'No courier table yet.' })])
   ], 'pair'));
   return root;
 };
@@ -7710,8 +7716,13 @@ M.PAGES.payments.render = function (r) {
   /* payouts */
   var setl = M.rowsIn('razorpay_settlements', r.from, r.to).slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
   var paidOut = setl.reduce(function (a, x) { return a + (+x.amount || 0); }, 0);
-  root.appendChild(M.card('Payouts to the bank', 'Each line is one transfer from Razorpay to the bank. Only the last 4 characters of the bank reference are kept.', [
-    setl.length ? M.table([{ k: 'date', label: 'Paid out on', fmt: M.fd }, { k: 'amount', label: 'Amount', num: true, fmt: M.inr, bar: { color: M.COLORS.teal } }, { k: 'fees', label: 'Fees taken', num: true, fmt: M.inr }, { k: 'tax', label: 'GST on fees', num: true, fmt: M.inr }, { k: 'status', label: 'Status' }, { k: 'utr_tail', label: 'Bank ref (last 4)' }], { rows: setl, sortKey: 'date', empty: 'No payouts in these dates.', limit: 20 })
+  /* T1036: each payout names the orders it paid. The reconciliation tab ties a payment to its payout by the end of the settlement id; the payments tab gives the payment's shop order. */
+  var payBy = {}, recBy = {};
+  if (M.has('razorpay_payments')) M.rows('razorpay_payments').forEach(function (x) { payBy[x.key] = x; });
+  if (M.has('razorpay_recon')) M.rows('razorpay_recon').forEach(function (x) { (recBy[x.settlement_id] = recBy[x.settlement_id] || []).push(x); });
+  setl = setl.map(function (x) { var o = {}; Object.keys(x).forEach(function (k) { o[k] = x[k]; }); var w = (recBy[String(x.id).slice(-8)] || []).map(function (rc) { return M.refOf(payBy[rc.payment_key] || { key: rc.payment_key }); }); o.which = M.refList('order', w); o.which_list = w; return o; });
+  root.appendChild(M.card('Payouts to the bank', 'Each line is one transfer from Razorpay to the bank, with the orders it paid. Only the last 4 characters of the bank reference are kept.', [
+    setl.length ? M.table([{ k: 'date', label: 'Paid out on', fmt: M.fd }, { k: 'amount', label: 'Amount', num: true, fmt: M.inr, bar: { color: M.COLORS.teal } }, { k: 'fees', label: 'Fees taken', num: true, fmt: M.inr }, { k: 'tax', label: 'GST on fees', num: true, fmt: M.inr }, { k: 'status', label: 'Status' }, M.refCol('payout', 'utr_tail', 'Bank reference'), M.refsCol('order', 'which', 'Orders paid', { title: function (r) { return 'Payout of ' + M.fd(r.date) + ': the orders'; } })], { rows: setl, sortKey: 'date', empty: 'No payouts in these dates.', limit: 20 })
          : M.empty('No payouts in these dates yet. Razorpay pays out a day or two after a payment.'),
     setl.length ? M.h('p', { class: 'small', text: M.inr(paidOut) + ' reached the bank in these dates.' }) : null]));
   return root;
@@ -7805,10 +7816,11 @@ M.PAGES.shipping.render = function (r) {
     promiseKids.push(M.h('p', { class: 'small', text: 'Days are counted from the order to the door. ' + M.num(rowsAll.length) + ' orders in these dates: ' + M.num(door.length) + ' delivered, ' + M.num(openAll.length) + ' on the way or not sent yet, ' + M.num(byHand.length) + ' handed over by hand. The courier alone takes ' + (avgDays == null ? 'about 2 to 3' : M.num(avgDays, 1)) + ' days; the rest is the wait before the pickup.' }));
   }
   /* every order, one line each, from the same list: the owner can check any delivery against Shopify and Shiprocket */
+  var awbOf = {}; if (M.has('shiprocket_parcels')) M.rows('shiprocket_parcels').forEach(function (x) { if (x.order && x.awb_tail) awbOf[x.order] = x.awb_tail; });      /* T1036: the courier's tracking number end, from Shiprocket's own parcel list */
   var everyOrder = rowsAll.length ? M.card('Every order and where it is', 'One line for every real order placed in these dates (cancelled and test orders are left out). The cards above all count these same orders.', [
-    M.table([{ k: 'order', label: 'Order' }, { k: 'at', label: 'Ordered', fmt: M.fd }, { k: 'kindName', label: 'Kind' }, { k: 'carrier', label: 'Courier', wrap: true }, { k: 'sent', label: 'Sent', fmt: function (v) { return v ? M.fd(v) : 'not yet'; } },
+    M.table([M.refCol('order', 'order', 'Order'), M.refCol('parcel', 'awb', 'Parcel', { none: 'none' }), { k: 'at', label: 'Ordered', fmt: M.fd }, { k: 'kindName', label: 'Kind' }, { k: 'carrier', label: 'Courier', wrap: true }, { k: 'sent', label: 'Sent', fmt: function (v) { return v ? M.fd(v) : 'not yet'; } },
       { k: 'delivered', label: 'Delivered', fmt: function (v) { return v ? M.fd(v) : ''; } }, { k: 'days', label: 'Days since the order', num: true, fmt: function (v) { return M.num(v, 0); } }, { k: 'status', label: 'Where it is' }, { k: 'late', label: 'Against the promise', render: function (x) { return M.tag(x.late, x.late === 'late' ? 'thin' : 'ok'); } }],
-      { rows: rowsAll.map(function (x) { var hi = x.kind === 'made' ? 20 : Pm.ready[1]; return { order: x.order, at: x.at, kindName: x.kind === 'made' ? 'made to order' : 'ready to ship', carrier: x.carrier || (x.done ? 'by hand or self' : ''), sent: x.sent, delivered: x.delivered, days: x.days, status: x.status, late: x.hand ? 'no courier clock' : x.days > hi ? 'late' : x.done ? 'on time' : 'inside the promise' }; }), sortKey: 'at', limit: 40, name: 'every order and where it is' })]) : null;
+      { rows: rowsAll.map(function (x) { var hi = x.kind === 'made' ? 20 : Pm.ready[1]; return { order: x.order, awb: awbOf[x.order] || '', at: x.at, kindName: x.kind === 'made' ? 'made to order' : 'ready to ship', carrier: x.carrier || (x.done ? 'by hand or self' : ''), sent: x.sent, delivered: x.delivered, days: x.days, status: x.status, late: x.hand ? 'no courier clock' : x.days > hi ? 'late' : x.done ? 'on time' : 'inside the promise' }; }), sortKey: 'at', limit: 40, name: 'every order and where it is' })]) : null;
   root.appendChild(M.card('Is the promise kept?', 'The shop promises ' + Pm.ready[0] + ' to ' + Pm.ready[1] + ' working days for ready to ship pieces and about 20 days for pieces made to order. This compares what buyers really waited, from the order to the door.', promiseKids));
   if (everyOrder) root.appendChild(everyOrder);
   /* failed delivery tries */
@@ -8007,6 +8019,12 @@ M.PAGES.tables.render = function () {
   root.appendChild(kp);
   /* 1. reviews and returns */
   var rv = M.rows('review_weekly'), rt = M.rows('review_themes'), jd = M.rows('judgeme_daily'), rw = M.rows('returns_weekly');
+  /* T1036: the weekly count of cancelled orders names them. A cancelled order is a 'void' line of the tax register (the same list the Taxes page shows), put in the week it was placed. */
+  var cancelNamed = function (list) {
+    var by = {};
+    if (M.has('tax_orders')) M.rows('tax_orders').forEach(function (x) { if (x.kind === 'void' && x.order && x.date) (by[M.monday(String(x.date).slice(0, 10))] = by[M.monday(String(x.date).slice(0, 10))] || []).push(x.order); });
+    return list.map(function (x) { var o = {}; Object.keys(x).forEach(function (k) { o[k] = x[k]; }); var w = by[String(x.week).slice(0, 10)] || []; o.cancelled_which_list = w; o.cancelled_which = M.refList('order', w); return o; });
+  };
   var kids = [];
   if (rv.length || jd.length) {
     var last = rv.length ? rv[rv.length - 1] : null, jl = jd.length ? jd.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; })[jd.length - 1] : null;
@@ -8017,7 +8035,7 @@ M.PAGES.tables.render = function () {
   }
   if (rw.length) {
     var sum = function (c) { return rw.reduce(function (a, x) { return a + (+x[c] || 0); }, 0); };
-    kids.push(M.card('Returns and exchanges', 'Exchanges, refunds, disputes and cancelled orders, week by week. Exchange only, 7 days, is the shop rule.', [M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Exchanges', value: M.num(sum('exchanges_logged')) }), M.kpi({ label: 'Refunds', value: M.num(sum('refunds')), note: M.inr(sum('refunded_amount')) }), M.kpi({ label: 'Disputes', value: M.num(sum('disputes')) }), M.kpi({ label: 'Cancelled orders', value: M.num(sum('cancelled_orders')) })]), M.table([{ k: 'week', label: 'Week starting', fmt: M.fd }, { k: 'exchanges_logged', label: 'Exchanges', num: true, fmt: M.num }, { k: 'refunds', label: 'Refunds', num: true, fmt: M.num }, { k: 'refunded_amount', label: 'Refunded', num: true, fmt: M.inr }, { k: 'disputes', label: 'Disputes', num: true, fmt: M.num }, { k: 'high_risk_orders', label: 'Risky orders flagged', num: true, fmt: M.num }, { k: 'cancelled_orders', label: 'Cancelled', num: true, fmt: M.num }], { rows: rw, sortKey: 'week', empty: 'No weeks yet.', name: 'returns', limit: 20, totals: true })]));      /* T884: a Total row for the dates and filter chosen; the grouping strip comes from the shared table layer */
+    kids.push(M.card('Returns and exchanges', 'Exchanges, refunds, disputes and cancelled orders, week by week. Exchange only, 7 days, is the shop rule.', [M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Exchanges', value: M.num(sum('exchanges_logged')) }), M.kpi({ label: 'Refunds', value: M.num(sum('refunds')), note: M.inr(sum('refunded_amount')) }), M.kpi({ label: 'Disputes', value: M.num(sum('disputes')) }), M.kpi({ label: 'Cancelled orders', value: M.num(sum('cancelled_orders')) })]), M.table([{ k: 'week', label: 'Week starting', fmt: M.fd }, { k: 'exchanges_logged', label: 'Exchanges', num: true, fmt: M.num }, { k: 'refunds', label: 'Refunds', num: true, fmt: M.num }, { k: 'refunded_amount', label: 'Refunded', num: true, fmt: M.inr }, { k: 'disputes', label: 'Disputes', num: true, fmt: M.num }, { k: 'high_risk_orders', label: 'Risky orders flagged', num: true, fmt: M.num }, { k: 'cancelled_orders', label: 'Cancelled', num: true, fmt: M.num }, M.refsCol('order', 'cancelled_which', 'Cancelled orders', { none: 'none', title: function (r) { return 'Week of ' + M.fd(r.week) + ': cancelled orders'; } })], { rows: cancelNamed(rw), sortKey: 'week', empty: 'No weeks yet.', name: 'returns', limit: 20, totals: true })]));      /* T884: a Total row for the dates and filter chosen; the grouping strip comes from the shared table layer */
   }
   if (kids.length) root.appendChild(M.grid(kids, 'one'));
   /* 2. money in the bank, numbers typed in */
@@ -8531,11 +8549,11 @@ M.TERMS = [
     var sd = M.rows('shipping_daily');
     if (!sd.length) return [];
     sd = sd.filter(function (x) { return !/test order/i.test(x.note || ''); });      /* 7 Nov 2026: the same list as the promise card (every real order, tests left out) */
-    var st = {}; sd.forEach(function (x) { var k = x.delivered ? 'DELIVERED' : !x.dispatched ? 'NOT SENT YET' : (x.status || 'unknown'); st[k] = (st[k] || 0) + 1; });
+    var st = {}, stOrders = {}; sd.forEach(function (x) { var k = x.delivered ? 'DELIVERED' : !x.dispatched ? 'NOT SENT YET' : (x.status || 'unknown'); st[k] = (st[k] || 0) + 1; (stOrders[k] = stOrders[k] || []).push(x.order); });      /* T1036: the orders behind each count */
     var back = (st.RTO || 0) + (st.RETURNED || 0) + (st.RETURNED_TO_ORIGIN || 0) + (st.RTO_DELIVERED || 0);
-    var rows = Object.keys(st).map(function (k) { return { status: k.replace(/_/g, ' ').toLowerCase(), parcels: st[k] }; }).sort(function (a, b) { return b.parcels - a.parcels; });
+    var rows = Object.keys(st).map(function (k) { return { status: k.replace(/_/g, ' ').toLowerCase(), parcels: st[k], which: M.refList('order', stOrders[k]), which_list: stOrders[k] }; }).sort(function (a, b) { return b.parcels - a.parcels; });
     return [M.card('Where every parcel is now', 'The shop\'s own record of each parcel. A parcel that comes back to us would appear as returned. ' + (back ? M.num(back) + ' came back.' : 'None has come back so far.'), [
-      M.table([{ k: 'status', label: 'State' }, { k: 'parcels', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }], { rows: rows, sortKey: 'parcels', empty: 'None.', noTools: true, detail: false })])];
+      M.table([{ k: 'status', label: 'State' }, { k: 'parcels', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, M.refsCol('order', 'which', 'Which orders', { title: function (r) { return r.status + ': the orders'; } })], { rows: rows, sortKey: 'parcels', empty: 'None.', noTools: true, detail: false })])];
   });
 
   /* ---------------------------------------------------------------- Search and market: competitors over time */
@@ -10293,17 +10311,20 @@ M.glueMarks = function () {
   /* quarters and financial years, newest first: the only places a table could grow for years, so each is its own small table with a CSV */
   var totalsCard = function (all) {
     var ms = {}; all.forEach(function (x) { var o = ms[x.month] || (ms[x.month] = { month: x.month, taxable: 0, cgst: 0, sgst: 0, igst: 0, gst: 0, paid: 0, orders: 0 }); o.taxable += num(x.taxable_value); o.cgst += num(x.cgst); o.sgst += num(x.sgst); o.igst += num(x.igst); o.gst += num(x.total_gst); o.paid += num(x.total_paid); o.orders += (x.kind === 'refund' ? 0 : num(x.orders)); });
-    var months = Object.keys(ms).sort().reverse().map(function (m) { var o = ms[m]; return { fy: fyOfMonth(m), q: fyOfMonth(m) + ' ' + qOfMonth(m), month: m, orders: o.orders, taxable: r2(o.taxable), cgst: r2(o.cgst), sgst: r2(o.sgst), igst: r2(o.igst), gst: r2(o.gst), pay: rupee(o.gst), paid: r2(o.paid) }; });
+    /* T1036: the orders in each month. The summary above has no order numbers, so they come from the order lines of the register (tax_orders): a sale, a cancelled order and a not-a-sale order are all listed, as the register lists them. */
+    var namesOf = {}, seenOrd = {};
+    if (M.has('tax_orders')) M.rows('tax_orders').forEach(function (x) { var k = x.month + '|' + x.order; if (x.order && x.month && !seenOrd[k]) { seenOrd[k] = 1; (namesOf[x.month] = namesOf[x.month] || []).push(x.order); } });
+    var months = Object.keys(ms).sort().reverse().map(function (m) { var o = ms[m]; return { fy: fyOfMonth(m), q: fyOfMonth(m) + ' ' + qOfMonth(m), month: m, names: namesOf[m] || [], orders: o.orders, taxable: r2(o.taxable), cgst: r2(o.cgst), sgst: r2(o.sgst), igst: r2(o.igst), gst: r2(o.gst), pay: rupee(o.gst), paid: r2(o.paid) }; });
     var group = function (key) { var g = {}; months.forEach(function (x) { var o = g[x[key]] || (g[x[key]] = { label: x[key], orders: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, gst: 0, paid: 0 }); o.orders += x.orders; o.taxable += x.taxable; o.cgst += x.cgst; o.sgst += x.sgst; o.igst += x.igst; o.gst += x.gst; o.paid += x.paid; }); return Object.keys(g).sort().reverse().map(function (k) { var o = g[k]; return { label: k, orders: o.orders, taxable: r2(o.taxable), cgst: r2(o.cgst), sgst: r2(o.sgst), igst: r2(o.igst), gst: r2(o.gst), pay: rupee(o.gst), paid: r2(o.paid) }; }); };
     var cols = function (first) { return [{ k: 'label', label: first, sort: function (x) { return x._m || x.label; } }, { k: 'orders', label: 'Orders', num: true, fmt: M.num }, { k: 'taxable', label: 'Taxable value', num: true, fmt: paise }, { k: 'cgst', label: 'CGST', num: true, fmt: paise },
       { k: 'sgst', label: 'SGST', num: true, fmt: paise }, { k: 'igst', label: 'IGST', num: true, fmt: paise }, { k: 'gst', label: 'Total tax', num: true, fmt: paise }, { k: 'pay', label: 'To pay (rupees)', num: true, fmt: M.inr }, { k: 'paid', label: 'Total paid', num: true, fmt: paise }]; };
-    var mrows = months.map(function (x) { return { label: mshort(x.month) + ' (' + x.fy + ')', orders: x.orders, taxable: x.taxable, cgst: x.cgst, sgst: x.sgst, igst: x.igst, gst: x.gst, pay: x.pay, paid: x.paid, _m: x.month }; });
+    var mrows = months.map(function (x) { return { which: M.refList('order', x.names), which_list: x.names, label: mshort(x.month) + ' (' + x.fy + ')', orders: x.orders, taxable: x.taxable, cgst: x.cgst, sgst: x.sgst, igst: x.igst, gst: x.gst, pay: x.pay, paid: x.paid, _m: x.month }; });
     var yrs = group('fy'), qs = group('q');
     /* ONE table at a time (Years, Quarters or Months), newest first, with a limit and "Show more" for older ones: three tables on top of each other grew past 1,800px after five years of data
        (the growth audit, 3 Nov 2026). The CSV of the card holds every month whichever table is showing. */
     var yTable = M.table(cols('Financial year'), { rows: yrs, sortKey: 'label', sortDir: -1, empty: 'None.', detail: false, noTools: yrs.length <= 8, name: 'tax-by-financial-year', limit: 5 });
     var qTable = M.table(cols('Quarter'), { rows: qs, sortKey: 'label', sortDir: -1, empty: 'None.', detail: false, noTools: qs.length <= 8, name: 'tax-by-quarter', limit: 8 });
-    var mTable = M.table(cols('Month'), { rows: mrows, sortKey: 'label', sortDir: -1, empty: 'None.', detail: false, noTools: mrows.length <= 8, name: 'tax-by-month', limit: 12 });
+    var mTable = M.table(cols('Month').concat([M.refsCol('order', 'which', 'Which orders', { title: function (r) { return r.label + ': the orders'; } })]), { rows: mrows, sortKey: 'label', sortDir: -1, empty: 'None.', detail: false, noTools: mrows.length <= 8, name: 'tax-by-month', limit: 12 });
     var panes = [['Months', mTable, mrows.length], ['Quarters', qTable, qs.length], ['Years', yTable, yrs.length]], host = M.h('div', { class: 'tax-panes' }), btns = [];
     var show = function (k) { panes.forEach(function (x, i) { x[1].hidden = i !== k; btns[i].setAttribute('aria-pressed', i === k ? 'true' : 'false'); }); };
     var seg = M.h('div', { class: 'seg', role: 'group', 'aria-label': 'Show the figures by' }, panes.map(function (x, i) { var b = M.h('button', { type: 'button', text: x[0] + ' (' + M.num(x[2]) + ')', onclick: function () { show(i); } }); btns.push(b); return b; }));
@@ -12991,10 +13012,11 @@ M.annot = (function () {
     if (!list.length && pl == null) return null;
     var rows = list.map(function (b) {
       var covers = b.from && b.to ? M.billSpan(b.from, b.to) : b.to ? 'ended ' + M.fd(b.to) : 'not known';
-      return { date: b.date, covers: covers, plan: b.plan, charges: b.fee, other: b.other, total: b.total, status: 'Counted', note: b.note };
+      return { number: b.number, date: b.date, covers: covers, plan: b.plan, charges: b.fee, other: b.other, total: b.total, status: 'Counted', note: b.note };
     });
     var na = function (v) { return v == null ? 'not read' : M.inr(v); };
-    var cols = [{ k: 'date', label: 'Bill date', fmt: M.fd }, { k: 'total', label: 'Bill total', num: true, fmt: M.inr }, { k: 'covers', label: 'Covers', wrap: true }, { k: 'plan', label: 'Plan', num: true, fmt: na },
+    /* T1036: the bill is named by the number printed on Shopify's own bill, so it can be found on the billing page */
+    var cols = [{ k: 'date', label: 'Bill date', fmt: M.fd }, M.refCol('bill', 'number', 'Bill'), { k: 'total', label: 'Bill total', num: true, fmt: M.inr }, { k: 'covers', label: 'Covers', wrap: true }, { k: 'plan', label: 'Plan', num: true, fmt: na },
       { k: 'charges', label: 'Shopify\'s charges', num: true, fmt: na }, 
       { k: 'other', label: 'Other (a credit shows as minus)', num: true, hidden: true, fmt: function (v) { return v == null ? '' : M.inr(v); } }, { k: 'note', label: 'Note', wrap: true, hidden: true }];
     var kids = [M.table(cols, { rows: rows, sortKey: 'date', sortDir: -1, detail: false, noTools: false, name: 'shopify-bills', empty: 'No bill is on record yet.' })];
@@ -13855,12 +13877,14 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     if (!c.C.length) return R.card(title, why, [R.nodata(c, 'No payment went through in these dates, so there is no fee to show.')]);
     var rows = R.by(c.C, R.way).map(function (g) {
       var amt = R.sum(g.rows, 'amount'), fee = R.sum(g.rows, 'fee'), gst = R.sum(g.rows, 'gst_on_fee'), n = R.cntOf(g.rows);
-      return { way: g.key, n: n, amount: amt, fee: fee, pct: amt ? fee / amt * 100 : null, gst: gst, pre: amt ? (fee - gst) / amt * 100 : null, avg: n ? fee / n : null };
+      var which = g.rows.map(M.refOf);      /* T1036: the orders behind the row (a payment when there is no order) */
+      return { way: g.key, n: n, amount: amt, fee: fee, pct: amt ? fee / amt * 100 : null, gst: gst, pre: amt ? (fee - gst) / amt * 100 : null, avg: n ? fee / n : null, which: M.refList('order', which), which_list: which };
     }).sort(function (a, b) { return b.amount - a.amount; });
     var pctf = function (v) { return v == null ? 'not read' : M.pct(v, 2); };
     var kids = [M.table([{ k: 'way', label: 'Way of paying' }, { k: 'n', label: 'Payments', num: true }, { k: 'amount', label: 'Paid by buyers', num: true, fmt: R.inr },
       { k: 'fee', label: 'Razorpay kept, GST included', num: true, fmt: R.inr }, { k: 'pct', label: 'Share of the money', num: true, fmt: pctf, bar: { color: COL.mustard } },
-      { k: 'gst', label: 'GST inside the fee', num: true, fmt: R.inr }, { k: 'pre', label: 'Share before GST', num: true, fmt: pctf }, { k: 'avg', label: 'Average fee for a payment', num: true, fmt: R.inr }],
+      { k: 'gst', label: 'GST inside the fee', num: true, fmt: R.inr }, { k: 'pre', label: 'Share before GST', num: true, fmt: pctf }, { k: 'avg', label: 'Average fee for a payment', num: true, fmt: R.inr },
+      M.refsCol('order', 'which', 'Which payments', { title: function (r) { return r.way + ': the payments'; } })],
       { rows: rows, sortKey: 'amount', empty: 'No payment went through.', name: 'Razorpay fee by way of paying' })];
     var sp = R.span(c.r), G = R.spread(c.C, sp.B), all = [], pre = [];
     G.forEach(function (g) { var a = R.sum(g, 'amount'), f = R.sum(g, 'fee'), t = R.sum(g, 'gst_on_fee'); all.push(a ? f / a * 100 : null); pre.push(a ? (f - t) / a * 100 : null); });
@@ -13902,7 +13926,8 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   /* ================================================================ 6. days to the bank */
   R.cards.push(function days(c) {
     var title = 'Days from payment to the bank', r = c.r, why = 'The days between a buyer paying and the money reaching the bank. Razorpay pays out on working days, so a payment on a Friday or before a holiday takes longer.';
-    var rec = c.REC, kids = [], d = R.daysToBank(rec);
+    var rec = c.REC, kids = [], d = R.daysToBank(rec), byKey = {};
+    c.ALL.forEach(function (x) { byKey[x.key] = x; });      /* T1036: a payout line names the shop order of its payment */
     var wait = c.ALL.filter(function (x) { return R.isCap(x) && !x.settled_on; }).sort(R.byDate);
     if (!rec.length) {
       kids.push(M.empty('No payout reached the bank in these dates.' + (M.has(R.T.rec) ? ' Payouts exist from ' + M.fd(M.cover(R.T.rec).first) + ' to ' + M.fd(M.cover(R.T.rec).last) + '.' : ' Payouts are read from Razorpay each night.')));
@@ -13929,12 +13954,12 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       }, { rowHead: 'Week', legendText: 'Rupees paid out' })]);
       kids.push(calBox);
       setTimeout(function () { calBox.scrollTop = calBox.scrollHeight; }, 0);
-      kids.push(M.tableView([{ k: 'date', label: 'Paid out on', fmt: M.fd }, { k: 'paid_date', label: 'Payment made on', fmt: M.fd }, { k: 'method', label: 'Way of paying' }, { k: 'amount', label: 'Paid by buyer', num: true, fmt: R.inr }, { k: 'fee', label: 'Razorpay kept', num: true, fmt: R.inr }, { k: 'net', label: 'Reached the bank', num: true, fmt: R.inr }, { k: 'days_to_settle', label: 'Days to the bank', num: true, fmt: function (v) { return R.has(v) ? M.num(+v, 1) : 'not read'; } }, { k: 'utr_tail', label: 'Bank ref (last 4)' }],
-        rec.slice().sort(R.byDate), 'Show every payment that was paid out', { name: 'Razorpay payouts by payment' }));
+      kids.push(M.tableView([{ k: 'date', label: 'Paid out on', fmt: M.fd }, { k: 'paid_date', label: 'Payment made on', fmt: M.fd }, { k: 'method', label: 'Way of paying' }, { k: 'amount', label: 'Paid by buyer', num: true, fmt: R.inr }, { k: 'fee', label: 'Razorpay kept', num: true, fmt: R.inr }, { k: 'net', label: 'Reached the bank', num: true, fmt: R.inr }, { k: 'days_to_settle', label: 'Days to the bank', num: true, fmt: function (v) { return R.has(v) ? M.num(+v, 1) : 'not read'; } }, M.refCol('payout', 'utr_tail', 'Bank reference'), M.refCol('order', 'shop_order', 'Shop order')],
+        rec.slice().sort(R.byDate).map(function (x) { var o = {}; Object.keys(x).forEach(function (k) { o[k] = x[k]; }); var pay = byKey[x.payment_key]; o.shop_order = pay ? pay.shop_order || '' : ''; return o; }), 'Show every payment that was paid out', { name: 'Razorpay payouts by payment' }));
     }
     kids.push(R.sub('Payments not paid out yet'));
     /* 7 Nov 2026 night: the payments not paid out yet are few by nature, but this table was drawn open at its full height. It sits in the same fixed-height box as the calendar. */
-    kids.push(wait.length ? M.table([{ k: 'date', label: 'Paid on', fmt: M.fd }, { k: 'hour', label: 'Hour (India)' }, { k: 'shop_order', label: 'Shop order' }, { k: 'amount', label: 'Paid by buyer', num: true, fmt: R.inr }, { k: 'net', label: 'Will reach the bank', num: true, fmt: R.inr }, { k: 'waiting', label: 'Days waiting', num: true }],
+    kids.push(wait.length ? M.table([{ k: 'date', label: 'Paid on', fmt: M.fd }, { k: 'hour', label: 'Hour (India)' }, M.refCol('order', 'shop_order', 'Shop order'), { k: 'amount', label: 'Paid by buyer', num: true, fmt: R.inr }, { k: 'net', label: 'Will reach the bank', num: true, fmt: R.inr }, { k: 'waiting', label: 'Days waiting', num: true }],
       { rows: wait.map(function (x) { var o = {}; Object.keys(x).forEach(function (k) { o[k] = x[k]; }); o.waiting = M.diff(String(x.date).slice(0, 10), c.today); return o; }), sortKey: 'date', limit: 5, name: 'Razorpay payments not paid out yet' })
       : R.small('Every payment made so far has been paid out.'));
     return R.card(title, why, kids);
@@ -14054,12 +14079,14 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     if (!c.P.length) return R.card(title, why, [R.nodata(c, 'No payment was tried in these dates.')]);
     var rows = ['From India', 'From outside India'].map(function (lab) {
       var P = c.P.filter(function (x) { return (x.international === 'yes' ? 'From outside India' : 'From India') === lab; }), C = P.filter(R.isCap), amt = R.sum(C, 'amount'), fee = R.sum(C, 'fee'), t = R.cntOf(P), k = R.cntOf(C);
-      return { who: lab, tries: t, ok: k, rate: t ? k / t * 100 : null, amount: amt, fee: fee, share: amt ? fee / amt * 100 : null, avgfee: k ? fee / k : null, avgpay: k ? amt / k : null };
+      var which = P.map(M.refOf);      /* T1036: the payments behind the count: the shop order when there is one, else the payment (a refused try has no order) */
+      return { who: lab, tries: t, ok: k, rate: t ? k / t * 100 : null, amount: amt, fee: fee, share: amt ? fee / amt * 100 : null, avgfee: k ? fee / k : null, avgpay: k ? amt / k : null, which: M.refList('order', which), which_list: which };
     });
     var abroadN = rows[1].ok, kids = [];
     kids.push(M.table([{ k: 'who', label: 'Where the card or payment was from' }, { k: 'tries', label: 'Tries', num: true }, { k: 'ok', label: 'Went through', num: true }, { k: 'rate', label: 'Share that went through', num: true, fmt: function (v) { return v == null ? 'no tries' : M.pct(v, 0); } },
       { k: 'amount', label: 'Paid by buyers', num: true, fmt: R.inr }, { k: 'avgpay', label: 'Average payment', num: true, fmt: function (v) { return v == null ? 'none' : R.inr(v); } }, { k: 'fee', label: 'Razorpay kept', num: true, fmt: R.inr },
-      { k: 'share', label: 'Share of the money', num: true, fmt: function (v) { return v == null ? 'none' : M.pct(v, 2); }, bar: { color: COL.mustard } }, { k: 'avgfee', label: 'Average fee for a payment', num: true, fmt: function (v) { return v == null ? 'none' : R.inr(v); } }],
+      { k: 'share', label: 'Share of the money', num: true, fmt: function (v) { return v == null ? 'none' : M.pct(v, 2); }, bar: { color: COL.mustard } }, { k: 'avgfee', label: 'Average fee for a payment', num: true, fmt: function (v) { return v == null ? 'none' : R.inr(v); } },
+      M.refsCol('order', 'which', 'Which payments', { title: function (r) { return r.who + ': the payments'; } })],
       { rows: rows, sortKey: 'amount', name: 'Razorpay India and abroad' }));
     if (!abroadN) kids.push(R.small('No payment from outside India went through in these dates, so the second line is empty. The first such payment appears here the night it is read.'));
     else kids.push(M.h('div', { style: 'margin-top:16px' }, [M.donut([{ label: 'From India', value: rows[0].amount }, { label: 'From outside India', value: rows[1].amount }], { name: 'Money from India and abroad', total: 'paid', unit: 'money', fmt: R.inr0 })]));      /* 7 Nov 2026: the audit found the chart touching the table (0 px); 16 px of room */
@@ -14142,11 +14169,27 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     kids.push(R.sub('Money, week by week'));
     kids.push(R.tc(sp.B, sp.mode, 'Razorpay and the shop', [{ name: 'Collected by Razorpay', values: a, color: COL.maroon, fmt: R.inr }, { name: 'Shop orders paid through Razorpay', values: b, color: COL.teal, fmt: R.inr }], { yfmt: R.yRs, h: 170 }));
     kids.push(R.sub('Every day with a payment or an order'));
+    /* T1036: name the orders behind each difference. Worked out only from what the tabs hold, and only for a kind of difference whose order is knowable:
+         cancelled in the shop        the payments of that day whose shop order is cancelled
+         payment with no order        captured payments of that day with no shop order (named by the payment)
+         order says paid, no payment  the orders of that day that no captured payment names (order_sources)
+         paid by hand                 the same orders: an order of that day with no Razorpay payment
+       When the tabs cannot say, the cell stays empty rather than guess. */
+    var allPay = M.has(R.T.pay) ? M.rows(R.T.pay) : [], srcRows = M.has('order_sources') ? M.rows('order_sources') : [], paidOrd = {};
+    allPay.forEach(function (x) { if (R.isCap(x) && x.shop_order) paidOrd[x.shop_order] = 1; });
+    var namesFor = function (x) {
+      var d = String(x.date).slice(0, 10), out = [];
+      allPay.filter(function (p) { return p.date === d && p.shop_status === 'cancelled' && R.num(x.cancelled_in_shop); }).forEach(function (p) { out.push({ kind: 'order', value: p.shop_order }); });
+      allPay.filter(function (p) { return p.date === d && R.isCap(p) && !p.shop_order && R.num(x.not_in_shop); }).forEach(function (p) { out.push(M.refOf(p)); });
+      if (R.num(x.no_payment) || R.num(x.manual_orders)) srcRows.filter(function (o) { return o.date === d && !paidOrd[o.order]; }).forEach(function (o) { out.push({ kind: 'order', value: o.order }); });
+      return out;
+    };
     kids.push(active.length ? M.table([{ k: 'date', label: 'Day', fmt: M.fd, render: R.day }, { k: 'rzp_payments', label: 'Razorpay payments', num: true }, { k: 'rzp_amount', label: 'Collected', num: true, fmt: R.inr }, { k: 'shop_orders', label: 'Shop orders', num: true }, { k: 'shop_amount', label: 'Paid, per the shop', num: true, fmt: R.inr },
       { k: 'difference', label: 'Difference', num: true, fmt: function (v) { var n = R.num(v); return (n > 0 ? '+' : '') + R.inr(n); } },
       { k: 'state', label: 'Result', sort: function (x) { return diffDays(x) ? 1 : 0; }, render: function (x) { return diffDays(x) ? R.mark('Differs', false) : R.mark('Agrees', true); } },
+      M.refsCol('order', 'which', 'Which orders', { title: function (r) { return M.fd(r.date) + ': the orders'; }, none: 'none' }),
       { k: 'why', label: 'What differs', render: function (x) { var t = parts.filter(function (p) { return R.num(x[p[1]]) && p[1] !== 'manual_orders' && p[1] !== 'before_live'; }).map(function (p) { return R.num(x[p[1]]) + ' ' + p[0].toLowerCase(); }); if (R.num(x.manual_orders)) t.push(R.num(x.manual_orders) + ' paid by hand'); if (R.num(x.before_live)) t.push(R.num(x.before_live) + ' before Razorpay was live'); return M.h('span', { text: t.join('; ') || 'Nothing' }); } }],
-      { rows: active.map(function (x) { var o = {}; Object.keys(x).forEach(function (k) { o[k] = x[k]; }); return o; }), sortKey: 'date', limit: 15, name: 'Razorpay against the shop' })
+      { rows: active.map(function (x) { var o = {}; Object.keys(x).forEach(function (k) { o[k] = x[k]; }); var w = diffDays(x) || R.num(x.manual_orders) ? namesFor(x) : []; o.which_list = w; o.which = M.refList('order', w); return o; }), sortKey: 'date', limit: 15, name: 'Razorpay against the shop' })
       : M.empty('No day in these dates had a payment or a shop order paid through Razorpay.'));
     return R.card(title, why, kids);
   });
@@ -14164,9 +14207,9 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var noDis = disAll.length ? 'None of the ' + M.num(disAll.length) + ' disputes read so far was opened in these dates.' : 'Razorpay lists no dispute, so there is none to show. A dispute appears here with its amount, reason and the day to answer by.';
     if (!rf.length && !dis.length) kids.push(R.small(noRf + ' ' + noDis));      /* one plain line, not a boxed empty state: the card carries its numbers and a page keeps to one boxed empty state */
     else {
-      kids.push(rf.length ? M.table([{ k: 'date', label: 'Paid on', fmt: M.fd }, { k: 'way', label: 'Way of paying' }, { k: 'amount', label: 'Paid', num: true, fmt: R.inr }, { k: 'refunded', label: 'Refunded', num: true, fmt: R.inr }, { k: 'shop_order', label: 'Shop order' }],
-        { rows: rf.map(function (x) { return { date: x.date, way: R.way(x), amount: x.amount, refunded: x.refunded, shop_order: x.shop_order }; }), sortKey: 'date', name: 'Razorpay refunds' }) : R.small(noRf));
-      kids.push(dis.length ? M.table([{ k: 'date', label: 'Opened on', fmt: M.fd }, { k: 'dispute_id', label: 'Dispute (last 8)' }, { k: 'amount', label: 'Amount', num: true, fmt: R.inr }, { k: 'reason', label: 'Reason' }, { k: 'status', label: 'Status' }, { k: 'phase', label: 'Stage' }, { k: 'respond_by', label: 'Answer by', fmt: M.fd }],
+      kids.push(rf.length ? M.table([{ k: 'date', label: 'Paid on', fmt: M.fd }, { k: 'way', label: 'Way of paying' }, { k: 'amount', label: 'Paid', num: true, fmt: R.inr }, { k: 'refunded', label: 'Refunded', num: true, fmt: R.inr }, M.refCol('order', 'shop_order', 'Shop order', { none: 'no order' }), M.refCol('payment', 'pay', 'Payment')],
+        { rows: rf.map(function (x) { return { date: x.date, way: R.way(x), amount: x.amount, refunded: x.refunded, shop_order: x.shop_order, pay: String(x.key || '').split('_').pop(), pay_full: x.key }; }), sortKey: 'date', name: 'Razorpay refunds' }) : R.small(noRf));
+      kids.push(dis.length ? M.table([{ k: 'date', label: 'Opened on', fmt: M.fd }, M.refCol('payment', 'dispute_id', 'Dispute'), { k: 'amount', label: 'Amount', num: true, fmt: R.inr }, { k: 'reason', label: 'Reason' }, { k: 'status', label: 'Status' }, { k: 'phase', label: 'Stage' }, { k: 'respond_by', label: 'Answer by', fmt: M.fd }],
         { rows: dis, sortKey: 'date', name: 'Razorpay disputes' }) : R.small(noDis));
     }
     return R.card(title, why, kids);
@@ -14190,9 +14233,9 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   R.cards.push(function every(c) {
     var title = 'Every payment, one line each', why = 'One line for each time a buyer tried to pay. Only the last 8 characters of a payment\'s id are kept, never a name, phone, e-mail, card number or UPI id.';
     if (!c.P.length) return R.card(title, why, [R.nodata(c, 'No payment was tried in these dates.')]);
-    var cols = [{ k: 'date', label: 'Date', fmt: M.fd, render: R.day }, { k: 'hour', label: 'Hour (India)', hidden: true }, { k: 'shop_order', label: 'Shop order' }, { k: 'way', label: 'Way of paying' }, { k: 'app', label: 'UPI app or card' }, { k: 'amount', label: 'Paid by buyer', num: true, fmt: R.inr }, { k: 'fee', label: 'Razorpay kept', num: true, fmt: R.inr },
-      { k: 'gst_on_fee', label: 'GST inside the fee', num: true, fmt: R.inr }, { k: 'net', label: 'Left after fees', num: true, fmt: R.inr }, { k: 'status', label: 'Result' }, { k: 'settled_on', label: 'Reached the bank', fmt: function (v) { return v ? M.fd(v) : 'not yet'; } }, { k: 'secs', label: 'Seconds to pay', num: true, hidden: true, fmt: function (v) { return R.has(v) ? M.num(+v) : ''; } }];
-    var rows = c.P.slice().sort(R.byDate).map(function (x) { var card = [x.card_network, x.card_type, x.issuer].filter(Boolean).join(' '); return { date: x.date, hour: x.hour, shop_order: x.shop_order || '', way: R.way(x), app: String(x.method).toLowerCase() === 'upi' ? (x.upi_app || '') : card, amount: x.amount, fee: x.fee, gst_on_fee: x.gst_on_fee, net: x.net, status: R.cap1(x.status), settled_on: x.settled_on, secs: x.avg_seconds_to_pay }; });
+    var cols = [{ k: 'date', label: 'Date', fmt: M.fd, render: R.day }, { k: 'hour', label: 'Hour (India)', hidden: true }, M.refCol('order', 'shop_order', 'Shop order', { none: 'no order' }), M.refCol('payment', 'pay', 'Payment'), { k: 'way', label: 'Way of paying' }, { k: 'app', label: 'UPI app or card' }, { k: 'amount', label: 'Paid by buyer', num: true, fmt: R.inr }, { k: 'fee', label: 'Razorpay kept', num: true, fmt: R.inr },
+      { k: 'gst_on_fee', label: 'GST inside the fee', num: true, fmt: R.inr }, { k: 'net', label: 'Left after fees', num: true, fmt: R.inr }, { k: 'status', label: 'Result' }, { k: 'why', label: 'Why it failed', wrap: true, hidden: true }, { k: 'settled_on', label: 'Reached the bank', fmt: function (v) { return v ? M.fd(v) : 'not yet'; } }, { k: 'secs', label: 'Seconds to pay', num: true, hidden: true, fmt: function (v) { return R.has(v) ? M.num(+v) : ''; } }];
+    var rows = c.P.slice().sort(R.byDate).map(function (x) { var card = [x.card_network, x.card_type, x.issuer].filter(Boolean).join(' '); return { date: x.date, hour: x.hour, shop_order: x.shop_order || '', pay: String(x.key || '').split('_').pop(), pay_full: x.key, why: x.status === 'failed' ? (x.failed_why || x.failed_code || '') : '', way: R.way(x), app: String(x.method).toLowerCase() === 'upi' ? (x.upi_app || '') : card, amount: x.amount, fee: x.fee, gst_on_fee: x.gst_on_fee, net: x.net, status: R.cap1(x.status), settled_on: x.settled_on, secs: x.avg_seconds_to_pay }; });
     return R.card(title, why, [M.table(cols, { rows: rows, sortKey: 'date', limit: 15, name: 'Razorpay payments' })]);
   });
 })();
@@ -15086,24 +15129,25 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     /* ============================================================ 9. by state and by zone */
     (function () {
       var Z = M.has('shiprocket_zones') ? M.stateRows('shiprocket_zones').filter(function (x) { return x.kind === 'zone'; }) : [];
-      var st = {}; P.forEach(function (x) { if (!x.state) return; var o = st[x.state] || (st[x.state] = { state: x.state, n: 0, cost: 0, dl: 0, days: 0, back: 0 }); o.n++; o.cost += money(x); if (x.status === 'returned') o.back++; if (x.status === 'delivered' && x.picked_up_at && x.delivered_at) { o.dl++; o.days += M.hoursBetween(x.picked_up_at, x.delivered_at) / 24; } });
-      var S = Object.keys(st).map(function (k) { var o = st[k]; return { state: o.state, n: o.n, avg: o.cost / o.n, cost: o.cost, days: o.dl ? o.days / o.dl : null, back: o.back }; }).sort(function (a, b2) { return b2.n - a.n; });
+      var st = {}; P.forEach(function (x) { if (!x.state) return; var o = st[x.state] || (st[x.state] = { state: x.state, n: 0, cost: 0, dl: 0, days: 0, back: 0, which: [] }); o.which.push({ kind: 'order', value: x.order }); o.n++; o.cost += money(x); if (x.status === 'returned') o.back++; if (x.status === 'delivered' && x.picked_up_at && x.delivered_at) { o.dl++; o.days += M.hoursBetween(x.picked_up_at, x.delivered_at) / 24; } });
+      var S = Object.keys(st).map(function (k) { var o = st[k]; return { state: o.state, n: o.n, avg: o.cost / o.n, cost: o.cost, days: o.dl ? o.days / o.dl : null, back: o.back, which: M.refList('order', o.which), which_list: o.which }; }).sort(function (a, b2) { return b2.n - a.n; });
       if (!S.length) return none(cards, 'Cost and days by state and by zone', 'A zone is Shiprocket\'s measure of distance: A is the same city, B the same state, C metro to metro, D the rest of India, E the north east and hill states.');
       var kids = [];
       if (Z.length) kids.push(M.h('div', null, [M.h('h4', { class: 'sub-h ship-sub', text: 'By zone (how far the parcel travelled)' }), M.bars(Z.map(function (z) { return { label: z.label, value: +z.avg_total || 0, text: inr2(z.avg_total) + ' a parcel', sub: M.num(z.parcels) + ' parcels' + (z.avg_days !== '' && z.avg_days != null ? ', ' + d1(z.avg_days) + ' days' : ''), color: COL.teal }; }).sort(function (a, b2) { return a.label < b2.label ? -1 : 1; }), {})]));
-      kids.push(M.table([{ k: 'state', label: 'State' }, { k: 'n', label: 'Parcels', num: true, fmt: M.num, bar: { color: COL.teal } }, { k: 'avg', label: 'Average cost', num: true, fmt: inr2 }, { k: 'days', label: 'Courier days', num: true, fmt: d1 }, { k: 'back', label: 'Came back', num: true, fmt: M.num }], { rows: S, sortKey: 'n', limit: 12, empty: 'No parcels.' }));
+      kids.push(M.table([{ k: 'state', label: 'State' }, { k: 'n', label: 'Parcels', num: true, fmt: M.num, bar: { color: COL.teal } }, { k: 'avg', label: 'Average cost', num: true, fmt: inr2 }, { k: 'days', label: 'Courier days', num: true, fmt: d1 }, { k: 'back', label: 'Came back', num: true, fmt: M.num }, M.refsCol('order', 'which', 'Which orders', { title: function (r) { return r.state + ': the orders'; } })], { rows: S, sortKey: 'n', limit: 12, empty: 'No parcels.' }));
       cards.push(card('Cost and days by state and by zone', 'A zone is Shiprocket\'s measure of distance: A is the same city, B the same state, C metro to metro, D the rest of India, E the north east and hill states. The further the zone, the more the freight.', kids));
     })();
 
     /* ============================================================ 10. courier comparison */
     (function () {
-      var by = {}; P.forEach(function (x) { var o = by[x.courier] || (by[x.courier] = { courier: x.courier, n: 0, cost: 0, extra: 0, dl: 0, days: 0, back: 0, tries: 0 }); o.n++; o.cost += money(x); o.extra += +x.other_charges || 0; if (x.status === 'returned') o.back++; if (x.status === 'delivered' && x.picked_up_at && x.delivered_at) { o.dl++; o.days += M.hoursBetween(x.picked_up_at, x.delivered_at) / 24; } });
+      var by = {}; P.forEach(function (x) { var o = by[x.courier] || (by[x.courier] = { courier: x.courier, n: 0, cost: 0, extra: 0, dl: 0, days: 0, back: 0, tries: 0, which: [], extraWhich: [] }); o.n++; o.which.push({ kind: 'order', value: x.order }); o.cost += money(x); o.extra += +x.other_charges || 0; if (+x.other_charges > 0) o.extraWhich.push({ kind: 'order', value: x.order }); if (x.status === 'returned') o.back++; if (x.status === 'delivered' && x.picked_up_at && x.delivered_at) { o.dl++; o.days += M.hoursBetween(x.picked_up_at, x.delivered_at) / 24; } });
       var att = M.has('shiprocket_attempts') ? M.rows('shiprocket_attempts') : [];
       att.forEach(function (a) { if (by[a.courier]) by[a.courier].tries++; });
-      var C = Object.keys(by).map(function (k) { var o = by[k]; return { courier: o.courier, n: o.n, avg: o.cost / o.n, extra: o.extra, days: o.dl ? o.days / o.dl : null, tries: o.tries, back: o.back }; }).sort(function (a, b2) { return b2.n - a.n; });
+      var C = Object.keys(by).map(function (k) { var o = by[k]; return { courier: o.courier, n: o.n, avg: o.cost / o.n, extra: o.extra, days: o.dl ? o.days / o.dl : null, tries: o.tries, back: o.back, which: M.refList('order', o.which), which_list: o.which, extra_which: M.refList('order', o.extraWhich), extra_which_list: o.extraWhich }; }).sort(function (a, b2) { return b2.n - a.n; });
       if (C.length < 2) return none(cards, 'Couriers side by side', 'Cost, speed, extra weight and trouble for each courier in the dates picked.', C.length ? 'Only one courier carried parcels in these dates, so there is nothing to put side by side.' : 'No parcel was picked up between the dates chosen.' + SINCE());
       cards.push(card('Couriers side by side', 'Cost, speed, extra weight and trouble for each courier in the dates picked. A courier with under 5 parcels is too few to judge: its numbers move with one parcel.', [
         M.table([{ k: 'courier', label: 'Courier', wrap: true }, { k: 'n', label: 'Parcels', num: true, fmt: M.num, bar: { color: COL.teal } }, { k: 'avg', label: 'Average cost', num: true, fmt: inr2 }, { k: 'days', label: 'Courier days', num: true, fmt: d1 }, { k: 'extra', label: 'Extra weight paid', num: true, fmt: inr2 }, { k: 'tries', label: 'Failed tries or missed pickups', num: true, fmt: M.num }, { k: 'back', label: 'Came back', num: true, fmt: M.num },
+          M.refsCol('order', 'extra_which', 'Orders with extra weight', { none: 'none', title: function (r) { return r.courier + ': orders charged for extra weight'; } }), M.refsCol('order', 'which', 'Which orders', { title: function (r) { return r.courier + ': the orders'; } }),
           { k: 'read', label: 'Sample', render: function (x) { return x.n < 5 ? M.tag('few parcels', 'thin') : M.h('span', { text: '5 or more' }); }, sort: function (x) { return x.n; } }], { rows: C, sortKey: 'n', limit: 12, empty: 'No parcels.' })]));
     })();
 
