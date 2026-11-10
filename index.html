@@ -2299,64 +2299,130 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
 /* Shipping page in depth (T835 and T884, 6 Nov 2026), dashboard_72_shiprocket.js. A sub heading inside a card sits 12px from the chart under it (the layout audit asks for room between stacked blocks). */
 .ship-sub{margin:var(--sp4) 0 var(--sp3)!important}
 
-/* mazo dashboard bell (T1032, 10 Nov 2026). The panel is the same .popover as Filters (a floating card on a laptop, a bottom sheet at 900px and below, see dashboard_20_design.css). Only the button,
-   the badge and the list rows are new. Motion is opacity only and off for reduced motion. */
+/* mazo dashboard bell (T1032, 10 Nov 2026; panel redesigned the same day after the owner said he did not like it). The panel is the same .popover as Filters (a floating card on a laptop, a
+   bottom sheet at 900px and below, see dashboard_20_design.css). One row = one notification: a severity word with its shape on the left, the title, a muted reason, a muted time on the right,
+   and a dismiss X. Quiet dividers, an 8px grid, a header that stays put, a scroll shadow so the list never looks cut off. Motion is opacity only and off for reduced motion. */
 .tp-bell{position:relative;flex:0 0 auto}
 .bell-btn{position:relative;width:40px;min-width:40px;padding:0;justify-content:center}
 .bell-btn .ic{width:20px;height:20px;flex-basis:20px}
 .bell-btn.has-new .ic{color:var(--maroon)}
 .bell-badge{position:absolute;top:-9px;right:-9px;display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--maroon);color:#fff;font:600 var(--t12)/1 var(--sans);border:2px solid var(--paper);box-sizing:content-box;pointer-events:none}
 .bell-badge[hidden]{display:none}
-.bell-pop{width:min(420px,calc(100vw - 24px));padding:0;gap:0;overflow:hidden;display:flex;flex-direction:column}
+
+/* the card */
+.bell-pop{width:min(440px,calc(100vw - 24px));padding:0;gap:0;overflow:hidden;display:flex;flex-direction:column;max-height:min(78vh,640px)}
 .bell-pop[hidden]{display:none}
 .bell-pop:focus,.bell-pop:focus-visible{outline:none}
-.bell-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);padding:var(--sp4) var(--sp4) var(--sp1)}
-.bell-title{margin:0;font:600 var(--t16)/1.3 var(--sans);color:var(--ink)}
-.bell-markall[hidden],.bell-more[hidden]{display:none}
-.bell-asof{margin:0;padding:0 var(--sp4) var(--sp3);font-size:var(--t12);color:var(--ink2);border-bottom:1px solid var(--edge)}
-.bell-body{overflow-y:auto;flex:1 1 auto;min-height:0;max-height:min(66vh,520px);overscroll-behavior:contain}
-.bell-grp{margin:0;padding:var(--sp3) var(--sp4) var(--sp1);font:600 var(--t12)/1.2 var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--ink2)}
+.bell-head{flex:0 0 auto;padding:var(--sp4) var(--sp4) var(--sp3);background:#fff;border-bottom:1px solid var(--edge)}
+.bell-head-row{display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);min-height:32px}
+.bell-title{margin:0;font:600 var(--t20)/1.2 var(--serif,var(--sans));color:var(--maroon)}
+.bell-acts{display:inline-flex;align-items:center;gap:var(--sp4)}
+.bell-acts .link,.bell-foot .link{font-size:var(--t13);font-weight:600}
+.bell-markall[hidden],.bell-dismissall[hidden],.bell-more[hidden],.bell-goneb[hidden]{display:none}
+.bell-asof{margin:var(--sp1) 0 0;font-size:var(--t12);color:var(--ink2)}
+
+/* the list: scrolls inside the card; a soft shadow at the top and bottom shows there is more */
+.bell-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 0 var(--sp2);
+  background:linear-gradient(#fff 30%,rgba(255,255,255,0)) top/100% 24px no-repeat local,linear-gradient(rgba(255,255,255,0),#fff 70%) bottom/100% 24px no-repeat local,
+             linear-gradient(rgba(60,40,20,.10),rgba(60,40,20,0)) top/100% 8px no-repeat scroll,linear-gradient(rgba(60,40,20,0),rgba(60,40,20,.10)) bottom/100% 8px no-repeat scroll,#fff}
+.bell-grp{margin:0;padding:var(--sp4) var(--sp4) var(--sp2);font:600 var(--t12)/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
 .bell-ul{list-style:none;margin:0;padding:0}
-.bell-ul>li{margin:0;padding:0;border-top:1px solid var(--edge)}
-.bell-ul>li.bell-day{border-top:0;padding:var(--sp3) var(--sp4) var(--sp1);font-size:var(--t12);font-weight:600;color:var(--ink2)}
-.bell-sec:first-child .bell-ul>li:first-child{border-top:0}
-.bell-item{display:flex;flex-direction:column;gap:var(--sp1);padding:var(--sp3) var(--sp4);color:var(--ink);text-decoration:none;min-height:44px}
-.bell-item:hover{background:var(--wash)}
-.bell-item:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
-.bell-item:focus:not(:focus-visible){outline:none}
-.bell-top{display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);font-size:var(--t12);color:var(--ink2)}
-.bell-when{white-space:nowrap}
-.bell-t{display:block;font-size:var(--t14);line-height:1.4;font-weight:500;color:var(--ink)}
-.bell-item.unread .bell-t{font-weight:700}
-.bell-dot{display:inline-block;width:8px;height:8px;margin:0 var(--sp2) 1px 0;border-radius:50%;background:var(--maroon);vertical-align:middle}
-.bell-why{display:block;font-size:var(--t13);line-height:1.45;color:var(--ink2)}
-.bell-open{display:block;font-size:var(--t12);font-weight:600;color:var(--maroon)}
-.bell-empty{margin:0;padding:var(--sp5) var(--sp4);font-size:var(--t14);color:var(--ink2);text-align:center}
-.bell-empty strong{display:block;margin-bottom:var(--sp1);font-size:var(--t16);color:var(--ink)}
-.bell-more{display:block;margin:0;padding:var(--sp3) var(--sp4);width:100%;text-align:left;border-top:1px solid var(--edge);min-height:44px}
-.bell-pop .pop-done{margin:var(--sp3) var(--sp4) var(--sp4);width:auto}
+.bell-ul>li.bell-day{padding:var(--sp3) var(--sp4) var(--sp1);font-size:var(--t12);font-weight:600;color:var(--ink2)}
+
+/* one notification */
+.bell-row{position:relative;display:flex;align-items:flex-start;gap:var(--sp1);margin:0;padding:0 var(--sp2) 0 0}
+.bell-row+.bell-row{border-top:1px solid var(--edge)}
+.bell-row:hover,.bell-row:focus-within{background:var(--wash)}
+.bell-open-link{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"sev when" "main main";column-gap:var(--sp3);row-gap:var(--sp1);padding:var(--sp3) 0 var(--sp3) var(--sp5);color:var(--ink);text-decoration:none}
+.bell-open-link:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
+.bell-open-link:focus:not(:focus-visible){outline:none}
+.bell-sev{grid-area:sev;justify-self:start}
+.bell-sev .badge{font-size:var(--t12)}
+.bell-when{grid-area:when;justify-self:end;align-self:center;font-size:var(--t12);color:var(--ink2);white-space:nowrap}
+.bell-main{grid-area:main;display:flex;flex-direction:column;gap:2px;min-width:0}
+.bell-t{display:block;font-size:var(--t14);line-height:1.4;font-weight:500;color:var(--ink);overflow-wrap:anywhere}
+.bell-row.unread .bell-t{font-weight:700}
+.bell-why{display:block;font-size:var(--t13);line-height:1.45;color:var(--ink2);overflow-wrap:anywhere}
+.bell-go{display:block;margin-top:2px;font-size:var(--t12);font-weight:600;color:var(--maroon)}
+.bell-row:hover .bell-go,.bell-row:focus-within .bell-go{text-decoration:underline;text-underline-offset:3px}
+.bell-dot{position:absolute;left:var(--sp3);top:21px;width:8px;height:8px;border-radius:50%;background:var(--maroon)}
+.bell-row.gone .bell-t,.bell-row.gone .bell-why{color:var(--ink2);font-weight:500}
+
+/* dismiss X and Restore */
+.bell-act{all:unset;box-sizing:border-box;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;margin:var(--sp2) var(--sp1) 0 0;min-width:32px;height:32px;border-radius:50%;color:var(--ink2);cursor:pointer}
+.bell-x-ic{width:14px;height:14px}
+.bell-act:hover{background:#fff;color:var(--maroon)}
+.bell-act:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+.bell-restore{border-radius:999px;padding:0 var(--sp3);font-size:var(--t13);font-weight:600;color:var(--maroon)}
+.bell-restore:hover{background:var(--wash)}
+
+/* empty, undo line, foot */
+.bell-empty{margin:0;padding:var(--sp6) var(--sp5);font-size:var(--t14);line-height:1.5;color:var(--ink2);text-align:center}
+.bell-empty strong{display:block;margin-bottom:var(--sp1);font:600 var(--t20)/1.2 var(--serif,var(--sans));color:var(--maroon)}
+.bell-undo{flex:0 0 auto;margin:0;display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);padding:var(--sp2) var(--sp4);background:var(--maroon);color:#fff;font-size:var(--t13)}
+.bell-undo[hidden]{display:none}
+.bell-undo .link{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:3px;min-height:32px;padding:0}
+.bell-undo-t{padding:var(--sp1) 0}
+.bell-foot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);padding:0 var(--sp4);border-top:1px solid var(--edge);background:#fff}
+.bell-foot:not(:has(.link:not([hidden]))){display:none}
+.bell-foot .link{padding:var(--sp2) 0;min-height:44px}
+.bell-pop .pop-done{flex:0 0 auto;margin:var(--sp2) var(--sp4) var(--sp4);width:auto}
 .bell-pop:not([hidden]){animation:bell-in .14s ease-out}
 @keyframes bell-in{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.bell-pop:not([hidden]){animation:none}}
+
 /* 10 Nov 2026: the toolbar blurs what is behind it (dashboard_38_soft.css). A blur makes the toolbar the anchor of every position:fixed child, so on a phone the Filters sheet and this one were
-   placed against the toolbar (a sheet 210px above the top of the screen) instead of against the screen. The toolbar is 92% white, so without the blur it looks the same. */
+   placed against the toolbar instead of against the screen. The toolbar is 92% white, so without the blur it looks the same. */
 @media (max-width:900px){
   #controls{-webkit-backdrop-filter:none;backdrop-filter:none}
-  .bell-pop{width:auto;max-height:min(82vh,640px)}
-  .bell-body{max-height:none;flex:1 1 auto}
-  .bell-head{padding-top:var(--sp5)}
+  .bell-pop{width:auto;max-height:min(84vh,680px);position:fixed}
+  .bell-head{position:relative;padding-top:var(--sp5)}
   .bell-head::before{content:"";position:absolute;left:50%;top:8px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--edge2)}
-  .bell-pop{position:fixed}
+  .bell-pop .pop-done{margin-top:var(--sp3)}
 }
-/* where the bell sits. Wide and tablet: right after the search box, at the right end of its row (the row wraps the same way it did before the bell, and the bell shares the search box's row).
-   Phone (640px and below): the toolbar is ordered by number, the bell comes last in the first row, after the page list, the dates and Filters (the search and Compare are on the row below). */
+/* where the bell sits. Wide and tablet: right after the search box, at the right end of its row. Phone (640px and below): the bell comes last in the first row. */
 @media (max-width:640px){.tp-bell{order:3}.tp-fil{margin-right:0}}
 @media (pointer:coarse){
   .bell-btn{width:44px;min-width:44px}
-  .bell-markall,.bell-more{min-height:44px;display:inline-flex;align-items:center}
+  .bell-act{min-width:44px;height:44px;margin:0}
+  .bell-acts .link,.bell-foot .link{min-height:44px;display:inline-flex;align-items:center}
+  .bell-undo .link{min-height:44px;padding:0 var(--sp2)}
+  .bell-open-link{padding-top:var(--sp3);padding-bottom:var(--sp3)}
+  .bell-dot{top:22px}
 }
-@media (forced-colors:active){.bell-badge{border:1px solid CanvasText}.bell-dot{background:CanvasText}}
+@media (forced-colors:active){.bell-badge{border:1px solid CanvasText}.bell-dot{background:CanvasText}.bell-undo{border:1px solid CanvasText}}
 @media print{.tp-bell{display:none!important}}
+
+/* mazo dashboard page frame (T1035, 10 Nov 2026). Owner: "why is there so much space on the right side. left and right padding is very off please fix".
+   Cause: the toolbar ran to the right edge of the window while the content (main) stopped at a fixed 1240px (1320px from 1500px) and was never centred, so on a 1920 screen 384px of empty
+   space sat on the right and none on the left. Now the toolbar, the page switcher, the content and the footer share ONE column: the same left and right edge, equal on both sides, and the column
+   grows to --page-max before it stops. Below 1024px the page keeps the tablet and phone padding it already had (set in dashboard.css and dashboard_20_design.css). */
+:root{--page-max:1680px}
+@media (min-width:1024px){
+  #controls,.subnav,main,#foot{max-width:none;padding-left:max(var(--sp6),calc((100% - var(--page-max)) / 2));padding-right:max(var(--sp6),calc((100% - var(--page-max)) / 2))}
+}
+@media print{main,#foot{padding-left:0;padding-right:0}}
+
+/* References (T1036): one look for every order number, payment, payout, parcel, bill and post in a table. Quiet text, a thin dotted underline like the dashboard's other click-through values,
+   tabular digits so numbers line up, a short "Copied" confirmation, and the usual rules: focus ring for the keyboard only, 44px tap on a touch screen. */
+.ref { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; max-width: 100%; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: .01em;
+  white-space: nowrap; border-bottom: 1px dotted #8f8579; border-radius: 2px; line-height: 1.35; }
+a.ref { text-decoration: none; }
+.ref:hover { color: var(--maroon); border-bottom-color: var(--maroon); border-bottom-style: solid; }
+.ref:focus-visible { outline: 2px solid var(--maroon); outline-offset: 2px; }
+.ref.copied { color: var(--green-t, #2f6b3a); border-bottom-style: solid; }
+.ref.copied::after { content: "Copied"; font-size: 11px; letter-spacing: .02em; opacity: .9; }
+.ref.nocopy::after { content: "Select to copy"; font-size: 11px; color: var(--terra-t, #9a3b22); }
+.ref-order { font-weight: 600; }
+.ref-more { border-bottom: 0; color: var(--ink2); font-size: 12px; padding: 0 2px; text-decoration: underline; text-underline-offset: 2px; }
+.ref-more:hover { color: var(--maroon); }
+.refs { display: inline-flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+td .refs { max-width: 260px; }
+@media (pointer: coarse) {
+  .ref { min-height: 44px; padding: 0 2px; }
+  .refs { gap: 0 10px; }
+}
+@media (prefers-reduced-motion: no-preference) { .ref { transition: color .15s ease, border-color .15s ease; } }
 
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
@@ -15229,8 +15295,8 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   };
 
   /* ------------------------------------------------------------ what the owner has seen and read (this browser only). Storage can be blocked: then it is kept in memory for this visit. */
-  var mem = { seenAt: {}, read: {} };
-  var load = function () { try { var s = JSON.parse(localStorage.getItem(STORE) || 'null'); if (s && typeof s === 'object') return { seenAt: s.seenAt || {}, read: s.read || {} }; } catch (e) { /* blocked */ } return mem; };
+  var mem = { seenAt: {}, read: {}, dismissed: {} };
+  var load = function () { try { var s = JSON.parse(localStorage.getItem(STORE) || 'null'); if (s && typeof s === 'object') return { seenAt: s.seenAt || {}, read: s.read || {}, dismissed: s.dismissed || {} }; } catch (e) { /* blocked */ } return mem; };
   var save = function (st) { mem = st; try { localStorage.setItem(STORE, JSON.stringify(st)); } catch (e) { /* kept in memory */ } };
   M.bellState = { load: load, save: save };
   /* the weight of an item: if it gets worse (more tries, a higher alert) it counts as new again. The key of what was seen is id + level. */
@@ -15249,10 +15315,16 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var items = M.bellShape(M.bellRules(today, function (n) { return M.has(n) ? M.rows(n) : []; }), today);
     return { today: today, items: items };
   };
+  /* DISMISSED (10 Nov 2026, owner: "there should be an option to dismiss notifications"). The key is id + level, the same as read and seen. So a dismissed item stays gone while it is the same
+     thing, and comes back by itself when it gets worse (more tries, a higher alert) or changes (a new id). A dismissed item is never deleted: "Show dismissed" lists it with Restore. */
+  M.bellDismissed = function (o, st) { return !!(st.dismissed && st.dismissed[level(o)]); };
   M.bellCounts = function (items, st) {
-    var unseen = 0, unread = 0;
-    items.forEach(function (o) { if (!st.seenAt[level(o)]) unseen++; if (!st.read[level(o)]) unread++; });
-    return { unseen: unseen, unread: unread };
+    var unseen = 0, unread = 0, live = 0, gone = 0;
+    items.forEach(function (o) {
+      if (M.bellDismissed(o, st)) { gone++; return; }
+      live++; if (!st.seenAt[level(o)]) unseen++; if (!st.read[level(o)]) unread++;
+    });
+    return { unseen: unseen, unread: unread, live: live, dismissed: gone };
   };
   M.bellLevel = level;
 })();
@@ -15261,6 +15333,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
    Behaviour, each with its reason, in docs/guides/dashboard-notifications.md:
    - the badge counts items NEW since the panel was last opened (capped 9+, nothing at 0); opening the panel clears it; an item stays bold with a dot until it is clicked or "Mark all read"
    - the panel is the same popover as Filters (one open at a time, Escape and an outside click close it, focus returns to the bell); on a phone it is the same bottom sheet with a Done button
+   - DISMISS (10 Nov 2026): an X on every row, "Dismiss all" in the header, an Undo for 6 seconds, and "Show dismissed" at the foot with Restore. A dismissed item stays gone until it gets worse or changes.
    - "Needs attention" first (still true now), then "Recent" (last 7 days, grouped Today / Yesterday / Earlier); 8 shown, "Show more" up to 30
    - every item has a severity WORD and shape (never colour alone), a plain title, one line of reason, when, and opens the right page and card
    - nothing opens by itself, no sound, no pop up. It is computed in the browser after each draw (never during one, so the hosted site's month loader is not disturbed). */
@@ -15284,10 +15357,10 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     document.body.appendChild(svg);
   };
 
-  var states = function () { var st = M.bellState.load(); return { seenAt: st.seenAt || {}, read: st.read || {} }; };
+  var states = function () { var st = M.bellState.load(); return { seenAt: st.seenAt || {}, read: st.read || {}, dismissed: st.dismissed || {} }; };
   var prune = function (st, items) {
     var keep = {}; items.forEach(function (o) { keep[M.bellLevel(o)] = 1; });
-    ['seenAt', 'read'].forEach(function (k) { Object.keys(st[k]).forEach(function (id) { if (!keep[id]) delete st[k][id]; }); });
+    ['seenAt', 'read', 'dismissed'].forEach(function (k) { Object.keys(st[k]).forEach(function (id) { if (!keep[id]) delete st[k][id]; }); });
   };
 
   /* ---------------------------------------------------------------- the button */
@@ -15299,15 +15372,21 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   };
 
   /* ---------------------------------------------------------------- the panel */
-  var item = function (o, st) {
-    var unread = !st.read[M.bellLevel(o)], pg = M.PAGES[o.page], rd = M.go ? true : false;
-    var a = M.h('a', { class: 'bell-item' + (unread ? ' unread' : ''), href: '#/' + o.page, 'data-bell': o.id }, [
-      M.h('span', { class: 'bell-top' }, [M.badge(SEVWORD[o.sev], SEVKIND[o.sev]), M.h('span', { class: 'bell-when', text: whenOf(o, cur.today) })]),
-      M.h('span', { class: 'bell-t' }, [unread ? M.h('i', { class: 'bell-dot', 'aria-hidden': 'true' }) : null, unread ? M.h('span', { class: 'sr-only', text: 'Unread. ' }) : null, o.title]),
-      M.h('span', { class: 'bell-why', text: o.why }),
-      M.h('span', { class: 'bell-open', 'aria-hidden': 'true', text: 'Open ' + (pg ? pg.nav : o.page) })
+  var xIcon = function () { return M.s('svg', { class: 'bell-x-ic', viewBox: '0 0 16 16', 'aria-hidden': 'true' }, [M.s('path', { d: 'M4 4l8 8M12 4l-8 8', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.6', 'stroke-linecap': 'round' })]); };
+  var lastUndo = null, undoTimer = null, showGone = false;
+
+  var item = function (o, st, gone) {
+    var unread = !gone && !st.read[M.bellLevel(o)], pg = M.PAGES[o.page], rd = M.go ? true : false;
+    var open = M.h('a', { class: 'bell-open-link', href: '#/' + o.page, 'data-bell': o.id, 'aria-label': (unread ? 'Unread. ' : '') + o.title + '. ' + SEVWORD[o.sev] + '. ' + whenOf(o, cur.today) + '. Open ' + (pg ? pg.nav : o.page) }, [
+      M.h('span', { class: 'bell-sev sev-' + o.sev }, [M.badge(SEVWORD[o.sev], SEVKIND[o.sev])]),
+      M.h('span', { class: 'bell-main' }, [
+        M.h('span', { class: 'bell-t' }, [o.title]),
+        M.h('span', { class: 'bell-why', text: o.why }),
+        M.h('span', { class: 'bell-go', 'aria-hidden': 'true', text: 'Open ' + (pg ? pg.nav : o.page) })
+      ]),
+      M.h('span', { class: 'bell-when', text: whenOf(o, cur.today) })
     ]);
-    a.addEventListener('click', function (e) {
+    open.addEventListener('click', function (e) {
       e.preventDefault();
       var s2 = states(); s2.read[M.bellLevel(o)] = 1; s2.seenAt[M.bellLevel(o)] = 1; M.bellState.save(s2);
       closePanel(false);
@@ -15316,11 +15395,41 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       window.scrollTo(0, 0);
       var m = document.getElementById('main'); if (m) m.focus({ preventScroll: true });
     });
-    return M.h('li', null, a);
+    var ctl = gone
+      ? M.h('button', { type: 'button', class: 'bell-act bell-restore', 'data-restore': o.id, text: 'Restore', 'aria-label': 'Restore: ' + o.title })
+      : M.h('button', { type: 'button', class: 'bell-act bell-x', 'data-dismiss': o.id, title: 'Dismiss', 'aria-label': 'Dismiss: ' + o.title }, [xIcon()]);
+    var li = M.h('li', { class: 'bell-row' + (unread ? ' unread' : '') + (gone ? ' gone' : '') }, [unread ? M.h('i', { class: 'bell-dot', 'aria-hidden': 'true' }) : null, open, ctl]);
+    /* The redraw removes this very button. The shared outside-click handler (dashboard_03_shell.js) decides "inside or outside" AFTER the click, from the node that was clicked, so a redraw during the click
+       made a keyboard press (no mouse press recorded) look like a click outside and closed the panel. The redraw waits until the click has finished. */
+    ctl.addEventListener('click', function () { setTimeout(function () { (gone ? restore : dismiss)([o]); }, 0); });
+    return li;
+  };
+
+  /* dismiss one or many; the Undo line stays for 6 seconds or until the next action */
+  var say = function (text, undoFn) {
+    var line = panel.querySelector('.bell-undo'); if (!line) return;
+    clearTimeout(undoTimer); line.hidden = false; M.clear(line);
+    var msg = M.h('span', { class: 'bell-undo-t', role: 'status', text: text });
+    line.appendChild(msg);
+    if (undoFn) { var u = M.h('button', { type: 'button', class: 'link bell-undo-b', text: 'Undo' }); u.addEventListener('click', function () { clearTimeout(undoTimer); line.hidden = true; undoFn(); }); line.appendChild(u); }
+    undoTimer = setTimeout(function () { line.hidden = true; lastUndo = null; }, 6000);
+  };
+  var dismiss = function (os) {
+    var st = states(); os.forEach(function (o) { st.dismissed[M.bellLevel(o)] = 1; st.seenAt[M.bellLevel(o)] = 1; }); M.bellState.save(st);
+    lastUndo = os.slice(); paintPanel(); paintBadge();
+    say(os.length === 1 ? 'Dismissed' : os.length + ' dismissed', function () { restore(os, true); });
+    var next = panel.querySelector('.bell-x') || panel; next.focus({ preventScroll: true });
+  };
+  var restore = function (os, quiet) {
+    var st = states(); os.forEach(function (o) { delete st.dismissed[M.bellLevel(o)]; }); M.bellState.save(st);
+    if (!quiet) { clearTimeout(undoTimer); var line = panel.querySelector('.bell-undo'); if (line) line.hidden = true; }
+    paintPanel(); paintBadge();
+    var f = panel.querySelector('.bell-x, .bell-open-link') || panel; f.focus({ preventScroll: true });
   };
 
   var paintPanel = function (focusFirstNew) {
-    var st = states(), items = cur.items, c = M.bellCounts(items, st);
+    var st = states(), all = cur.items, c = M.bellCounts(all, st);
+    var items = all.filter(function (o) { return !M.bellDismissed(o, st); }), gone = all.filter(function (o) { return M.bellDismissed(o, st); });
     M.clear(list);
     var att = items.filter(function (o) { return o.group === 'attention'; }), rec = items.filter(function (o) { return o.group === 'recent'; });
     var shown = 0, limit = expanded ? 30 : 8, firstExtra = null;
@@ -15330,8 +15439,8 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var ul = M.h('ul', { class: 'bell-ul' }), lastDay = '';
       rows.forEach(function (o) {
         if (byDay) { var dw = DAYWORD(o.date, cur.today); if (dw !== lastDay) { ul.appendChild(M.h('li', { class: 'bell-day', role: 'presentation', text: dw })); lastDay = dw; } }
-        var li = item(o, st); ul.appendChild(li);
-        if (!firstExtra && shown >= 8) firstExtra = li.firstChild;
+        var li = item(o, st, false); ul.appendChild(li);
+        if (!firstExtra && shown >= 8) firstExtra = li.querySelector('.bell-open-link');
         shown++;
       });
       list.appendChild(M.h('section', { class: 'bell-sec', 'aria-label': title }, [M.h('h4', { class: 'bell-grp', text: title }), ul]));
@@ -15339,12 +15448,19 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     section('Needs attention', att, false);
     section('Recent', rec, true);
     var total = items.length;
-    if (!total) list.appendChild(M.h('p', { class: 'bell-empty' }, [M.h('strong', { text: 'All clear.' }), ' Nothing needs you right now.']));
+    if (!total) list.appendChild(M.h('p', { class: 'bell-empty' }, [M.h('strong', { text: all.length ? 'All clear' : 'All clear' }), all.length ? 'You have dismissed everything. Nothing new needs you.' : 'Nothing needs you right now.']));
+    if (showGone && gone.length) {
+      var ulg = M.h('ul', { class: 'bell-ul' }); gone.forEach(function (o) { ulg.appendChild(item(o, st, true)); });
+      list.appendChild(M.h('section', { class: 'bell-sec bell-gone', 'aria-label': 'Dismissed' }, [M.h('h4', { class: 'bell-grp', text: 'Dismissed' }), ulg]));
+    }
     var more = panel.querySelector('.bell-more');
     more.hidden = expanded || total <= 8;
     more.textContent = 'Show ' + Math.max(0, total - 8) + ' more';
+    var gb = panel.querySelector('.bell-goneb'); gb.hidden = !gone.length; gb.textContent = (showGone ? 'Hide dismissed (' : 'Show dismissed (') + gone.length + ')'; gb.setAttribute('aria-expanded', showGone ? 'true' : 'false');
     panel.querySelector('.bell-markall').hidden = c.unread === 0;
+    panel.querySelector('.bell-dismissall').hidden = total === 0;
     panel.querySelector('.bell-asof').textContent = 'Data to ' + M.fds(M.D.anchor) + ', saved ' + M.builtText();
+    list.classList.toggle('has-more', total > 3);
     if (focusFirstNew && firstExtra) firstExtra.focus({ preventScroll: false });
   };
 
@@ -15352,7 +15468,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   var openedBy = function () {
     /* opening the panel is "seeing" every item: the badge clears, the bold dot stays until the item is clicked or Mark all read */
     var st = states(); cur.items.forEach(function (o) { st.seenAt[M.bellLevel(o)] = 1; }); prune(st, cur.items); M.bellState.save(st);
-    expanded = false; paintPanel(); paintBadge();
+    expanded = false; showGone = false; paintPanel(); paintBadge();
   };
 
   M.bellRefresh = function () {
@@ -15372,11 +15488,17 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       [M.s('svg', { class: 'ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#i-bell' })]), badge]);
     list = M.h('div', { class: 'bell-body' });
     var markAll = M.h('button', { type: 'button', class: 'link bell-markall', text: 'Mark all read', hidden: true });
+    var dismissAll = M.h('button', { type: 'button', class: 'link bell-dismissall', text: 'Dismiss all', hidden: true });
     var moreBtn = M.h('button', { type: 'button', class: 'link bell-more', text: 'Show more', hidden: true });
+    var goneBtn = M.h('button', { type: 'button', class: 'link bell-goneb', hidden: true, 'aria-expanded': 'false' });
     panel = M.h('div', { class: 'popover pop-right bell-pop', id: 'bell-panel', role: 'dialog', 'aria-label': 'Notifications', hidden: true }, [
-      M.h('div', { class: 'bell-head' }, [M.h('h3', { class: 'bell-title', text: 'Notifications' }), markAll]),
-      M.h('p', { class: 'bell-asof' }),
-      list, moreBtn
+      M.h('div', { class: 'bell-head' }, [
+        M.h('div', { class: 'bell-head-row' }, [M.h('h3', { class: 'bell-title', text: 'Notifications' }), M.h('span', { class: 'bell-acts' }, [markAll, dismissAll])]),
+        M.h('p', { class: 'bell-asof' })
+      ]),
+      list,
+      M.h('p', { class: 'bell-undo', hidden: true }),
+      M.h('div', { class: 'bell-foot' }, [moreBtn, goneBtn])
     ]);
     closePanel = M.pop(btn, panel);
     panel.appendChild(M.popDone(closePanel));
@@ -15394,6 +15516,12 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var st = states(); cur.items.forEach(function (o) { st.read[M.bellLevel(o)] = 1; st.seenAt[M.bellLevel(o)] = 1; }); M.bellState.save(st); paintPanel(); paintBadge();
       panel.focus({ preventScroll: true });
     });
+    dismissAll.addEventListener('click', function () {
+      var st = states(), live = cur.items.filter(function (o) { return !M.bellDismissed(o, st); });
+      if (live.length) dismiss(live);
+      panel.focus({ preventScroll: true });
+    });
+    goneBtn.addEventListener('click', function () { showGone = !showGone; paintPanel(); goneBtn.focus({ preventScroll: true }); });
     moreBtn.addEventListener('click', function () { expanded = true; paintPanel(true); });
     M.bellRefresh();
   };
@@ -15402,6 +15530,89 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   M.buildControls = function () { buildBase.apply(this, arguments); try { M.bellMount(); } catch (e) { console.error(e); } };
   var after = M.afterRender;
   M.afterRender = function () { if (after) after.apply(this, arguments); setTimeout(function () { try { M.bellRefresh(); } catch (e) { console.error(e); } }, 0); };
+})();
+
+/* mazo dashboard: REFERENCES (T1036, 10 Nov 2026). Owner: "for the payments and shipments etc I need to see order number also, I should be able to connect everywhere throughout the dashboard back to my
+   system. If you just say one international transaction what will I understand? Nothing." So wherever a table speaks about ONE thing (a payment, a parcel, a payout, a bill, a post), the thing is named
+   by the number the owner would type into Shopify, Razorpay, Shiprocket or a social app, and an aggregate row lists the things behind its count.
+   One look for every reference (M.ref), so a reader learns it once:
+     order       #MZ1035            (Shopify order number; the primary thing)
+     payment     pay_...Z25h        (the last 4 to 8 letters of Razorpay's payment id; the dashboard never keeps more)
+     payout      UTR ...6721        (the bank reference end)
+     parcel      AWB ...1334        (the tracking number end)
+     bill        Bill 610490926
+     post        a short label that opens the post
+   A reference is a small button: click it to copy, a polite announcement says "Copied #MZ1035". Posts are links. A reference is plain text in the table search, the row detail and the CSV, so the filter box finds it.
+   NEVER a name, phone, e-mail, address or card number: the tabs hold none and this file only formats what they hold.
+   Helpers:  M.ref(kind, value[, opts])           -> a node (or a text node 'not known' when the value is empty)
+             M.refs(kind, values, opts)           -> a node with up to 3 chips and a "+N more" that opens the full list; used for the "Which ones" column of a counted row
+             M.refText(kind, value)               -> the plain text a CSV and the table search hold
+             M.refList(kind, values)              -> 'a, b, c' for a CSV cell */
+(function () {
+  var KINDS = {
+    order: { word: 'Shop order', show: function (v) { v = String(v).trim(); return /^#/.test(v) ? v : '#' + v; } },
+    payment: { word: 'Payment', show: function (v) { return 'pay ' + String(v).trim().slice(-8); } },
+    payout: { word: 'Payout', show: function (v) { v = String(v).trim(); return 'UTR ' + (v.length > 6 ? v.slice(-6) : v); } },
+    parcel: { word: 'Parcel', show: function (v) { return 'AWB ' + String(v).trim().slice(-6); } },
+    bill: { word: 'Bill', show: function (v) { return 'Bill ' + String(v).trim(); } },
+    post: { word: 'Post', show: function (v) { return String(v).trim().slice(0, 28); } }
+  };
+  var live = null;
+  function say(text) {      /* one polite announcement area for every copy, so a screen reader hears "Copied ..." */
+    if (!live) { live = M.h('p', { class: 'sr-only', role: 'status', 'aria-live': 'polite', id: 'ref-live' }); document.body.appendChild(live); }
+    live.textContent = ''; setTimeout(function () { live.textContent = text; }, 30);
+  }
+  function copy(text, done) {
+    function fallback() { var ta = M.h('textarea', { style: 'position:fixed;left:-9999px;top:0', 'aria-hidden': 'true', tabindex: '-1' }); ta.value = text; document.body.appendChild(ta); ta.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; } document.body.removeChild(ta); done(ok); }
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, fallback); else fallback(); } catch (e) { fallback(); }
+  }
+  /* a mixed list item: a payment that became an order is named by its order; a refused try has no order, so it is named by the payment. M.refOf(payRow) gives {kind, value, full}. */
+  M.refOf = function (pay) { return pay && pay.shop_order ? { kind: 'order', value: pay.shop_order } : { kind: 'payment', value: String(pay && pay.key || '').split('_').pop(), full: pay && pay.key }; };
+  M.refText = function (kind, value) { var k = KINDS[kind]; return value == null || value === '' || !k ? '' : k.show(value); };
+  M.refList = function (kind, values) { return (values || []).filter(function (v) { return v != null && v !== ''; }).map(function (v) { return v && typeof v === 'object' ? M.refText(v.kind, v.value) : M.refText(kind, v); }).join(', '); };
+  /* one reference chip. opts: {href} makes it a link (posts); {full} the whole value that is copied (default: the value as given) */
+  M.ref = function (kind, value, opts) {
+    var k = KINDS[kind], o = opts || {};
+    if (value == null || value === '' || !k) return document.createTextNode('not known');
+    var txt = k.show(value), full = o.full != null ? String(o.full) : String(value);
+    if (o.href) return M.h('a', { class: 'ref ref-' + kind, href: o.href, target: '_blank', rel: 'noopener', title: k.word + ': ' + txt + ' (opens the ' + k.word.toLowerCase() + ')', text: txt });
+    var b = M.h('button', { type: 'button', class: 'ref ref-' + kind, 'data-ref': txt, title: k.word + ' ' + txt + ': click to copy', 'aria-label': k.word + ' ' + txt + ', click to copy' }, [M.h('span', { text: txt })]);
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();      /* a click on a reference never opens the row detail underneath */
+      copy(full, function (ok) { b.classList.add(ok ? 'copied' : 'nocopy'); say(ok ? 'Copied ' + txt : 'Could not copy ' + txt + '. Select it and copy by hand.'); setTimeout(function () { b.classList.remove('copied', 'nocopy'); }, 1400); });
+    });
+    return b;
+  };
+  /* the "Which ones" cell of a counted row: the first three chips, then a "+N more" button that opens the full list in the page's own detail panel */
+  M.refs = function (kind, values, opts) {
+    var o = opts || {}, list = (values || []).filter(function (v) { return v != null && v !== ''; }), seen = {}, uniq = [];
+    var kd = function (v) { return v && typeof v === 'object' ? v.kind : kind; }, vl = function (v) { return v && typeof v === 'object' ? v.value : v; };
+    list.forEach(function (v) { var t = M.refText(kd(v), vl(v)); if (!seen[t]) { seen[t] = 1; uniq.push(v); } });
+    if (!uniq.length) return M.h('span', { class: 'muted', text: o.none || 'none' });
+    var cell = M.h('span', { class: 'refs' }), head = uniq.slice(0, o.show || 3);
+    head.forEach(function (v) { cell.appendChild(M.ref(kd(v), vl(v), v && typeof v === 'object' && v.full ? { full: v.full } : null)); });
+    if (uniq.length > head.length) {
+      var more = M.h('button', { type: 'button', class: 'ref ref-more', 'aria-label': 'Show all ' + uniq.length + ' references', text: '+' + (uniq.length - head.length) + ' more' });
+      more.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var rows = uniq.map(function (v) { return { k: KINDS[kd(v)].word, v: M.refText(kd(v), vl(v)) }; });
+        if (M.detail && M.detail.open) M.detail.open({ title: o.title || 'Which ones', rows: rows, actions: [], opener: more, force: true });
+      });
+      cell.appendChild(more);
+    }
+    return cell;
+  };
+  /* a table column for one reference. c = M.refCol('order', 'shop_order', 'Shop order'). The row keeps the PLAIN TEXT under the key (so sorting, the filter box, the row detail and the CSV all hold "#MZ1035"),
+     and the chip is drawn from it. For a payment or a parcel the row keeps the full id under key + '_full' when it has one, and that is what a click copies. */
+  M.refCol = function (kind, key, label, opts) {
+    var o = opts || {};
+    return { k: key, label: label || KINDS[kind].word, dim: false, wrap: false, render: function (r) { var v = r[key]; return v == null || v === '' ? M.h('span', { class: 'muted', text: o.none || 'not known' }) : M.ref(kind, v, { href: o.href ? o.href(r) : null, full: r[key + '_full'] != null ? r[key + '_full'] : v }); } };
+  };
+  /* a column of several references in one cell (the "Which ones" column). The row keeps the plain list as text under the key (M.refList), and the references as an array under key + '_list'. */
+  M.refsCol = function (kind, key, label, opts) {
+    var o = opts || {};
+    return { k: key, label: label || 'Which ones', dim: false, wrap: true, render: function (r) { return M.refs(kind, Array.isArray(r[key + '_list']) ? r[key + '_list'] : [], { title: o.title ? o.title(r) : 'Which ones', none: o.none }); } };
+  };
 })();
 
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
