@@ -2299,6 +2299,65 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
 /* Shipping page in depth (T835 and T884, 6 Nov 2026), dashboard_72_shiprocket.js. A sub heading inside a card sits 12px from the chart under it (the layout audit asks for room between stacked blocks). */
 .ship-sub{margin:var(--sp4) 0 var(--sp3)!important}
 
+/* mazo dashboard bell (T1032, 10 Nov 2026). The panel is the same .popover as Filters (a floating card on a laptop, a bottom sheet at 900px and below, see dashboard_20_design.css). Only the button,
+   the badge and the list rows are new. Motion is opacity only and off for reduced motion. */
+.tp-bell{position:relative;flex:0 0 auto}
+.bell-btn{position:relative;width:40px;min-width:40px;padding:0;justify-content:center}
+.bell-btn .ic{width:20px;height:20px;flex-basis:20px}
+.bell-btn.has-new .ic{color:var(--maroon)}
+.bell-badge{position:absolute;top:-9px;right:-9px;display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--maroon);color:#fff;font:600 var(--t12)/1 var(--sans);border:2px solid var(--paper);box-sizing:content-box;pointer-events:none}
+.bell-badge[hidden]{display:none}
+.bell-pop{width:min(420px,calc(100vw - 24px));padding:0;gap:0;overflow:hidden;display:flex;flex-direction:column}
+.bell-pop[hidden]{display:none}
+.bell-pop:focus,.bell-pop:focus-visible{outline:none}
+.bell-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);padding:var(--sp4) var(--sp4) var(--sp1)}
+.bell-title{margin:0;font:600 var(--t16)/1.3 var(--sans);color:var(--ink)}
+.bell-markall[hidden],.bell-more[hidden]{display:none}
+.bell-asof{margin:0;padding:0 var(--sp4) var(--sp3);font-size:var(--t12);color:var(--ink2);border-bottom:1px solid var(--edge)}
+.bell-body{overflow-y:auto;flex:1 1 auto;min-height:0;max-height:min(66vh,520px);overscroll-behavior:contain}
+.bell-grp{margin:0;padding:var(--sp3) var(--sp4) var(--sp1);font:600 var(--t12)/1.2 var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--ink2)}
+.bell-ul{list-style:none;margin:0;padding:0}
+.bell-ul>li{margin:0;padding:0;border-top:1px solid var(--edge)}
+.bell-ul>li.bell-day{border-top:0;padding:var(--sp3) var(--sp4) var(--sp1);font-size:var(--t12);font-weight:600;color:var(--ink2)}
+.bell-sec:first-child .bell-ul>li:first-child{border-top:0}
+.bell-item{display:flex;flex-direction:column;gap:var(--sp1);padding:var(--sp3) var(--sp4);color:var(--ink);text-decoration:none;min-height:44px}
+.bell-item:hover{background:var(--wash)}
+.bell-item:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
+.bell-item:focus:not(:focus-visible){outline:none}
+.bell-top{display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);font-size:var(--t12);color:var(--ink2)}
+.bell-when{white-space:nowrap}
+.bell-t{display:block;font-size:var(--t14);line-height:1.4;font-weight:500;color:var(--ink)}
+.bell-item.unread .bell-t{font-weight:700}
+.bell-dot{display:inline-block;width:8px;height:8px;margin:0 var(--sp2) 1px 0;border-radius:50%;background:var(--maroon);vertical-align:middle}
+.bell-why{display:block;font-size:var(--t13);line-height:1.45;color:var(--ink2)}
+.bell-open{display:block;font-size:var(--t12);font-weight:600;color:var(--maroon)}
+.bell-empty{margin:0;padding:var(--sp5) var(--sp4);font-size:var(--t14);color:var(--ink2);text-align:center}
+.bell-empty strong{display:block;margin-bottom:var(--sp1);font-size:var(--t16);color:var(--ink)}
+.bell-more{display:block;margin:0;padding:var(--sp3) var(--sp4);width:100%;text-align:left;border-top:1px solid var(--edge);min-height:44px}
+.bell-pop .pop-done{margin:var(--sp3) var(--sp4) var(--sp4);width:auto}
+.bell-pop:not([hidden]){animation:bell-in .14s ease-out}
+@keyframes bell-in{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.bell-pop:not([hidden]){animation:none}}
+/* 10 Nov 2026: the toolbar blurs what is behind it (dashboard_38_soft.css). A blur makes the toolbar the anchor of every position:fixed child, so on a phone the Filters sheet and this one were
+   placed against the toolbar (a sheet 210px above the top of the screen) instead of against the screen. The toolbar is 92% white, so without the blur it looks the same. */
+@media (max-width:900px){
+  #controls{-webkit-backdrop-filter:none;backdrop-filter:none}
+  .bell-pop{width:auto;max-height:min(82vh,640px)}
+  .bell-body{max-height:none;flex:1 1 auto}
+  .bell-head{padding-top:var(--sp5)}
+  .bell-head::before{content:"";position:absolute;left:50%;top:8px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--edge2)}
+  .bell-pop{position:fixed}
+}
+/* where the bell sits. Wide and tablet: right after the search box, at the right end of its row (the row wraps the same way it did before the bell, and the bell shares the search box's row).
+   Phone (640px and below): the toolbar is ordered by number, the bell comes last in the first row, after the page list, the dates and Filters (the search and Compare are on the row below). */
+@media (max-width:640px){.tp-bell{order:3}.tp-fil{margin-right:0}}
+@media (pointer:coarse){
+  .bell-btn{width:44px;min-width:44px}
+  .bell-markall,.bell-more{min-height:44px;display:inline-flex;align-items:center}
+}
+@media (forced-colors:active){.bell-badge{border:1px solid CanvasText}.bell-dot{background:CanvasText}}
+@media print{.tp-bell{display:none!important}}
+
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
 #lock[hidden]{display:none}
@@ -15041,6 +15100,308 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
 
     cards.forEach(function (c) { root.appendChild(c); });
   });
+})();
+
+/* mazo dashboard notifications (T1032, 10 Nov 2026). Owner: "I want notifications in the dashboard, a bell icon in the header, best UX, only proper ones. For example the missed payment yesterday."
+   Everything is worked out in the browser from the tables already inside the page: nothing is written to the Sheet or the server, no new data. The bell shows what the last nightly publish knew.
+   Design and the rules, with how often each would have fired over the stored history: docs/guides/dashboard-notifications.md.
+
+   Two kinds of item:
+     NEEDS ATTENTION  a condition that is still true now (a size almost out, a parcel stuck, data gone stale). It stays until it is fixed, then disappears by itself.
+     RECENT           an event of the last 7 days (a payment refused, a cancelled order, a low review). It stays 7 days, nothing is older than 30.
+   Every item has a deterministic id built from the data, so "new" and "read" survive a reload. Kinds (the only ones): payment refused, dispute, parcel stuck, size almost out, wallet low,
+   shop data stale, return or tax due in 7 days, dated item due in 7 days, low review, cancelled order. */
+(function () {
+  var STORE = 'mazo-bell-v1', MAX_SHOWN = 8, MAX_HELD = 30, RECENT_DAYS = 7, HOLD_DAYS = 30;
+  var SEV = { act: { word: 'Needs action', rank: 0 }, check: { word: 'Check', rank: 1 }, info: { word: 'Info', rank: 2 } };
+
+  /* ------------------------------------------------------------ the rules (pure: they take the day to judge from and the table reader, so a test can feed them fake data) */
+  var rup = function (n) { return M.inr(n); };
+  var daysAgo = function (d, today) { return M.diff(d, today); };
+  var cap = function (s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); };
+
+  M.bellRules = function (today, read) {
+    var out = [], push = function (o) { out.push(o); };
+    var rows = function (n) { try { return read(n) || []; } catch (e) { return []; } };
+
+    /* 1. a payment refused. Retries of one checkout are ONE item (same order id); a customer who simply ran out of time is not an item, the shop's own settings refusing the card is. */
+    var failed = rows('razorpay_payments').filter(function (x) { return x.status === 'failed' && x.date && daysAgo(x.date, today) <= RECENT_DAYS; });
+    var byOrder = {};
+    failed.forEach(function (x) { var k = x.order_id || x.key; (byOrder[k] = byOrder[k] || []).push(x); });
+    Object.keys(byOrder).forEach(function (k) {
+      var g = byOrder[k], first = g[0], mine = g.some(function (x) { return x.failed_by === 'business'; });
+      var codes = {}; g.forEach(function (x) { codes[x.failed_code || 'unknown'] = (codes[x.failed_code || 'unknown'] || 0) + 1; });
+      if (!mine && g.length < 2) return;      /* one customer timeout or a declined card is normal and the buyer can try again */
+      var why = mine ? 'Razorpay refused it on the shop’s side' + (first.failed_code === 'international_transaction_not_allowed' ? ': international cards are not accepted on this account.' : ': ' + String(first.failed_why || 'no reason given').replace(/\.$/, '') + '.')
+        : 'The buyer tried ' + g.length + ' times and did not get through' + (first.failed_why ? ': ' + String(first.failed_why).replace(/\.$/, '') + '.' : '.');
+      push({ id: 'payfail|' + first.date + '|' + first.amount + '|' + k, kind: 'payfail', sev: mine ? 'act' : 'check', group: 'recent', date: first.date, time: first.hour || '',
+        title: g.length > 1 ? 'A buyer’s card payment of ' + rup(first.amount) + ' failed ' + g.length + ' times' : 'A card payment of ' + rup(first.amount) + ' failed',
+        why: why + ' No sale was made.', n: g.length, page: 'payments', card: /failed|refused|why payments/i });
+    });
+
+    /* 2. a dispute or chargeback is open (the table has had no row so far, so this will be rare and important) */
+    rows('razorpay_disputes').forEach(function (x) {
+      if (/won|lost|closed|resolved/i.test(String(x.status || ''))) return;
+      push({ id: 'dispute|' + x.dispute_id, kind: 'dispute', sev: 'act', group: 'attention', date: x.date || today, title: 'A payment dispute is open for ' + rup(x.amount),
+        why: (x.reason ? cap(x.reason) + '. ' : '') + (x.respond_by ? 'Answer by ' + M.fd(x.respond_by) + '.' : 'It needs an answer in Razorpay.'), page: 'payments', card: /dispute|settle/i });
+    });
+
+    /* 3. a parcel stuck: sent 8 or more days ago and not delivered. The delivery date comes from the shop's own fulfilment record (shipping_daily): the courier tracking tab keeps only the last
+       event it saw and still showed #MZ1026 as "Undelivered" for 10 days after it was delivered. (A "cancellation requested" that never went through was tried and dropped: it fired every night
+       for two weeks about a booking the owner had already settled.) */
+    var delivered = {};
+    rows('shipping_daily').forEach(function (x) { if (x.delivered || /DELIVERED/i.test(String(x.status || ''))) delivered[x.order] = 1; });
+    rows('shipping_daily').forEach(function (x) {
+      if (delivered[x.order] || /CONFIRMED|CANCEL/i.test(String(x.status || '')) || !x.dispatched) return;
+      var n = daysAgo(String(x.dispatched).slice(0, 10), today);
+      if (n < 8) return;
+      push({ id: 'stuck|' + x.order + '|' + String(x.dispatched).slice(0, 10), kind: 'parcel', sev: 'act', group: 'attention', date: String(x.dispatched).slice(0, 10), title: 'Order ' + x.order + ' has not arrived after ' + n + ' days',
+        why: 'Sent ' + M.fd(String(x.dispatched).slice(0, 10)) + (x.carrier ? ' with ' + x.carrier : '') + ', still ' + String(x.status || 'on the way').toLowerCase().replace(/_/g, ' ') + '.', page: 'shipping', card: /order|status|parcel/i });
+    });
+
+    /* 4. a size almost out: under 14 days at the fast pace, or none left. One item per size, shown once while true. */
+    rows('stockout_forecast').forEach(function (x) {
+      var left = x.days_left_fast != null ? +x.days_left_fast : null, none = +x.stock === 0;
+      if (!none && !(left != null && left < 14)) return;
+      push({ id: 'stock|' + x.product + '|' + x.size + '|' + (none ? 'zero' : 'low'), kind: 'stock', sev: none ? 'act' : 'check', group: 'attention', date: today,
+        title: none ? x.product + ', size ' + x.size + ' is sold out' : x.product + ', size ' + x.size + ' is almost out',
+        why: none ? 'None left, and it sold ' + x.sold_28d + ' in the last 28 days.' : x.stock + ' left, and it sold ' + x.sold_28d + ' in the last 28 days: about ' + left + ' days at the fast pace.', page: 'forecast', card: /stock|size|run out|sold out/i });
+    });
+
+    /* 5. the Shiprocket wallet is low. It is the money that pays for parcels. */
+    var w = rows('shiprocket_wallet'); w = w.length ? w[w.length - 1] : null;
+    if (w && w.balance_to_date != null && +w.balance_to_date < 100) {
+      push({ id: 'wallet|' + (+w.balance_to_date < 0 ? 'neg' : 'low'), kind: 'wallet', sev: +w.balance_to_date < 0 ? 'act' : 'check', group: 'attention', date: String(w.date || today).slice(0, 10),
+        title: 'The Shiprocket wallet is ' + (+w.balance_to_date < 0 ? 'below zero' : 'low') + ': ' + rup(+w.balance_to_date), why: 'It pays for courier bookings' + (+w.waiting_orders ? '. ' + w.waiting_orders + ' order' + (+w.waiting_orders === 1 ? ' is' : 's are') + ' waiting for it.' : '.'), page: 'shipping', card: /wallet|money|cost/i });
+    }
+
+    /* 6. the numbers are old: the newest day in the dashboard is more than 2 days behind. Everything else on this list would be wrong without anyone knowing. */
+    var gap = M.D.anchor ? daysAgo(M.D.anchor, today) : 0;
+    if (gap > 2) push({ id: 'stale|' + M.D.anchor, kind: 'stale', sev: 'act', group: 'attention', date: M.D.anchor, title: 'The numbers are ' + gap + ' days old', why: 'The newest day is ' + M.fd(M.D.anchor) + '. The nightly update has not run, so nothing here is fresh.', page: 'quality', card: /fresh|check|quality/i });
+
+    /* 7. a tax return due within 7 days (the filing calendar) */
+    rows('tax_calendar').forEach(function (x) {
+      if (!x.due_date) return;
+      var left = M.diff(today, x.due_date);
+      if (left < 0 || left > 7 || /quarterly/i.test(x.form || '')) return;
+      push({ id: 'tax|' + x.due_date + '|' + x.form + '|' + x.period, kind: 'tax', sev: left === 0 ? 'act' : 'check', group: 'attention', date: x.due_date,
+        title: x.form + ' for ' + x.period + ' is due ' + (left === 0 ? 'today' : left === 1 ? 'tomorrow' : 'in ' + left + ' days'), why: 'Due ' + M.fd(x.due_date) + '. The Accountant files it; what she needs is on the Taxes page.', page: 'tax', card: /due next|calendar/i });
+    });
+
+    /* 8. a dated item within 7 days (sale ends, prices return, a token runs out). Only rows with a date that are still open. */
+    rows('compliance_dates').forEach(function (x) {
+      if (!x.due || /closed|retired|done/i.test(String(x.status || ''))) return;
+      var left = M.diff(today, x.due);
+      if (left < 0 || left > 7) return;
+      push({ id: 'dated|' + x.due + '|' + String(x.item).slice(0, 40), kind: 'dated', sev: left === 0 ? 'act' : 'check', group: 'attention', date: x.due, title: String(x.item).replace(/\s*\([^)]*\)\s*$/, '') + ' ' + (left === 0 ? 'is today' : left === 1 ? 'is tomorrow' : 'is in ' + left + ' days'),
+        why: 'Date: ' + M.fd(x.due) + '.', page: 'quality', card: /date|due/i });
+    });
+
+    /* 9. a low review: 1 or 2 stars on any product. The ratings table has no per review row, so this fires when a product's count of 1 and 2 star reviews goes up. */
+    rows('product_ratings').forEach(function (x) {
+      var low = (+x.stars_1 || 0) + (+x.stars_2 || 0);
+      if (!low) return;
+      push({ id: 'review|' + x.product_handle + '|' + low, kind: 'review', sev: 'check', group: 'recent', date: String(x.newest_review || today).slice(0, 10), title: x.product_title + ' has ' + low + ' review' + (low === 1 ? '' : 's') + ' of 1 or 2 stars',
+        why: 'A customer may need an answer.', page: 'tables', card: /review/i });
+    });
+
+    /* 10. a cancelled order (the early test orders are recorded as not a sale and never appear here) */
+    rows('tax_orders').forEach(function (x) {
+      if (x.kind !== 'void' || !x.date || daysAgo(x.date, today) > HOLD_DAYS) return;
+      push({ id: 'cancel|' + x.order, kind: 'cancel', sev: 'info', group: 'recent', date: x.date, title: 'Order ' + x.order + ' was cancelled', why: 'It is shown as a cancelled order in the sales register, with no sale and no tax.', page: 'tax', card: /register/i });
+    });
+    return out;
+  };
+
+  /* ------------------------------------------------------------ keeping, sorting, shaping */
+  M.bellShape = function (items, today) {
+    var seen = {}, keep = [];
+    items.forEach(function (o) { if (seen[o.id]) return; seen[o.id] = 1; keep.push(o); });
+    keep = keep.filter(function (o) {
+      var age = daysAgo(o.date || today, today);
+      if (o.group === 'recent') return age >= 0 && age <= RECENT_DAYS;
+      return age <= HOLD_DAYS || o.group === 'attention';
+    });
+    var by = function (a, b) { return SEV[a.sev].rank - SEV[b.sev].rank || (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) || (a.time < b.time ? 1 : -1); };
+    var att = keep.filter(function (o) { return o.group === 'attention'; }).sort(by);
+    var rec = keep.filter(function (o) { return o.group === 'recent'; }).sort(function (a, b) { return (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) || SEV[a.sev].rank - SEV[b.sev].rank; });
+    return att.concat(rec).slice(0, MAX_HELD);
+  };
+
+  /* ------------------------------------------------------------ what the owner has seen and read (this browser only). Storage can be blocked: then it is kept in memory for this visit. */
+  var mem = { seenAt: {}, read: {} };
+  var load = function () { try { var s = JSON.parse(localStorage.getItem(STORE) || 'null'); if (s && typeof s === 'object') return { seenAt: s.seenAt || {}, read: s.read || {} }; } catch (e) { /* blocked */ } return mem; };
+  var save = function (st) { mem = st; try { localStorage.setItem(STORE, JSON.stringify(st)); } catch (e) { /* kept in memory */ } };
+  M.bellState = { load: load, save: save };
+  /* the weight of an item: if it gets worse (more tries, a higher alert) it counts as new again. The key of what was seen is id + level. */
+  var level = function (o) { return o.id + '#' + (o.n || 1) + '#' + o.sev; };
+
+  /* today by the India clock (UTC + 5:30), whatever the clock of the computer says. An old saved copy of the dashboard (a dated file opened weeks later) judges from the day after its own newest
+     data instead, so it is never told "the numbers are old" about a picture it was meant to be. The hosted site and a copy saved in the last 3 days use the real day. */
+  M.bellToday = function () {
+    var real = new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10), built = String(M.D.built || '').slice(0, 10);
+    if (window.MAZO_HOSTED || !M.isDate(built) || M.diff(built, real) <= 3) return real;
+    return M.add(M.D.anchor || built, 1);
+  };
+  M.bellCompute = function (todayOverride) {
+    if (window.MAZO_BELL_TEST) return { today: window.MAZO_BELL_TEST.today, items: M.bellShape(window.MAZO_BELL_TEST.items, window.MAZO_BELL_TEST.today) };      /* the test script feeds fake items */
+    var today = todayOverride || M.bellToday();
+    var items = M.bellShape(M.bellRules(today, function (n) { return M.has(n) ? M.rows(n) : []; }), today);
+    return { today: today, items: items };
+  };
+  M.bellCounts = function (items, st) {
+    var unseen = 0, unread = 0;
+    items.forEach(function (o) { if (!st.seenAt[level(o)]) unseen++; if (!st.read[level(o)]) unread++; });
+    return { unseen: unseen, unread: unread };
+  };
+  M.bellLevel = level;
+})();
+
+/* mazo dashboard bell (T1032, 10 Nov 2026): the button in the toolbar and the panel it opens. The rules that decide WHAT is a notification are in dashboard_73_notifications.js.
+   Behaviour, each with its reason, in docs/guides/dashboard-notifications.md:
+   - the badge counts items NEW since the panel was last opened (capped 9+, nothing at 0); opening the panel clears it; an item stays bold with a dot until it is clicked or "Mark all read"
+   - the panel is the same popover as Filters (one open at a time, Escape and an outside click close it, focus returns to the bell); on a phone it is the same bottom sheet with a Done button
+   - "Needs attention" first (still true now), then "Recent" (last 7 days, grouped Today / Yesterday / Earlier); 8 shown, "Show more" up to 30
+   - every item has a severity WORD and shape (never colour alone), a plain title, one line of reason, when, and opens the right page and card
+   - nothing opens by itself, no sound, no pop up. It is computed in the browser after each draw (never during one, so the hosted site's month loader is not disturbed). */
+(function () {
+  var wrap, btn, panel, badge, list, built = false, expanded = false, cur = { items: [], today: '' };
+  var SEVWORD = { act: 'Needs action', check: 'Check', info: 'Info' }, SEVKIND = { act: 'red', check: 'amber', info: 'grey' };
+  var DAYWORD = function (d, today) { var n = M.diff(d, today); return n <= 0 ? 'Today' : n === 1 ? 'Yesterday' : 'Earlier'; };
+
+  var whenOf = function (o, today) {
+    if (o.kind === 'tax' || o.kind === 'dated') return 'Due ' + M.fds(o.date);
+    if (o.group === 'attention') return o.kind === 'parcel' && o.date ? 'Since ' + M.fds(o.date) : 'Now';
+    var n = M.diff(o.date, today);
+    return (n <= 0 ? 'Today' : n === 1 ? 'Yesterday' : M.fds(o.date)) + (o.time ? ', ' + o.time : '');
+  };
+
+  var addSymbol = function () {
+    if (document.getElementById('i-bell')) return;
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '0'); svg.setAttribute('height', '0'); svg.setAttribute('aria-hidden', 'true'); svg.style.cssText = 'position:absolute';
+    svg.innerHTML = '<symbol id="i-bell" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5a6 6 0 0 1 12 0c0 5.5 2.2 7 2.2 7H3.8S6 15 6 9.5zM10 19.5a2 2 0 0 0 4 0"/></g></symbol>';
+    document.body.appendChild(svg);
+  };
+
+  var states = function () { var st = M.bellState.load(); return { seenAt: st.seenAt || {}, read: st.read || {} }; };
+  var prune = function (st, items) {
+    var keep = {}; items.forEach(function (o) { keep[M.bellLevel(o)] = 1; });
+    ['seenAt', 'read'].forEach(function (k) { Object.keys(st[k]).forEach(function (id) { if (!keep[id]) delete st[k][id]; }); });
+  };
+
+  /* ---------------------------------------------------------------- the button */
+  var paintBadge = function () {
+    var c = M.bellCounts(cur.items, states()), n = c.unseen;
+    badge.hidden = n === 0; badge.textContent = n > 9 ? '9+' : String(n);
+    btn.setAttribute('aria-label', n ? 'Notifications, ' + n + ' new' : 'Notifications');
+    btn.classList.toggle('has-new', n > 0);
+  };
+
+  /* ---------------------------------------------------------------- the panel */
+  var item = function (o, st) {
+    var unread = !st.read[M.bellLevel(o)], pg = M.PAGES[o.page], rd = M.go ? true : false;
+    var a = M.h('a', { class: 'bell-item' + (unread ? ' unread' : ''), href: '#/' + o.page, 'data-bell': o.id }, [
+      M.h('span', { class: 'bell-top' }, [M.badge(SEVWORD[o.sev], SEVKIND[o.sev]), M.h('span', { class: 'bell-when', text: whenOf(o, cur.today) })]),
+      M.h('span', { class: 'bell-t' }, [unread ? M.h('i', { class: 'bell-dot', 'aria-hidden': 'true' }) : null, unread ? M.h('span', { class: 'sr-only', text: 'Unread. ' }) : null, o.title]),
+      M.h('span', { class: 'bell-why', text: o.why }),
+      M.h('span', { class: 'bell-open', 'aria-hidden': 'true', text: 'Open ' + (pg ? pg.nav : o.page) })
+    ]);
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      var s2 = states(); s2.read[M.bellLevel(o)] = 1; s2.seenAt[M.bellLevel(o)] = 1; M.bellState.save(s2);
+      closePanel(false);
+      if (o.card) M.pending_after = { card: o.card };
+      if (rd) M.go({ page: o.page }, true);
+      window.scrollTo(0, 0);
+      var m = document.getElementById('main'); if (m) m.focus({ preventScroll: true });
+    });
+    return M.h('li', null, a);
+  };
+
+  var paintPanel = function (focusFirstNew) {
+    var st = states(), items = cur.items, c = M.bellCounts(items, st);
+    M.clear(list);
+    var att = items.filter(function (o) { return o.group === 'attention'; }), rec = items.filter(function (o) { return o.group === 'recent'; });
+    var shown = 0, limit = expanded ? 30 : 8, firstExtra = null;
+    var section = function (title, arr, byDay) {
+      var rows = arr.slice(0, Math.max(0, limit - shown));
+      if (!rows.length) return;
+      var ul = M.h('ul', { class: 'bell-ul' }), lastDay = '';
+      rows.forEach(function (o) {
+        if (byDay) { var dw = DAYWORD(o.date, cur.today); if (dw !== lastDay) { ul.appendChild(M.h('li', { class: 'bell-day', role: 'presentation', text: dw })); lastDay = dw; } }
+        var li = item(o, st); ul.appendChild(li);
+        if (!firstExtra && shown >= 8) firstExtra = li.firstChild;
+        shown++;
+      });
+      list.appendChild(M.h('section', { class: 'bell-sec', 'aria-label': title }, [M.h('h4', { class: 'bell-grp', text: title }), ul]));
+    };
+    section('Needs attention', att, false);
+    section('Recent', rec, true);
+    var total = items.length;
+    if (!total) list.appendChild(M.h('p', { class: 'bell-empty' }, [M.h('strong', { text: 'All clear.' }), ' Nothing needs you right now.']));
+    var more = panel.querySelector('.bell-more');
+    more.hidden = expanded || total <= 8;
+    more.textContent = 'Show ' + Math.max(0, total - 8) + ' more';
+    panel.querySelector('.bell-markall').hidden = c.unread === 0;
+    panel.querySelector('.bell-asof').textContent = 'Data to ' + M.fds(M.D.anchor) + ', saved ' + M.builtText();
+    if (focusFirstNew && firstExtra) firstExtra.focus({ preventScroll: false });
+  };
+
+  var closePanel;
+  var openedBy = function () {
+    /* opening the panel is "seeing" every item: the badge clears, the bold dot stays until the item is clicked or Mark all read */
+    var st = states(); cur.items.forEach(function (o) { st.seenAt[M.bellLevel(o)] = 1; }); prune(st, cur.items); M.bellState.save(st);
+    expanded = false; paintPanel(); paintBadge();
+  };
+
+  M.bellRefresh = function () {
+    if (!built) return;
+    cur = M.bellCompute();
+    paintBadge();
+    if (!panel.hidden) paintPanel();
+  };
+
+  /* ---------------------------------------------------------------- build */
+  M.bellMount = function () {
+    var row = document.querySelector('#controls .toolrow');
+    if (!row || document.getElementById('bell-btn')) return;
+    addSymbol();
+    badge = M.h('span', { class: 'bell-badge', 'aria-hidden': 'true', hidden: true });
+    btn = M.h('button', { type: 'button', class: 'tbtn bell-btn', id: 'bell-btn', 'aria-label': 'Notifications', 'aria-expanded': 'false', 'aria-haspopup': 'dialog', 'aria-controls': 'bell-panel' },
+      [M.s('svg', { class: 'ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#i-bell' })]), badge]);
+    list = M.h('div', { class: 'bell-body' });
+    var markAll = M.h('button', { type: 'button', class: 'link bell-markall', text: 'Mark all read', hidden: true });
+    var moreBtn = M.h('button', { type: 'button', class: 'link bell-more', text: 'Show more', hidden: true });
+    panel = M.h('div', { class: 'popover pop-right bell-pop', id: 'bell-panel', role: 'dialog', 'aria-label': 'Notifications', hidden: true }, [
+      M.h('div', { class: 'bell-head' }, [M.h('h3', { class: 'bell-title', text: 'Notifications' }), markAll]),
+      M.h('p', { class: 'bell-asof' }),
+      list, moreBtn
+    ]);
+    closePanel = M.pop(btn, panel);
+    panel.appendChild(M.popDone(closePanel));
+    wrap = M.h('div', { class: 'tpop tp-bell' }, [btn, panel]);
+    row.appendChild(wrap);
+    built = true;
+    btn.addEventListener('click', function () {
+      if (panel.hidden) return;
+      openedBy();      /* M.pop has just opened it (its own click handler runs first) */
+      /* M.pop moves focus to the first control in the panel, which is "Mark all read" or nothing. The panel must always take focus, so the keyboard (Escape, Tab) works inside it. */
+      panel.setAttribute('tabindex', '-1');
+      if (!panel.contains(document.activeElement)) panel.focus({ preventScroll: true });
+    });
+    markAll.addEventListener('click', function () {
+      var st = states(); cur.items.forEach(function (o) { st.read[M.bellLevel(o)] = 1; st.seenAt[M.bellLevel(o)] = 1; }); M.bellState.save(st); paintPanel(); paintBadge();
+      panel.focus({ preventScroll: true });
+    });
+    moreBtn.addEventListener('click', function () { expanded = true; paintPanel(true); });
+    M.bellRefresh();
+  };
+
+  var buildBase = M.buildControls;
+  M.buildControls = function () { buildBase.apply(this, arguments); try { M.bellMount(); } catch (e) { console.error(e); } };
+  var after = M.afterRender;
+  M.afterRender = function () { if (after) after.apply(this, arguments); setTimeout(function () { try { M.bellRefresh(); } catch (e) { console.error(e); } }, 0); };
 })();
 
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
