@@ -15216,15 +15216,15 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   /* ------------------------------------------------------------ keeping, sorting, shaping */
   M.bellShape = function (items, today) {
     var seen = {}, keep = [];
-    items.forEach(function (o) { if (seen[o.id]) return; seen[o.id] = 1; keep.push(o); });
+    items.forEach(function (o, i) { if (seen[o.id]) return; seen[o.id] = 1; o.idx = i; keep.push(o); });
     keep = keep.filter(function (o) {
       var age = daysAgo(o.date || today, today);
       if (o.group === 'recent') return age >= 0 && age <= RECENT_DAYS;
       return age <= HOLD_DAYS || o.group === 'attention';
     });
-    var by = function (a, b) { return SEV[a.sev].rank - SEV[b.sev].rank || (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) || (a.time < b.time ? 1 : -1); };
+    var by = function (a, b) { return SEV[a.sev].rank - SEV[b.sev].rank || (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) || (a.time < b.time ? 1 : a.time > b.time ? -1 : 0) || (a.idx - b.idx); };      /* worst first, then newest, then the order the rules produced (a tie never flips) */
     var att = keep.filter(function (o) { return o.group === 'attention'; }).sort(by);
-    var rec = keep.filter(function (o) { return o.group === 'recent'; }).sort(function (a, b) { return (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) || SEV[a.sev].rank - SEV[b.sev].rank; });
+    var rec = keep.filter(function (o) { return o.group === 'recent'; }).sort(function (a, b) { return (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) || SEV[a.sev].rank - SEV[b.sev].rank || (a.time < b.time ? 1 : a.time > b.time ? -1 : 0) || (a.idx - b.idx); });
     return att.concat(rec).slice(0, MAX_HELD);
   };
 
