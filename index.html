@@ -2299,98 +2299,171 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
 /* Shipping page in depth (T835 and T884, 6 Nov 2026), dashboard_72_shiprocket.js. A sub heading inside a card sits 12px from the chart under it (the layout audit asks for room between stacked blocks). */
 .ship-sub{margin:var(--sp4) 0 var(--sp3)!important}
 
-/* mazo dashboard bell (T1032, 10 Nov 2026; panel redesigned the same day after the owner said he did not like it). The panel is the same .popover as Filters (a floating card on a laptop, a
-   bottom sheet at 900px and below, see dashboard_20_design.css). One row = one notification: a severity word with its shape on the left, the title, a muted reason, a muted time on the right,
-   and a dismiss X. Quiet dividers, an 8px grid, a header that stays put, a scroll shadow so the list never looks cut off. Motion is opacity only and off for reduced motion. */
+/* mazo dashboard bell (T1032, 10 Nov 2026). Second design, the same day, after the owner said the first panel looked generic, had underlined text and took up the page.
+   A small card under the bell: 380px wide, about 400px tall at most, 4 rows before the list scrolls. One row = a round tinted icon for the kind, a one line title, a one line reason with the time at its
+   right, a chevron. Two tabs instead of headings. Icon buttons and pill buttons: no underlined text anywhere. At 900px and below the same card is a bottom sheet (dashboard_20_design.css places it),
+   at most 60% of the screen, with a grab handle and a close icon. Motion is opacity and a few pixels of movement only, 150 to 200 ms, and off for reduced motion. */
 .tp-bell{position:relative;flex:0 0 auto}
 .bell-btn{position:relative;width:40px;min-width:40px;padding:0;justify-content:center}
 .bell-btn .ic{width:20px;height:20px;flex-basis:20px}
 .bell-btn.has-new .ic{color:var(--maroon)}
-.bell-badge{position:absolute;top:-9px;right:-9px;display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--maroon);color:#fff;font:600 var(--t12)/1 var(--sans);border:2px solid var(--paper);box-sizing:content-box;pointer-events:none}
+.bell-badge{position:absolute;top:-9px;right:-9px;display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--maroon);color:#fff;font:600 var(--t12)/1 var(--sans);border:2px solid var(--paper);box-sizing:content-box;pointer-events:none;font-variant-numeric:tabular-nums}
 .bell-badge[hidden]{display:none}
+.bn{width:20px;height:20px;flex:0 0 auto;display:block}
 
-/* the card */
-.bell-pop{width:min(440px,calc(100vw - 24px));padding:0;gap:0;overflow:hidden;display:flex;flex-direction:column;max-height:min(78vh,640px)}
+/* the card. The panel itself only carries the border, the shadow and the caret; .bell-in clips and holds the height limit (the placement script sets an inline max-height on the panel, so it is switched off here). */
+.bell-pop{width:min(380px,calc(100vw - 24px));padding:0;gap:0;display:block;overflow:visible;max-height:none!important;background:#fff}
 .bell-pop[hidden]{display:none}
 .bell-pop:focus,.bell-pop:focus-visible{outline:none}
-.bell-head{flex:0 0 auto;padding:var(--sp4) var(--sp4) var(--sp3);background:#fff;border-bottom:1px solid var(--edge)}
-.bell-head-row{display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);min-height:32px}
-.bell-title{margin:0;font:600 var(--t20)/1.2 var(--serif,var(--sans));color:var(--maroon)}
-.bell-acts{display:inline-flex;align-items:center;gap:var(--sp4)}
-.bell-acts .link,.bell-foot .link{font-size:var(--t13);font-weight:600}
-.bell-markall[hidden],.bell-dismissall[hidden],.bell-more[hidden],.bell-goneb[hidden]{display:none}
-.bell-asof{margin:var(--sp1) 0 0;font-size:var(--t12);color:var(--ink2)}
+.bell-caret{position:absolute;z-index:1;top:-7px;left:calc(var(--caret-x,calc(100% - 20px)) - 6px);width:12px;height:12px;background:#fff;border-top:1px solid var(--edge);border-left:1px solid var(--edge);border-top-left-radius:3px;transform:rotate(45deg);pointer-events:none}
+.bell-in{position:relative;display:flex;flex-direction:column;max-height:min(440px,60vh);overflow:hidden;border-radius:calc(var(--rad3) - 1px);background:#fff}
 
-/* the list: scrolls inside the card; a soft shadow at the top and bottom shows there is more */
-.bell-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 0 var(--sp2);
+/* header: title and the muted "data to" line on the left, icon buttons on the right */
+.bell-head{flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp2);padding:14px 10px 6px 16px}
+.bell-head-t{min-width:0;flex:1 1 auto}
+.bell-title{margin:0;font:600 var(--t16)/1.25 var(--serif,var(--sans));color:var(--maroon)}
+.bell-asof{margin:2px 0 0;font-size:var(--t12);line-height:1.4;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bell-acts{flex:0 0 auto;display:inline-flex;align-items:center;gap:2px;margin-top:-2px}
+.bell-hb{appearance:none;border:0;background:transparent;margin:0;padding:0;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:var(--ink2);cursor:pointer;transition:background-color .15s,color .15s}
+.bell-hb .bn{width:18px;height:18px}
+.bell-hb:hover{background:var(--wash);color:var(--maroon)}
+.bell-hb:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+.bell-hb:focus:not(:focus-visible){outline:none}
+.bell-hb[hidden],.bell-close{display:none}
+
+/* the two tabs: a soft track with a white thumb that slides under the chosen one */
+.bell-tabs{position:relative;flex:0 0 auto;display:grid;grid-template-columns:1fr 1fr;margin:6px 16px 8px;padding:3px;background:var(--wash);border-radius:999px}
+.bell-tabs[hidden]{display:none}
+.bell-thumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(42,42,42,.14),0 0 0 1px var(--edge);transition:transform .18s var(--ease,ease-out)}
+.bell-tabs[data-tab="recent"] .bell-thumb{transform:translateX(100%)}
+.bell-tab{appearance:none;position:relative;z-index:1;border:0;background:transparent;margin:0;padding:0 var(--sp2);min-height:30px;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp2);border-radius:999px;font:600 var(--t13)/1 var(--sans);color:var(--ink2);cursor:pointer;transition:color .15s}
+.bell-tab[aria-selected="true"]{color:var(--ink)}
+.bell-tab:hover{color:var(--ink)}
+.bell-tab:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+.bell-tab:focus:not(:focus-visible){outline:none}
+.bell-tab-n{min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#E9E2D8;color:var(--ink2);font:600 var(--t12)/1 var(--sans);font-variant-numeric:tabular-nums;transition:background-color .15s,color .15s}
+.bell-tab[aria-selected="true"] .bell-tab-n{background:var(--maroon);color:#fff}
+
+/* the list: four rows high, then it scrolls inside the card; a soft shadow at the top and bottom shows there is more */
+.bell-body{flex:1 1 auto;min-height:0;max-height:264px;overflow-y:auto;overscroll-behavior:contain;
   background:linear-gradient(#fff 30%,rgba(255,255,255,0)) top/100% 24px no-repeat local,linear-gradient(rgba(255,255,255,0),#fff 70%) bottom/100% 24px no-repeat local,
              linear-gradient(rgba(60,40,20,.10),rgba(60,40,20,0)) top/100% 8px no-repeat scroll,linear-gradient(rgba(60,40,20,0),rgba(60,40,20,.10)) bottom/100% 8px no-repeat scroll,#fff}
-.bell-grp{margin:0;padding:var(--sp4) var(--sp4) var(--sp2);font:600 var(--t12)/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
-.bell-ul{list-style:none;margin:0;padding:0}
-.bell-ul>li.bell-day{padding:var(--sp3) var(--sp4) var(--sp1);font-size:var(--t12);font-weight:600;color:var(--ink2)}
+.bell-body.swap{animation:bell-swap .17s var(--ease,ease-out)}
+.bell-ul{list-style:none;margin:0;padding:4px 6px}
 
 /* one notification */
-.bell-row{position:relative;display:flex;align-items:flex-start;gap:var(--sp1);margin:0;padding:0 var(--sp2) 0 0}
-.bell-row+.bell-row{border-top:1px solid var(--edge)}
-.bell-row:hover,.bell-row:focus-within{background:var(--wash)}
-.bell-open-link{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"sev when" "main main";column-gap:var(--sp3);row-gap:var(--sp1);padding:var(--sp3) 0 var(--sp3) var(--sp5);color:var(--ink);text-decoration:none}
+.bell-row{--rowbg:#fff;position:relative;margin:0;min-height:64px;display:flex;align-items:stretch;border-radius:12px;transition:background-color .15s}
+.bell-row+.bell-row::before{content:"";position:absolute;top:0;left:58px;right:10px;border-top:1px solid var(--edge);pointer-events:none}
+.bell-row:hover,.bell-row:focus-within{--rowbg:var(--wash);background:var(--wash)}
+.bell-row:hover::before,.bell-row:focus-within::before,.bell-row:hover+.bell-row::before,.bell-row:focus-within+.bell-row::before{border-top-color:transparent}
+.bell-open-link{position:relative;flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:12px;padding:10px 36px 10px 10px;border-radius:12px;color:var(--ink);text-decoration:none}
+.bell-open-link:active{background:var(--sand,#F3EEE6)}
 .bell-open-link:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
 .bell-open-link:focus:not(:focus-visible){outline:none}
-.bell-sev{grid-area:sev;justify-self:start}
-.bell-sev .badge{font-size:var(--t12)}
-.bell-when{grid-area:when;justify-self:end;align-self:center;font-size:var(--t12);color:var(--ink2);white-space:nowrap}
-.bell-main{grid-area:main;display:flex;flex-direction:column;gap:2px;min-width:0}
-.bell-t{display:block;font-size:var(--t14);line-height:1.4;font-weight:500;color:var(--ink);overflow-wrap:anywhere}
-.bell-row.unread .bell-t{font-weight:700}
-.bell-why{display:block;font-size:var(--t13);line-height:1.45;color:var(--ink2);overflow-wrap:anywhere}
-.bell-go{display:block;margin-top:2px;font-size:var(--t12);font-weight:600;color:var(--maroon)}
-.bell-row:hover .bell-go,.bell-row:focus-within .bell-go{text-decoration:underline;text-underline-offset:3px}
-.bell-dot{position:absolute;left:var(--sp3);top:21px;width:8px;height:8px;border-radius:50%;background:var(--maroon)}
-.bell-row.gone .bell-t,.bell-row.gone .bell-why{color:var(--ink2);font-weight:500}
+.bell-ic{position:relative;flex:0 0 auto;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#EEE9E2;color:var(--ink2)}
+.bell-ic.sev-act{background:#F4E1DB;color:var(--maroon)}
+.bell-ic.sev-check{background:#F8EBD2;color:var(--mustard-t,#7D5208)}
+.bell-dot{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:var(--maroon);box-shadow:0 0 0 2px var(--rowbg)}
+.bell-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.bell-t{display:block;font-size:var(--t14);line-height:1.3;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bell-row.unread .bell-t{font-weight:600}
+.bell-sub{display:flex;align-items:center;gap:6px;min-width:0;font-size:var(--t13);line-height:1.4}
+.bell-tag{flex:0 0 auto;padding:0 7px;border-radius:999px;background:#F4E1DB;color:var(--maroon);font:600 var(--t12)/1.5 var(--sans)}
+.bell-why{flex:1 1 0;min-width:0;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bell-when{flex:0 0 auto;font-size:var(--t12);color:var(--ink2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.bell-chev{position:absolute;right:10px;top:50%;width:16px;height:16px;margin-top:-8px;color:var(--ink2);transition:opacity .15s}
+.bell-row.gone .bell-t{font-weight:500;color:var(--ink2)}
 
-/* dismiss X and Restore */
-.bell-act{all:unset;box-sizing:border-box;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;margin:var(--sp2) var(--sp1) 0 0;min-width:32px;height:32px;border-radius:50%;color:var(--ink2);cursor:pointer}
-.bell-x-ic{width:14px;height:14px}
-.bell-act:hover{background:#fff;color:var(--maroon)}
-.bell-act:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
-.bell-restore{border-radius:999px;padding:0 var(--sp3);font-size:var(--t13);font-weight:600;color:var(--maroon)}
+/* dismiss X (shown on hover or keyboard focus on a laptop, quiet but always there on a touch screen) and Restore */
+.bell-act{appearance:none;border:0;background:transparent;margin:0;padding:0;position:absolute;top:50%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink2)}
+.bell-x{right:4px;width:28px;height:28px;margin-top:-14px;border-radius:50%;transition:opacity .15s,background-color .15s,color .15s}
+.bell-x .bn{width:16px;height:16px}
+.bell-x:hover{background:#fff;color:var(--maroon)}
+.bell-act:focus-visible{outline:2px solid var(--ring);outline-offset:1px;opacity:1}
+.bell-act:focus:not(:focus-visible){outline:none}
+.bell-restore{right:8px;height:32px;margin-top:-16px;padding:0 14px;border:1px solid var(--edge2);border-radius:999px;background:#fff;font:600 var(--t13)/1 var(--sans);color:var(--maroon)}
 .bell-restore:hover{background:var(--wash)}
+.bell-row.gone .bell-open-link{padding-right:96px}
+@media (hover:hover){
+  .bell-x{opacity:0}
+  .bell-row:hover .bell-x,.bell-row:focus-within .bell-x{opacity:1}
+  .bell-row:hover .bell-chev,.bell-row:focus-within .bell-chev{opacity:0}
+}
 
-/* empty, undo line, foot */
-.bell-empty{margin:0;padding:var(--sp6) var(--sp5);font-size:var(--t14);line-height:1.5;color:var(--ink2);text-align:center}
-.bell-empty strong{display:block;margin-bottom:var(--sp1);font:600 var(--t20)/1.2 var(--serif,var(--sans));color:var(--maroon)}
-.bell-undo{flex:0 0 auto;margin:0;display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);padding:var(--sp2) var(--sp4);background:var(--maroon);color:#fff;font-size:var(--t13)}
+/* dismissed items, the empty line, the foot */
+.bell-gone-sec{margin-top:4px;border-top:1px solid var(--edge)}
+.bell-gone-t{margin:0;padding:10px 16px 0;font:600 var(--t12)/1.3 var(--sans);color:var(--ink2)}
+.bell-empty{margin:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:28px 16px;font-size:var(--t14);line-height:1.4;color:var(--ink2);text-align:left}
+.bell-empty-ic{flex:0 0 auto;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--wash);color:var(--maroon)}
+.bell-empty-ic .bn{width:18px;height:18px}
+.bell-foot{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2);padding:8px 16px 12px;border-top:1px solid var(--edge);background:#fff}
+.bell-foot[hidden]{display:none}
+.bell-pill{appearance:none;margin:0;padding:0 14px;height:32px;display:inline-flex;align-items:center;border:1px solid var(--edge2);border-radius:999px;background:#fff;font:600 var(--t13)/1 var(--sans);color:var(--ink);cursor:pointer;transition:background-color .15s,border-color .15s}
+.bell-pill:hover{background:var(--wash);border-color:var(--maroon);color:var(--maroon)}
+.bell-pill:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+.bell-pill:focus:not(:focus-visible){outline:none}
+.bell-pill[hidden]{display:none}
+
+/* the Undo bar: a slim dark strip at the very bottom of the card */
+.bell-undo{flex:0 0 auto;margin:0 8px 8px;display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);padding:6px 6px 6px 16px;border-radius:12px;background:#2A2A2A;color:var(--cream);font-size:var(--t13);line-height:1.3;animation:bell-toast .18s var(--ease,ease-out)}
 .bell-undo[hidden]{display:none}
-.bell-undo .link{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:3px;min-height:32px;padding:0}
-.bell-undo-t{padding:var(--sp1) 0}
-.bell-foot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);padding:0 var(--sp4);border-top:1px solid var(--edge);background:#fff}
-.bell-foot:not(:has(.link:not([hidden]))){display:none}
-.bell-foot .link{padding:var(--sp2) 0;min-height:44px}
-.bell-pop .pop-done{flex:0 0 auto;margin:var(--sp2) var(--sp4) var(--sp4);width:auto}
-.bell-pop:not([hidden]){animation:bell-in .14s ease-out}
-@keyframes bell-in{from{opacity:0}to{opacity:1}}
-@media (prefers-reduced-motion:reduce){.bell-pop:not([hidden]){animation:none}}
+.bell-undo-b{appearance:none;margin:0;padding:0 14px;height:32px;display:inline-flex;align-items:center;border:0;border-radius:999px;background:var(--cream);color:var(--maroon);font:600 var(--t13)/1 var(--sans);cursor:pointer}
+.bell-undo-b:hover{background:#fff}
+.bell-undo-b:focus-visible{outline:2px solid var(--cream);outline-offset:2px}
+.bell-undo-b:focus:not(:focus-visible){outline:none}
+
+/* the full text, after a pause on a row (laptop) or at once on keyboard focus */
+.bell-tip{position:absolute;z-index:5;left:12px;right:12px;padding:8px 12px;border-radius:10px;background:#2A2A2A;color:var(--cream);font-size:var(--t12);line-height:1.45;box-shadow:0 6px 18px rgba(42,42,42,.28);pointer-events:none;animation:bell-fade .15s ease-out}
+.bell-tip[hidden]{display:none}
+.bell-tip b{display:block;margin-bottom:2px;font-weight:600;color:#fff}
+
+/* motion: opacity and a few pixels of movement only */
+.bell-pop:not([hidden]){animation:bell-in .17s var(--ease,ease-out)}
+@keyframes bell-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes bell-sheet{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes bell-swap{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes bell-toast{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes bell-fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){
+  .bell-pop:not([hidden]),.bell-body.swap,.bell-undo,.bell-tip{animation:none}
+  .bell-thumb,.bell-row,.bell-hb,.bell-tab,.bell-tab-n,.bell-x,.bell-pill,.bell-chev{transition:none}
+}
 
 /* 10 Nov 2026: the toolbar blurs what is behind it (dashboard_38_soft.css). A blur makes the toolbar the anchor of every position:fixed child, so on a phone the Filters sheet and this one were
    placed against the toolbar instead of against the screen. The toolbar is 92% white, so without the blur it looks the same. */
 @media (max-width:900px){
   #controls{-webkit-backdrop-filter:none;backdrop-filter:none}
-  .bell-pop{width:auto;max-height:min(84vh,680px);position:fixed}
-  .bell-head{position:relative;padding-top:var(--sp5)}
+  .bell-pop{width:auto}
+  .bell-pop:not([hidden]){animation:bell-sheet .2s var(--ease,ease-out)}
+  .bell-caret{display:none}
+  .bell-in{max-height:60vh}
+  .bell-head{position:relative;padding-top:22px}
   .bell-head::before{content:"";position:absolute;left:50%;top:8px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--edge2)}
-  .bell-pop .pop-done{margin-top:var(--sp3)}
+  .bell-close{display:inline-flex}
+  .bell-asof{white-space:normal;overflow:visible}
 }
+@media (prefers-reduced-motion:reduce){@media (max-width:900px){.bell-pop:not([hidden]){animation:none}}}
 /* where the bell sits. Wide and tablet: right after the search box, at the right end of its row. Phone (640px and below): the bell comes last in the first row. */
 @media (max-width:640px){.tp-bell{order:3}.tp-fil{margin-right:0}}
 @media (pointer:coarse){
   .bell-btn{width:44px;min-width:44px}
-  .bell-act{min-width:44px;height:44px;margin:0}
-  .bell-acts .link,.bell-foot .link{min-height:44px;display:inline-flex;align-items:center}
-  .bell-undo .link{min-height:44px;padding:0 var(--sp2)}
-  .bell-open-link{padding-top:var(--sp3);padding-bottom:var(--sp3)}
-  .bell-dot{top:22px}
+  .bell-hb{width:44px;height:44px}
+  .bell-acts{margin-top:-6px}
+  .bell-tab{min-height:44px}
+  .bell-pill,.bell-undo-b{height:44px}
+  .bell-undo{padding:4px 4px 4px 16px}
+  .bell-open-link{padding-right:68px}
+  .bell-chev{right:46px}
+  .bell-x{right:0;width:44px;height:44px;margin-top:-22px;opacity:.75}
+  .bell-restore{height:44px;margin-top:-22px}
+  .bell-row.gone .bell-open-link{padding-right:104px}
 }
-@media (forced-colors:active){.bell-badge{border:1px solid CanvasText}.bell-dot{background:CanvasText}.bell-undo{border:1px solid CanvasText}}
+@media (forced-colors:active){
+  .bell-badge,.bell-ic,.bell-tag,.bell-undo,.bell-tip,.bell-pill,.bell-restore{border:1px solid CanvasText}
+  .bell-dot{background:CanvasText;box-shadow:none}
+  .bell-thumb{border:1px solid CanvasText;box-shadow:none}
+  .bell-tab[aria-selected="true"] .bell-tab-n{border:1px solid CanvasText}
+}
 @media print{.tp-bell{display:none!important}}
 
 /* mazo dashboard page frame (T1035, 10 Nov 2026). Owner: "why is there so much space on the right side. left and right padding is very off please fix".
@@ -15375,16 +15448,19 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
 
 /* mazo dashboard bell (T1032, 10 Nov 2026): the button in the toolbar and the panel it opens. The rules that decide WHAT is a notification are in dashboard_73_notifications.js.
    Behaviour, each with its reason, in docs/guides/dashboard-notifications.md:
-   - the badge counts items NEW since the panel was last opened (capped 9+, nothing at 0); opening the panel clears it; an item stays bold with a dot until it is clicked or "Mark all read"
-   - the panel is the same popover as Filters (one open at a time, Escape and an outside click close it, focus returns to the bell); on a phone it is the same bottom sheet with a Done button
-   - DISMISS (10 Nov 2026): an X on every row, "Dismiss all" in the header, an Undo for 6 seconds, and "Show dismissed" at the foot with Restore. A dismissed item stays gone until it gets worse or changes.
-   - "Needs attention" first (still true now), then "Recent" (last 7 days, grouped Today / Yesterday / Earlier); 8 shown, "Show more" up to 30
-   - every item has a severity WORD and shape (never colour alone), a plain title, one line of reason, when, and opens the right page and card
+   - the badge counts items NEW since the panel was last opened (capped 9+, nothing at 0); opening the panel clears it; an item keeps its small maroon dot until it is clicked or "Mark all read"
+   - the panel is the same popover as Filters (one open at a time, Escape and an outside click close it, focus returns to the bell). Laptop: a small card under the bell. Phone: a bottom sheet, at most 60% of the screen, with a close icon.
+   - COMPACT (10 Nov 2026, second design, owner: "the UI looks shit, very generic with underline texts... we cant have notifications take up the entire page"): one row = one line of title, one line of reason, a round
+     icon for the kind, the time, a chevron. Two tabs, "Needs attention" and "Recent", instead of headings and day labels. Icon buttons and pill buttons, no underlined text anywhere.
+   - DISMISS: an X on every row (on hover or keyboard focus on a laptop, always there but quiet on a phone), "Dismiss all" in the header, an Undo bar for 6 seconds, "Show dismissed" at the foot with Restore.
+     A dismissed item stays gone until it gets worse or changes.
+   - 8 shown per tab, "Show more" up to 30; every item has a kind icon, a plain title, one line of reason, when, and opens the right page and card. "Needs action" also has a text tag, so colour is never the only signal.
    - nothing opens by itself, no sound, no pop up. It is computed in the browser after each draw (never during one, so the hosted site's month loader is not disturbed). */
 (function () {
-  var wrap, btn, panel, badge, list, built = false, expanded = false, cur = { items: [], today: '' };
-  var SEVWORD = { act: 'Needs action', check: 'Check', info: 'Info' }, SEVKIND = { act: 'red', check: 'amber', info: 'grey' };
-  var DAYWORD = function (d, today) { var n = M.diff(d, today); return n <= 0 ? 'Today' : n === 1 ? 'Yesterday' : 'Earlier'; };
+  var wrap, btn, panel, inner, badge, list, tabsEl, tipEl, built = false, expanded = false, tab = 'attention', picked = false, cur = { items: [], today: '' };
+  var SEVWORD = { act: 'Needs action', check: 'Check', info: 'Info' };
+  var TABS = [['attention', 'Needs attention'], ['recent', 'Recent']];
+  var KINDIC = { payfail: 'pay', dispute: 'pay', wallet: 'pay', parcel: 'parcel', stock: 'stock', tax: 'date', dated: 'date', review: 'review', cancel: 'order', stale: 'data' };
 
   var whenOf = function (o, today) {
     if (o.kind === 'tax' || o.kind === 'dated') return 'Due ' + M.fds(o.date);
@@ -15393,13 +15469,32 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     return (n <= 0 ? 'Today' : n === 1 ? 'Yesterday' : M.fds(o.date)) + (o.time ? ', ' + o.time : '');
   };
 
-  var addSymbol = function () {
-    if (document.getElementById('i-bell')) return;
+  /* One small icon set, one look: 24px box, 1.6 stroke, round ends. The kind icons and the panel's own icons. */
+  var ICONS = {
+    'i-bell': '<path d="M6 9.5a6 6 0 0 1 12 0c0 5.5 2.2 7 2.2 7H3.8S6 15 6 9.5zM10 19.5a2 2 0 0 0 4 0"/>',
+    'bn-pay': '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18M7 15h4"/>',
+    'bn-parcel': '<path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2L12 3z"/><path d="M4 7.2l8 4.3 8-4.3M12 11.5V21"/>',
+    'bn-stock': '<path d="M12 4l9 4.5-9 4.5-9-4.5L12 4z"/><path d="M3 12.5l9 4.5 9-4.5M3 16.5l9 4.5 9-4.5"/>',
+    'bn-date': '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+    'bn-order': '<path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/>',
+    'bn-review': '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9L3.5 9.7l5.9-.8L12 3.5z"/>',
+    'bn-data': '<ellipse cx="12" cy="6" rx="7.5" ry="3"/><path d="M4.5 6v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6M4.5 12v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6"/>',
+    'bn-readall': '<path d="M3 12.5l4.5 4.5 8-9.5M12.5 16.5l1 1 8-9.5"/>',
+    'bn-clear': '<path d="M4 7h9M4 12h6M4 17h9M15.5 12.5l5 5M20.5 12.5l-5 5"/>',
+    'bn-x': '<path d="M6 6l12 12M18 6L6 18"/>',
+    'bn-chev': '<path d="M9 6l6 6-6 6"/>',
+    'bn-ok': '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16 9.5"/>'
+  };
+  var addSymbols = function () {
+    if (document.getElementById('bn-pay')) return;
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('width', '0'); svg.setAttribute('height', '0'); svg.setAttribute('aria-hidden', 'true'); svg.style.cssText = 'position:absolute';
-    svg.innerHTML = '<symbol id="i-bell" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5a6 6 0 0 1 12 0c0 5.5 2.2 7 2.2 7H3.8S6 15 6 9.5zM10 19.5a2 2 0 0 0 4 0"/></g></symbol>';
+    svg.innerHTML = Object.keys(ICONS).filter(function (id) { return !document.getElementById(id); }).map(function (id) {
+      return '<symbol id="' + id + '" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + ICONS[id] + '</g></symbol>';
+    }).join('');
     document.body.appendChild(svg);
   };
+  var ic = function (id, cls) { return M.s('svg', { class: 'bn ' + (cls || ''), 'aria-hidden': 'true', focusable: 'false' }, [M.s('use', { href: '#' + id })]); };
 
   var states = function () { var st = M.bellState.load(); return { seenAt: st.seenAt || {}, read: st.read || {}, dismissed: st.dismissed || {} }; };
   var prune = function (st, items) {
@@ -15415,25 +15510,43 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     btn.classList.toggle('has-new', n > 0);
   };
 
+  /* ---------------------------------------------------------------- the full text on hover or keyboard focus (only when the row had to cut it short) */
+  var tipTimer = null;
+  var hideTip = function () { clearTimeout(tipTimer); if (tipEl) tipEl.hidden = true; };
+  var showTip = function (row) {
+    var t = row.querySelector('.bell-t'), w = row.querySelector('.bell-why');
+    if (!t || !w || !(t.scrollWidth > t.clientWidth + 1 || w.scrollWidth > w.clientWidth + 1)) return;
+    M.clear(tipEl); tipEl.appendChild(M.h('b', { text: t.textContent })); tipEl.appendChild(document.createTextNode(row.getAttribute('data-full') || w.textContent));
+    tipEl.hidden = false;
+    /* the tip lives in the panel (not in the clipped inner box), so a short card can still show all of it. Below the row; above it only when the window has no room below. */
+    var pr = panel.getBoundingClientRect(), rr = row.getBoundingClientRect(), th = tipEl.offsetHeight;
+    var top = rr.bottom - pr.top + 4; if (rr.bottom + 4 + th > window.innerHeight - 8) top = rr.top - pr.top - th - 4;
+    tipEl.style.top = Math.round(top) + 'px';
+  };
+
   /* ---------------------------------------------------------------- the panel */
-  var xIcon = function () { return M.s('svg', { class: 'bell-x-ic', viewBox: '0 0 16 16', 'aria-hidden': 'true' }, [M.s('path', { d: 'M4 4l8 8M12 4l-8 8', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.6', 'stroke-linecap': 'round' })]); };
   var lastUndo = null, undoTimer = null, showGone = false;
 
   var item = function (o, st, gone) {
-    var unread = !gone && !st.read[M.bellLevel(o)], pg = M.PAGES[o.page], rd = M.go ? true : false;
-    var open = M.h('a', { class: 'bell-open-link', href: '#/' + o.page, 'data-bell': o.id, 'aria-label': (unread ? 'Unread. ' : '') + o.title + '. ' + SEVWORD[o.sev] + '. ' + whenOf(o, cur.today) + '. Open ' + (pg ? pg.nav : o.page) }, [
-      M.h('span', { class: 'bell-sev sev-' + o.sev }, [M.badge(SEVWORD[o.sev], SEVKIND[o.sev])]),
+    var unread = !gone && !st.read[M.bellLevel(o)], pg = M.PAGES[o.page], rd = M.go ? true : false, when = whenOf(o, cur.today);
+    /* the time column already says "Due 11 Nov", so the reason line does not repeat it; the hover text and the screen reader still get the whole sentence */
+    var shortWhy = (o.kind === 'tax' || o.kind === 'dated') ? (String(o.why).replace(/^Due [^.]*\.\s*/, '') || o.why) : o.why;
+    var open = M.h('a', { class: 'bell-open-link', href: '#/' + o.page, 'data-bell': o.id, 'aria-label': (unread ? 'Unread. ' : '') + o.title + '. ' + SEVWORD[o.sev] + '. ' + when + '. ' + o.why + ' Open ' + (pg ? pg.nav : o.page) }, [
+      M.h('span', { class: 'bell-ic sev-' + o.sev, 'aria-hidden': 'true' }, [ic('bn-' + (KINDIC[o.kind] || 'data')), unread ? M.h('i', { class: 'bell-dot' }) : null]),
       M.h('span', { class: 'bell-main' }, [
-        M.h('span', { class: 'bell-t' }, [o.title]),
-        M.h('span', { class: 'bell-why', text: o.why }),
-        M.h('span', { class: 'bell-go', 'aria-hidden': 'true', text: 'Open ' + (pg ? pg.nav : o.page) })
+        M.h('span', { class: 'bell-t', text: o.title }),
+        M.h('span', { class: 'bell-sub' }, [
+          o.sev === 'act' ? M.h('span', { class: 'bell-tag', 'aria-hidden': 'true', text: SEVWORD.act }) : null,
+          M.h('span', { class: 'bell-why', text: shortWhy }),
+          M.h('span', { class: 'bell-when', text: when })
+        ])
       ]),
-      M.h('span', { class: 'bell-when', text: whenOf(o, cur.today) })
+      gone ? null : ic('bn-chev', 'bell-chev')
     ]);
     open.addEventListener('click', function (e) {
       e.preventDefault();
       var s2 = states(); s2.read[M.bellLevel(o)] = 1; s2.seenAt[M.bellLevel(o)] = 1; M.bellState.save(s2);
-      closePanel(false);
+      hideTip(); closePanel(false);
       if (o.card) M.pending_after = { card: o.card };
       if (rd) M.go({ page: o.page }, true);
       window.scrollTo(0, 0);
@@ -15441,78 +15554,90 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     });
     var ctl = gone
       ? M.h('button', { type: 'button', class: 'bell-act bell-restore', 'data-restore': o.id, text: 'Restore', 'aria-label': 'Restore: ' + o.title })
-      : M.h('button', { type: 'button', class: 'bell-act bell-x', 'data-dismiss': o.id, title: 'Dismiss', 'aria-label': 'Dismiss: ' + o.title }, [xIcon()]);
-    var li = M.h('li', { class: 'bell-row' + (unread ? ' unread' : '') + (gone ? ' gone' : '') }, [unread ? M.h('i', { class: 'bell-dot', 'aria-hidden': 'true' }) : null, open, ctl]);
+      : M.h('button', { type: 'button', class: 'bell-act bell-x', 'data-dismiss': o.id, title: 'Dismiss', 'aria-label': 'Dismiss: ' + o.title }, [ic('bn-x')]);
+    var li = M.h('li', { class: 'bell-row' + (unread ? ' unread' : '') + (gone ? ' gone' : ''), 'data-full': o.why }, [open, ctl]);
     /* The redraw removes this very button. The shared outside-click handler (dashboard_03_shell.js) decides "inside or outside" AFTER the click, from the node that was clicked, so a redraw during the click
-       made a keyboard press (no mouse press recorded) look like a click outside and closed the panel. The redraw waits until the click has finished. */
-    ctl.addEventListener('click', function () { setTimeout(function () { (gone ? restore : dismiss)([o]); }, 0); });
+       made a keyboard press (no mouse press recorded) look like a click outside and closed the panel. The redraw waits until the click has finished.
+       e.detail is 0 for a keyboard press: only then does focus move on to the next row's button (a mouse user would see a stray X appear on a row he never touched). */
+    ctl.addEventListener('click', function (e) { var kb = e.detail === 0; hideTip(); setTimeout(function () { if (gone) restore([o], false, kb); else dismiss([o], kb); }, 0); });
     return li;
   };
 
-  /* dismiss one or many; the Undo line stays for 6 seconds or until the next action */
+  /* dismiss one or many; the Undo bar stays for 6 seconds or until the next action */
   var say = function (text, undoFn) {
     var line = panel.querySelector('.bell-undo'); if (!line) return;
     clearTimeout(undoTimer); line.hidden = false; M.clear(line);
-    var msg = M.h('span', { class: 'bell-undo-t', role: 'status', text: text });
-    line.appendChild(msg);
-    if (undoFn) { var u = M.h('button', { type: 'button', class: 'link bell-undo-b', text: 'Undo' }); u.addEventListener('click', function () { clearTimeout(undoTimer); line.hidden = true; undoFn(); }); line.appendChild(u); }
+    line.appendChild(M.h('span', { class: 'bell-undo-t', role: 'status', text: text }));
+    if (undoFn) { var u = M.h('button', { type: 'button', class: 'bell-undo-b', text: 'Undo' }); u.addEventListener('click', function () { clearTimeout(undoTimer); line.hidden = true; undoFn(); }); line.appendChild(u); }
     undoTimer = setTimeout(function () { line.hidden = true; lastUndo = null; }, 6000);
   };
-  var dismiss = function (os) {
+  var dismiss = function (os, kb) {
     var st = states(); os.forEach(function (o) { st.dismissed[M.bellLevel(o)] = 1; st.seenAt[M.bellLevel(o)] = 1; }); M.bellState.save(st);
     lastUndo = os.slice(); paintPanel(); paintBadge();
     say(os.length === 1 ? 'Dismissed' : os.length + ' dismissed', function () { restore(os, true); });
-    var next = panel.querySelector('.bell-x') || panel; next.focus({ preventScroll: true });
+    var next = (kb && panel.querySelector('.bell-x')) || panel; next.focus({ preventScroll: true });
   };
-  var restore = function (os, quiet) {
+  var restore = function (os, quiet, kb) {
     var st = states(); os.forEach(function (o) { delete st.dismissed[M.bellLevel(o)]; }); M.bellState.save(st);
     if (!quiet) { clearTimeout(undoTimer); var line = panel.querySelector('.bell-undo'); if (line) line.hidden = true; }
     paintPanel(); paintBadge();
-    var f = panel.querySelector('.bell-x, .bell-open-link') || panel; f.focus({ preventScroll: true });
+    var f = ((kb === true || quiet === true) && panel.querySelector('.bell-x, .bell-open-link')) || panel; f.focus({ preventScroll: true });      /* a mouse user keeps the panel focus; a keyboard user lands on the first row's button */
+  };
+
+  var emptyLine = function (text) {
+    return M.h('p', { class: 'bell-empty' }, [M.h('span', { class: 'bell-empty-ic', 'aria-hidden': 'true' }, [ic('bn-ok')]), M.h('span', { text: text })]);
   };
 
   var paintPanel = function (focusFirstNew) {
     var st = states(), all = cur.items, c = M.bellCounts(all, st);
     var items = all.filter(function (o) { return !M.bellDismissed(o, st); }), gone = all.filter(function (o) { return M.bellDismissed(o, st); });
-    M.clear(list);
-    var att = items.filter(function (o) { return o.group === 'attention'; }), rec = items.filter(function (o) { return o.group === 'recent'; });
-    var shown = 0, limit = expanded ? 30 : 8, firstExtra = null;
-    var section = function (title, arr, byDay) {
-      var rows = arr.slice(0, Math.max(0, limit - shown));
-      if (!rows.length) return;
-      var ul = M.h('ul', { class: 'bell-ul' }), lastDay = '';
-      rows.forEach(function (o) {
-        if (byDay) { var dw = DAYWORD(o.date, cur.today); if (dw !== lastDay) { ul.appendChild(M.h('li', { class: 'bell-day', role: 'presentation', text: dw })); lastDay = dw; } }
-        var li = item(o, st, false); ul.appendChild(li);
-        if (!firstExtra && shown >= 8) firstExtra = li.querySelector('.bell-open-link');
-        shown++;
-      });
-      list.appendChild(M.h('section', { class: 'bell-sec', 'aria-label': title }, [M.h('h4', { class: 'bell-grp', text: title }), ul]));
-    };
-    section('Needs attention', att, false);
-    section('Recent', rec, true);
-    var total = items.length;
-    if (!total) list.appendChild(M.h('p', { class: 'bell-empty' }, [M.h('strong', { text: all.length ? 'All clear' : 'All clear' }), all.length ? 'You have dismissed everything. Nothing new needs you.' : 'Nothing needs you right now.']));
+    var sets = { attention: items.filter(function (o) { return o.group === 'attention'; }), recent: items.filter(function (o) { return o.group === 'recent'; }) };
+    var other = tab === 'attention' ? 'recent' : 'attention';
+    if (!picked && !sets[tab].length && sets[other].length) tab = other;      /* the tab he did not pick himself follows the items */
+    hideTip(); M.clear(list);
+    var arr = sets[tab], limit = expanded ? 30 : 8, firstExtra = null, total = arr.length;
+    if (!items.length) list.appendChild(emptyLine(all.length ? 'All clear. You have dismissed everything.' : 'All clear. Nothing needs you right now.'));
+    else if (!arr.length) list.appendChild(emptyLine(tab === 'attention' ? 'Nothing needs attention right now.' : 'Nothing new in the last 7 days.'));
+    else {
+      var ul = M.h('ul', { class: 'bell-ul' });
+      arr.slice(0, limit).forEach(function (o, i) { var li = item(o, st, false); ul.appendChild(li); if (i === 8) firstExtra = li.querySelector('.bell-open-link'); });
+      list.appendChild(ul);
+    }
     if (showGone && gone.length) {
       var ulg = M.h('ul', { class: 'bell-ul' }); gone.forEach(function (o) { ulg.appendChild(item(o, st, true)); });
-      list.appendChild(M.h('section', { class: 'bell-sec bell-gone', 'aria-label': 'Dismissed' }, [M.h('h4', { class: 'bell-grp', text: 'Dismissed' }), ulg]));
+      list.appendChild(M.h('section', { class: 'bell-gone-sec', 'aria-label': 'Dismissed' }, [M.h('p', { class: 'bell-gone-t', text: 'Dismissed' }), ulg]));
     }
+    /* the tabs: counts in the name, a sliding thumb under the chosen one */
+    tabsEl.hidden = !items.length; tabsEl.setAttribute('data-tab', tab);
+    TABS.forEach(function (t) {
+      var b = tabsEl.querySelector('[data-tab="' + t[0] + '"]'), n = sets[t[0]].length, on = t[0] === tab;
+      b.querySelector('.bell-tab-n').textContent = String(n);
+      b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1; b.setAttribute('aria-label', t[1] + ', ' + n);
+    });
+    if (items.length) { list.setAttribute('role', 'tabpanel'); list.setAttribute('aria-labelledby', 'bell-tab-' + tab); } else { list.removeAttribute('role'); list.removeAttribute('aria-labelledby'); }
     var more = panel.querySelector('.bell-more');
     more.hidden = expanded || total <= 8;
     more.textContent = 'Show ' + Math.max(0, total - 8) + ' more';
     var gb = panel.querySelector('.bell-goneb'); gb.hidden = !gone.length; gb.textContent = (showGone ? 'Hide dismissed (' : 'Show dismissed (') + gone.length + ')'; gb.setAttribute('aria-expanded', showGone ? 'true' : 'false');
+    panel.querySelector('.bell-foot').hidden = more.hidden && gb.hidden;
     panel.querySelector('.bell-markall').hidden = c.unread === 0;
-    panel.querySelector('.bell-dismissall').hidden = total === 0;
+    panel.querySelector('.bell-dismissall').hidden = items.length === 0;
     panel.querySelector('.bell-asof').textContent = 'Data to ' + M.fds(M.D.anchor) + ', saved ' + M.builtText();
-    list.classList.toggle('has-more', total > 3);
     if (focusFirstNew && firstExtra) firstExtra.focus({ preventScroll: false });
+  };
+
+  var setTab = function (t, focus) {
+    if (t === tab) return;
+    tab = t; picked = true; expanded = false; paintPanel();
+    list.scrollTop = 0; list.classList.remove('swap'); void list.offsetWidth; list.classList.add('swap');      /* a short fade of the new list */
+    if (focus) tabsEl.querySelector('[data-tab="' + t + '"]').focus({ preventScroll: true });
   };
 
   var closePanel;
   var openedBy = function () {
-    /* opening the panel is "seeing" every item: the badge clears, the bold dot stays until the item is clicked or Mark all read */
+    /* opening the panel is "seeing" every item: the badge clears, the dot stays until the item is clicked or Mark all read */
     var st = states(); cur.items.forEach(function (o) { st.seenAt[M.bellLevel(o)] = 1; }); prune(st, cur.items); M.bellState.save(st);
-    expanded = false; showGone = false; paintPanel(); paintBadge();
+    expanded = false; showGone = false; picked = false; tab = 'attention'; paintPanel(); paintBadge();
   };
 
   M.bellRefresh = function () {
@@ -15523,38 +15648,53 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   };
 
   /* ---------------------------------------------------------------- build */
+  var iconBtn = function (cls, label, icon) { return M.h('button', { type: 'button', class: 'bell-hb ' + cls, title: label, 'aria-label': label }, [ic(icon)]); };
   M.bellMount = function () {
     var row = document.querySelector('#controls .toolrow');
     if (!row || document.getElementById('bell-btn')) return;
-    addSymbol();
+    addSymbols();
     badge = M.h('span', { class: 'bell-badge', 'aria-hidden': 'true', hidden: true });
     btn = M.h('button', { type: 'button', class: 'tbtn bell-btn', id: 'bell-btn', 'aria-label': 'Notifications', 'aria-expanded': 'false', 'aria-haspopup': 'dialog', 'aria-controls': 'bell-panel' },
       [M.s('svg', { class: 'ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#i-bell' })]), badge]);
-    list = M.h('div', { class: 'bell-body' });
-    var markAll = M.h('button', { type: 'button', class: 'link bell-markall', text: 'Mark all read', hidden: true });
-    var dismissAll = M.h('button', { type: 'button', class: 'link bell-dismissall', text: 'Dismiss all', hidden: true });
-    var moreBtn = M.h('button', { type: 'button', class: 'link bell-more', text: 'Show more', hidden: true });
-    var goneBtn = M.h('button', { type: 'button', class: 'link bell-goneb', hidden: true, 'aria-expanded': 'false' });
-    panel = M.h('div', { class: 'popover pop-right bell-pop', id: 'bell-panel', role: 'dialog', 'aria-label': 'Notifications', hidden: true }, [
-      M.h('div', { class: 'bell-head' }, [
-        M.h('div', { class: 'bell-head-row' }, [M.h('h3', { class: 'bell-title', text: 'Notifications' }), M.h('span', { class: 'bell-acts' }, [markAll, dismissAll])]),
-        M.h('p', { class: 'bell-asof' })
-      ]),
+    list = M.h('div', { class: 'bell-body', id: 'bell-body' });
+    var markAll = iconBtn('bell-markall', 'Mark all read', 'bn-readall'); markAll.hidden = true;
+    var dismissAll = iconBtn('bell-dismissall', 'Dismiss all', 'bn-clear'); dismissAll.hidden = true;
+    var closeBtn = iconBtn('bell-close', 'Close notifications', 'bn-x');
+    var moreBtn = M.h('button', { type: 'button', class: 'bell-pill bell-more', text: 'Show more', hidden: true });
+    var goneBtn = M.h('button', { type: 'button', class: 'bell-pill bell-goneb', hidden: true, 'aria-expanded': 'false' });
+    tabsEl = M.h('div', { class: 'bell-tabs', role: 'tablist', 'aria-label': 'Notification groups' }, [M.h('span', { class: 'bell-thumb', 'aria-hidden': 'true' })].concat(TABS.map(function (t) {
+      var b = M.h('button', { type: 'button', class: 'bell-tab', role: 'tab', id: 'bell-tab-' + t[0], 'data-tab': t[0], 'aria-selected': 'false', 'aria-controls': 'bell-body', tabindex: '-1' },
+        [M.h('span', { class: 'bell-tab-t', text: t[1] }), M.h('span', { class: 'bell-tab-n', 'aria-hidden': 'true', text: '0' })]);
+      b.addEventListener('click', function () { setTab(t[0], false); });
+      b.addEventListener('keydown', function (e) {
+        var k = e.key; if (k !== 'ArrowLeft' && k !== 'ArrowRight' && k !== 'Home' && k !== 'End') return;
+        e.preventDefault(); setTab(k === 'ArrowLeft' || k === 'Home' ? 'attention' : 'recent', true);
+      });
+      return b;
+    })));
+    tipEl = M.h('div', { class: 'bell-tip', role: 'presentation', 'aria-hidden': 'true', hidden: true });
+    inner = M.h('div', { class: 'bell-in' }, [
+      M.h('div', { class: 'bell-head' }, [M.h('div', { class: 'bell-head-t' }, [M.h('h3', { class: 'bell-title', text: 'Notifications' }), M.h('p', { class: 'bell-asof' })]), M.h('span', { class: 'bell-acts' }, [markAll, dismissAll, closeBtn])]),
+      tabsEl,
       list,
-      M.h('p', { class: 'bell-undo', hidden: true }),
-      M.h('div', { class: 'bell-foot' }, [moreBtn, goneBtn])
+      M.h('div', { class: 'bell-foot', hidden: true }, [moreBtn, goneBtn]),
+      M.h('p', { class: 'bell-undo', hidden: true })
     ]);
+    panel = M.h('div', { class: 'popover pop-right bell-pop', id: 'bell-panel', role: 'dialog', 'aria-label': 'Notifications', hidden: true }, [M.h('span', { class: 'bell-caret', 'aria-hidden': 'true' }), inner, tipEl]);
     closePanel = M.pop(btn, panel);
-    panel.appendChild(M.popDone(closePanel));
+    closeBtn.addEventListener('click', function () { closePanel(true); M.popClose = null; document.body.classList.remove('pop-open'); });      /* the phone sheet's close icon (hidden on a laptop) */
     wrap = M.h('div', { class: 'tpop tp-bell' }, [btn, panel]);
     row.appendChild(wrap);
     built = true;
     btn.addEventListener('click', function () {
       if (panel.hidden) return;
       openedBy();      /* M.pop has just opened it (its own click handler runs first) */
-      /* M.pop moves focus to the first control in the panel, which is "Mark all read" or nothing. The panel must always take focus, so the keyboard (Escape, Tab) works inside it. */
+      /* M.pop moves focus to the first control in the panel. The panel itself must take focus, so the keyboard (Escape, Tab from the top) works inside it. */
       panel.setAttribute('tabindex', '-1');
-      if (!panel.contains(document.activeElement)) panel.focus({ preventScroll: true });
+      panel.focus({ preventScroll: true });
+      /* the small arrow points at the middle of the bell, even when the card had to be moved to stay inside the window */
+      var bb = btn.getBoundingClientRect(), pb = panel.getBoundingClientRect();
+      panel.style.setProperty('--caret-x', Math.round(bb.left + bb.width / 2 - pb.left) + 'px');
     });
     markAll.addEventListener('click', function () {
       var st = states(); cur.items.forEach(function (o) { st.read[M.bellLevel(o)] = 1; st.seenAt[M.bellLevel(o)] = 1; }); M.bellState.save(st); paintPanel(); paintBadge();
@@ -15567,6 +15707,15 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     });
     goneBtn.addEventListener('click', function () { showGone = !showGone; paintPanel(); goneBtn.focus({ preventScroll: true }); });
     moreBtn.addEventListener('click', function () { expanded = true; paintPanel(true); });
+    /* the full text: after a short pause on hover, at once on keyboard focus; never on a touch screen */
+    if (window.matchMedia && window.matchMedia('(hover:hover)').matches) {
+      var rowOf = function (e) { return e.target.closest ? e.target.closest('.bell-row') : null; };
+      list.addEventListener('mouseover', function (e) { var r = rowOf(e); clearTimeout(tipTimer); if (r && !r.contains(e.relatedTarget)) tipTimer = setTimeout(function () { showTip(r); }, 380); });
+      list.addEventListener('mouseout', function (e) { var r = rowOf(e); if (r && !r.contains(e.relatedTarget)) hideTip(); });
+      list.addEventListener('focusin', function (e) { var r = rowOf(e); if (r && e.target.matches && e.target.matches(':focus-visible')) showTip(r); });
+      list.addEventListener('focusout', hideTip);
+      list.addEventListener('scroll', hideTip, { passive: true });
+    }
     M.bellRefresh();
   };
 
