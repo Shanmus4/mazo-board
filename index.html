@@ -16613,6 +16613,9 @@ M.unlock = function () {
     if (M.state.page !== 'tax' || !M.taxKit || !M.taxKit.months) return want;
     var F = M.D.files || { d: [] };
     try { M.taxKit.months().forEach(function (m) { var id = 'd-' + m; if ((F.d || []).indexOf(m) >= 0 && want.indexOf(id) < 0) want.push(id); }); } catch (e) { console.error(e); }
+    /* 12 Nov 2026 (audit finding, T1086): the "Months, quarters and years" table lists EVERY month of the financial year with the order numbers behind it, but the lines above open only the months of
+       the chosen period, so an older month's order numbers read "none" on the hosted site. The Taxes page is small (about 40 order lines in all), so it opens every month file the shop has. */
+    try { (F.d || []).forEach(function (m) { var id = 'd-' + m; if (want.indexOf(id) < 0) want.push(id); }); } catch (e) { console.error(e); }
     return want;
   };
 })();
