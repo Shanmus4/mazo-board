@@ -505,19 +505,37 @@ body.detail-on #fsroot .card.fs{padding-right:var(--s6)}
 @media (pointer:coarse){.tbl-q{height:44px}.btn.sm{height:40px}}
 @media print{.subnav,.gsearch,.tbl-tools,.tbl-more,.detail,.fs-ctl,.fold-hint{display:none!important}.fold>*{display:block!important}.fold>summary{display:block}.fold>summary::after{display:none}}
 
-/* search result found (T1097, 12 Nov 2026): the card, chart or headline number a search result points at is lit by a soft ring for about two seconds, then it fades. */
-.found-it { position: relative; border-radius: var(--cr-pan, 12px); animation: foundIt 2.2s ease-out both; }
-@keyframes foundIt {
-  0%   { box-shadow: 0 0 0 0 rgba(200, 137, 42, 0); }
-  12%  { box-shadow: 0 0 0 4px rgba(200, 137, 42, .62), 0 6px 22px rgba(200, 137, 42, .18); }
-  70%  { box-shadow: 0 0 0 4px rgba(200, 137, 42, .5), 0 6px 22px rgba(200, 137, 42, .12); }
-  100% { box-shadow: 0 0 0 0 rgba(200, 137, 42, 0); }
+/* search result found (T1097, 12 Nov 2026; round 2, 13 Nov 2026): the card, table, chart or headline number a search result points at glimmers for about three seconds: a soft light sweeps across it
+   twice and a gold border fades out. A whole page that was searched glimmers its title block and the top of its content. */
+.found-it { position: relative; }      /* the gold border is drawn by dashboard_09_search.js (a Web Animation); the sweep below is CSS */
+.found-it::after, .found-page::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; bottom: 0; border-radius: inherit; pointer-events: none; z-index: 3;
+  background: linear-gradient(105deg, rgba(255, 244, 214, 0) 34%, rgba(255, 226, 160, .6) 50%, rgba(255, 244, 214, 0) 66%) no-repeat;
+  background-size: 280% 100%; background-position: 135% 0;
+  animation: foundSweep 1.35s ease-in-out .15s 2 both;
+}
+@keyframes foundSweep { from { background-position: 135% 0; } to { background-position: -35% 0; } }
+}
+/* a whole page: a frame the height of one screen over the top of the content */
+.found-page { position: relative; }
+.found-page::after { bottom: auto; height: var(--found-h, 70vh); border-radius: var(--cr-pan, 12px); animation: foundSweep 1.35s ease-in-out .15s 2 both, foundFrame 3s ease-out both; }
+@keyframes foundFrame {
+  0%   { box-shadow: inset 0 0 0 0 rgba(200, 137, 42, 0); }
+  10%  { box-shadow: inset 0 0 0 3px rgba(200, 137, 42, .8); }
+  70%  { box-shadow: inset 0 0 0 3px rgba(200, 137, 42, .6); }
+  100% { box-shadow: inset 0 0 0 0 rgba(200, 137, 42, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .found-it { animation: none; box-shadow: 0 0 0 3px rgba(200, 137, 42, .55); transition: box-shadow .2s; }
+  .found-it { animation: none; box-shadow: 0 0 0 3px rgba(200, 137, 42, .7); }
+  .found-it::after { display: none; }
+  .found-page::after { animation: none; box-shadow: inset 0 0 0 3px rgba(200, 137, 42, .6); background: none; }
 }
 /* a result's second line names the page and what it is ("Overview, headline number") */
 .sr-i .sr-s { text-transform: none; }
+/* the chosen row is a plain tint, no bar on its left edge (owner, 13 Nov 2026) */
+.gs-list .sr-i[aria-selected="true"], .gs-list .sr-i:hover { background: var(--wash); box-shadow: none; }
+/* while the search box is in use the page keeps still: no scroll padding, so focusing or typing never scrolls the page up (T1097 round 2) */
+html.gs-typing, html.gs-typing.still, html:has(#gsearch:focus) { scroll-padding-top: 0 !important; }
 
 /* mazo dashboard, Marketing pages (T830, 1 Nov 2026). Small on purpose: the look of cards, tables, buttons, info marks and focus comes from the shared files. */
 .ch-bar{margin:0 0 var(--sp4);overflow-x:auto;scrollbar-width:none}
@@ -2503,10 +2521,34 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
   white-space: nowrap; border-bottom: 1px dotted #8f8579; border-radius: 2px; line-height: 1.35; }
 a.ref { text-decoration: none; }
 .ref:hover { color: var(--maroon); border-bottom-color: var(--maroon); border-bottom-style: solid; }
+/* T1102: on a phone the tap box of a reference is 44px tall; the underline used to hang at the bottom of that box, far below the number. It is drawn under the text itself instead. */
+button.ref { border-bottom: 0; }
+button.ref .ref-t { border-bottom: 1px dotted #8f8579; line-height: 1.35; }
+button.ref:hover .ref-t { border-bottom-color: var(--maroon); border-bottom-style: solid; }
 .ref:focus-visible { outline: 2px solid var(--maroon); outline-offset: 2px; }
-.ref.copied { color: var(--green-t, #2f6b3a); border-bottom-style: solid; }
-.ref.copied::after { content: "Copied"; font-size: 11px; letter-spacing: .02em; opacity: .9; }
-.ref.nocopy::after { content: "Select to copy"; font-size: 11px; color: var(--terra-t, #9a3b22); }
+/* T1102 (13 Nov 2026): copied is shown IN PLACE. For 1.4 seconds the number gives way to a check mark and the word Copied (maroon on a soft cream pill the size of the number, so nothing around it moves),
+   and the small notice at the bottom centre (.copied-toast) says what was copied. */
+.ref.copied .ref-t, .ref.nocopy .ref-t { position: relative; color: transparent; border-bottom-color: transparent; }
+.ref.copied .ref-t::before, .ref.nocopy .ref-t::before { position: absolute; left: -7px; right: -7px; top: -3px; bottom: -3px; display: flex; align-items: center; justify-content: center; border-radius: 999px;
+  font-size: 12px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+.ref.copied .ref-t::before { content: "\2713  Copied"; background: var(--cream, #F0EDE7); color: var(--maroon); }
+.ref.nocopy .ref-t::before { content: "Select to copy"; background: #F7E6DF; color: var(--terra-t, #9a3b22); }
+.ref-more.copied::before { content: none; }
+.btn.drill-copy.copied { color: var(--maroon); border-color: var(--maroon); background: var(--cream, #F0EDE7); }
+.btn.drill-copy.copied::before { content: "\2713  "; }
+
+/* the bottom notice: one for the whole dashboard. It floats above the page, never over the side panel's own buttons on a phone (it rides above the panel), and is only a confirmation (no click, no focus). */
+.copied-toast { position: fixed; left: 50%; bottom: 20px; z-index: 95; transform: translate(-50%, 12px); display: inline-flex; align-items: center; gap: 8px; max-width: min(92vw, 420px);
+  padding: 9px 16px 9px 12px; border-radius: 999px; background: var(--maroon); color: var(--cream, #F0EDE7); font-size: 14px; line-height: 1.3; box-shadow: 0 8px 28px rgba(42, 42, 42, .22);
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s; }
+.copied-toast.on { opacity: 1; visibility: visible; transform: translate(-50%, 0); transition-delay: 0s; }
+.copied-toast.bad { background: #8a3a1c; }
+.copied-tick { display: inline-flex; width: 18px; height: 18px; flex: 0 0 18px; }
+.copied-tick .ic { width: 18px; height: 18px; margin: 0; stroke: none; max-width: 18px; max-height: 18px; }
+.copied-msg { overflow-wrap: anywhere; }
+@media (min-width: 641px) { body.detail-on .copied-toast { left: calc((100vw - min(420px, 100vw)) / 2); } }      /* the side panel is open: centre the notice in the free part of the screen */
+@media (max-width: 640px) { .copied-toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); } body.detail-on .copied-toast { display: none; } }      /* the panel fills the lower part of a phone: the check mark in place says Copied, the screen reader still hears it */
+@media (prefers-reduced-motion: reduce) { .copied-toast, .copied-toast.on { transition: none; transform: translate(-50%, 0); } }
 .ref-order { font-weight: 600; }
 .ref-more { border-bottom: 0; color: var(--ink2); font-size: 12px; padding: 0 2px; text-decoration: underline; text-underline-offset: 2px; }
 .ref-more:hover { color: var(--maroon); }
@@ -2531,7 +2573,10 @@ td .refs { max-width: 260px; }
 .dn-legend li.drill-li { cursor: pointer; }
 .dn-legend li.drill-li:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
 .dn-legend li.drill-li span { min-width: 0; text-decoration: underline dotted #8f8579; text-underline-offset: 3px; }
-.dn-legend li.drill-li span .drill-go { display: inline-block; vertical-align: -3px; }      /* the arrow follows the last word of the label, wherever the label breaks */
+/* T1101 (13 Nov 2026, owner note on a ring legend row: "the chevron icon is placed weirdly"): the arrow used to follow the last word of the label, so it stood at a different place in every row and, when a
+   label wrapped, on its own line. It is now a column of its own at the right end of the row, centred up and down, the same in every legend on every page. The row keeps room for it (padding). */
+.dn-legend li.drill-li { position: relative; padding-right: 34px; }
+.dn-legend li.drill-li span .drill-go { position: absolute; right: 9px; top: 50%; margin: -8px 0 0; }
 .dn-legend li.drill-li:hover span, .dn-legend li.drill-li.on span { text-decoration-color: var(--maroon); color: var(--maroon); }
 .dn-legend li.drill-li b { display: inline-flex; align-items: center; justify-content: flex-end; }
 
@@ -2539,9 +2584,9 @@ td .refs { max-width: 260px; }
 .hb.drill-row { cursor: pointer; }
 .hb.drill-row .vl { display: inline-flex; align-items: center; justify-content: flex-end; }
 tr.drill-row { cursor: pointer; }
-/* the arrow in a table row takes NO width: it sits in the gap between the first two columns. (An arrow that took 20px made the Couriers table on Customers too wide for its card, and the fit-to-card code then switched a column off.) */
-tr.drill-row td:first-child { position: relative; }
-tr.drill-row td:first-child .drill-go { position: absolute; right: -4px; top: 50%; margin: -8px 0 0; }
+/* the arrow in a table row sits at the end of the first cell (T1101: inside 26px of the cell's own padding, no longer over the text of a narrow first column). */
+tr.drill-row td:first-child { position: relative; padding-right: 26px; }
+tr.drill-row td:first-child .drill-go { position: absolute; right: 6px; top: 50%; margin: -8px 0 0; }      /* T1101: inside the cell's own padding, so the text never runs under it */
 
 /* a headline tile that opens a list: an arrow button in the corner, the tile itself is clickable too */
 .kpi.kpi-drill { position: relative; cursor: pointer; }
@@ -2549,6 +2594,9 @@ tr.drill-row td:first-child .drill-go { position: absolute; right: -4px; top: 50
 .kpi-go { all: unset; box-sizing: border-box; position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink2); background: var(--wash); }
 .kpi-go:hover { color: var(--maroon); background: var(--sand, var(--wash)); }
 .kpi-go:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.kpi.kpi-drill .kpi-top { padding-right: 40px; }      /* T1101: the label never runs under the corner arrow button */
+.kpi .kpi-tile svg, .kpi.hero .kpi-tile svg { width: 20px; height: 20px; margin: 0; }      /* the sparkline rule '.kpi.hero svg { height: 64px }' also hit the round icon of a large tile and made its box 64px tall */
+@media (max-width: 640px) { .kpi.kpi-drill .kpi-top { padding-right: 0; } .kpi.kpi-drill .kpi-top .l { padding-right: 44px; } }
 @media (pointer: coarse) {
   .kpi-go { width: 44px; height: 44px; top: 6px; right: 6px; }
   .dn-legend li.drill-li { min-height: 44px; }
@@ -2569,6 +2617,9 @@ tr.drill-row td:first-child .drill-go { position: absolute; right: -4px; top: 50
 .drill-sub { margin: var(--s4, 16px) 0 0; font-size: var(--fs-md, 16px); }
 .drill-foot { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .drill-go { transition: none; } }
+
+/* T1100: the sum under an order's amount: "Items Rs. 1,950 + Shipping Rs. 120 = Rs. 2,070". Calm, one line, wraps on a phone, digits line up. */
+.drill-sum { font-size: var(--fs-sm, 14px); color: var(--ink2); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
@@ -5139,8 +5190,8 @@ M.openFolds = function (el) {
    is found too. All text goes in through textContent. Every element carries data-ux="1". */
 
 M.ALIAS = {
-  overview: 'sales revenue net sales sales after discounts total paid by customers sales without GST orders profit profit after everything shopify bill money goes visits conversion summary home headline average order value',
-  growth: 'growth sales growth line graph trend over time since the start from the beginning cumulative running total week by week month by month compared with the period before previous period increase average order value buyers built up',
+  overview: 'sales revenue net sales sales after discounts total paid by customers sales without GST orders profit profit after everything shopify bill money goes visits conversion summary home headline',
+  growth: 'growth sales growth line graph trend over time since the start from the beginning cumulative running total week by week month by month compared with the period before previous period increase buyers built up',
   funnel: 'shopping steps funnel checkout cart add to cart drop off steps bought payment device leak',
   products: 'product stock inventory verdict sell through views units collection catalogue',
   sizes: 'size stock by size restock reorder lost demand heatmap xs s m l xl xxl next batch',
@@ -5240,13 +5291,14 @@ M.SRCH_SYN = [[/average order value/, 'aov basket size order size'], [/why peopl
     /* every page, the sidebar order first (Payments and Shipping are not in M.ORDER) */
     M.ORDER.concat(Object.keys(M.PAGES).filter(function (id) { return M.ORDER.indexOf(id) < 0; })).forEach(function (id) {
       var p = M.PAGES[id]; if (!p) return;
-      out.push({ type: 'Pages', label: p.title, sub: p.why ? M.shortWhy(p.why) : '', hay: norm(p.title + ' ' + p.nav + ' ' + (M.ALIAS[id] || '')), boost: 2, run: { page: id } });
+      out.push({ type: 'Pages', label: p.title, sub: p.why ? M.shortWhy(p.why) : '', hay: norm(p.title + ' ' + p.nav + ' ' + (M.ALIAS[id] || '')), thay: norm(p.title + ' ' + p.nav), boost: 2, run: { page: id }, glow: true });
     });
     /* T1097: every card, chart, table and headline number, from the list the index script wrote (titles only, scripts/dashboard_search_index.js) */
+    var popular = {}; M.SRCH_POPULAR.forEach(function (t) { popular[norm(t)] = 1; });
     (M.SEARCH_INDEX || []).forEach(function (r) {
       var pg = M.PAGES[r[0]]; if (!pg) return;
       var syn = ''; M.SRCH_SYN.forEach(function (x) { if (x[0].test(r[3])) syn += ' ' + x[1]; });
-      out.push({ type: 'Cards and numbers', label: r[2], sub: pg.title + ', ' + (KIND_NAME[r[1]] || 'card'), hay: norm(r[2] + ' ' + pg.title + syn), thay: norm(r[2] + syn), kind: r[1], boost: r[1] === 'kpi' ? 0.5 : 0, run: { page: r[0] }, find: { page: r[0], key: r[3], kind: r[1] } });
+      out.push({ type: 'Cards and numbers', label: r[2], sub: pg.title + ', ' + (KIND_NAME[r[1]] || 'card'), hay: norm(r[2] + ' ' + pg.title + syn), thay: norm(r[2] + syn), kind: r[1], boost: (r[1] === 'kpi' ? 0.5 : 0) + (popular[norm(r[2])] ? 1.5 : 0), run: { page: r[0] }, find: { page: r[0], key: r[3], kind: r[1] } });
     });
     f.products.forEach(function (n) { out.push({ type: 'Products', label: n, sub: f.coll[n] || '', hay: norm(n + ' ' + (f.coll[n] || '')), run: { page: 'products', product: n, sel: '' } }); });
     f.collections.forEach(function (n) { out.push({ type: 'Collections', label: n, sub: 'Products page, one collection', hay: norm(n), run: { page: 'products', collection: n } }); });
@@ -5293,8 +5345,10 @@ M.SRCH_SYN = [[/average order value/, 'aov basket size order size'], [/why peopl
 
   function choose(o) {
     close(true);
-    inp.value = '';
+    inp.value = ''; inp.blur();      /* the box lets go, so the jump below uses the page's normal scroll padding */
+    document.documentElement.classList.remove('gs-typing');
     if (o.after) M.pending_after = o.after;
+    if (o.glow) M.pending_after = { glow: true };      /* a whole page: its title block and the top of its content glimmer once */
     var same = M.state.page === o.run.page && o.find;
     if (o.find) M.pending_after = { find: o.find, instant: !same };      /* a new page is entered at the card at once, like a link; the same page scrolls smoothly */
     M.go(o.run, true);
@@ -5306,11 +5360,14 @@ M.SRCH_SYN = [[/average order value/, 'aov basket size order size'], [/why peopl
   M.findTitle = function (f) {
     var main = document.getElementById('main'); if (!main) return null;
     var sels = f.kind === 'kpi' ? ['.kpi .l'] : f.kind === 'chart' ? ['h4.sub-h', '.minichart .mc-head b', '.card h3'] : ['.card h3'], i, nodes, n, el = null;
+    /* T1097 round 2: with "Compare with the previous period" on, a card is called "Sales each week, against the period before" and the saved title is "Sales each week" (key "sales each p"),
+       so a title also fits when, with its period word turned into p, it starts with the key and a comma */
+    var fits = function (t) { var k = M.titleKey(t); return k === f.key || (k.indexOf(f.key) === 0 && f.key.length > 12) || (f.key.length >= 10 && k.replace(/\b(by|per|each) (day|week|month)\b/g, '$1 p').indexOf(f.key + ', ') === 0); };
     for (i = 0; i < sels.length && !el; i++) {
       nodes = main.querySelectorAll(sels[i]);
-      for (n = 0; n < nodes.length; n++) if (M.titleKey(M.titleText(nodes[n])) === f.key || M.titleKey(M.titleText(nodes[n])).indexOf(f.key) === 0 && f.key.length > 12) { el = nodes[n]; break; }
+      for (n = 0; n < nodes.length; n++) if (fits(M.titleText(nodes[n]))) { el = nodes[n]; break; }
     }
-    if (!el) { nodes = main.querySelectorAll('.kpi .l, h4.sub-h, .minichart .mc-head b, .card h3'); for (n = 0; n < nodes.length; n++) if (M.titleKey(M.titleText(nodes[n])) === f.key) { el = nodes[n]; break; } }
+    if (!el) { nodes = main.querySelectorAll('.kpi .l, h4.sub-h, .minichart .mc-head b, .card h3'); for (n = 0; n < nodes.length; n++) if (fits(M.titleText(nodes[n]))) { el = nodes[n]; break; } }
     if (!el) return null;
     return { title: el, box: el.closest(f.kind === 'kpi' ? '.kpi' : '.minichart, .card') || el.closest('.card') || el };
   };
@@ -5320,13 +5377,30 @@ M.SRCH_SYN = [[/average order value/, 'aov basket size order size'], [/why peopl
     var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var r = box.getBoundingClientRect(), top = 100, vh = window.innerHeight || document.documentElement.clientHeight;
     if (r.top < top || r.bottom > vh - 24) box.scrollIntoView({ block: r.height > vh - top - 40 ? 'start' : 'center', behavior: still || instant ? 'instant' : 'smooth' });
-    box.classList.add('found-it');
-    setTimeout(function () { box.classList.remove('found-it'); }, 2200);
+    glimmer(box, 'found-it');
   };
+  /* a whole page was searched: the title block glimmers and a soft frame passes over the top of the content (about a screen high), then both fade */
+  M.showFoundPage = function () {
+    var main = document.getElementById('main'); if (!main) return;
+    var head = main.querySelector('.pg-head');
+    main.style.setProperty('--found-h', Math.max(160, Math.min(main.offsetHeight, (window.innerHeight || 800) - 90)) + 'px');
+    glimmer(main, 'found-page');
+    if (head) glimmer(head, 'found-it');
+  };
+  /* the light sits on the element for about three seconds (a still border with reduced motion) and is then taken off; a second search restarts it */
+  var RING0 = '0 0 0 0 rgba(200, 137, 42, 0)', RING1 = '0 0 0 3px rgba(200, 137, 42, .9), 0 8px 26px rgba(200, 137, 42, .22)', RING2 = '0 0 0 3px rgba(200, 137, 42, .72), 0 8px 26px rgba(200, 137, 42, .14)';
+  function glimmer(el, cls) {
+    var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+    /* the border is a Web Animation, not a CSS animation: cards already carry their own entrance animation, which would replace a CSS one */
+    if (cls === 'found-it' && el.animate && !still) el.animate([{ boxShadow: RING0 }, { boxShadow: RING1, offset: .1 }, { boxShadow: RING2, offset: .7 }, { boxShadow: RING0 }], { duration: 3000, easing: 'ease-out', id: 'found-border' });
+    clearTimeout(el._foundT); el._foundT = setTimeout(function () { el.classList.remove(cls); if (cls === 'found-page') el.style.removeProperty('--found-h'); }, 3200);
+  }
   /* after the page is drawn: scroll to the card the search result is about, and put the phrase in that table's own "Filter rows" box */
   M.afterRender = function () {
     var a = M.pending_after; M.pending_after = null;
     if (!a) return;
+    if (a.glow) { setTimeout(function () { M.showFoundPage(); }, 120); return; }
     if (a.find) {
       /* the hosted site may draw the page once more after its month files arrive, which replaces the card: look again until the same card has stood still for a moment (at most about 4 seconds) */
       var tries = 0, last = null, tick = function () {
@@ -5386,7 +5460,11 @@ M.SRCH_SYN = [[/average order value/, 'aov basket size order size'], [/why peopl
     var shown = 0, byType = {}, rest;
     res.forEach(function (o) { (byType[o.type] = byType[o.type] || []).push(o); });
     /* groups are ordered by their best match (pages get a small lead so a plain word like "stock" lists the pages first); equal scores keep the fixed order */
-    var best = function (type) { var m = -99; res.forEach(function (o) { if (o.type === type && o.score > m) m = o.score; }); return m + (type === 'Pages' ? 5 : type === 'Cards and numbers' ? 4 : 0); };      /* cards and numbers lead the History table names: the owner wants to land on the card */
+    var best = function (type) {
+      var m = -99, named = false; res.forEach(function (o) { if (o.type === type && o.score > m) m = o.score; if (type === 'Pages' && o.type === 'Pages' && o.titleHit) named = true; });
+      /* T1097 round 2: pages lead only when the typed words are a page NAME ("overview", "payments"); for "average" or "orders" the exact cards come first */
+      return m + (type === 'Pages' ? (named ? 5 : -3) : type === 'Cards and numbers' ? 4 : type === 'Measures and tables' || type === 'Rows in a table' ? -3 : 0);      /* the History table names come after the cards */
+    };      /* cards and numbers lead the History table names: the owner wants to land on the card */
     var groups = M.SRCH_ORDER.filter(function (t) { return byType[t]; }).sort(function (a, b) { return best(b) - best(a) || M.SRCH_ORDER.indexOf(a) - M.SRCH_ORDER.indexOf(b); });
     /* at most SRCH_MAX in all: the best result of every group first, then the best groups fill the rest, no group over SRCH_PER */
     var take = {}; groups.forEach(function (t) { take[t] = 0; });
@@ -5406,10 +5484,17 @@ M.SRCH_SYN = [[/average order value/, 'aov basket size order size'], [/why peopl
     status.textContent = shown + ' result' + (shown === 1 ? '' : 's') + ' shown of ' + res.length;
     setActive(0);
   }
+  /* T1097 round 2 (13 Nov 2026, owner: "the screen in view scrolls up for every character typed"): scrollIntoView moved the WHOLE page to show the row. Only the results panel scrolls now. */
+  function keepInPanel(li) {
+    if (!panel || panel.hidden) return;
+    var pr = panel.getBoundingClientRect(), lr = li.getBoundingClientRect();
+    if (lr.top < pr.top) panel.scrollTop -= pr.top - lr.top + 4;
+    else if (lr.bottom > pr.bottom) panel.scrollTop += lr.bottom - pr.bottom + 4;
+  }
   function setActive(i) {
     if (act >= 0 && items[act]) items[act].setAttribute('aria-selected', 'false');
     act = i;
-    if (act >= 0 && items[act]) { items[act].setAttribute('aria-selected', 'true'); inp.setAttribute('aria-activedescendant', items[act].id); items[act].scrollIntoView({ block: 'nearest' }); } else inp.removeAttribute('aria-activedescendant');
+    if (act >= 0 && items[act]) { items[act].setAttribute('aria-selected', 'true'); inp.setAttribute('aria-activedescendant', items[act].id); keepInPanel(items[act]); } else inp.removeAttribute('aria-activedescendant');
   }
   function open() { idx = null; if (panel.hidden) { panel.hidden = false; if (M.popClose) M.popClose(); } paint(inp.value); }
   function close(noFocus) {
@@ -5426,6 +5511,12 @@ M.SRCH_SYN = [[/average order value/, 'aov basket size order size'], [/why peopl
     panel = M.h('div', { class: 'gs-panel', hidden: true, 'data-ux': '1' }, [list, status]);
     var hint = M.h('kbd', { class: 'gs-key', 'aria-hidden': 'true', text: '/' });
     var wrap = M.h('div', { class: 'gsearch', role: 'search', 'data-ux': '1' }, [M.s('svg', { class: 'ic gs-ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#i-search' })]), inp, hint, panel]);
+    /* T1097 round 2 (13 Nov 2026): the page has scroll-padding-top:88px for links, and the box sits inside the sticky top bar closer than that to the top, so every focus and every typed
+       character made the browser scroll the page up to clear the padding. The padding is switched off while the box is in use (class set before the focus, removed on blur). */
+    var typing = function (on) { document.documentElement.classList.toggle('gs-typing', on); };
+    wrap.addEventListener('pointerdown', function () { typing(true); }, true);
+    wrap.addEventListener('touchstart', function () { typing(true); }, { capture: true, passive: true });
+    inp.addEventListener('blur', function () { typing(false); });
     inp.addEventListener('focus', open);
     inp.addEventListener('input', function () { if (panel.hidden) panel.hidden = false; paint(inp.value); });
     inp.addEventListener('keydown', function (e) {
@@ -5445,7 +5536,7 @@ M.SRCH_SYN = [[/average order value/, 'aov basket size order size'], [/why peopl
     var k = e.key === 'k' || e.key === 'K';
     if ((k && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing && !e.metaKey && !e.ctrlKey && !e.altKey)) {
       if (M.fs || (inp.closest && inp.closest('[inert]'))) return;      /* full screen and open dialogs keep the keyboard */
-      e.preventDefault(); inp.focus(); inp.select();
+      e.preventDefault(); document.documentElement.classList.add('gs-typing'); inp.focus({ preventScroll: true }); inp.select();
     }
   }, true);
 })();
@@ -5650,6 +5741,7 @@ M.SEARCH_INDEX = [
 ["payments","table","Payouts to the bank","payouts to the bank"],
 ["payments","card","Payments that went through, week by week","payments that went through, week by p"],
 ["payments","card","How buyers paid, in detail","how buyers paid, in detail"],
+["payments","card","Other ways of paying","other ways of paying"],
 ["payments","card","What Razorpay keeps for each way of paying","what razorpay keeps for each way of paying"],
 ["payments","card","Money collected, paid out and still waiting","money collected, paid out and still waiting"],
 ["payments","table","Days from payment to the bank","days from payment to the bank"],
@@ -5691,6 +5783,7 @@ M.SEARCH_INDEX = [
 ["payments","chart","Collected and paid out, added up","collected and paid out, added up"],
 ["payments","chart","Checkouts each week","checkouts each p"],
 ["payments","kpi","Paid by buyers","paid by buyers"],
+["payments","kpi","Paid another way","paid another way"],
 ["payments","kpi","Razorpay kept","razorpay kept"],
 ["payments","kpi","Reached the bank","reached the bank"],
 ["payments","kpi","Payments that failed","payments that failed"],
@@ -5701,6 +5794,8 @@ M.SEARCH_INDEX = [
 ["payments","kpi","Checkouts left behind","checkouts left behind"],
 ["payments","kpi","Time to pay","time to pay"],
 ["payments","kpi","Paid by someone who paid before","paid by someone who paid before"],
+["payments","kpi","Paid outside Razorpay","paid outside razorpay"],
+["payments","kpi","Way of paying not told yet","way of paying not told yet"],
 ["payments","kpi","Collected after fees, all time","collected after fees, all time"],
 ["payments","kpi","Paid out to the bank, all time","paid out to the bank, all time"],
 ["payments","kpi","Waiting at Razorpay","waiting at razorpay"],
@@ -5751,7 +5846,7 @@ M.SEARCH_INDEX = [
 ["shipping","card","Is the Shiprocket catalogue right?","is the shiprocket catalogue right?"],
 ["shipping","card","Catalogue health over the nights","catalogue health over the nights"],
 ["shipping","card","GST inside the shipping charges","gst inside the shipping charges"],
-["shipping","card","Exchange parcels (booked by Madhu, not in Shiprocket)","exchange parcels (booked by madhu, not in shiprocket)"],
+["shipping","table","Exchange parcels (booked by Madhu, not in Shiprocket)","exchange parcels (booked by madhu, not in shiprocket)"],
 ["shipping","chart","The same cost as a share of what the orders were worth","the same cost as a share of what the orders were worth"],
 ["shipping","chart","How the parcels ended","how the # parcels ended"],
 ["shipping","chart","Why delivery failed","why delivery failed"],
@@ -5789,6 +5884,10 @@ M.SEARCH_INDEX = [
 ["shipping","kpi","Freight and extra charges billed","freight and extra charges billed"],
 ["shipping","kpi","WhatsApp tracking fees billed","whatsapp tracking fees billed"],
 ["shipping","kpi","GST inside the parcel charges","gst inside the parcel charges"],
+["shipping","kpi","Exchange orders","exchange orders"],
+["shipping","kpi","Paid to the courier","paid to the courier"],
+["shipping","kpi","Paid by the buyers","paid by the buyers"],
+["shipping","kpi","Left with the shop","left with the shop"],
 ["tables","table","Reviews","reviews"],
 ["tables","table","Returns and exchanges","returns and exchanges"],
 ["tables","card","Reviews over time","reviews over time"],
@@ -8417,7 +8516,7 @@ M.sumCol = function (tab, col, r) { var t = M.total({ tab: tab, col: col }, r.fr
 M.ratio = function (a, b, dp) { return b ? M.pct(a / b * 100, dp == null ? 1 : dp) : 'not tracked'; };
 
 /* ================================================================ PAYMENTS */
-M.sp('payments', 'Payments', 'Payments', 'How much of the money paid reaches the bank, what Razorpay keeps, which payments fail and why, and whether Razorpay agrees with the shop.', [], { dates: true });
+M.sp('payments', 'Payments', 'Payments', 'All the money buyers paid, however it came: through Razorpay or another way. How much reaches the bank, what Razorpay keeps, which payments fail and why, and whether Razorpay agrees with the shop.', [], { dates: true });
 M.PAGES.payments.render = function (r) {
   var root = M.h('div');
   if (!M.isConnected('razorpay', 'razorpay_payments_daily')) {
@@ -8439,7 +8538,14 @@ M.PAGES.payments.render = function (r) {
   var PD = M.drill, PR = M.has('razorpay_payments') ? M.rowsIn('razorpay_payments', r.from, r.to) : [];
   var paidSpec = PD.same(PD.countIs(PD.paySpec(PR.filter(function (x) { return x.status === 'captured' || x.status === 'refunded'; }), { title: 'Paid by buyers' }), cap), amt);
   var failSpec = PD.countIs(PD.paySpec(PR.filter(function (x) { return x.status === 'failed'; }), { title: 'Payments that failed' }), fail);
-  kp.appendChild(M.kpi({ label: 'Paid by buyers', value: M.inr(amt), hero: true, note: M.num(cap) + ' payments went through', drill: paidSpec }));
+  /* T1096 (13 Nov 2026, owner: "payments is all payments, not just razorpay"): the headline is ALL the money paid, Razorpay plus the orders paid another way (Google Pay, a bank transfer, cash...), which
+     Shopify records only as 'manual'. The note says how the two parts split. Fees, the bank and the failed tries below stay Razorpay's own. */
+  var OP = M.otherPay ? M.otherPay(r) : [], opSum = M.otherPaySum ? M.otherPaySum(OP) : 0, allAmt = Math.round((amt + opSum) * 100) / 100;
+  var opSpec = OP.length && M.otherPaySpec ? M.drill.same(M.otherPaySpec('Paid outside Razorpay', OP), opSum) : null;
+  var allSpec = paidSpec && opSpec ? M.drill.same(M.drill.mk({ title: 'Paid by buyers', sentence: M.num(cap + OP.length) + ' payments, ' + M.inr(allAmt) + ': ' + M.num(cap) + ' through Razorpay (' + M.inr(amt) + ') and ' + M.num(OP.length) + ' another way (' + M.inr(opSum) + ').',
+    n: cap + OP.length, money: allAmt, more: [], noun: 'payment' }, function () { return paidSpec.items.concat(opSpec.items).sort(M.drill.newest); }), allAmt) : (OP.length ? null : paidSpec);
+  kp.appendChild(M.kpi({ label: 'Paid by buyers', value: M.inr(allAmt), hero: true, note: OP.length ? M.num(cap + OP.length) + ' payments: ' + M.inr(amt) + ' through Razorpay and ' + M.inr(opSum) + ' another way' : M.num(cap) + ' payments went through', drill: allSpec }));
+  if (OP.length) kp.appendChild(M.kpi({ label: 'Paid another way', value: M.inr(opSum), note: M.num(OP.length) + (OP.length === 1 ? ' order' : ' orders') + ' paid outside Razorpay, no Razorpay fee', drill: opSpec }));
   kp.appendChild(M.kpi({ label: 'Razorpay kept', value: M.inr(fee), note: amt ? M.pct(fee / amt * 100, 2) + ' of what was paid, GST included' : '' }));
   kp.appendChild(M.kpi({ label: 'Reached the bank', value: M.inr(net), note: 'after Razorpay\'s charge' }));
   kp.appendChild(M.kpi({ label: 'Payments that failed', value: M.num(fail), note: pays ? M.pct(fail / pays * 100, 1) + ' of ' + M.num(pays) + ' tries' : '', drill: failSpec }));
@@ -14632,15 +14738,21 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
 
   /* ================================================================ 3. how buyers paid */
   R.cards.push(function howPaid(c) {
-    var title = 'How buyers paid, in detail', why = 'Payments that went through, split four ways: the way of paying, the UPI app, the kind of card and where the card was from. The UPI app is the part after the @ of the UPI id; the id itself is not kept.';
+    var title = 'How buyers paid, in detail', why = 'Payments that went through, split four ways: the way of paying (Razorpay and other ways together), the UPI app, the kind of card and where the card was from. The UPI app is the part after the @ of the UPI id; the id itself is not kept.';
     if (!c.C.length) return R.card(title, why, [R.nodata(c, 'No payment went through in these dates.')]);
     var C = c.C, box = function (t, parts, o) { return M.h('div', null, [R.sub(t), M.donut(parts, o)]); };
     /* T1036: each part opens the payments it is made of. A list is attached only when it adds up to the part (the same count, or the same money to the paisa). */
     var D = M.drill, byMoney = function (title, rows, val) { return D.same(D.paySpec(rows, { title: title }), val); }, byCount = function (title, rows, n) { return D.countIs(D.paySpec(rows, { title: title }), n); };
     var money = R.by(C, R.method).map(function (g) { var v = R.sum(g.rows, 'amount'); return { label: g.key, value: v, drill: byMoney(g.key + ': the payments', g.rows, v) }; });
+    /* T1096 (13 Nov 2026): the ring of money by way of paying holds ALL the money, so the orders paid outside Razorpay are parts of it, named by the way a person typed (Google Pay, NEFT, cash...) */
+    var OPL = M.otherPay ? M.otherPay(c.r) : [], opBy = {};
+    OPL.forEach(function (x) { (opBy[x.method] = opBy[x.method] || []).push(x); });
+    Object.keys(opBy).forEach(function (k) { var v = M.otherPaySum(opBy[k]); money.push({ label: k === 'Not told yet' ? 'Another way (not told yet)' : k, value: v, drill: M.drill.same(M.otherPaySpec(k + ': the orders', opBy[k]), v) }); });
     var upi = R.by(C.filter(function (x) { return String(x.method).toLowerCase() === 'upi'; }), function (x) { return x.upi_app || 'Not given'; }).map(function (g) { return { label: g.key, value: R.cntOf(g.rows), drill: byCount(g.key + ': UPI payments', g.rows, R.cntOf(g.rows)) }; });
     var cards = R.by(C.filter(function (x) { return String(x.method).toLowerCase() === 'card'; }), function (x) { return [x.card_network, x.card_type].filter(Boolean).join(' ') || 'Card, kind not given'; }).map(function (g) { return { label: g.key, value: R.cntOf(g.rows), drill: byCount(g.key + ': card payments', g.rows, R.cntOf(g.rows)) }; });
     var origin = R.by(C, function (x) { return x.international === 'yes' ? 'From outside India' : 'From India'; }).map(function (g) { var v = R.sum(g.rows, 'amount'); return { label: g.key, value: v, drill: R.originSpec(c, g.key, g.rows, v) }; });
+    /* T1096: the 'where from' ring holds ALL the money too. An order paid another way has no card or UPI details; Shopify's address is not read here, so these parts are labelled for what is known: paid outside Razorpay. */
+    if (OPL.length) origin.push({ label: 'Paid outside Razorpay (place not recorded)', value: M.otherPaySum(OPL), drill: M.drill.same(M.otherPaySpec('Paid outside Razorpay', OPL), M.otherPaySum(OPL)) });
     var kids = [M.grid([
       box('Money by way of paying', money, { name: 'Money by way of paying', total: 'paid', unit: 'money', fmt: R.inr0, empty: 'No payment went through.' }),
       box('UPI apps', upi, { name: 'UPI apps', total: 'UPI payments', unit: 'payments', empty: 'No UPI payment in these dates.' }),
@@ -14652,13 +14764,11 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var ap = M.h('p', { class: 'small' }, [M.num(R.cntOf(apple)) + ' of these ' + (R.cntOf(apple) === 1 ? 'payment' : 'payments') + ' came through Apple Pay (counted as card). '].concat(D.countIs(D.paySpec(apple, { title: 'Payments through Apple Pay', noApple: true }), R.cntOf(apple)) ? [R.seeLink(D.paySpec(apple, { title: 'Payments through Apple Pay', noApple: true }), 'See which')] : []));
       kids.push(ap);      /* T1036: the note names the payments behind it */
     }
-    /* T1096 (12 Nov 2026, owner: "mz1039 was not synced?? the payment was made through google pay"): an order Madhu marks as paid by hand in Shopify has no Razorpay payment, so these rings
-       (Razorpay payments only) cannot hold it, and Shopify does not record how that money reached her. Say so under the rings and open the orders, instead of leaving the owner to think it is missing. */
-    var MT = c.MAT || [], nHand = R.sum(MT, 'manual_orders'), mHand = R.sum(MT, 'manual_amount');
-    if (nHand > 0) {
-      var hd = {}; MT.forEach(function (x) { if (R.num(x.manual_orders)) hd[String(x.date).slice(0, 10)] = 1; });
-      var hs = D.same(D.paidOrdersSpec(D.unpaidOrdersOn(hd), { title: 'Marked paid by hand', lead: 'Orders entered in Shopify as paid. Shopify does not record how this money reached the shop.', note: 'Marked paid by hand' }), mHand);
-      kids.push(M.h('p', { class: 'small' }, [M.num(nHand) + (nHand === 1 ? ' order' : ' orders') + ' (' + R.inr0(mHand) + ') ' + (nHand === 1 ? 'was' : 'were') + ' marked paid by hand in Shopify, so ' + (nHand === 1 ? 'it is' : 'they are') + ' not in these rings: the rings count Razorpay payments only, and Shopify does not record how that money was received. '].concat(hs ? [R.seeLink(hs, 'See which')] : [])));
+    /* T1096 (13 Nov 2026): the first ring now holds the orders paid outside Razorpay too. The rings for the UPI app, the kind of card and where the card came from describe Razorpay payments only
+       (Shopify does not record these details for a payment made another way), so a short line under the rings says so and opens the orders paid another way. */
+    if (OPL.length) {
+      var opTotal = M.otherPaySum(OPL), opSp = M.drill.same(M.otherPaySpec('Paid another way', OPL), opTotal);
+      kids.push(M.h('p', { class: 'small' }, [M.num(OPL.length) + (OPL.length === 1 ? ' order' : ' orders') + ' (' + R.inr0(opTotal) + ') ' + (OPL.length === 1 ? 'was' : 'were') + ' paid another way and ' + (OPL.length === 1 ? 'is' : 'are') + ' part of the first ring. The other rings describe Razorpay payments only: Shopify does not record the UPI app or the card for a payment made another way. '].concat(opSp ? [R.seeLink(opSp, 'See which')] : [])));
     }
     return R.card(title, why, kids);
   });
@@ -14761,7 +14871,10 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   M.addPageCards('payments', function (r, root) {
     if (!M.isConnected('razorpay', R.T.day) || !M.has(R.T.pay) || !M.daysCovered(R.T.day, r.from, r.to)) return;
     var c = R.ctx(r);
-    R.cards.forEach(function (fn) {
+    /* T1096: the card 'Other ways of paying' (dashboard_78_other_payments.js) is drawn right after 'How buyers paid, in detail', so all the ways of paying sit together */
+    var order = R.cards.slice(), oi = order.findIndex(function (f) { return f.name === 'otherWays'; }), hi = order.findIndex(function (f) { return f.name === 'howPaid'; });
+    if (oi > -1 && hi > -1) { var ow = order.splice(oi, 1)[0]; order.splice(order.findIndex(function (f) { return f.name === 'howPaid'; }) + 1, 0, ow); }
+    order.forEach(function (fn) {
       try {
         var n = fn(c); if (!n) return;
         if (fn.name === 'glance' && M.vizPlace) M.vizPlace(root, n, null);      /* the eight numbers sit right under the page's own headline numbers */
@@ -16499,7 +16612,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
      parcel      AWB ...1334        (the tracking number end)
      bill        Bill 610490926
      post        a short label that opens the post
-   A reference is a small button: click it to copy, a polite announcement says "Copied #MZ1035". Posts are links. A reference is plain text in the table search, the row detail and the CSV, so the filter box finds it.
+   A reference is a small button: click it to copy. The reference itself turns into a check mark and "Copied" for 1.4 seconds (13 Nov 2026, owner: "I dont like the copied text that appears, choose a better UI"), and one small notice at the bottom centre says "Copied #MZ1035" (M.copied); a polite announcement says it too. Posts are links. A reference is plain text in the table search, the row detail and the CSV, so the filter box finds it.
    NEVER a name, phone, e-mail, address or card number: the tabs hold none and this file only formats what they hold.
    Helpers:  M.ref(kind, value[, opts])           -> a node (or a text node 'not known' when the value is empty)
              M.refs(kind, values, opts)           -> a node with up to 3 chips and a "+N more" that opens the full list; used for the "Which ones" column of a counted row
@@ -16519,12 +16632,27 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     if (!live) { live = M.h('p', { class: 'sr-only', role: 'status', 'aria-live': 'polite', id: 'ref-live' }); document.body.appendChild(live); }
     live.textContent = ''; setTimeout(function () { live.textContent = text; }, 30);
   }
+  /* T1102: one small notice at the bottom centre, for every copy in the dashboard. It sits above the page, below the side panel's buttons (it never covers a button: on a phone it rides above the panel),
+     fades in and out (no motion when the person asked for less), says what was copied, and is read out politely. Clicking it does nothing: it is only a confirmation. */
+  var toastEl = null, toastTimer = 0;
+  M.copied = function (message, ok) {
+    if (!toastEl) {
+      toastEl = M.h('div', { class: 'copied-toast', 'aria-hidden': 'true' });
+      document.body.appendChild(toastEl);
+    }
+    M.clear(toastEl);
+    toastEl.classList.toggle('bad', ok === false);
+    toastEl.appendChild(M.h('span', { class: 'copied-tick' }, [M.icon ? M.icon(ok === false ? 'i-info' : 'i-check', 'ic') : document.createTextNode('')]));
+    toastEl.appendChild(M.h('span', { class: 'copied-msg', text: message }));
+    toastEl.classList.remove('on'); void toastEl.offsetWidth; toastEl.classList.add('on');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { toastEl.classList.remove('on'); }, ok === false ? 3200 : 1700);
+  };
   function copy(text, done) {
     function fallback() { var ta = M.h('textarea', { style: 'position:fixed;left:-9999px;top:0', 'aria-hidden': 'true', tabindex: '-1' }); ta.value = text; document.body.appendChild(ta); ta.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; } document.body.removeChild(ta); done(ok); }
     try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, fallback); else fallback(); } catch (e) { fallback(); }
   }
   /* copy a list of references at once (the "Copy all references" button of the drill panel, dashboard_76_drill.js); done(ok) is told the result, the polite announcement says it too */
-  M.refCopyText = function (text, label, done) { copy(text, function (ok) { say(ok ? 'Copied ' + label : 'Could not copy. Select the text and copy by hand.'); if (done) done(ok); }); };
+  M.refCopyText = function (text, label, done) { copy(text, function (ok) { say(ok ? 'Copied ' + label : 'Could not copy. Select the text and copy by hand.'); M.copied(ok ? 'Copied ' + label : 'Could not copy. Select the list and copy by hand.', ok); if (done) done(ok); }); };
   /* a mixed list item: a payment that became an order is named by its order; a refused try has no order, so it is named by the payment. M.refOf(payRow) gives {kind, value, full}. */
   M.refOf = function (pay) { return pay && pay.shop_order ? { kind: 'order', value: pay.shop_order } : { kind: 'payment', value: String(pay && pay.key || '').split('_').pop(), full: pay && pay.key }; };
   M.refText = function (kind, value) { var k = KINDS[kind]; return value == null || value === '' || !k ? '' : k.show(value); };
@@ -16535,10 +16663,15 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     if (value == null || value === '' || !k) return document.createTextNode('not known');
     var txt = k.show(value), full = o.full != null ? String(o.full) : String(value);
     if (o.href) return M.h('a', { class: 'ref ref-' + kind, href: o.href, target: '_blank', rel: 'noopener', title: k.word + ': ' + txt + ' (opens the ' + k.word.toLowerCase() + ')', text: txt });
-    var b = M.h('button', { type: 'button', class: 'ref ref-' + kind, 'data-ref': txt, title: k.word + ' ' + txt + ': click to copy', 'aria-label': k.word + ' ' + txt + ', click to copy' }, [M.h('span', { text: txt })]);
+    var b = M.h('button', { type: 'button', class: 'ref ref-' + kind, 'data-ref': txt, 'aria-label': k.word + ' ' + txt + ', click to copy' }, [M.h('span', { class: 'ref-t', text: txt })]);      /* no title attribute: the grey browser pill 'click to copy' was the thing the owner disliked (T1102); the pointer, the underline and the aria-label say it is a button */
     b.addEventListener('click', function (e) {
       e.stopPropagation();      /* a click on a reference never opens the row detail underneath */
-      copy(full, function (ok) { b.classList.add(ok ? 'copied' : 'nocopy'); say(ok ? 'Copied ' + txt : 'Could not copy ' + txt + '. Select it and copy by hand.'); setTimeout(function () { b.classList.remove('copied', 'nocopy'); }, 1400); });
+      copy(full, function (ok) {
+        b.classList.remove('copied', 'nocopy'); void b.offsetWidth; b.classList.add(ok ? 'copied' : 'nocopy');
+        say(ok ? 'Copied ' + txt : 'Could not copy ' + txt + '. Select it and copy by hand.');
+        M.copied(ok ? 'Copied ' + txt : 'Could not copy ' + txt + '. Select it and copy by hand.', ok);
+        clearTimeout(b.__t); b.__t = setTimeout(function () { b.classList.remove('copied', 'nocopy'); }, 1400);
+      });
     });
     return b;
   };
@@ -16599,7 +16732,20 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   var r2 = function (v) { return Math.round(v * 100) / 100; };
   var cap1 = function (s) { s = String(s || '').replace(/_/g, ' ').trim(); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; };
   var tailOf = function (key) { return String(key || '').split('_').pop(); };
-  var newest = function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; };
+  /* T1099 (13 Nov 2026, owner note: "why 1039 is placed above 1040??"): EVERY list a number opens is sorted the same way, by this one function: the newest day first, then, on the same day, the HIGHEST
+     order number first (a number is compared as a number: #MZ1040 above #MZ1039, #MZ1100 above #MZ999), then the reference text. An item whose date is empty goes last. */
+  var refNum = function (r) { var m = r && r.value != null ? String(r.value).match(/(\d+)\s*$/) : null; return m ? +m[1] : -1; };
+  var newest = function (a, b) {
+    var x = a.date || '', y = b.date || '';
+    if (x !== y) return x < y ? 1 : -1;
+    var p = refNum(a.ref), q = refNum(b.ref);
+    if (p !== q) return p < q ? 1 : -1;
+    var s1 = a.ref && a.ref.value != null ? String(a.ref.value) : '', s2 = b.ref && b.ref.value != null ? String(b.ref.value) : '';
+    return s1 < s2 ? 1 : s1 > s2 ? -1 : 0;
+  };
+  /* the rows of a table are sorted by their own date column and order column; this adapts a row to the same rule */
+  var byRow = function (dateOf, orderOf) { return function (a, b) { return newest({ date: dateOf(a), ref: { value: orderOf(a) } }, { date: dateOf(b), ref: { value: orderOf(b) } }); }; };
+  D.newest = newest;
   D.countText = function (n, noun) { var w = NOUN[noun] || [noun, noun + 's']; return M.num(n) + ' ' + (n === 1 ? w[0] : w[1]); };
   D.sum = function (items) { var t = 0; items.forEach(function (it) { if (it.amount != null && it.amount !== '' && !it.noSum) t += num(it.amount); }); return r2(t); };
   /* a spec whose lines are built only when read */
@@ -16632,7 +16778,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   function line(it) {
     var meta = [it.date ? M.fd(it.date) : '', it.way, it.note].filter(Boolean).join(', ');
     var top = M.h('div', { class: 'drill-top' }, [chip(it.ref), it.ref2 ? chip(it.ref2) : null, it.amount != null && it.amount !== '' ? M.h('span', { class: 'drill-amt', text: M.inr(it.amount) }) : null]);
-    return M.h('li', { class: 'drill-item' }, [top, meta ? M.h('div', { class: 'drill-meta small muted', text: meta }) : null,
+    return M.h('li', { class: 'drill-item' }, [top, it.sum ? M.h('div', { class: 'drill-sum', text: it.sum }) : null, meta ? M.h('div', { class: 'drill-meta small muted', text: meta }) : null,
       it.status ? M.h('div', { class: 'drill-st ' + (it.tone || '') }, [M.h('i', { 'aria-hidden': 'true' }), M.h('span', { text: it.status })]) : null]);
   }
   /* what "Copy all references" copies: the part a person pastes into Shopify, Razorpay or Shiprocket (the order number, or the payment tail for a try with no order), once each, in the order shown */
@@ -16655,7 +16801,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     more.addEventListener('click', function () { shown += PAGE; draw(); if (more.hidden) copyBtn.focus(); });
     copyBtn.addEventListener('click', function () {
       var txt = D.copyText(items), label = D.countText(items.length, spec.noun) + ' (' + txt.slice(0, 40) + (txt.length > 40 ? ' ...' : '') + ')';
-      M.refCopyText(txt, label, function (ok) { copyBtn.textContent = ok ? 'Copied' : 'Select the list and copy by hand'; setTimeout(function () { copyBtn.textContent = 'Copy all references'; }, 1500); });
+      M.refCopyText(txt, label, function (ok) { copyBtn.classList.toggle('copied', ok); copyBtn.textContent = ok ? 'Copied' : 'Select the list and copy by hand'; clearTimeout(copyBtn.__t); copyBtn.__t = setTimeout(function () { copyBtn.classList.remove('copied'); copyBtn.textContent = 'Copy all references'; }, 1500); });
     });
     root.appendChild(list); draw();
     var acts = M.h('div', { class: 'drill-acts' }, [more]);
@@ -16727,9 +16873,9 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     else sentence = D.countText(n, 'try') + ': ' + ok + ' went through (' + M.inr(r2(money)) + ') and ' + bad + ' failed.';
     if (o.lead) sentence += ' ' + o.lead;
     if (apple && !o.noApple) sentence += ' ' + (apple === n ? (apple === 1 ? 'It came' : 'All came') : D.countText(apple, ok ? 'payment' : 'try') + ' came') + ' through Apple Pay (counted as card).';
-    return D.mk({ title: o.title || 'Payments', sentence: sentence, n: n, money: money, more: (o.more || []).slice().sort(newest), moreTitle: o.moreTitle, noun: bad ? 'try' : 'payment',
+    return D.mk({ title: o.title || 'Payments', sentence: sentence, n: n, money: money, more: (o.more || []).slice().sort(byRow(function (x) { return x.date; }, function (x) { return x.shop_order || tailOf(x.key); })), moreTitle: o.moreTitle, noun: bad ? 'try' : 'payment',
       foot: folded ? D.countText(folded, 'line') + ' of older payments are kept as monthly totals and are not listed one by one.' : '' },
-      function () { return one.slice().sort(newest).map(D.payItem); });
+      function () { return one.map(D.payItem).sort(newest); });
   };
 
   /* ---------------------------------------------------------------- orders: rows of order_sources, the state of each from shipping_daily */
@@ -16746,24 +16892,44 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     o = o || {};
     rows = rows.filter(function (x) { return x.order; });      /* a row folded into a month holds no order number */
     var money = 0; rows.forEach(function (x) { money += num(x.net_sales); });
-    return D.mk({ title: o.title || 'Orders', sentence: D.countText(rows.length, 'order') + ', ' + M.inr(r2(money)) + ' in sales after discounts. Each amount is that order\'s sales after discounts, with the GST inside and the shipping left out.' + (o.lead ? ' ' + o.lead : ''), n: rows.length, money: money, noun: 'order' },
+    return D.mk({ title: o.title || 'Orders', sentence: D.countText(rows.length, 'order') + ', ' + M.inr(r2(money)) + ' in sales after discounts. Each amount is that order\'s items after discounts, GST inside, shipping left out; the line under it adds the shipping to give what the buyer paid.' + (o.lead ? ' ' + o.lead : ''), n: rows.length, money: money, noun: 'order' },
       function () {
-        var ship = shipState();
-        return rows.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : (a.order < b.order ? 1 : -1); }).map(function (x) {
-          var st = ship(x.order), tp = taxMap()[x.order], paid = tp && tp.kind === 'sale' ? num(tp.total_paid) : 0, extra = paid && Math.abs(paid - num(x.net_sales)) >= 0.5 ? 'The buyer paid ' + M.inr(r2(paid)) + ' with shipping' : '';
+        var ship = shipState(), tm = taxMap(), days = dayIndex();
+        return rows.slice().sort(byRow(function (x) { return x.date; }, function (x) { return x.order; })).map(function (x) {
+          var st = ship(x.order), tp = tm[x.order], facts = D.orderFacts(tp, days), paid = tp && tp.kind === 'sale' ? num(tp.total_paid) : 0, extra = !facts && paid && Math.abs(paid - num(x.net_sales)) >= 0.5 ? 'The buyer paid ' + M.inr(r2(paid)) + ' with shipping' : '';
           /* T1098 (12 Nov 2026, owner: "the order was 2070 but I see 1950"): the amount here is the sales after discounts, shipping left out. Each row now says what the buyer paid in all when that is more. */
           var tag = x.new_customer === 'yes' ? 'First order of this buyer' : x.new_customer === 'no' ? 'A buyer who came back' : '';
-          return { ref: { kind: 'order', value: x.order, copy: x.order }, date: x.date, amount: x.net_sales, status: st.status, tone: st.tone, note: [extra, tag].filter(Boolean).join('. ') };
+          return { ref: { kind: 'order', value: x.order, copy: x.order }, date: x.date, amount: x.net_sales, status: st.status, tone: st.tone, sum: D.breakdown(facts), note: [extra, tag].filter(Boolean).join('. ') };
         });
       });
   };
   /* orders by number, with what the buyer paid (shipping included) from the tax register: for the money that did not come through Razorpay */
   var taxMap = function (rows) { var by = {}; if (rows || M.has('tax_orders')) (rows || M.rows('tax_orders')).forEach(function (x) { if (x.order && (x.kind === 'sale' || !by[x.order])) by[x.order] = x; }); return by; };      /* rows: only the order lines of the chosen days (12 Nov 2026), so the hosted site never reads a month it has not opened */
+  /* T1100 (13 Nov 2026, owner note on a list line: "please represent the number as item value + shipping cost - discount or whatever applies").
+     What the dashboard holds for ONE order: tax_orders.items_value (the pieces AFTER discounts, GST inside), tax_orders.shipping_taxable (the shipping charged, GST inside) and tax_orders.total_paid (what the
+     buyer paid); items + shipping equals total_paid for every order (scripts/order_breakdown_check.py proves it against Shopify for all orders). The discount of one order is not stored on its own. It is
+     known for certain only on a day with ONE order: money_daily then holds that day's price before discounts (gross_sales) and discounts, and the sum must close to the rupee (gross - discount = items).
+     On a day with several orders the line shows the items after discounts and says nothing about a discount, so a wrong number is never shown. */
+  var dayIndex = function () { var by = {}; if (M.has('money_daily')) M.rows('money_daily').forEach(function (x) { if (x.date) by[String(x.date).slice(0, 10)] = x; }); return by; };
+  D.orderFacts = function (t, days) {
+    if (!t || t.kind !== 'sale') return null;
+    var items = num(t.items_value), ship = num(t.shipping_taxable), paid = num(t.total_paid);
+    if (!(paid > 0) || Math.abs(items + ship - paid) > 0.5) return null;
+    var f = { items: r2(items), ship: r2(ship), paid: r2(paid), disc: null, before: null }, d = days && days[String(t.date).slice(0, 10)];
+    if (d && num(d.orders) === 1 && num(d.discounts) > 0 && Math.abs(num(d.gross_sales) - num(d.discounts) - items) < 0.5) { f.disc = r2(num(d.discounts)); f.before = r2(num(d.gross_sales)); }
+    return f;
+  };
+  /* "Items Rs. 1,950 + Shipping Rs. 120 = Rs. 2,070"; with a discount: "Items Rs. 1,650 - Discount Rs. 165 + Shipping Rs. 120 = Rs. 1,605"; free shipping says "Shipping free". The minus is the plain
+     hyphen with spaces round it, which is how the owner wrote the sum (13 Nov 2026). */
+  D.breakdown = function (f) {
+    if (!f) return '';
+    return 'Items ' + M.inr(f.disc != null ? f.before : f.items) + (f.disc != null ? ' - Discount ' + M.inr(f.disc) : '') + (f.ship ? ' + Shipping ' + M.inr(f.ship) : ' + Shipping free') + ' = ' + M.inr(f.paid);
+  };
   D.paidOrdersSpec = function (orders, o) {
     var tx = taxMap(o.rows), money = 0; orders.forEach(function (n) { var t = tx[n]; if (t && t.kind === 'sale') money += num(t.total_paid); });
     return D.mk({ title: o.title, sentence: D.countText(orders.length, 'order') + (o.plain ? '.' : ', ' + M.inr(r2(money)) + ' paid by the buyers (shipping included).') + (o.lead ? ' ' + o.lead : ''), n: orders.length, money: money, noun: 'order' }, function () {
-      var ship = shipState();
-      return orders.map(function (n) { var t = tx[n], st = ship(n); return { ref: { kind: 'order', value: n, copy: n }, date: t ? t.date : '', amount: !o.plain && t && t.kind === 'sale' ? t.total_paid : null, status: o.status || st.status, tone: o.status ? 'bad' : st.tone, note: o.note || '' }; }).sort(newest);
+      var ship = shipState(), days = dayIndex();
+      return orders.map(function (n) { var t = tx[n], st = ship(n); return { ref: { kind: 'order', value: n, copy: n }, date: t ? t.date : '', amount: !o.plain && t && t.kind === 'sale' ? t.total_paid : null, sum: o.plain ? '' : D.breakdown(D.orderFacts(t, days)), status: o.status || st.status, tone: o.status ? 'bad' : st.tone, note: o.note || '' }; }).sort(newest);
     });
   };
   /* the orders of given days that no captured Razorpay payment names: "marked paid by hand", "paid before Razorpay was live", or "paid with no payment in Razorpay" */
@@ -16786,7 +16952,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var money = 0; rows.forEach(function (x) { money += D.parcelCost(x); });
     return D.mk({ title: o.title || 'Parcels', sentence: D.countText(rows.length, 'parcel') + (money ? ', ' + M.inr(r2(money)) + ' charged by the couriers' : '') + '. Each amount is what the courier charged for that parcel (freight, extra weight and returns, GST inside). The date is the day it was picked up.' + (o.lead ? ' ' + o.lead : ''), n: rows.length, money: money, noun: 'parcel' },
       function () {
-        return rows.slice().sort(function (a, b) { var p = D.parcelDay(a), q = D.parcelDay(b); return p < q ? 1 : p > q ? -1 : 0; }).map(function (x) {
+        return rows.slice().sort(byRow(D.parcelDay, function (x) { return x.order; })).map(function (x) {
           var st = String(x.status || ''), done = st === 'delivered', back = /return|rto/i.test(st);
           return { ref: { kind: 'order', value: x.order, copy: x.order }, ref2: x.awb_tail ? { kind: 'parcel', value: x.awb_tail, copy: x.awb_tail } : null, date: D.parcelDay(x), amount: D.parcelCost(x) || null,
             way: [x.courier, x.state].filter(Boolean).join(', '), status: cap1(st), tone: done ? 'good' : back || /fail/i.test(st) ? 'bad' : '', note: x.weight_note || '' };
@@ -16798,7 +16964,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   D.promiseSpec = function (list, hi, o) {
     o = o || {};
     return D.mk({ title: o.title, sentence: D.countText(list.length, 'order') + '. The days are counted from the order to the door.' + (o.lead ? ' ' + o.lead : ''), n: list.length, money: 0, noun: 'order' }, function () {
-      return list.slice().sort(function (a, b) { return a.at < b.at ? 1 : a.at > b.at ? -1 : 0; }).map(function (x) {
+      return list.slice().sort(byRow(function (x) { return x.at; }, function (x) { return x.order; })).map(function (x) {
         var late = x.days > hi, st = x.done ? (late ? 'Delivered late, after ' : 'Delivered on time, after ') + M.num(x.days, 0) + ' days' : (late ? 'Late: ' : 'Inside the promise: ') + M.num(x.days, 0) + ' days since the order, ' + x.status;
         return { ref: { kind: 'order', value: x.order, copy: x.order }, date: x.at, way: x.carrier || '', status: st, tone: late ? 'bad' : x.done ? 'good' : '', note: x.kind === 'made' ? 'Made to order' : 'Ready to ship' };
       });
@@ -16809,7 +16975,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   D.refundSpec = function (rows, o) {
     var money = 0; rows.forEach(function (x) { money += num(x.refunded); });
     return D.mk({ title: o.title, sentence: D.countText(rows.length, 'payment') + ' refunded, ' + M.inr(r2(money)) + ' sent back.', n: rows.length, money: money, noun: 'payment' }, function () {
-      return rows.slice().sort(newest).map(function (x) {
+      return rows.slice().sort(byRow(function (x) { return x.date; }, function (x) { return x.shop_order || tailOf(x.key); })).map(function (x) {
         var it = D.payItem(x), t = tailOf(x.key);
         it.amount = x.refunded; it.status = 'Refunded ' + M.inr(x.refunded) + ' of ' + M.inr(x.amount); it.tone = 'bad'; it.noSum = false; it.note = '';
         if (x.shop_order) { it.ref = { kind: 'order', value: x.shop_order, copy: x.shop_order }; it.ref2 = { kind: 'payment', value: t, copy: t }; } else { it.ref = { kind: 'payment', value: t, copy: t }; it.ref2 = null; }
@@ -16820,7 +16986,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   D.disputeSpec = function (rows, byKey, o) {
     var money = 0; rows.forEach(function (x) { money += num(x.amount); });
     return D.mk({ title: o.title, sentence: D.countText(rows.length, 'dispute') + ', ' + M.inr(r2(money)) + ' in dispute.', n: rows.length, money: money, noun: 'dispute' }, function () {
-      return rows.slice().sort(newest).map(function (x) {
+      return rows.slice().sort(byRow(function (x) { return x.date; }, function (x) { var pay = byKey[x.payment_key]; return pay && pay.shop_order ? pay.shop_order : String(x.dispute_id || ''); })).map(function (x) {
         var pay = byKey[x.payment_key], id = String(x.dispute_id || '').split('_').pop(), withOrder = pay && pay.shop_order;
         return { ref: withOrder ? { kind: 'order', value: pay.shop_order, copy: pay.shop_order } : { kind: 'payment', value: id, copy: x.dispute_id }, ref2: withOrder ? { kind: 'payment', value: id, copy: x.dispute_id } : null,
           date: x.date, amount: x.amount, way: cap1(x.reason), status: cap1(x.status) + (x.phase ? ', ' + x.phase : ''), tone: 'bad', note: x.respond_by ? 'Answer by ' + M.fd(x.respond_by) : '' };
@@ -16832,7 +16998,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   D.extraSpec = function (rows, o) {
     var money = 0; rows.forEach(function (x) { money += num(x.extra_amount); });
     return D.mk({ title: o.title, sentence: D.countText(rows.length, 'parcel') + ' billed above the weight declared, ' + M.inr(r2(money)) + ' extra in all.', n: rows.length, money: money, noun: 'parcel' }, function () {
-      return rows.slice().sort(newest).map(function (x) {
+      return rows.slice().sort(byRow(function (x) { return x.date; }, function (x) { return x.order; })).map(function (x) {
         return { ref: { kind: 'order', value: x.order, copy: x.order }, ref2: x.awb_tail ? { kind: 'parcel', value: x.awb_tail, copy: x.awb_tail } : null, date: x.date, amount: x.extra_amount, way: x.courier,
           status: 'Billed ' + M.num(x.billed_kg, 2) + ' kg, declared ' + M.num(x.declared_kg, 2) + ' kg', tone: 'bad', note: x.dispute || '' };
       });
@@ -16840,7 +17006,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   };
   D.attemptSpec = function (rows, o) {
     return D.mk({ title: o.title, sentence: D.countText(rows.length, 'try') + ', each in the courier\'s own words.', n: rows.length, money: 0, noun: 'try' }, function () {
-      return rows.slice().sort(newest).map(function (x) {
+      return rows.slice().sort(byRow(function (x) { return x.date; }, function (x) { return x.order; })).map(function (x) {
         return { ref: { kind: 'order', value: x.order, copy: x.order }, ref2: x.awb_tail ? { kind: 'parcel', value: x.awb_tail, copy: x.awb_tail } : null, date: x.date, way: [x.courier, x.state].filter(Boolean).join(', '), status: x.reason || cap1(x.kind), tone: 'bad', note: x.outcome ? cap1(x.outcome) : '' };
       });
     });
@@ -16916,6 +17082,51 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     }
     var card = M.card('Exchange parcels (booked by Madhu, not in Shiprocket)', 'The buyer pays both parcels of a size exchange to Madhu by GPay and Madhu pays Delhivery, so this money never passes through Shopify, Razorpay or Shiprocket. It is listed here so nothing about an exchange is missing. These amounts are not part of the Shiprocket cost figures above, so those averages stay true. Typed in by scripts/exchange_parcel_add.py.', kids);
     root.appendChild(card);
+  });
+})();
+
+/* dashboard_78_other_payments.js: PAYMENTS THAT DID NOT GO THROUGH RAZORPAY (T1096, 13 Nov 2026).
+   Owner, 13 Nov 2026: "please include non razorpay payments also in payments, payments is all payments not just razorpay. dont put google pay, because payment can be gpay, neft or anything else".
+   Shopify keeps only the word "manual" for an order marked paid by hand, so HOW the money came is typed by a person in the Sheet tab manual_payments (scripts/manual_payment_add.py). Nothing is guessed:
+   an order with no method typed shows "Not told yet". This file adds (1) M.otherPay(r), the orders paid outside Razorpay in the chosen dates, joined to the typed method, and (2) the card
+   "Other ways of paying" on the Payments page. The headline tiles and the rings of dashboard_68_razorpay*.js read M.otherPay too, so every figure on the page is ALL payments. */
+(function () {
+  var R = M.rz;
+  if (!R) return;
+  var num = function (v) { return v == null || v === '' || isNaN(+v) ? 0 : +v; };
+  /* the orders marked paid by hand in the chosen dates, newest first: [{ order, date, amount, method, received_on, note, told }] amount = what the buyer paid (shipping and GST included) */
+  M.otherPay = function (r) {
+    if (!M.has('order_sources')) return [];
+    var typed = {}; if (M.has('manual_payments')) M.rows('manual_payments').forEach(function (x) { if (x.order) typed[x.order] = x; });
+    var days = {}; if (M.has('razorpay_match')) M.rowsIn('razorpay_match', r.from, r.to).forEach(function (x) { if (num(x.manual_orders)) days[String(x.date).slice(0, 10)] = 1; });
+    var orders = M.drill.unpaidOrdersOn(days), tx = {};
+    if (M.has('tax_orders')) M.rows('tax_orders').forEach(function (x) { if (x.order && x.kind === 'sale') tx[x.order] = x; });
+    var dateOf = {}; M.rows('order_sources').forEach(function (x) { dateOf[x.order] = x.date; });
+    return orders.map(function (o) {
+      var t = typed[o] || {}, paid = tx[o] ? num(tx[o].total_paid) : 0, method = String(t.method || '').trim();
+      return { order: o, date: dateOf[o] || (tx[o] && tx[o].date) || '', amount: paid, method: method || 'Not told yet', told: !!method, received_on: t.received_on || '', note: t.note || '' };
+    }).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : (a.order < b.order ? 1 : -1); });
+  };
+  M.otherPaySum = function (list) { var t = 0; list.forEach(function (x) { t += x.amount; }); return Math.round(t * 100) / 100; };
+  /* one drill list for a group of these orders */
+  M.otherPaySpec = function (title, list, lead) {
+    return M.drill.paidOrdersSpec(list.map(function (x) { return x.order; }), { title: title, lead: lead || 'Orders marked paid by hand in Shopify. How the money came is typed in by a person; Shopify does not record it.', note: 'Paid outside Razorpay' });
+  };
+  R.cards.push(function otherWays(c) {
+    var title = 'Other ways of paying', why = 'Orders that were paid without going through Razorpay: Google Pay, a bank transfer, cash or anything else. Madhu marks such an order as paid in Shopify, and Shopify does not record how the money came, so the way of paying is typed in by a person (Sheet tab manual_payments). Until it is typed it says "Not told yet". These payments carry no Razorpay fee.';
+    var list = M.otherPay(c.r);
+    if (!list.length) return R.card(title, why, [M.empty('No order was paid outside Razorpay in these dates.')]);
+    var by = {}; list.forEach(function (x) { (by[x.method] = by[x.method] || []).push(x); });
+    var parts = Object.keys(by).map(function (k) { return { label: k, value: M.otherPaySum(by[k]), drill: M.drill.same(M.otherPaySpec(k + ': the orders', by[k]), M.otherPaySum(by[k])) }; });
+    var total = M.otherPaySum(list), unt = list.filter(function (x) { return !x.told; });
+    var tiles = M.h('div', { class: 'kpis rz' }, [
+      M.kpi({ label: 'Paid outside Razorpay', value: R.inr(total), note: M.num(list.length) + (list.length === 1 ? ' order' : ' orders') + ', no Razorpay fee', drill: M.drill.same(M.otherPaySpec('Paid outside Razorpay', list), total) }),
+      M.kpi({ label: 'Way of paying not told yet', value: M.num(unt.length), note: unt.length ? R.inr(M.otherPaySum(unt)) + ' in ' + (unt.length === 1 ? 'one order' : 'these orders') + '. Shown as Not told yet until it is recorded.' : 'Every order has its way of paying.', drill: unt.length ? M.drill.same(M.otherPaySpec('Way of paying not told yet', unt), M.otherPaySum(unt)) : null })]);
+    var kids = [M.grid([M.h('div', null, [R.sub('Money by way of paying'), M.donut(parts, { name: 'Other ways of paying', total: 'paid', unit: 'money', fmt: R.inr0 })]), tiles], 'wide')];
+    kids.push(M.table([M.refCol('order', 'order', 'Order'), { k: 'date', label: 'Order day', fmt: M.fd }, { k: 'amount', label: 'Paid by the buyer', num: true, fmt: M.inr },
+      { k: 'method', label: 'Way of paying', fmt: function (v) { return v; } }, { k: 'received_on', label: 'Money arrived on', fmt: function (v) { return v ? M.fd(v) : 'Not told yet'; } }, { k: 'note', label: 'Note', wrap: true, hidden: !list.some(function (x) { return x.note; }) }],
+      { rows: list, sortKey: 'date', sortDir: -1, name: 'other-ways-of-paying', detail: false, empty: 'None.' }));
+    return R.card(title, why, kids);
   });
 })();
 
@@ -17218,7 +17429,7 @@ M.unlock = function () {
     social:    [[SOCIAL, 'all']],
     search:    [[['competitor_social', 'kpi_daily', 'shopify_visits_split_daily', 'visits_joined_daily'], 'all'], [['search_pages_weekly'], 'own']],      /* visits from AI assistants: Shopify's split before 5 Oct, and the date of the first one */
     email:     [['email_weekly', 'all']],
-    payments:  [[['razorpay_payments_daily', 'razorpay_payments', 'razorpay_orders', 'razorpay_recon', 'razorpay_match', 'razorpay_balance_daily', 'money_daily'], 'all']],      /* T707: money waiting, success by method, left checkouts and the match with the shop look at every day since the first payment */
+    payments:  [[['razorpay_payments_daily', 'razorpay_payments', 'razorpay_orders', 'razorpay_recon', 'razorpay_match', 'razorpay_balance_daily', 'money_daily', 'manual_payments', 'order_sources', 'tax_orders'], 'all']],      /* T707: money waiting, success by method, left checkouts and the match with the shop look at every day since the first payment */
     shipping:  [[['money_daily', 'shiprocket_rate_check', 'shipping_daily', 'shiprocket_parcels', 'exchange_parcels'], 'all']],      /* 7 Nov 2026 night: the promise card, the status card and the 'Every order' table all read the one list of orders (shipping_daily) and the hand-delivered parcels */      /* 7 Nov 2026: the line 'N of 24 sales days use real costs' counts every sales day, and 'Could a cheaper courier have carried it?' reads every parcel's check */
     tables:    [[['finance_monthly', 'judgeme_daily', 'order_sources', 'queries_weekly', 'returns_weekly', 'review_weekly'], 'all']],
     health:    [[['vitals_daily', 'ux_daily', 'data_trust_daily', 'clarity_weekly', 'speed_weekly'], 'all']],
