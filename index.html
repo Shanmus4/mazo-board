@@ -6094,6 +6094,23 @@ M.productDetail = function (r, sel) {
     var bk = sd.map(function (x) { return { from: x.date, to: x.date, label: M.fds(x.date) }; });
     kids.push(M.card('Pieces in stock, night by night', 'Stock on hand at the end of each night since ' + M.fd(sd[0].date) + '. This record starts on that day.', [M.chart('', function (h, w) { M.timeChart(h, w, { buckets: bk, mode: 'day', title: sel.product + ' stock', h: 170, series: [{ name: 'In stock', values: sd.map(function (x) { return +x.units_on_hand || 0; }), color: M.COLORS.grey, fmt: M.num }], empty: 'No stock record.' }); })]));
   }
+  /* the shop price over time (owner note on the Products page, 12 Nov 2026: "need a graph for product price history also, actual price, not including checkout discount"). Two sources, joined by day:
+     the order lines (gross sales divided by pieces = the price on the shop that day, before any code typed at checkout; this goes back to the first sale) and the nightly price record (since 30 Oct,
+     it wins on the days it exists). A day with no sale and no record has no point, so the line joins the days we know. */
+  (function () {
+    var pts = {}, src = {};
+    if (M.has('product_sales_daily')) M.rows('product_sales_daily').forEach(function (x) { if (x.product === sel.product && +x.units > 0 && +x.gross_sales > 0) { pts[x.date] = Math.round(+x.gross_sales / +x.units * 100) / 100; src[x.date] = 'order'; } });
+    ph.forEach(function (x) { if (+x.price > 0) { pts[x.snapshot_date] = +x.price; src[x.snapshot_date] = 'record'; } });
+    var days = Object.keys(pts).sort();
+    if (days.length < 2) return;
+    var lo = Math.min.apply(null, days.map(function (d) { return pts[d]; })), hi = Math.max.apply(null, days.map(function (d) { return pts[d]; }));
+    var moves = days.filter(function (d, i) { return i && Math.round(pts[d]) !== Math.round(pts[days[i - 1]]); }).length;
+    var bkp = days.map(function (d) { return { from: d, to: d, label: M.fds(d) }; });
+    kids.push(M.card('Shop price over time', 'The price on the shop, before any discount code typed at checkout. Before ' + M.fd(ph.length ? ph[0].snapshot_date : days[days.length - 1]) + ' each point is read from an order of that day (gross sales divided by pieces); after that it is the price saved every night. Days with no sale and no record have no point.', [
+      M.h('p', { class: 'small muted', text: 'Lowest Rs. ' + M.num(lo, 0) + ', highest Rs. ' + M.num(hi, 0) + ', ' + (moves ? M.num(moves) + ' change' + (moves === 1 ? '' : 's') + ' between the days shown.' : 'no change between the days shown.') }),
+      M.chart('', function (h, w) { M.timeChart(h, w, { buckets: bkp, mode: 'day', title: sel.product + ': shop price', h: 190, noEvents: false, yfmt: function (v) { return 'Rs. ' + M.short(v); },
+        series: [{ name: 'Shop price', values: days.map(function (d) { return pts[d]; }), color: M.COLORS.maroon, fmt: M.inr, type: 'line' }] }); })]));
+  })();
   var prices = ph.map(function (x) { return +x.price; }).filter(function (v) { return v > 0; }), pChanged = prices.length && Math.min.apply(null, prices) !== Math.max.apply(null, prices);
   kids.push(M.card('Price and margin', 'The price is saved every night. It starts on ' + (ph[0] ? M.fd(ph[0].snapshot_date) : 'the first night') + '; older prices exist only on the orders themselves.', [M.table([
     { k: 'when', label: 'Night' }, { k: 'price', label: 'Price', num: true, fmt: M.inr }, { k: 'cost', label: 'Cost to make', num: true, fmt: M.inr }, { k: 'margin', label: 'Margin', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } }, { k: 'stock', label: 'In stock', num: true, fmt: function (v) { return sel.mto ? M.MTO : M.num(v); }, csv: function (x) { return sel.mto ? M.MTO : x.stock; } }
@@ -6734,15 +6751,16 @@ M.PAGES.quality.render = function () {
   var today0 = M.D.built.slice(0, 10), fr = M.D.meta.filter(function (m) { return m.last && /_daily$/.test(m.name) && m.name !== 'data_quality_daily'; }).map(function (m) { return { name: m.name, last: m.last, age: M.diff(m.last, today0), rows: m.rows }; });
   /* T878 (3 Nov 2026, owner: "Data page, needs a look"): a table that writes a row ONLY when something happened (a day with an order, a parcel that moved) looks old on a quiet week although nothing is wrong. It is shown calmly with its reason; a table that writes every day and is old is the real warning. Google reports a day 1 to 3 days late. */
   var QUIET = { data_trust_daily: 'one row per day that had an order; no order since', shipping_daily: 'one row per parcel; no new parcel since' };
-  var LATE = { bing_daily: 1, merchant_daily: 1, youtube_analytics_daily: 1, brand_search_daily: 1, ga4_funnel_daily: 1, source_daily: 1, landing_daily: 1, campaign_daily: 1, visitor_type_daily: 1, funnel_device_daily: 1, product_daily: 1, place_device_daily: 1 };
+  var LATE = { bing_daily: 1, merchant_daily: 1, youtube_analytics_daily: 1, brand_search_daily: 1, ga4_funnel_daily: 1, source_daily: 1, landing_daily: 1, campaign_daily: 1, visitor_type_daily: 1, funnel_device_daily: 1, product_daily: 1, place_device_daily: 1,
+             pinterest_daily: 1, pinterest_split_daily: 1, youtube_more_daily: 1, youtube_split_daily: 1, linkedin_daily: 1, linkedin_more_daily: 1, ux_daily: 1, vitals_daily: 1, ga4_users_daily: 1, ga4_device_daily: 1, ga4_source_daily: 1, ga4_country_daily: 1, ga4_wide_daily: 1, ga4_events_daily: 1, ga4_city_daily: 1, ga4_region_daily: 1, ga4_pages_daily: 1, ga4_screen_daily: 1 };      /* 12 Nov 2026 (owner: "some data said 5 days old, pinterest etc."): these sources publish a day 2 to 4 days late (Pinterest marks the newest 2 days "processing", Bing and Google Analytics 2 to 3 days), so 2 to 4 is normal for them and the card now says so for every one of them */
   var freshText = function (x) {
     var base = x.age + ' day' + (x.age === 1 ? '' : 's') + ' old (' + M.fd(x.last) + ')';
     if (QUIET[x.name]) return base + ': ' + QUIET[x.name] + ' ' + M.fd(x.last);
-    if (LATE[x.name] && x.age <= 3) return base + ', Google reports late';
+    if (LATE[x.name] && x.age <= 4) return base + ', the source reports late';      /* Bing, Pinterest, Google: a day shows up 2 to 4 days after it happened */
     return base;
   };
   var freshColor = function (x) { if (QUIET[x.name]) return M.COLORS.grey; return x.age > 5 ? M.COLORS.terra : x.age > (LATE[x.name] ? 4 : 3) ? M.COLORS.mustard : M.COLORS.green; };
-  root.appendChild(M.card('How fresh is each daily table?', 'How many days old the newest number is. Google Analytics, Search, Bing and Merchant Center report a day 1 to 3 days late, so 2 to 3 is normal for them. A grey bar is a table that only gets a row when something happens, so it is not late.', [M.bars(fr.sort(function (a, b) { return b.age - a.age; }).map(function (x) { return { label: (function () { var w = M.TABLE_WORDS && M.TABLE_WORDS[String(x.name).replace(/_hist$/, '')]; return w ? w[0] : M.niceName(x.name); })(), value: x.age, max: Math.max(7, fr.reduce(function (m, y) { return Math.max(m, y.age); }, 0)), text: freshText(x), color: freshColor(x) }; }), { empty: 'No daily tables.' })]));
+  root.appendChild(M.card('How fresh is each daily table?', 'How many days old the newest number is. Google Analytics, Search, Bing, Merchant Center, Pinterest and YouTube report a day 2 to 4 days late, so that is normal for them: a bar there is not a fault. A real fault is a bar older than 5 days, or the page itself saying it was saved long ago. A grey bar is a table that only gets a row when something happens, so it is not late.', [M.bars(fr.sort(function (a, b) { return b.age - a.age; }).map(function (x) { return { label: (function () { var w = M.TABLE_WORDS && M.TABLE_WORDS[String(x.name).replace(/_hist$/, '')]; return w ? w[0] : M.niceName(x.name); })(), value: x.age, max: Math.max(7, fr.reduce(function (m, y) { return Math.max(m, y.age); }, 0)), text: freshText(x), color: freshColor(x) }; }), { empty: 'No daily tables.' })]));
   var meta = M.D.meta.filter(function (m) { return m.name !== 'Sheet1' && m.name !== 'Dashboard' && m.name !== 'History'; });
   root.appendChild(M.card('Everything that is stored', 'Rows and the dates each one covers. "Shown" means a page can show it. "Nothing yet" means it holds no data yet.', [M.table([{ k: 'name', label: 'Table', wrap: true, fmt: function (v) { var w = M.TABLE_WORDS && M.TABLE_WORDS[String(v).replace(/_hist$/, '')]; return w ? w[0] + (/_hist$/.test(v) ? ' (night by night)' : '') : M.niceName(v); }      /* F5: words only; the name of the tab in the data sheet is its own column, switched off until a reader needs to open the sheet */ }, { k: 'tab', label: 'Tab in the data sheet', hidden: true, entity: false }, { k: 'rows', label: 'Rows', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'cols', label: 'Columns', num: true }, { k: 'first', label: 'First date', fmt: function (v) { return v ? M.fd(v) : ''; }, sort: function (x) { return x.first || ''; } }, { k: 'last', label: 'Last date', fmt: function (v) { return v ? M.fd(v) : ''; }, sort: function (x) { return x.last || ''; } },
     { k: 'emb', label: 'On the dashboard', render: function (x) { return x.rows === 0 ? M.badge('Nothing yet', 'grey') : x.emb ? M.badge('Shown', 'green') : M.badge('Not shown', 'grey'); }, sort: function (x) { return x.emb ? 1 : 0; } }], { rows: meta.map(function (m) { return { name: m.name, tab: m.name, rows: m.rows, cols: m.cols, first: m.first, last: m.last, emb: !!M.D.tabs[m.name] }; }), sortKey: 'name', sortDir: 1, limit: 200 })]));
@@ -8674,11 +8692,14 @@ M.TERMS = [
   /* ---------------------------------------------------------------- Customers: which discount code, and the tax split for the accountant */
   wrap('customers', function () {
     var out = [], dc = M.stateRows('discount_codes').filter(function (x) { return x.code && x.code !== 'none used yet'; });
-    out.push(M.card('Which discount code was used', 'Every code or discount used on a real order, with the orders it was on and the money it gave away. When one order used two discounts the money is split evenly between them.', [
+    out.push(M.card('Which discount code was used', 'Every code or discount set up in Shopify, with what it gave, the dates it was active, the orders it was on and the money it gave away. The dates are Shopify\'s own. When one order used two discounts the money is split evenly between them. Sale prices (a lower price on the product) are not codes: they show on the price graph of each product.', [
       dc.length ? M.table([{ k: 'code', label: 'Code', wrap: true }, { k: 'kind', label: 'Kind', fmt: function (v) { return v === 'code' ? 'A code the buyer typed' : v === 'automatic' ? 'Applied by the shop' : 'Added by hand'; } },
         { k: 'orders', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'money_given', label: 'Money given away', num: true, fmt: M.inr },
-        { k: 'share_of_orders_pct', label: 'Share of all orders', num: true, fmt: function (v) { return M.pct(v, 1); } }, { k: 'first_used', label: 'First used', fmt: M.fd }, { k: 'last_used', label: 'Last used', fmt: M.fd }],
-        { rows: dc, sortKey: 'orders', empty: 'None.', noTools: true, detail: false }) : empty('No real order has used a discount yet.')]));
+        { k: 'gives', label: 'What it gave', fmt: function (v) { return v || 'not known'; } },
+        { k: 'starts', label: 'Active from', fmt: function (v) { return v ? M.fd(v) : 'not known'; } }, { k: 'ends', label: 'Active until', fmt: function (v, x) { return v ? M.fd(v) : (x && x.starts ? 'no end date' : 'not known'); } },
+        { k: 'state', label: 'Now', fmt: function (v) { return v === 'active' ? 'Active' : v === 'expired' ? 'Ended' : v === 'scheduled' ? 'Starts later' : (v || 'not known'); } },
+        { k: 'share_of_orders_pct', label: 'Share of all orders', num: true, fmt: function (v) { return M.pct(v, 1); } }, { k: 'first_used', label: 'First used', fmt: function (v) { return v ? M.fd(v) : 'never used'; } }, { k: 'last_used', label: 'Last used', fmt: function (v) { return v ? M.fd(v) : 'never used'; } }],
+        { rows: dc, sortKey: 'starts', sortDir: -1, empty: 'None.', noTools: true, detail: false }) : empty('No real order has used a discount yet.')]));
     /* 'Tax collected, by month and rate' moved to the Taxes page on 3 Nov 2026 (T884, owner: tax belongs in its own place, not under Customers) */
     /* why people exchange: the table says plainly that there is none yet */
     var er = M.stateRows('exchange_reasons').filter(function (x) { return x.reason && x.reason !== 'no exchange or return yet'; });
@@ -15527,6 +15548,22 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var gap = M.D.anchor ? daysAgo(M.D.anchor, today) : 0;
     if (gap > 2) push({ id: 'stale|' + M.D.anchor, kind: 'stale', sev: 'act', group: 'attention', date: M.D.anchor, title: 'The numbers are ' + gap + ' days old', why: 'The newest day is ' + M.fd(M.D.anchor) + '. The nightly update has not run, so nothing here is fresh.', page: 'quality', card: /fresh|check|quality/i });
 
+    /* 6b. one daily table has gone quiet (owner, 12 Nov 2026: "make sure this never happens again", about old data on single tables). A table that writes a row every day and whose newest row is more
+       than 5 days old is a real fault (Bing, Google and Pinterest are 2 to 4 days late by nature, so 5 is the line the freshness card also uses). Tables that only write a row when something happens are left out. */
+    var QUIET_OK = { data_trust_daily: 1, shipping_daily: 1, data_quality_daily: 1 }, built0 = String(M.D.built || '').slice(0, 10) || today, quiet = [];
+    (M.D.meta || []).forEach(function (m) {
+      if (!m.last || !/_daily$/.test(m.name) || QUIET_OK[m.name] || !M.isDate(m.last)) return;
+      var age = M.diff(m.last, built0);
+      if (age > 5) quiet.push({ name: m.name, last: m.last, age: age });
+    });
+    if (quiet.length) {
+      quiet.sort(function (a, b) { return b.age - a.age; });
+      var qn = quiet.length, w0 = quiet[0];
+      push({ id: 'quiet|' + quiet.map(function (q) { return q.name; }).join(','), kind: 'stale', sev: 'check', group: 'attention', date: w0.last, n: qn,
+        title: qn === 1 ? (M.niceName ? M.niceName(w0.name) : w0.name) + ' has not updated for ' + w0.age + ' days' : qn + ' tables have not updated for more than 5 days',
+        why: qn === 1 ? 'The newest row is ' + M.fd(w0.last) + '. The nightly job may have failed for this one.' : 'The oldest is ' + (M.niceName ? M.niceName(w0.name) : w0.name) + ', newest row ' + M.fd(w0.last) + '. The nightly job may have failed for these.', page: 'quality', card: /fresh/i });
+    }
+
     /* 7. a tax return due within 7 days (the filing calendar) */
     rows('tax_calendar').forEach(function (x) {
       if (!x.due_date) return;
@@ -16281,6 +16318,43 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   };
 })();
 
+/* mazo dashboard: EXCHANGE PARCELS (T1085, 12 Nov 2026). Owner: order #MZ1037 is a size exchange. The buyer pays BOTH Delhivery parcels (70 + 70 = Rs. 140) by GPay to Madhu, and Madhu pays Delhivery.
+   None of it passes through Shopify, Razorpay or Shiprocket, so no other card could see it ("how this should be updated everywhere, even in our dashboard, because we have shipping cost also").
+   One card at the bottom of the Shipping page, from the typed table exchange_parcels (scripts/exchange_parcel_add.py): each exchange parcel with its order, leg, courier, what Madhu paid the courier
+   and what the buyer paid her. It is a PASS THROUGH: the card adds its own two totals and says plainly that they are not part of the Shiprocket cost figures above, so the Shiprocket averages stay true.
+   A parcel not booked yet shows "to book". Only the order number and the end of the tracking number are kept: no name, address or phone. */
+(function () {
+  if (!M.PAGES || !M.PAGES.shipping || !M.addPageCards) return;
+  var num = function (v) { return v == null || v === '' || isNaN(+v) ? 0 : +v; };
+  M.addPageCards('shipping', function (r, root) {
+    if (!M.has('exchange_parcels')) return;
+    var all = M.rows('exchange_parcels').filter(function (x) { return x.order; });
+    if (!all.length) return;
+    var rows = all.filter(function (x) { return x.date >= r.from && x.date <= r.to; });
+    var paid = rows.reduce(function (a, x) { return a + num(x.paid_to_courier); }, 0), got = rows.reduce(function (a, x) { return a + num(x.collected_from_buyer); }, 0);
+    var orders = {}; rows.forEach(function (x) { orders[x.order] = 1; });
+    var kids = [];
+    if (!rows.length) {
+      var newest = all.map(function (x) { return x.date; }).sort().pop(), later = newest > r.to && newest > M.D.anchor;
+      kids.push(M.empty('No exchange parcel was booked between the dates chosen. ' + M.num(all.length) + ' stored in all' + (later ? ', the newest on ' + M.fd(newest) + ', which is after the newest day the dashboard holds (' + M.fd(M.D.anchor) + '). It shows here from the next nightly update.' : ', from ' + M.fd(all.map(function (x) { return x.date; }).sort()[0]) + '.')));
+    } else {
+      kids.push(M.h('div', { class: 'kpis' }, [
+        M.kpi({ label: 'Exchange orders', value: M.num(Object.keys(orders).length), note: M.num(rows.length) + ' parcel' + (rows.length === 1 ? '' : 's') + ' in these dates' }),
+        M.kpi({ label: 'Paid to the courier', value: M.inr(paid), note: 'What Madhu paid Delhivery for these parcels' }),
+        M.kpi({ label: 'Paid by the buyers', value: M.inr(got), note: 'What the buyers sent Madhu for them' }),
+        M.kpi({ label: 'Left with the shop', value: M.inr(got - paid), note: got - paid === 0 ? 'Nothing: the buyers pay the courier cost' : got - paid > 0 ? 'Paid by buyers, not yet paid to the courier' : 'Paid to the courier, not paid back by the buyers' })]));
+      kids.push(M.table([M.refCol('order', 'order', 'Order'), { k: 'date', label: 'Date', fmt: M.fd },
+        { k: 'leg', label: 'Which parcel', fmt: function (v) { return v === 'return' ? 'Piece coming back' : v === 'resend' ? 'New size going out' : v; } },
+        { k: 'carrier', label: 'Courier' }, { k: 'awb_tail', label: 'Tracking (end)', fmt: function (v) { return v ? 'AWB ' + v : 'to book'; } },
+        { k: 'paid_to_courier', label: 'Paid to the courier', num: true, fmt: M.inr }, { k: 'collected_from_buyer', label: 'Paid by the buyer', num: true, fmt: M.inr },
+        { k: 'how_collected', label: 'How', fmt: function (v) { return v === 'gpay' ? 'GPay to Madhu' : (v || ''); } }, { k: 'status', label: 'State', fmt: function (v) { return v === 'booked' ? 'Booked' : v === 'to book' ? 'Not booked yet' : (v || ''); } },
+        { k: 'note', label: 'Note', wrap: true }], { rows: rows.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }), sortKey: 'date', sortDir: -1, name: 'exchange-parcels', detail: false, empty: 'None.' }));
+    }
+    var card = M.card('Exchange parcels (booked by Madhu, not in Shiprocket)', 'The buyer pays both parcels of a size exchange to Madhu by GPay and Madhu pays Delhivery, so this money never passes through Shopify, Razorpay or Shiprocket. It is listed here so nothing about an exchange is missing. These amounts are not part of the Shiprocket cost figures above, so those averages stay true. Typed in by scripts/exchange_parcel_add.py.', kids);
+    root.appendChild(card);
+  });
+})();
+
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
    the one file build (docs/reports/dashboard/mazo-dashboard.html) never uses any of this. Plan and design: docs/guides/robust-data-and-hosting-plan.md, scripts/site_crypto.py.
 
@@ -16578,7 +16652,7 @@ M.unlock = function () {
     search:    [[['competitor_social', 'kpi_daily', 'shopify_visits_split_daily', 'visits_joined_daily'], 'all'], [['search_pages_weekly'], 'own']],      /* visits from AI assistants: Shopify's split before 5 Oct, and the date of the first one */
     email:     [['email_weekly', 'all']],
     payments:  [[['razorpay_payments_daily', 'razorpay_payments', 'razorpay_orders', 'razorpay_recon', 'razorpay_match', 'razorpay_balance_daily', 'money_daily'], 'all']],      /* T707: money waiting, success by method, left checkouts and the match with the shop look at every day since the first payment */
-    shipping:  [[['money_daily', 'shiprocket_rate_check', 'shipping_daily', 'shiprocket_parcels'], 'all']],      /* 7 Nov 2026 night: the promise card, the status card and the 'Every order' table all read the one list of orders (shipping_daily) and the hand-delivered parcels */      /* 7 Nov 2026: the line 'N of 24 sales days use real costs' counts every sales day, and 'Could a cheaper courier have carried it?' reads every parcel's check */
+    shipping:  [[['money_daily', 'shiprocket_rate_check', 'shipping_daily', 'shiprocket_parcels', 'exchange_parcels'], 'all']],      /* 7 Nov 2026 night: the promise card, the status card and the 'Every order' table all read the one list of orders (shipping_daily) and the hand-delivered parcels */      /* 7 Nov 2026: the line 'N of 24 sales days use real costs' counts every sales day, and 'Could a cheaper courier have carried it?' reads every parcel's check */
     tables:    [[['finance_monthly', 'judgeme_daily', 'order_sources', 'queries_weekly', 'returns_weekly', 'review_weekly'], 'all']],
     health:    [[['vitals_daily', 'ux_daily', 'data_trust_daily', 'clarity_weekly', 'speed_weekly'], 'all']],
     tax:       [[['tax_orders', 'razorpay_payments_daily'], 'own']]                                                                      /* dashboard_98_taxload.js opens the months of the chosen period */
