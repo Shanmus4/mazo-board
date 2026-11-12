@@ -3422,7 +3422,8 @@ M.staticTable = function (cols, rows, sort, onSort) {
     return th;
   })))]);
   var tb = M.h('tbody');
-  rows.forEach(function (r) { tb.appendChild(M.h('tr', null, cols.map(function (c) { var v = c.fmt ? c.fmt(r[c.k], r) : r[c.k]; v = v == null ? '' : String(v); return M.h('td', { class: c.num ? 'n' : '', text: v === 'n/a' ? 'not available' : (M.plain ? M.plain(v) : v) }); }))); });
+  rows.forEach(function (r) { tb.appendChild(M.h('tr', null, cols.map(function (c) { var v = c.fmt ? c.fmt(r[c.k], r) : r[c.k]; v = v == null ? '' : String(v); if (c.render) { var cell = M.h('td', { class: c.num ? 'n' : '' }); var rn = c.render(r); if (rn != null) M.kids(cell, rn); return cell; }      /* T1036 (12 Nov 2026): a column that draws its own cell (the order chip) is drawn here too, in the plain folded lists */
+    return M.h('td', { class: c.num ? 'n' : '', text: v === 'n/a' ? 'not available' : (M.plain ? M.plain(v) : v) }); }))); });
   t.appendChild(tb);
   return M.h('div', { class: 'tw' + (rows.length > 14 ? ' tall' : '') }, t);
 };
@@ -4035,7 +4036,8 @@ M.buildControls = function () {
   c.rail.addEventListener('click', function () { M.railOpen(true); });
   c.search = M.searchBox ? M.searchBox() : null;
   c.fresh = M.h('span', { class: 'fresh', id: 'fresh', 'data-ux': '1' });      /* kept as a hidden text holder: the visible freshness is the small line at the bottom left of the sidebar (M.railFresh) */
-  host.appendChild(M.h('div', { class: 'toolrow' }, [c.rail, c.dateWrap, c.cmpWrap, c.filWrap, c.sum, c.search]));
+  /* 12 Nov 2026 (owner note on the Overview): the order is the dates, then Filters, then the compare switch */
+  host.appendChild(M.h('div', { class: 'toolrow' }, [c.rail, c.dateWrap, c.filWrap, c.cmpWrap, c.sum, c.search]));
   M.railFoot();
   host.appendChild(c.chips);
 
@@ -5137,7 +5139,7 @@ M.ALIAS = {
   tax: 'tax taxes gst cgst sgst igst gstr gstr-1 gstr-3b b2cs hsn itc input tax credit filing return due date challan accountant financial year quarter income tax advance tax 44ad professional tax place of supply rate credit note refund rounding',
   shipping: 'shiprocket shipping parcel parcels courier couriers freight cost delivery days rto returned return to origin ndr failed delivery weight discrepancy awb tracking promise on time'
 };
-M.SRCH_ORDER = ['Pages', 'Products', 'Collections', 'Channels', 'Devices', 'Sizes', 'Measures and tables', 'Google searches', 'Content topics'];
+M.SRCH_ORDER = ['Pages', 'Products', 'Collections', 'Channels', 'Devices', 'Sizes', 'Measures and tables', 'Rows in a table', 'Google searches', 'Content topics'];
 M.SRCH_PER = 5;
 
 (function () {
@@ -5145,20 +5147,20 @@ M.SRCH_PER = 5;
   /* lower case, no accents (so "rose" finds "Rosé"), punctuation as spaces */
   var norm = function (s) { return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[_\-\/|.]+/g, ' ').replace(/\s+/g, ' ').trim(); };
 
-  /* every measure of every table that the History page can draw (numeric columns of daily, nightly and total tables) */
+  /* everything the three dropdowns of the History page offer (Table, Measure, Row), read from the same lists the page uses (M.histSources, M.histMeasures, M.histEntities), so a choice in a
+     dropdown can always be found here too (owner note on the History page, 12 Nov 2026). A table with no number to chart is still found by its name. */
   function metricIndex() {
     var out = [], srcs = M.histSources ? M.histSources() : [];
     srcs.forEach(function (s) {
-      var t = M.D.tabs[s.id];
-      if (!t || !t.c || !t.r) return;
-      var skip = { key: 1, date: 1, snapshot_date: 1, week: 1, month: 1, profit_read: 1 };
-      t.c.forEach(function (c, j) {
-        if (skip[c] || /(^|_)id$/.test(c)) return;
-        var seen = 0, bad = 0;
-        for (var i = 0; i < t.r.length && i < 60; i++) { var v = t.r[i][j]; if (v == null) continue; seen++; if (typeof v !== 'number') bad++; }
-        if (seen < 1 || bad) return;
-        var label = c.replace(/_/g, ' '), tbl = s.label.replace(/\s*\((daily|every night)\)\s*$/, '');
-        out.push({ type: 'Measures and tables', label: label, sub: tbl, hay: norm(label + ' ' + tbl + ' ' + s.id), boost: s.id === 'kpi_daily' || /^rollup_/.test(s.id) ? 2 : 0, run: { page: 'history', hsrc: s.id, hcol: c, hcol2: '', hent: '*', hagg: '', preset: /^rollup_/.test(s.id) && M.state.preset === '28d' ? 'all' : M.state.preset } });
+      var tbl = s.label.replace(/\s*\((one row a day|saved each night)\)\s*$/, ''), rollup = /^rollup_/.test(s.id), base = { page: 'history', hsrc: s.id, hcol: '', hcol2: '', hent: '*', hagg: '', preset: rollup && M.state.preset === '28d' ? 'all' : M.state.preset };
+      var run = function (o) { var r = {}; Object.keys(base).forEach(function (k) { r[k] = base[k]; }); Object.keys(o || {}).forEach(function (k) { r[k] = o[k]; }); return r; };
+      out.push({ type: 'Measures and tables', label: tbl, sub: 'History page, table', hay: norm(tbl + ' ' + s.id + ' table'), boost: s.id === 'kpi_daily' || rollup ? 2 : 0, run: run() });
+      var ms = M.histMeasures(s.id);
+      ms.forEach(function (m) {
+        out.push({ type: 'Measures and tables', label: m.label, sub: tbl, hay: norm(m.label + ' ' + m.id + ' ' + tbl + ' ' + s.id), boost: s.id === 'kpi_daily' || rollup ? 2 : 0, run: run({ hcol: m.id }) });
+      });
+      if (ms.length) M.histEntities(s.id).forEach(function (e) {
+        out.push({ type: 'Rows in a table', label: e, sub: tbl + ', one row', hay: norm(e + ' ' + tbl + ' ' + s.id), run: run({ hcol: ms[0].id, hent: e }) });
       });
     });
     return out;
@@ -5185,9 +5187,10 @@ M.SRCH_PER = 5;
     ['content_patterns'].forEach(function (n) { if (M.has(n)) M.rows(n).forEach(function (x) { if (x.cut === 'topic' && x.value) topics[x.value] = (+x.posts || 0); }); });
     if (M.has('content_scorecard')) M.rows('content_scorecard').forEach(function (x) { if (x.topic && topics[x.topic] == null) topics[x.topic] = 0; });
     Object.keys(topics).forEach(function (n) { out.push({ type: 'Content topics', label: n, sub: topics[n] ? M.num(topics[n]) + ' posts' : 'Social and content page', hay: norm(n + ' topic'), run: { page: 'social', ccut: 'topic' }, after: { card: /what works/i } }); });
-    out.forEach(function (o) { var k = o.type + '|' + o.label + '|' + (o.run.hsrc || ''); if (seen[k]) o.dup = true; seen[k] = 1; });
+    out.forEach(function (o) { var k = o.type + '|' + o.label + '|' + (o.run.hsrc || '') + '|' + (o.run.hcol || ''); if (seen[k]) o.dup = true; seen[k] = 1; });
     return out.filter(function (o) { return !o.dup; });
   }
+  M.searchIndex = function () { return build(); };      /* for the checks only (scripts/dashboard_search_check.js): the same list the panel searches */
   function find(q) {
     q = norm(q);
     if (!idx) idx = build();
@@ -6279,7 +6282,7 @@ M.PAGES.customers.render = function (r) {
   root.appendChild(M.note('All ' + M.num(orders) + ' orders so far, whatever dates you picked.' + (orders < M.MIN_EVENTS ? ' With under ' + M.MIN_EVENTS + ' orders no split below shows a real pattern yet.' : '')));
   var kp = M.h('div', { class: 'kpis' }), ly = {}; M.stateRows('loyalty').forEach(function (x) { ly[x.measure] = x; });
   var lv = function (k) { return ly[k] && ly[k].value != null ? ly[k].value : null; };
-  kp.appendChild(M.kpi({ label: 'Orders so far', value: M.num(orders) })); kp.appendChild(M.kpi({ label: 'Customers who ordered', value: lv('customers who ordered') != null ? M.num(lv('customers who ordered')) : 'not available', note: 'the base for the repeat rate' })); kp.appendChild(M.kpi({ label: 'Contacts on file', value: lv('contacts on file') != null ? M.num(lv('contacts on file')) : 'not available', note: 'everyone in Shopify, most never ordered' }));
+  kp.appendChild(M.kpi({ label: 'Orders so far', value: M.num(orders), drill: M.has('order_sources') ? M.drill.countIs(M.drill.orderSpec(M.rows('order_sources'), { title: 'Every order so far' }), orders) : null })); kp.appendChild(M.kpi({ label: 'Customers who ordered', value: lv('customers who ordered') != null ? M.num(lv('customers who ordered')) : 'not available', note: 'the base for the repeat rate' })); kp.appendChild(M.kpi({ label: 'Contacts on file', value: lv('contacts on file') != null ? M.num(lv('contacts on file')) : 'not available', note: 'everyone in Shopify, most never ordered' }));
   kp.appendChild(M.kpi({ label: 'Repeat customers', value: lv('repeat customers') != null ? M.num(lv('repeat customers')) : 'not available', note: ly['repeat customers'] ? ly['repeat customers'].read || '' : '' }));
   kp.appendChild(M.kpi({ label: 'Average order value', value: lv('average order value') != null ? M.inr(lv('average order value')) : 'not available' }));
   root.appendChild(kp);
@@ -6435,7 +6438,8 @@ M.PAGES.forecast.render = function () {
     var sm = function (k) { return fut.reduce(function (a, x) { return a + (x[k] || 0); }, 0); };
     kp.appendChild(M.kpi({ label: 'Orders expected in the next ' + fut.length + ' weeks (a guess)', value: M.num(sm('mid'), 1), note: 'range ' + M.num(sm('low'), 1) + ' to ' + M.num(sm('high'), 1) }));
   }
-  kp.appendChild(M.kpi({ label: 'Orders in the last 4 weeks', value: M.num(act.slice(-4).reduce(function (a, x) { return a + (x.actual || 0); }, 0)) }));
+  var l4 = act.slice(-4), l4n = l4.reduce(function (a, x) { return a + (x.actual || 0); }, 0);
+  kp.appendChild(M.kpi({ label: 'Orders in the last 4 weeks', value: M.num(l4n), drill: l4.length && M.has('order_sources') ? M.drill.countIs(M.drill.orderSpec(M.rowsIn('order_sources', l4[0].week, M.add(l4[l4.length - 1].week, 6)), { title: 'The orders of the last 4 weeks' }), l4n) : null }));
   root.appendChild(kp);
   root.appendChild(M.card('Orders each week, and the next weeks', 'Solid bars are weeks that happened. Dashed boxes are a guess for the weeks ahead, from low to high; the thick line is the middle. Weeks start on Monday.', [rows.length ? M.chart('', function (h, w) { M.forecastChart(h, w, M.lastWeeks(rows, !!(h._frame && h._frame.big))); }) : M.empty('No weekly series yet.'), M.tableView([{ k: 'week', label: 'Week starting', fmt: M.fd }, { k: 'actual', label: 'Orders (actual)', num: true }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr }, { k: 'low', label: 'Low', num: true }, { k: 'mid', label: 'Middle', num: true }, { k: 'high', label: 'High', num: true }, { k: 'note', label: 'Note' }], rows)]));
   /* forecast error: every past forecast against what really happened */
@@ -6535,6 +6539,20 @@ M.histMeta = function (src) {
   };
   return { t: t, isHist: isHist, dateCol: dateCol, num: num, entity: entity, hasEntity: isHist || !!ent };
 };
+M.rollupLabel = function (c) { return c.replace(/^net_sales$/, 'sales after discounts').replace(/_/g, ' ').replace('est fees parcel packaging', 'fees, parcel and packaging').replace('profit est', 'profit before the Shopify bill (estimate)').replace('profit after plan', 'profit after the Shopify plan only (estimate)').replace('shopify fee est', 'Shopify\'s charges on orders (estimate)'); };
+M.rollupNums = function (src) { var t = M.tab(src); return t.cols.filter(function (c) { return c !== 'week' && c !== 'month' && c !== 'profit_read' && t.rows.some(function (x) { return typeof x[c] === 'number'; }); }); };
+/* 12 Nov 2026 (owner note on the History page: everything in the dropdowns must also be found in search): one list of what each dropdown offers, used by the dropdowns' own page
+   and by the search box, so the two can never differ. Table = M.histSources(); Measure = M.histMeasures(table); Row = M.histEntities(table). */
+M.histMeasures = function (src) {
+  if (/^rollup_/.test(src)) return M.rollupNums(src).map(function (c) { return { id: c, label: M.rollupLabel(c) }; });
+  return M.histMeta(src).num.map(function (c) { return { id: c, label: M.niceName(c) }; });
+};
+M.histEntities = function (src) {
+  if (/^rollup_/.test(src)) return [];
+  var m = M.histMeta(src); if (!m.hasEntity || !m.num.length) return [];
+  var set = {}; m.t.rows.forEach(function (x) { var e = m.entity(x); if (e) set[e] = 1; });
+  return Object.keys(set).sort();
+};
 M.histSel = function (id, label, vals, cur, key) {
   var el = M.h('select', { id: id }, vals.map(function (v) { return M.h('option', { value: v[0], text: v[1] }); })); el.value = cur;
   el.addEventListener('change', function () {
@@ -6600,7 +6618,11 @@ M.PAGES.history.render = function (r) {
   if (/^rollup_/.test(src)) return M.histRollup(r, srcs, src);
   var meta = M.histMeta(src);
   var col = meta.num.indexOf(s.hcol) >= 0 ? s.hcol : meta.num[0], col2 = meta.num.indexOf(s.hcol2) >= 0 && s.hcol2 !== col ? s.hcol2 : '';
-  if (!meta.num.length) { root.appendChild(M.empty('This table has no numeric measure to chart.')); return root; }
+  if (!meta.num.length) {      /* 12 Nov 2026: keep the Table dropdown on screen, so a table with no number to chart (found by search or picked here) is never a dead end */
+    root.appendChild(M.card('Choose what to look at', 'This table holds words and labels, not numbers a chart can draw. Pick another table to see a chart; its rows are listed on the page that uses it.', [M.h('div', { class: 'row-ctl' }, [M.histSel('h-src', 'Table', srcs.map(function (x) { return [x.id, x.label]; }), src, 'hsrc')])]));
+    root.appendChild(M.empty('This table has no numeric measure to chart.'));
+    return root;
+  }
   var ents = ['*']; if (meta.hasEntity) { var set = {}; meta.t.rows.forEach(function (x) { var e = meta.entity(x); if (e) set[e] = 1; }); ents = ['*'].concat(Object.keys(set).sort()); }
   var ent = ents.indexOf(s.hent) >= 0 ? s.hent : '*';
   var autoAgg = M.LEVEL.test(col) ? 'last' : M.RATIO.test(col) ? 'avg' : 'sum', agg = ['sum', 'avg', 'last'].indexOf(s.hagg) >= 0 ? s.hagg : autoAgg;
@@ -6655,9 +6677,9 @@ M.rollupPeriods = function (src, r) {
 };
 M.histRollup = function (r, srcs, src) {
   var s = M.state, root = M.h('div'), t = M.tab(src), month = src === 'rollup_monthly', periods = M.rollupPeriods(src, r);
-  var nums = t.cols.filter(function (c) { return c !== 'week' && c !== 'month' && c !== 'profit_read' && t.rows.some(function (x) { return typeof x[c] === 'number'; }); });
+  var nums = M.rollupNums(src);
   var col = nums.indexOf(s.hcol) >= 0 ? s.hcol : 'net_sales', col2 = nums.indexOf(s.hcol2) >= 0 && s.hcol2 !== col ? s.hcol2 : '';
-  var label = function (c) { return c.replace(/^net_sales$/, 'sales after discounts').replace(/_/g, ' ').replace('est fees parcel packaging', 'fees, parcel and packaging').replace('profit est', 'profit before the Shopify bill (estimate)').replace('profit after plan', 'profit after the Shopify plan only (estimate)').replace('shopify fee est', 'Shopify\'s charges on orders (estimate)'); };
+  var label = M.rollupLabel;
   root.appendChild(M.card('Choose what to look at', 'Each bar is one stored ' + (month ? 'month' : 'week') + '. A period is included when any of its days fall in the date range, and it is shown whole, so the first ' + (month ? 'month' : 'week') + ' can start before the data does. The compare switch and chart steps do not apply here: every bar is already a full period. Choose "All time" in the date range to see everything stored.', [M.h('div', { class: 'row-ctl' }, [
     M.histSel('h-src', 'Table', srcs.map(function (x) { return [x.id, x.label]; }), src, 'hsrc'),
     M.histSel('h-col', 'Measure', nums.map(function (c) { return [c, label(c)]; }), col, 'hcol'),
@@ -8757,7 +8779,7 @@ M.TERMS = [
     var how = typed != null ? 'the number typed in the Sheet' : 'twice the orders of the last 28 days (the rule you gave on 31 Oct 2026)';
     M.goalInfo = { now: now28, goal: goal, typed: typed != null };      /* T877: the goal ring on the Overview reads the same two numbers */
     var kp = M.h('div', { class: 'kpis' });
-    kp.appendChild(M.kpi({ label: 'Orders in the last 28 days', value: M.num(now28), note: before28 ? 'the 28 days before: ' + M.num(before28) : 'no orders in the 28 days before' }));
+    kp.appendChild(M.kpi({ label: 'Orders in the last 28 days', value: M.num(now28), note: before28 ? 'the 28 days before: ' + M.num(before28) : 'no orders in the 28 days before', drill: M.has('order_sources') ? M.drill.countIs(M.drill.orderSpec(M.rowsIn('order_sources', from, last), { title: 'The orders of the last 28 days' }), now28) : null }));
     kp.appendChild(M.kpi({ label: 'Goal: orders a month', value: M.num(goal), note: how }));
     kp.appendChild(M.kpi({ label: 'Still to go', value: M.num(Math.max(0, goal - now28)), note: goal ? M.pct(Math.min(100, now28 / goal * 100), 0) + ' of the goal so far' : '' }));
     return [M.card('The goal', 'The goal is in orders a month. It is twice the orders of the last 28 days, unless a goal is set in the data sheet. The 28 days end on ' + M.fd(last) + '.', [kp])];
@@ -9331,7 +9353,8 @@ M.glueMarks = function () {
     if (net == null || ship == null) return;
     var covered = days < r.days ? days + ' of ' + r.days + ' days have data' : '';
     var box = M.h('div', { class: 'kpis rates paid-row' });      /* the same three column row as the rates above it; two tiles fill the first two columns */
-    var paid = M.kpi({ label: 'Total paid by customers', value: M.inr(net + ship), note: covered });
+    var paidRows = M.has('tax_orders') ? M.rowsIn('tax_orders', r.from, r.to) : [], paidOrders = paidRows.filter(function (x) { return x.kind === 'sale' && x.order; }).map(function (x) { return x.order; });      /* rowsIn reads only the chosen days, so the hosted site needs no other month */
+    var paid = M.kpi({ label: 'Total paid by customers', value: M.inr(net + ship), note: covered, drill: M.drill.same(M.drill.paidOrdersSpec(paidOrders, { rows: paidRows, title: 'The orders behind the total paid', lead: 'The amount is the total the buyer paid, GST and shipping included.' }), net + ship) });      /* T1036 (12 Nov 2026) */
     var sh = M.kpi({ label: 'Shipping charged', value: M.inr(ship), note: covered });
     paid.appendChild(M.h('div', { class: 'ctx ns-note', text: 'items plus shipping, GST inside: the figure Madhu files with' }));
     sh.appendChild(M.h('div', { class: 'ctx ns-note', text: 'part of the total paid, not in sales after discounts' }));
@@ -10357,13 +10380,17 @@ M.glueMarks = function () {
     var T = function (k) { return sum(rows, k); };
     var taxable = T('taxable_value'), cgst = T('cgst'), sgst = T('sgst'), igst = T('igst'), gst = T('total_gst'), paid = T('total_paid'), ship = T('shipping_taxable');
     var orders = sum(sales, 'orders'), nref = sum(refs, 'orders');
+    /* T1036 (12 Nov 2026): the sale orders of the period, from the order lines of the register; a tile keeps its list only when it adds up to the figure it shows */
+    var inMonths = {}; p.months.forEach(function (m) { inMonths[m] = 1; });
+    var saleOrders = M.has('tax_orders') ? M.rows('tax_orders').filter(function (x) { return x.kind === 'sale' && x.order && inMonths[x.month]; }).map(function (x) { return x.order; }) : [];
+    var taxSpec = M.drill.paidOrdersSpec(saleOrders, { title: 'The sales of this period in the tax register', lead: 'The amount is the total the buyer paid, GST and shipping included.' });
     var kp = M.h('div', { class: 'kpis lead tax-kpis' });
     var lab = function (k, text, title) { var l = k.querySelector('.l'); if (l) { l.appendChild(document.createTextNode(' ')); l.appendChild(M.infoMark(text, title, 'term-mark')); } return k; };
     kp.appendChild(lab(M.kpi({ label: 'Tax to pay (whole rupees)', value: M.inr(rupee(gst)), hero: true, note: 'exact: ' + paise(gst) + '. The return takes whole rupees.' }),
       'The GST the shop collected in this period, rounded to the whole rupee as the law requires for the tax payable (section 170 of the CGST Act: fifty paise or more goes up). It is the tax on sales, minus refunds. The tax already paid on purchases (input tax credit) is NOT taken off here: only the Accountant knows it.', 'Tax to pay'));
-    kp.appendChild(lab(M.kpi({ label: 'Taxable value', value: paise(taxable), note: M.num(orders) + ' order' + (orders === 1 ? '' : 's') + (nref ? ', ' + M.num(nref) + ' refund' + (nref === 1 ? '' : 's') : '') }),
+    kp.appendChild(lab(M.kpi({ label: 'Taxable value', value: paise(taxable), note: M.num(orders) + ' order' + (orders === 1 ? '' : 's') + (nref ? ', ' + M.num(nref) + ' refund' + (nref === 1 ? '' : 's') : ''), drill: M.drill.countIs(taxSpec, orders) }),
       'What customers paid, minus the GST inside it. This is the figure the GST returns call the taxable value. The shop keeps GST inside the price, so taxable value = total paid minus GST.', 'Taxable value'));
-    kp.appendChild(lab(M.kpi({ label: 'Total paid by customers', value: paise(paid), note: 'items after discounts + shipping ' + paise(ship) }),
+    kp.appendChild(lab(M.kpi({ label: 'Total paid by customers', value: paise(paid), note: 'items after discounts + shipping ' + paise(ship), drill: M.drill.same(M.drill.countIs(taxSpec, orders), paid) }),
       'Everything customers paid for the sales of this period, after refunds: the pieces after discounts plus shipping. The GST is inside it.', 'Total paid'));
     kp.appendChild(lab(M.kpi({ label: 'CGST + SGST + IGST', value: paise(cgst + sgst + igst), note: 'CGST ' + paise(cgst) + ', SGST ' + paise(sgst) + ', IGST ' + paise(igst) }),
       'CGST and SGST are the two halves of the tax on a sale delivered inside Karnataka. IGST is the whole tax on a sale delivered to another state.', 'Central, state and integrated tax'));
@@ -10534,7 +10561,7 @@ M.glueMarks = function () {
     var row = function (x) { return { date: x.date, order: x.order, reason: REASON[x.reason] || x.reason, amount: num(x.amount), rate: x.reason === 'odd_rate' ? num(x.rate_pct) : null, pieces: num(x.pieces), what: x.what_to_do, mine: set[x.month] ? 'Yes' : 'No', _k: x.reason }; };
     var list = open.map(row).sort(function (a, b) { return a.mine !== b.mine ? (a.mine === 'Yes' ? -1 : 1) : (a.date < b.date ? 1 : -1); });      /* this period first, newest first */
     var inPeriod = list.filter(function (x) { return x.mine === 'Yes'; }).length;
-    var cols = [{ k: 'date', label: 'Order date', fmt: M.fd }, { k: 'order', label: 'Order' }, { k: 'reason', label: 'What to check', render: function (r) { return M.tag(r.reason, r._k === 'no_tax' ? 'work' : 'thin'); }, sort: function (r) { return r.reason; } },
+    var cols = [{ k: 'date', label: 'Order date', fmt: M.fd }, M.refCol('order', 'order', 'Order'), { k: 'reason', label: 'What to check', render: function (r) { return M.tag(r.reason, r._k === 'no_tax' ? 'work' : 'thin'); }, sort: function (r) { return r.reason; } },
       { k: 'amount', label: 'Amount', num: true, fmt: paise }, { k: 'rate', label: 'Rate charged', num: true, fmt: function (v) { return v == null ? '' : M.num(v, 1) + '%'; } }, { k: 'pieces', label: 'Pieces', num: true, fmt: M.num },
       { k: 'what', label: 'What to do', wrap: true }, { k: 'mine', label: 'In the period you chose', render: function (r) { return r.mine === 'Yes' ? M.tag('This period', 'work') : 'Other period'; }, sort: function (r) { return r.mine; } }];
     var kids = [];
@@ -10792,7 +10819,7 @@ M.glueMarks = function () {
   var PAIRS = [['total paid', 'paid', 'total_paid'], ['total GST', 'gst', 'total_gst'], ['taxable value', 'taxable', 'taxable_value'], ['goods GST', 'g_gst', 'goods_gst'], ['shipping GST', 'sh_gst', 'ship_gst'], ['shipping charged', 'sh_charged', 'shipping_taxable']];
   var registerCard = function (list, p, summaryRows) {
     var cols = [
-      { k: 'order', label: 'Order no', groupHide: true, sort: function (r) { return orderNo(r); }, fmt: function (v, r) { return v || 'Month total'; } },
+      { k: 'order', label: 'Order no', groupHide: true, sort: function (r) { return orderNo(r); }, fmt: function (v, r) { return v || 'Month total'; }, render: function (r) { return r.order ? M.ref('order', r.order) : M.h('span', { text: 'Month total' }); } },
       { k: 'date', label: 'Date', fmt: dmy },
       { k: 'type', label: 'Type', groupHide: true },      /* 8 Nov 2026 (owner: "UI shows Cancelled with some dot on the left, make it consistent with the rest of the table"): plain text like every other column; the tag chip carried a dot */
       { k: 'state', label: 'Place of supply', csvLabel: 'Place of supply (delivery state)', groupHide: true, fmt: function (v, r) { return v && r.scode ? v + ' (' + r.scode + ')' : (v || ''); } },      /* on screen the state code sits beside the state; the file keeps its own column */
@@ -12634,7 +12661,7 @@ M.evenHeaders = function (root) {
       var sources = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a] || (a < b ? -1 : 1); });
       var pick = function () { return all.filter(function (x) { return (!src || x.source === src) && (!buy || x.buyer === buy); }); };
       var tbl = M.table([
-        { k: 'date', label: 'Day' }, { k: 'order', label: 'Order', groupHide: true }, { k: 'source', label: 'First came from', wrap: true, groupHide: true }, { k: 'buyer', label: 'Buyer', entity: false, several: 'New and returning', groupHide: true },
+        { k: 'date', label: 'Day' }, Object.assign(M.refCol('order', 'order', 'Order'), { groupHide: true }), { k: 'source', label: 'First came from', wrap: true, groupHide: true }, { k: 'buyer', label: 'Buyer', entity: false, several: 'New and returning', groupHide: true },
         { k: 'net_sales', label: 'Sales after discounts', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon }, agg: 'sum' },
         { k: 'orders', label: 'Orders', num: true, fmt: M.num, agg: 'sum', groupOnly: true }, { k: 'new_buyers', label: 'New buyers', num: true, fmt: M.num, agg: 'sum', groupOnly: true }, { k: 'came_back', label: 'Came back', num: true, fmt: M.num, agg: 'sum', groupOnly: true }
       ], { rows: all, sortKey: 'date', sortDir: -1, name: 'every-order', detail: false, totals: true });
@@ -13640,7 +13667,8 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var tot = M.total(sales, r.from, r.to), ord = M.total(orders, r.from, r.to), allT = M.total(sales, first, last);
     var pv = cmp ? M.total(sales, r.pfrom, r.pto) : { v: null }, cf = M.cmpFor(tot.v, pv.v, cmp, 'money_daily', r);
     var kp = M.h('div', { class: 'kpis lead' });
-    kp.appendChild(M.kpi({ label: 'Sales in the dates picked', value: tot.v == null ? 'No data' : inr(tot.v), change: cf.change, goodUp: true, cmpNote: cf.cmpNote, hero: true, note: (ord.v == null ? '' : M.num(ord.v) + ' orders, ') + 'after discounts.' }));
+    var gsp = M.has('order_sources') && tot.v != null ? M.drill.same(M.drill.orderSpec(M.rowsIn('order_sources', r.from, r.to), { title: 'The orders behind the sales' }), tot.v) : null;      /* T1036 (12 Nov 2026): the orders behind the headline sales, when they add up to it */
+    kp.appendChild(M.kpi({ label: 'Sales in the dates picked', value: tot.v == null ? 'No data' : inr(tot.v), change: cf.change, goodUp: true, cmpNote: cf.cmpNote, hero: true, drill: gsp, note: (ord.v == null ? '' : M.num(ord.v) + ' orders, ') + 'after discounts.' }));
     kp.appendChild(M.kpi({ label: 'Sales since the first sale', value: inr(allT.v || 0), note: 'From ' + M.fd(first) + ' to ' + M.fd(last) + '.' }));
     var wk = weeksOf(first, last), wv = M.series(sales, wk), recent = wv.slice(-4), before = wv.slice(-8, -4);
     var r4 = recent.reduce(function (a, b) { return a + b; }, 0), b4 = before.reduce(function (a, b) { return a + b; }, 0);
@@ -13668,7 +13696,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var cols = [{ k: 'label', label: 'Week' }, { k: 'v', label: unit, num: true, fmt: fmt }];
       if (prev) cols.push({ k: 'p', label: 'Same week before', num: true, fmt: fmt }, { k: 'ch', label: 'Change', num: true, fmt: function (v) { return v == null ? 'n/a' : (v > 0 ? '+' : '') + M.num(v, 1) + '%'; } });
       grid.appendChild(M.card(title + (prev ? ', against the period before' : ''), 'One point per week (Monday to Sunday). ' + (prev ? 'The dashed line is the same weeks in the period just before ' + M.fds(r.from) + '.' : 'Switch Compare on (top of the page) to see the period before as a dashed line.'), [
-        M.chart('', function (h, w) { M.timeChart(h, w, { buckets: wb, mode: 'week', title: title, yfmt: yfmt, series: [{ name: unit, values: cur, color: color, type: 'line', fmt: fmt }], prev: prev ? { name: 'Period before', values: prev } : null, h: 210 }); }),
+        M.chart('', function (h, w) { M.timeChart(h, w, { buckets: wb, mode: 'week', title: title, yfmt: yfmt, drill: part === sales ? M.drill.orderChart('Orders', 'sales') : part === orders ? M.drill.orderChart('Orders', 'orders') : null, series: [{ name: unit, values: cur, color: color, type: 'line', fmt: fmt }], prev: prev ? { name: 'Period before', values: prev } : null, h: 210 }); }),
         M.tableView(cols, rows)]));
     };
     weekCard('Sales each week', sales, COL.maroon, inr, yRs, 'Sales after discounts');
@@ -15202,7 +15230,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
         { label: 'Order to the door', value: mean(door) || 0, text: d1(mean(door)) + ' days', color: COL.maroon }];
       if (items.length) rows.push({ label: 'Promised on Google (middle to longest)', value: hiSum, text: M.num(lo, 1) + ' to ' + M.num(hiSum, 1) + ' days', color: COL.grey });
       kids.push(M.bars(rows, {}));
-      kids.push(M.tableView([{ k: 'order', label: 'Order' }, { k: 'courier', label: 'Courier' }, { k: 'waited', label: 'Waited before pickup (days)', num: true, fmt: d1 }, { k: 'cd', label: 'Courier days', num: true, fmt: d1 }, { k: 'door', label: 'Order to the door (days)', num: true, fmt: d1 }, { k: 'date', label: 'Delivered', fmt: M.fd }],
+      kids.push(M.tableView([M.refCol('order', 'order', 'Order'), { k: 'courier', label: 'Courier' }, { k: 'waited', label: 'Waited before pickup (days)', num: true, fmt: d1 }, { k: 'cd', label: 'Courier days', num: true, fmt: d1 }, { k: 'door', label: 'Order to the door (days)', num: true, fmt: d1 }, { k: 'date', label: 'Delivered', fmt: M.fd }],
         timed.map(function (x) { return { order: x.order, courier: x.courier, waited: x.ordered_at ? M.hoursBetween(x.ordered_at, x.picked_up_at) / 24 : null, cd: M.hoursBetween(x.picked_up_at, x.delivered_at) / 24, door: x.ordered_at ? M.hoursBetween(x.ordered_at, x.delivered_at) / 24 : null, date: x.delivered_at.slice(0, 10) }; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }), 'Show every parcel', { name: 'Three clocks per parcel' }));
       cards.push(card('Three clocks: days waited, courier days, order to the door', 'Measured from the order list and the scan history of each parcel. The days promised on Google come from the shipping settings the shop sends to Merchant Center.', kids));
     })();
@@ -15215,7 +15243,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var rows = edges.map(function (e) { var grp = timed.filter(function (x) { var d = M.hoursBetween(x.picked_up_at, x.delivered_at) / 24; return d >= e[0] && d < e[1]; }), n = grp.length; return { label: e[2], value: n, text: M.num(n) + ' (' + M.pct(n / timed.length * 100, 0) + ')', color: COL.teal, drill: M.drill.countIs(M.drill.parcelSpec(grp, { title: e[2] + ' with the courier' }), n) }; });      /* T1036: the parcels in each group */
       var slow = timed.map(function (x) { return { order: x.order, courier: x.courier, state: x.state, days: M.hoursBetween(x.picked_up_at, x.delivered_at) / 24 }; }).sort(function (a, b) { return b.days - a.days; });
       cards.push(card('How many days parcels took with the courier', 'Each parcel counted once in the group its pickup-to-door time falls in. ' + M.num(timed.length) + ' delivered parcels; the longest took ' + d1(slow[0].days) + ' days.', [M.bars(rows, { max: timed.length }),
-        M.tableView([{ k: 'order', label: 'Order' }, { k: 'courier', label: 'Courier' }, { k: 'state', label: 'State' }, { k: 'days', label: 'Days with the courier', num: true, fmt: d2 }], slow, 'Show the slowest first', { name: 'Courier days per parcel' })]));
+        M.tableView([M.refCol('order', 'order', 'Order'), { k: 'courier', label: 'Courier' }, { k: 'state', label: 'State' }, { k: 'days', label: 'Days with the courier', num: true, fmt: d2 }], slow, 'Show the slowest first', { name: 'Courier days per parcel' })]));
     })();
 
     /* ============================================================ 2b. where the time goes in a journey (the scan history, tab shiprocket_tracking) */
@@ -15228,7 +15256,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
         ['Hub to out for delivery', function (x) { return hrs(x.reached_hub_at, x.out_for_delivery_at); }, COL.teal], ['Out for delivery to delivered', function (x) { return hrs(x.out_for_delivery_at, x.delivered_at); }, COL.green]];
       var rows = steps.map(function (st) { var v = T.map(st[1]).filter(function (q) { return q != null && q >= 0; }); return { label: st[0], value: v.length ? mean(v) : 0, text: v.length ? d1(mean(v)) + ' hours on average (' + M.num(v.length) + ' parcels)' : 'not recorded', color: st[2] }; });
       cards.push(card('Where the time goes in a parcel\'s journey', 'Average hours between the scans of ' + M.num(T.length) + ' delivered parcels. The courier does not scan every step on every parcel, so a step with fewer parcels than the rest is averaged over those that have it.', [M.bars(rows, {}),
-        M.tableView([{ k: 'date', label: 'Picked up', fmt: M.fd }, { k: 'order', label: 'Order' }, { k: 'courier', label: 'Courier' }, { k: 'pickup_misses', label: 'Missed pickups', num: true }, { k: 'failed_tries', label: 'Failed tries', num: true }, { k: 'days_pickup_to_delivered', label: 'Courier days', num: true, fmt: d2 }, { k: 'hours_label_to_pickup', label: 'Label to pickup (hours)', num: true, fmt: d1 }, { k: 'hours_out_to_delivered', label: 'Out for delivery to delivered (hours)', num: true, fmt: d1 }],
+        M.tableView([{ k: 'date', label: 'Picked up', fmt: M.fd }, M.refCol('order', 'order', 'Order'), { k: 'courier', label: 'Courier' }, { k: 'pickup_misses', label: 'Missed pickups', num: true }, { k: 'failed_tries', label: 'Failed tries', num: true }, { k: 'days_pickup_to_delivered', label: 'Courier days', num: true, fmt: d2 }, { k: 'hours_label_to_pickup', label: 'Label to pickup (hours)', num: true, fmt: d1 }, { k: 'hours_out_to_delivered', label: 'Out for delivery to delivered (hours)', num: true, fmt: d1 }],
           T.slice().sort(function (a, b2) { return a.date < b2.date ? -1 : 1; }), 'Show every parcel', { name: 'Journey of each parcel' })]));
     })();
 
@@ -15273,7 +15301,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
         M.kpi({ label: 'Average extra', value: inr2(tot / D.length), note: 'per parcel that carried it', drill: exSpec }), M.kpi({ label: 'Share of freight', value: M.pct(tot / Math.max(1, P.reduce(function (a, x) { return a + (+x.freight || 0); }, 0)) * 100, 1), note: 'of the freight at the declared weight' })]));
       kids.push(M.h('p', { class: 'small', text: why + ' Dispute result: ' + dtxt + '.' }));
       kids.push(chart(function (h, w) { M.timeChart(h, w, { buckets: b, mode: b.length && b[0].from === b[0].to ? 'day' : 'week', title: 'Extra weight charged', yfmt: yRs, series: [{ name: 'Extra weight charged', values: vals, color: COL.terra, fmt: inr2 }] }); }));
-      kids.push(M.tableView([{ k: 'date', label: 'Picked up', fmt: M.fd }, { k: 'order', label: 'Order' }, { k: 'courier', label: 'Courier' }, { k: 'collection', label: 'Collection' }, { k: 'declared_kg', label: 'Declared kg', num: true, fmt: d2 }, { k: 'declared_size_cm', label: 'Declared size (cm)' }, { k: 'billed_kg', label: 'Billed kg', num: true, fmt: d2 }, { k: 'extra_amount', label: 'Extra paid', num: true, fmt: inr2 }, { k: 'dispute', label: 'Dispute' }],
+      kids.push(M.tableView([{ k: 'date', label: 'Picked up', fmt: M.fd }, M.refCol('order', 'order', 'Order'), { k: 'courier', label: 'Courier' }, { k: 'collection', label: 'Collection' }, { k: 'declared_kg', label: 'Declared kg', num: true, fmt: d2 }, { k: 'declared_size_cm', label: 'Declared size (cm)' }, { k: 'billed_kg', label: 'Billed kg', num: true, fmt: d2 }, { k: 'extra_amount', label: 'Extra paid', num: true, fmt: inr2 }, { k: 'dispute', label: 'Dispute' }],
         D.slice().sort(function (a, b2) { return a.date < b2.date ? -1 : 1; }), 'Show every parcel with extra weight', { name: 'Extra weight charged' }));
       cards.push(card('Extra weight the couriers charged', 'Couriers bill the larger of the real weight and the size weight (length x width x height in cm, divided by 5000), in steps of 0.5 kg.', kids));
     })();
@@ -15309,7 +15337,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
         'Delivery failed, still open': P.filter(function (x) { return x.status === 'delivery failed'; }), 'Came back to us': P.filter(function (x) { return x.status === 'returned'; }), 'Still on the way': P.filter(function (x) { return x.status === 'on the way'; }) };
       kids.push(M.h('div', null, [M.h('h4', { class: 'sub-h ship-sub', text: 'How the ' + M.num(P.length) + ' parcels ended' }), M.bars(endRows.map(function (e) { return { label: e[0], value: e[1], text: M.num(e[1]) + ' (' + M.pct(e[1] / Math.max(1, P.length) * 100, 0) + ')', color: e[2], drill: M.drill.countIs(M.drill.parcelSpec(endList[e[0]] || [], { title: e[0] }), e[1]) }; }), { max: Math.max(1, P.length) })]));      /* T1036: the parcels behind each ending */
       kids.push(M.h('div', { class: 'grid wide' }, [del.length ? M.h('div', null, [M.h('h4', { class: 'sub-h ship-sub', text: 'Why delivery failed' }), M.bars(by(del, 'Delivery failed'), {})]) : null, pk.length ? M.h('div', null, [M.h('h4', { class: 'sub-h ship-sub', text: 'Why the pickup was missed' }), M.bars(by(pk, 'Pickup missed'), {})]) : null].filter(Boolean)));
-      kids.push(M.tableView([{ k: 'date', label: 'Date', fmt: M.fd }, { k: 'order', label: 'Order' }, { k: 'courier', label: 'Courier' }, { k: 'state', label: 'State' }, { k: 'kind', label: 'What' }, { k: 'reason', label: 'Reason' }, { k: 'outcome', label: 'Then' }], A.slice().sort(function (a, b2) { return a.date < b2.date ? -1 : 1; }), 'Show every try', { name: 'Failed tries and missed pickups' }));
+      kids.push(M.tableView([{ k: 'date', label: 'Date', fmt: M.fd }, M.refCol('order', 'order', 'Order'), { k: 'courier', label: 'Courier' }, { k: 'state', label: 'State' }, { k: 'kind', label: 'What' }, { k: 'reason', label: 'Reason' }, { k: 'outcome', label: 'Then' }], A.slice().sort(function (a, b2) { return a.date < b2.date ? -1 : 1; }), 'Show every try', { name: 'Failed tries and missed pickups' }));
       cards.push(card(title, 'Taken from each parcel\'s scan history, in the courier\'s own words. No name, phone number or address is kept.', kids));
     })();
 
@@ -15323,7 +15351,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       cards.push(card('Orders waiting before the courier came', 'The days between an order being placed and the courier taking the parcel. Part of it is the making of a made to order piece; the rest is booking, the wallet and missed pickups.', [
         M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Average wait', value: d1(mean(W.map(function (x) { return x.days; }))) + ' days', note: M.num(W.length) + ' parcels' }), M.kpi({ label: 'Madras Theory', value: rtsW.length ? d1(mean(rtsW.map(function (x) { return x.days; }))) + ' days' : 'n/a', note: M.num(rtsW.length) + ' parcels' }),
           M.kpi({ label: 'Jig Jig', value: mtoW.length ? d1(mean(mtoW.map(function (x) { return x.days; }))) + ' days' : 'n/a', note: M.num(mtoW.length) + ' parcels' })]),
-        M.bars(rows, { max: W.length }), M.tableView([{ k: 'ordered', label: 'Ordered', fmt: M.fd }, { k: 'order', label: 'Order' }, { k: 'collection', label: 'Collection' }, { k: 'courier', label: 'Courier' }, { k: 'days', label: 'Days before pickup', num: true, fmt: d1 }], W.sort(function (a, b2) { return b2.days - a.days; }), 'Show the longest waits first', { name: 'Orders waiting before pickup', dateKey: 'ordered' })]));
+        M.bars(rows, { max: W.length }), M.tableView([{ k: 'ordered', label: 'Ordered', fmt: M.fd }, M.refCol('order', 'order', 'Order'), { k: 'collection', label: 'Collection' }, { k: 'courier', label: 'Courier' }, { k: 'days', label: 'Days before pickup', num: true, fmt: d1 }], W.sort(function (a, b2) { return b2.days - a.days; }), 'Show the longest waits first', { name: 'Orders waiting before pickup', dateKey: 'ordered' })]));
     })();
 
     /* ============================================================ 8. weight slabs */
@@ -15369,7 +15397,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       if (!R.length) { cards.push(card(title, 'For each parcel, what the cheapest courier on Shiprocket would charge today at the weight the courier measured, against what was paid.', [empty('No parcel in these dates has been rated yet. Each parcel is rated once, the night after it is picked up.' + WHEN('shiprocket_rate_check'))])); return; }
       var save = R.map(function (x) { return Math.max(0, (+x.paid || 0) - (+x.cheapest_rate || 0)); }), tot = save.reduce(function (a, v) { return a + v; }, 0), paid = R.reduce(function (a, x) { return a + (+x.paid || 0); }, 0);
       var kids = [M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Paid for these parcels', value: inr2(paid), note: M.num(R.length) + ' parcels rated' }), M.kpi({ label: 'Same parcels at the cheapest rate today', value: inr2(paid - tot), note: 'the cheapest courier on Shiprocket for each pincode and weight' }), M.kpi({ label: 'Difference', value: inr2(tot), note: M.pct(tot / Math.max(1, paid) * 100, 0) + ' of what was paid. It uses today\'s rates, which are not always the rates of the day the parcel went.' })])];
-      kids.push(M.tableView([{ k: 'date', label: 'Picked up', fmt: M.fd }, { k: 'order', label: 'Order' }, { k: 'courier', label: 'Courier used' }, { k: 'billed_kg', label: 'Billed kg', num: true, fmt: d2 }, { k: 'paid', label: 'Paid', num: true, fmt: inr2 }, { k: 'cheapest_courier', label: 'Cheapest courier now' }, { k: 'cheapest_rate', label: 'Its rate', num: true, fmt: inr2 }, { k: 'cheapest_days', label: 'Its days', num: true, fmt: M.num }, { k: 'diff', label: 'Difference', num: true, fmt: inr2 }],
+      kids.push(M.tableView([{ k: 'date', label: 'Picked up', fmt: M.fd }, M.refCol('order', 'order', 'Order'), { k: 'courier', label: 'Courier used' }, { k: 'billed_kg', label: 'Billed kg', num: true, fmt: d2 }, { k: 'paid', label: 'Paid', num: true, fmt: inr2 }, { k: 'cheapest_courier', label: 'Cheapest courier now' }, { k: 'cheapest_rate', label: 'Its rate', num: true, fmt: inr2 }, { k: 'cheapest_days', label: 'Its days', num: true, fmt: M.num }, { k: 'diff', label: 'Difference', num: true, fmt: inr2 }],
         R.map(function (x) { var o = Object.assign({}, x); o.diff = (+x.paid || 0) - (+x.cheapest_rate || 0); return o; }).sort(function (a, b2) { return b2.diff - a.diff; }), 'Show every parcel', { name: 'Cheapest courier today' }));
       cards.push(card(title, 'For each parcel, what the cheapest courier on Shiprocket would charge today at the weight the courier measured, against what was paid. A cheaper courier is often slower: the table shows its days.', kids));
     })();
@@ -16129,9 +16157,9 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       });
   };
   /* orders by number, with what the buyer paid (shipping included) from the tax register: for the money that did not come through Razorpay */
-  var taxMap = function () { var by = {}; if (M.has('tax_orders')) M.rows('tax_orders').forEach(function (x) { if (x.order && (x.kind === 'sale' || !by[x.order])) by[x.order] = x; }); return by; };
+  var taxMap = function (rows) { var by = {}; if (rows || M.has('tax_orders')) (rows || M.rows('tax_orders')).forEach(function (x) { if (x.order && (x.kind === 'sale' || !by[x.order])) by[x.order] = x; }); return by; };      /* rows: only the order lines of the chosen days (12 Nov 2026), so the hosted site never reads a month it has not opened */
   D.paidOrdersSpec = function (orders, o) {
-    var tx = taxMap(), money = 0; orders.forEach(function (n) { var t = tx[n]; if (t && t.kind === 'sale') money += num(t.total_paid); });
+    var tx = taxMap(o.rows), money = 0; orders.forEach(function (n) { var t = tx[n]; if (t && t.kind === 'sale') money += num(t.total_paid); });
     return D.mk({ title: o.title, sentence: D.countText(orders.length, 'order') + (o.plain ? '.' : ', ' + M.inr(r2(money)) + ' paid by the buyers (shipping included).') + (o.lead ? ' ' + o.lead : ''), n: orders.length, money: money, noun: 'order' }, function () {
       var ship = shipState();
       return orders.map(function (n) { var t = tx[n], st = ship(n); return { ref: { kind: 'order', value: n, copy: n }, date: t ? t.date : '', amount: !o.plain && t && t.kind === 'sale' ? t.total_paid : null, status: o.status || st.status, tone: o.status ? 'bad' : st.tone, note: o.note || '' }; }).sort(newest);
