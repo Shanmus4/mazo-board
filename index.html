@@ -505,6 +505,20 @@ body.detail-on #fsroot .card.fs{padding-right:var(--s6)}
 @media (pointer:coarse){.tbl-q{height:44px}.btn.sm{height:40px}}
 @media print{.subnav,.gsearch,.tbl-tools,.tbl-more,.detail,.fs-ctl,.fold-hint{display:none!important}.fold>*{display:block!important}.fold>summary{display:block}.fold>summary::after{display:none}}
 
+/* search result found (T1097, 12 Nov 2026): the card, chart or headline number a search result points at is lit by a soft ring for about two seconds, then it fades. */
+.found-it { position: relative; border-radius: var(--cr-pan, 12px); animation: foundIt 2.2s ease-out both; }
+@keyframes foundIt {
+  0%   { box-shadow: 0 0 0 0 rgba(200, 137, 42, 0); }
+  12%  { box-shadow: 0 0 0 4px rgba(200, 137, 42, .62), 0 6px 22px rgba(200, 137, 42, .18); }
+  70%  { box-shadow: 0 0 0 4px rgba(200, 137, 42, .5), 0 6px 22px rgba(200, 137, 42, .12); }
+  100% { box-shadow: 0 0 0 0 rgba(200, 137, 42, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .found-it { animation: none; box-shadow: 0 0 0 3px rgba(200, 137, 42, .55); transition: box-shadow .2s; }
+}
+/* a result's second line names the page and what it is ("Overview, headline number") */
+.sr-i .sr-s { text-transform: none; }
+
 /* mazo dashboard, Marketing pages (T830, 1 Nov 2026). Small on purpose: the look of cards, tables, buttons, info marks and focus comes from the shared files. */
 .ch-bar{margin:0 0 var(--sp4);overflow-x:auto;scrollbar-width:none}
 .ch-bar::-webkit-scrollbar{display:none}
@@ -1441,20 +1455,27 @@ td .info-mark{vertical-align:-0.25em;margin-left:var(--sp1)}
 .badge{display:inline-flex;align-items:center}
 
 /* ---------- donut charts (dashboard_35_pies.js) ---------- */
-.donut{display:grid;grid-template-columns:minmax(160px,220px) 1fr;gap:var(--sp5);align-items:center;padding:var(--sp3) 0}
-.donut svg{width:100%;height:auto;max-height:220px;display:block;overflow:visible}
+/* T1095 (12 Nov 2026, owner image 2): the ring and its legend sit side by side only when the legend has room for a label, an amount and a share (about 300px); otherwise the legend drops under the ring.
+   Before: a fixed ring column left the legend 160px in a four across row and the labels ran into the amounts. */
+.donut{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:var(--sp4) var(--sp5);padding:var(--sp3) 0}
+.donut svg{flex:0 1 200px;width:200px;max-width:100%;height:auto;max-height:220px;display:block;overflow:visible}
 .donut .dn-seg{cursor:pointer;transition:opacity .15s var(--ease)}
 .donut .dn-seg:hover,.donut .dn-seg:focus-visible{opacity:.82}
 .donut svg:focus-visible{outline:2px solid var(--ring);outline-offset:4px;border-radius:var(--cr-pan)}
 .donut .dn-total{font-family:Merriweather,Georgia,serif;font-size:22px;fill:var(--maroon);text-anchor:middle}
 .donut .dn-cap{font-size:11px;fill:var(--ink3);text-anchor:middle}
-.dn-legend{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.dn-legend{list-style:none;margin:0;padding:0;display:grid;gap:2px;flex:1 1 300px;min-width:0}
 .dn-legend li{display:grid;grid-template-columns:14px 1fr auto auto;gap:var(--sp2);align-items:center;min-height:32px;padding:0 var(--sp2);border-radius:var(--cr-ctl);font-size:var(--t14);cursor:default}
 .dn-legend li:hover,.dn-legend li.on{background:var(--sand)}
 .dn-legend i{width:12px;height:12px;border-radius:var(--cr-bar);display:block}
+.dn-legend li span{min-width:0;overflow-wrap:anywhere}
 .dn-legend b{font-weight:500;font-variant-numeric:tabular-nums}
 .dn-legend em{font-style:normal;color:var(--ink3);font-variant-numeric:tabular-nums;min-width:3.4em;text-align:right}
-@media (max-width:640px){.donut{grid-template-columns:1fr;justify-items:center}.donut svg{max-width:200px}.dn-legend{width:100%}}
+@media (max-width:640px){.donut svg{max-width:200px}.dn-legend{flex-basis:100%;width:100%}}
+/* the four rings of a card share a row height, so each "Show the numbers as a table" line sits at the same height (T1095) */
+.grid>div:has(>div>.donut){display:flex;flex-direction:column}
+.grid>div:has(>div>.donut)>div{display:flex;flex-direction:column;flex:1}
+.grid>div:has(>div>.donut)>div>.donut{flex:1;align-content:flex-start}
 
 /* marks after a value in a table cell or beside a source name: inline after the text, centred on that line */
 td.na,td.n.na{white-space:nowrap}
@@ -5139,13 +5160,62 @@ M.ALIAS = {
   tax: 'tax taxes gst cgst sgst igst gstr gstr-1 gstr-3b b2cs hsn itc input tax credit filing return due date challan accountant financial year quarter income tax advance tax 44ad professional tax place of supply rate credit note refund rounding',
   shipping: 'shiprocket shipping parcel parcels courier couriers freight cost delivery days rto returned return to origin ndr failed delivery weight discrepancy awb tracking promise on time'
 };
-M.SRCH_ORDER = ['Pages', 'Products', 'Collections', 'Channels', 'Devices', 'Sizes', 'Measures and tables', 'Rows in a table', 'Google searches', 'Content topics'];
-M.SRCH_PER = 5;
+M.SRCH_ORDER = ['Pages', 'Cards and numbers', 'Products', 'Collections', 'Channels', 'Devices', 'Sizes', 'Measures and tables', 'Rows in a table', 'Google searches', 'Content topics'];
+M.SRCH_PER = 5;      /* most results one group shows */
+M.SRCH_MAX = 8;      /* most results the whole list shows; every group with a match gets a place first, then the best groups get more */
+M.SRCH_POPULAR = ['Average order value', 'Sales', 'Returns', 'Razorpay payouts', 'Orders'];      /* shown when the box is empty */
+/* other words people use for a title (the title itself is always searched): the shop's own short names */
+M.SRCH_SYN = [[/average order value/, 'aov basket size order size'], [/why people exchange|exchange reason/, 'exchange reasons return reasons returns'], [/payouts to the bank/, 'settlements settlement payout'], [/profit after everything/, 'profit margin net profit'], [/visits that bought|conversion/, 'conversion rate cvr'], [/add to cart rate/, 'atc cart rate']];
 
 (function () {
   var inp = null, panel = null, list = null, status = null, items = [], act = -1, idx = null;      /* idx is rebuilt every time the panel opens, never kept between renders: data can arrive later */
   /* lower case, no accents (so "rose" finds "Rosé"), punctuation as spaces */
   var norm = function (s) { return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[_\-\/|.]+/g, ' ').replace(/\s+/g, ' ').trim(); };
+
+  /* ---- the words of a title, the same way the page and the index script read them (T1097) ---- */
+  /* the title of a card, chart or headline number without its little info button; the last word of a title sits next to that button */
+  M.titleText = function (e) {
+    var c = e.cloneNode(true);
+    Array.prototype.forEach.call(c.querySelectorAll('button, svg, .sr-only, [data-ux="1"]:not(.mk-row):not(.mk-text)'), function (x) { x.remove(); });
+    return String(c.textContent).replace(/\s+/g, ' ').trim();
+  };
+  /* what the index stores for a title: lower case, no accents, every run of digits is # (so "Visits, 37 of 177 days" is found again when the 37 moves), and the period word of "by day", "per week" or "each month" is p */
+  M.titleKey = function (t) { return String(t == null ? '' : t).replace(/\s+/g, ' ').trim().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[0-9]+/g, '#').replace(/\b(by|per|each) (day|week|month)$/, '$1 p'); };
+  var stem = function (w) { return w.length > 3 && w.charAt(w.length - 1) === 's' ? w.slice(0, -1) : w; };      /* orders = order, sales = sale */
+  var wordsOf = function (t) { return norm(t).split(' ').filter(Boolean).map(stem); };
+  /* one letter wrong, missing, extra or two neighbours swapped */
+  var near = function (a, b) {
+    var la = a.length, lb = b.length, d = [], i;
+    if (Math.abs(la - lb) > 1) return false;
+    if (la === lb) { for (i = 0; i < la; i++) if (a.charAt(i) !== b.charAt(i)) d.push(i); return d.length === 1 || (d.length === 2 && d[1] === d[0] + 1 && a.charAt(d[0]) === b.charAt(d[1]) && a.charAt(d[1]) === b.charAt(d[0])); }
+    var sm = la < lb ? a : b, lg = la < lb ? b : a, k = 0;
+    while (k < sm.length && sm.charAt(k) === lg.charAt(k)) k++;
+    return sm.slice(k) === lg.slice(k + 1);
+  };
+  /* how well one typed word fits one word of an entry: whole word 4, start of the word 3, inside the word 1.5, one letter off 1.2 (4 letters or more), 0 for no fit.
+     One or two typed letters only count at the start of a word, so a short start lists the best starts. */
+  var wscore = function (w, e, fuzzy) {
+    if (e === w) return 4;
+    if (e.indexOf(w) === 0) return 3;
+    if (w.length >= 3 && e.indexOf(w) > 0) return 1.5;
+    if (fuzzy && w.length >= 4 && (near(w, e) || (e.length > w.length && near(w, e.slice(0, w.length))))) return 1.2;
+    return 0;
+  };
+  /* the entry's score for the typed words, or 0 when a typed word fits nothing in it. Any order of words. */
+  var rate = function (ws, o, fuzzy) {
+    var sum = 0, i, j, b, t, inTitle = 0;
+    for (i = 0; i < ws.length; i++) {
+      b = 0; t = 0;
+      for (j = 0; j < o.words.length; j++) { var v = wscore(ws[i], o.words[j], fuzzy); if (v > b) b = v; }
+      if (!b) return 0;
+      for (j = 0; j < o.twords.length; j++) { var u = wscore(ws[i], o.twords[j], fuzzy); if (u > t) t = u; }
+      if (t) inTitle++;
+      sum += b;
+    }
+    o.titleHit = inTitle === ws.length;
+    return sum / ws.length + (o.titleHit ? 2 : 0);
+  };
+  var KIND_NAME = { kpi: 'headline number', card: 'card', chart: 'chart', table: 'table' }, KIND_RANK = { kpi: 0, card: 1, table: 2, chart: 3 };
 
   /* everything the three dropdowns of the History page offer (Table, Measure, Row), read from the same lists the page uses (M.histSources, M.histMeasures, M.histEntities), so a choice in a
      dropdown can always be found here too (owner note on the History page, 12 Nov 2026). A table with no number to chart is still found by its name. */
@@ -5167,9 +5237,16 @@ M.SRCH_PER = 5;
   }
   function build() {
     var out = [], f = M.facts(), seen = {};
-    M.ORDER.forEach(function (id) {
+    /* every page, the sidebar order first (Payments and Shipping are not in M.ORDER) */
+    M.ORDER.concat(Object.keys(M.PAGES).filter(function (id) { return M.ORDER.indexOf(id) < 0; })).forEach(function (id) {
       var p = M.PAGES[id]; if (!p) return;
       out.push({ type: 'Pages', label: p.title, sub: p.why ? M.shortWhy(p.why) : '', hay: norm(p.title + ' ' + p.nav + ' ' + (M.ALIAS[id] || '')), boost: 2, run: { page: id } });
+    });
+    /* T1097: every card, chart, table and headline number, from the list the index script wrote (titles only, scripts/dashboard_search_index.js) */
+    (M.SEARCH_INDEX || []).forEach(function (r) {
+      var pg = M.PAGES[r[0]]; if (!pg) return;
+      var syn = ''; M.SRCH_SYN.forEach(function (x) { if (x[0].test(r[3])) syn += ' ' + x[1]; });
+      out.push({ type: 'Cards and numbers', label: r[2], sub: pg.title + ', ' + (KIND_NAME[r[1]] || 'card'), hay: norm(r[2] + ' ' + pg.title + syn), thay: norm(r[2] + syn), kind: r[1], boost: r[1] === 'kpi' ? 0.5 : 0, run: { page: r[0] }, find: { page: r[0], key: r[3], kind: r[1] } });
     });
     f.products.forEach(function (n) { out.push({ type: 'Products', label: n, sub: f.coll[n] || '', hay: norm(n + ' ' + (f.coll[n] || '')), run: { page: 'products', product: n, sel: '' } }); });
     f.collections.forEach(function (n) { out.push({ type: 'Collections', label: n, sub: 'Products page, one collection', hay: norm(n), run: { page: 'products', collection: n } }); });
@@ -5187,7 +5264,11 @@ M.SRCH_PER = 5;
     ['content_patterns'].forEach(function (n) { if (M.has(n)) M.rows(n).forEach(function (x) { if (x.cut === 'topic' && x.value) topics[x.value] = (+x.posts || 0); }); });
     if (M.has('content_scorecard')) M.rows('content_scorecard').forEach(function (x) { if (x.topic && topics[x.topic] == null) topics[x.topic] = 0; });
     Object.keys(topics).forEach(function (n) { out.push({ type: 'Content topics', label: n, sub: topics[n] ? M.num(topics[n]) + ' posts' : 'Social and content page', hay: norm(n + ' topic'), run: { page: 'social', ccut: 'topic' }, after: { card: /what works/i } }); });
-    out.forEach(function (o) { var k = o.type + '|' + o.label + '|' + (o.run.hsrc || '') + '|' + (o.run.hcol || ''); if (seen[k]) o.dup = true; seen[k] = 1; });
+    out.forEach(function (o) {
+      var k = o.type + '|' + o.label + '|' + (o.find ? o.find.page + '|' + o.find.kind : '') + '|' + (o.run.hsrc || '') + '|' + (o.run.hcol || '');
+      if (seen[k]) o.dup = true; seen[k] = 1;
+      o.words = wordsOf(o.hay); o.twords = wordsOf(o.thay != null ? o.thay : o.label);      /* split once here, not at every key press */
+    });
     return out.filter(function (o) { return !o.dup; });
   }
   M.searchIndex = function () { return build(); };      /* for the checks only (scripts/dashboard_search_check.js): the same list the panel searches */
@@ -5195,15 +5276,17 @@ M.SRCH_PER = 5;
     q = norm(q);
     if (!idx) idx = build();
     if (!q) return [];
-    var words = q.split(' ');
-    var hits = [];
-    idx.forEach(function (o) {
-      var ok = words.every(function (w) { return o.hay.indexOf(w) >= 0; });
-      if (!ok) return;
-      var l = norm(o.label), s = (o.boost || 0) + (l === q ? 8 : l.indexOf(q) === 0 ? 5 : l.indexOf(q) > 0 ? 3 : 0) + (words.every(function (w) { return (' ' + l).indexOf(' ' + w) >= 0; }) ? 1 : 0) + (o.type === 'Measures and tables' && !/_hist$/.test(o.run.hsrc || '') ? 1 : 0) - (o.type === 'Measures and tables' && /_hist$/.test(o.run.hsrc || '') ? 2 : 0);
-      hits.push({ o: o, s: s });
-    });
-    hits.sort(function (a, b) { return b.s - a.s || (a.o.label < b.o.label ? -1 : 1); });
+    var ws = q.split(' ').map(stem), hits = [], pass, fuzzy;
+    for (pass = 0; pass < 2 && !hits.length; pass++) {
+      fuzzy = pass === 1;      /* a typo is only forgiven when nothing fits the letters exactly */
+      idx.forEach(function (o) {
+        var r = rate(ws, o, fuzzy); if (!r) return;
+        var l = norm(o.label);
+        var s2 = (o.boost || 0) + r + (l === q ? 8 : l.indexOf(q) === 0 ? 5 : l.indexOf(q) > 0 ? 3 : 0) + (o.type === 'Measures and tables' && !/_hist$/.test(o.run.hsrc || '') ? 1 : 0) - (o.type === 'Measures and tables' && /_hist$/.test(o.run.hsrc || '') ? 2 : 0);
+        hits.push({ o: o, s: s2 });
+      });
+    }
+    hits.sort(function (a, b) { return b.s - a.s || (a.o.kind && b.o.kind && KIND_RANK[a.o.kind] !== KIND_RANK[b.o.kind] ? KIND_RANK[a.o.kind] - KIND_RANK[b.o.kind] : 0) || (a.o.label < b.o.label ? -1 : 1); });
     hits.forEach(function (h) { h.o.score = h.s; });
     return hits.map(function (h) { return h.o; });
   }
@@ -5212,14 +5295,50 @@ M.SRCH_PER = 5;
     close(true);
     inp.value = '';
     if (o.after) M.pending_after = o.after;
+    var same = M.state.page === o.run.page && o.find;
+    if (o.find) M.pending_after = { find: o.find, instant: !same };      /* a new page is entered at the card at once, like a link; the same page scrolls smoothly */
     M.go(o.run, true);
-    window.scrollTo(0, 0);
-    var m = document.getElementById('main'); if (m) m.focus({ preventScroll: true });
+    if (!o.find) window.scrollTo(0, 0);
+    else if (!same) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    var m = document.getElementById('main'); if (m && !o.find) m.focus({ preventScroll: true });
   }
+  /* T1097: the element on the open page that carries a title (a card, a chart heading or a headline number); the title is matched on its key, so a number inside it can move */
+  M.findTitle = function (f) {
+    var main = document.getElementById('main'); if (!main) return null;
+    var sels = f.kind === 'kpi' ? ['.kpi .l'] : f.kind === 'chart' ? ['h4.sub-h', '.minichart .mc-head b', '.card h3'] : ['.card h3'], i, nodes, n, el = null;
+    for (i = 0; i < sels.length && !el; i++) {
+      nodes = main.querySelectorAll(sels[i]);
+      for (n = 0; n < nodes.length; n++) if (M.titleKey(M.titleText(nodes[n])) === f.key || M.titleKey(M.titleText(nodes[n])).indexOf(f.key) === 0 && f.key.length > 12) { el = nodes[n]; break; }
+    }
+    if (!el) { nodes = main.querySelectorAll('.kpi .l, h4.sub-h, .minichart .mc-head b, .card h3'); for (n = 0; n < nodes.length; n++) if (M.titleKey(M.titleText(nodes[n])) === f.key) { el = nodes[n]; break; } }
+    if (!el) return null;
+    return { title: el, box: el.closest(f.kind === 'kpi' ? '.kpi' : '.minichart, .card') || el.closest('.card') || el };
+  };
+  /* scroll the thing into view only when it is not already comfortably on screen, then light it for about two seconds (no light-up for people who asked for less motion) */
+  M.showFound = function (box, instant) {
+    if (M.openFolds) M.openFolds(box);
+    var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var r = box.getBoundingClientRect(), top = 100, vh = window.innerHeight || document.documentElement.clientHeight;
+    if (r.top < top || r.bottom > vh - 24) box.scrollIntoView({ block: r.height > vh - top - 40 ? 'start' : 'center', behavior: still || instant ? 'instant' : 'smooth' });
+    box.classList.add('found-it');
+    setTimeout(function () { box.classList.remove('found-it'); }, 2200);
+  };
   /* after the page is drawn: scroll to the card the search result is about, and put the phrase in that table's own "Filter rows" box */
   M.afterRender = function () {
     var a = M.pending_after; M.pending_after = null;
     if (!a) return;
+    if (a.find) {
+      /* the hosted site may draw the page once more after its month files arrive, which replaces the card: look again until the same card has stood still for a moment (at most about 4 seconds) */
+      var tries = 0, last = null, tick = function () {
+        tries++;
+        var got = M.findTitle(a.find);
+        if (got && got.box === last && got.box.isConnected && !(M.lazy && M.lazy.drawing)) { M.showFound(got.box, a.instant); return; }
+        last = got ? got.box : null;
+        if (tries < 26) setTimeout(tick, 150);
+      };
+      setTimeout(tick, 60);
+      return;
+    }
     var cards = Array.prototype.slice.call(document.querySelectorAll('#main .card')), hit = null;
     cards.forEach(function (c) { var h = c.querySelector('h3'); if (!hit && h && a.card && a.card.test(h.textContent)) hit = c; });
     if (!hit) return;
@@ -5229,38 +5348,60 @@ M.SRCH_PER = 5;
     hit.classList.add('found'); setTimeout(function () { hit.classList.remove('found'); }, 2200);
   };
 
+  function row(o) {
+    var id = 'sr-' + items.length, li = M.h('li', { role: 'option', id: id, class: 'sr-i', 'aria-selected': 'false' }, [M.h('span', { class: 'sr-l', text: o.label }), o.sub ? M.h('span', { class: 'sr-s', text: o.sub }) : null]);
+    li.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    li.addEventListener('click', function () { if (o.suggest) { inp.value = o.suggest; inp.focus(); paint(inp.value); } else choose(o); });
+    li.addEventListener('mousemove', function () { setActive(items.indexOf(li)); });
+    li._o = o; items.push(li); list.appendChild(li);
+    return li;
+  }
   function paint(q) {
     M.clear(list);
     items = []; act = -1;
     var res = find(q);
     inp.setAttribute('aria-expanded', 'true');
     if (!q.trim()) {
-      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-hint', 'data-ux': '1' }, 'Type to find a page, product, channel, size, measure, Google search or content topic. Enter opens the first result.'));
-      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-try', 'data-ux': '1' }, 'Try: sales after discounts, instagram, rose, size M, conversion'));
-      status.textContent = '';
+      /* the box is empty: five searches that people make, each a real result */
+      if (!idx) idx = build();
+      var pop = [];
+      M.SRCH_POPULAR.forEach(function (t) {
+        var n = norm(t), o = null;
+        idx.forEach(function (x) { if (!o && norm(x.label) === n && (x.type === 'Cards and numbers' || x.type === 'Pages') && x.find) o = x; });      /* a title that exists: go straight to it */
+        pop.push(o || { type: 'Popular', label: t, sub: 'Show the results', suggest: t });      /* else the words go into the box and the results list under it */
+      });
+      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-h', text: 'Popular searches' }));
+      pop.forEach(row); setActive(0);
+      status.textContent = pop.length + ' popular searches';
       return;
     }
     if (!res.length) {
-      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-hint', 'data-ux': '1' }, 'No match for "' + q.trim() + '".'));
-      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-try', 'data-ux': '1' }, 'Try one word, such as sales, stock, reviews, a product name or a channel. Measures use the same words as the History page.'));
-      status.textContent = 'No match';
+      var near2 = find(q.trim().split(/\s+/)[0]).filter(function (o) { return o.type === 'Pages'; }).slice(0, 3);
+      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-hint', 'data-ux': '1' }, 'Nothing found for "' + q.trim() + '".'));
+      if (near2.length) { list.appendChild(M.h('li', { role: 'presentation', class: 'sr-h', text: 'Pages that may help' })); near2.forEach(row); setActive(0); }
+      else list.appendChild(M.h('li', { role: 'presentation', class: 'sr-try', 'data-ux': '1' }, 'Try one word, such as sales, stock, reviews, a product name or a channel.'));
+      status.textContent = 'Nothing found';
       return;
     }
-    var shown = 0;
+    var shown = 0, byType = {}, rest;
+    res.forEach(function (o) { (byType[o.type] = byType[o.type] || []).push(o); });
     /* groups are ordered by their best match (pages get a small lead so a plain word like "stock" lists the pages first); equal scores keep the fixed order */
-    var best = function (type) { var m = -99; res.forEach(function (o) { if (o.type === type && o.score > m) m = o.score; }); return m + (type === 'Pages' ? 5 : 0); };
-    M.SRCH_ORDER.slice().sort(function (a, b) { return best(b) - best(a) || M.SRCH_ORDER.indexOf(a) - M.SRCH_ORDER.indexOf(b); }).forEach(function (type) {
-      var g = res.filter(function (o) { return o.type === type; });
-      if (!g.length) return;
-      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-h', text: type + (g.length > M.SRCH_PER ? ' (' + g.length + ')' : '') }));
-      g.slice(0, M.SRCH_PER).forEach(function (o) {
-        var id = 'sr-' + items.length, li = M.h('li', { role: 'option', id: id, class: 'sr-i', 'aria-selected': 'false' }, [M.h('span', { class: 'sr-l', text: o.label }), o.sub ? M.h('span', { class: 'sr-s', text: o.sub }) : null]);
-        li.addEventListener('mousedown', function (e) { e.preventDefault(); });
-        li.addEventListener('click', function () { choose(o); });
-        li.addEventListener('mousemove', function () { setActive(items.indexOf(li)); });
-        li._o = o; items.push(li); list.appendChild(li); shown++;
-      });
-      if (g.length > M.SRCH_PER) list.appendChild(M.h('li', { role: 'presentation', class: 'sr-more', text: (g.length - M.SRCH_PER) + ' more ' + type.toLowerCase() + '. Type more words to narrow them.' }));
+    var best = function (type) { var m = -99; res.forEach(function (o) { if (o.type === type && o.score > m) m = o.score; }); return m + (type === 'Pages' ? 5 : type === 'Cards and numbers' ? 4 : 0); };      /* cards and numbers lead the History table names: the owner wants to land on the card */
+    var groups = M.SRCH_ORDER.filter(function (t) { return byType[t]; }).sort(function (a, b) { return best(b) - best(a) || M.SRCH_ORDER.indexOf(a) - M.SRCH_ORDER.indexOf(b); });
+    /* at most SRCH_MAX in all: the best result of every group first, then the best groups fill the rest, no group over SRCH_PER */
+    var take = {}; groups.forEach(function (t) { take[t] = 0; });
+    var left = M.SRCH_MAX;
+    groups.forEach(function (t) { if (left > 0) { take[t] = 1; left--; } });
+    while (left > 0) {
+      var grew = false;
+      groups.forEach(function (t) { if (left > 0 && take[t] < Math.min(M.SRCH_PER, byType[t].length)) { take[t]++; left--; grew = true; } });
+      if (!grew) break;
+    }
+    groups.forEach(function (type) {
+      var g = byType[type], n = take[type]; if (!n) return;
+      list.appendChild(M.h('li', { role: 'presentation', class: 'sr-h', text: type + (g.length > n ? ' (' + g.length + ')' : '') }));
+      g.slice(0, n).forEach(function (o) { row(o); shown++; });
+      if (g.length > n) list.appendChild(M.h('li', { role: 'presentation', class: 'sr-more', text: (g.length - n) + ' more ' + type.toLowerCase() + '. Type more words to narrow them.' }));
     });
     status.textContent = shown + ' result' + (shown === 1 ? '' : 's') + ' shown of ' + res.length;
     setActive(0);
@@ -5290,7 +5431,7 @@ M.SRCH_PER = 5;
     inp.addEventListener('keydown', function (e) {
       if (e.key === 'ArrowDown') { e.preventDefault(); if (panel.hidden) open(); else if (items.length) setActive((act + 1) % items.length); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); if (items.length) setActive((act - 1 + items.length) % items.length); }
-      else if (e.key === 'Enter') { if (act >= 0 && items[act]) { e.preventDefault(); choose(items[act]._o); } }
+      else if (e.key === 'Enter') { if (act >= 0 && items[act]) { e.preventDefault(); if (items[act]._o.suggest) { inp.value = items[act]._o.suggest; paint(inp.value); } else choose(items[act]._o); } }
       else if (e.key === 'Escape') { if (!panel.hidden) { e.preventDefault(); e.stopPropagation(); close(false); } else if (inp.value) { inp.value = ''; } else inp.blur(); }
       else if (e.key === 'Home' && !inp.value) { e.preventDefault(); setActive(0); }
     });
@@ -5308,6 +5449,417 @@ M.SRCH_PER = 5;
     }
   }, true);
 })();
+
+/* GENERATED by scripts/dashboard_search_index.js (T1097). Do not edit by hand; run it with --write after a card or tile is added, renamed or removed.
+   Titles only: [page id, kind, title shown, key]. The search box (dashboard_09_search.js) reads M.SEARCH_INDEX. No number, name or amount is ever written here. */
+M.SEARCH_INDEX = [
+["overview","card","Sales after discounts by day or week","sales after discounts by p"],
+["overview","card","Orders by day or week","orders by p"],
+["overview","card","Visits by day or week","visits by p"],
+["overview","card","Sales built up so far","sales built up so far"],
+["overview","table","How the sales numbers connect","how the sales numbers connect"],
+["overview","card","Where the money goes","where the money goes"],
+["overview","table","Shopify bills","shopify bills"],
+["overview","table","Month by month","month by p"],
+["overview","card","The goal","the goal"],
+["overview","kpi","Sales after discounts","sales after discounts"],
+["overview","kpi","Orders","orders"],
+["overview","kpi","Profit after everything (estimate)","profit after everything (estimate)"],
+["overview","kpi","Visits","visits"],
+["overview","kpi","Visits that bought","visits that bought"],
+["overview","kpi","Add to cart rate","add to cart rate"],
+["overview","kpi","Average order value","average order value"],
+["overview","kpi","Total paid by customers","total paid by customers"],
+["overview","kpi","Shipping charged","shipping charged"],
+["overview","kpi","Orders in the last 28 days","orders in the last # days"],
+["overview","kpi","Goal: orders a month","goal: orders a month"],
+["overview","kpi","Still to go","still to go"],
+["funnel","card","The path from looking to buying","the path from looking to buying"],
+["funnel","card","Visits by device","visits by device"],
+["funnel","table","The six steps, all devices","the six steps, all devices"],
+["funnel","table","By device","by device"],
+["funnel","table","Shopping steps: where they came from","shopping steps: where they came from (last # days)"],
+["funnel","table","Shopping steps: which product","shopping steps: which product (last # days)"],
+["funnel","card","The steps from Shopify's own count of visits","the steps from shopify's own count of visits"],
+["funnel","kpi","Visits","visits, # of # days"],
+["funnel","kpi","Viewed a product","viewed a product"],
+["funnel","kpi","Product view to cart","product view to cart"],
+["funnel","kpi","Checkout to bought","checkout to bought"],
+["products","card","Sales by collection","sales by collection"],
+["products","table","All products","all products"],
+["products","table","Collections side by side","collections side by side"],
+["products","table","Compare two products","compare two products"],
+["products","table","Stock on hand, product by product","stock on hand, product by product"],
+["products","card","Price over time and sales","price over time and sales"],
+["products","kpi","Product views","product views"],
+["products","kpi","Added to cart","added to cart"],
+["products","kpi","Units sold","units sold"],
+["products","kpi","Revenue before order codes","revenue before order codes"],
+["products","kpi","Pieces in stock now","pieces in stock now"],
+["sizes","card","Units sold by size, last 90 days","units sold by size, last # days"],
+["sizes","card","Sold against in stock, by size","sold against in stock, by size"],
+["sizes","table","Product by size","product by size"],
+["sizes","card","Jig Jig: sales mix against stock mix","jig jig: sales mix against stock mix"],
+["sizes","card","Madras Theory: sales mix against stock mix","madras theory: sales mix against stock mix"],
+["sizes","table","Next batch advice","next batch advice"],
+["sizes","table","Reorder plan","reorder plan"],
+["sizes","table","Size curve, all products","size curve, all products"],
+["sizes","card","Stock by size over time","stock by size over time"],
+["sizes","table","Every product and size","every product and size"],
+["customers","table","Do first time buyers come back?","do first time buyers come back?"],
+["customers","table","Customer groups","customer groups"],
+["customers","card","Collection","collection"],
+["customers","card","Product type","product type"],
+["customers","card","Price band","price band"],
+["customers","card","Pattern","pattern"],
+["customers","card","Size","size"],
+["customers","card","First visit source","first visit source"],
+["customers","card","Used a discount code","used a discount code"],
+["customers","card","Payment","payment"],
+["customers","card","Weekday","weekday"],
+["customers","card","State","state"],
+["customers","card","New buyers and buyers coming back, week by week","new buyers and buyers coming back, week by p"],
+["customers","card","Where orders go","where orders go"],
+["customers","table","Cities that visit","cities that visit"],
+["customers","card","How big is an order?","how big is an order?"],
+["customers","card","People who joined and bought, week by week","people who joined and bought, week by p"],
+["customers","table","Customers, week by week","customers, week by p"],
+["customers","table","When people order: weekday by time of day","when people order: weekday by time of day"],
+["customers","card","Time from first visit to buying","time from first visit to buying"],
+["customers","table","States","states"],
+["customers","table","Coming back","coming back"],
+["customers","table","Baskets: products bought together","baskets: products bought together"],
+["customers","table","Couriers","couriers"],
+["customers","table","Which discount code was used","which discount code was used"],
+["customers","table","Why people exchange","why people exchange"],
+["customers","kpi","Orders so far","orders so far"],
+["customers","kpi","Customers who ordered","customers who ordered"],
+["customers","kpi","Contacts on file","contacts on file"],
+["customers","kpi","Repeat customers","repeat customers"],
+["customers","kpi","Average order value","average order value"],
+["forecast","card","Orders each week, and the next weeks","orders each week, and the next weeks"],
+["forecast","card","How good were our forecasts","how good were our forecasts"],
+["forecast","table","When a size runs out","when a size runs out"],
+["forecast","table","Where a lever could add sales","where a lever could add sales"],
+["forecast","table","Decisions logged","decisions logged"],
+["forecast","kpi","Orders expected in the next 4 weeks (a guess)","orders expected in the next # weeks (a guess)"],
+["forecast","kpi","Orders in the last 4 weeks","orders in the last # weeks"],
+["functions","card","How the jobs stand today","how the jobs stand today"],
+["functions","card","How many jobs are on target, close and need work, night by night","how many jobs are on target, close and need work, night by night"],
+["functions","table","Targets the status is judged against","targets the status is judged against"],
+["functions","kpi","On target","on target"],
+["functions","kpi","Close","close"],
+["functions","kpi","Needs work","needs work"],
+["functions","kpi","No data yet","no data yet"],
+["history","card","Choose what to look at","choose what to look at"],
+["history","card","Sales after discounts","sales after discounts"],
+["history","table","What is stored, year by year","what is stored, year by year"],
+["quality","table","Nightly checks","nightly checks"],
+["quality","card","How fresh is each daily table?","how fresh is each daily table?"],
+["quality","table","Everything that is stored","everything that is stored"],
+["quality","table","Which clock each number uses","which clock each number uses"],
+["quality","card","Privacy and build notes","privacy and build notes"],
+["quality","table","Did last night's routines run?","did last night's routines run?"],
+["quality","kpi","Checks last run","checks last run"],
+["quality","kpi","Checks passed","checks passed"],
+["quality","kpi","Updated","updated"],
+["quality","kpi","Newest data day","newest data day"],
+["gtm","card","Checkouts left, month by month","checkouts left, month by p"],
+["gtm","card","Where growth can come from","where growth can come from"],
+["gtm","card","Is each area working?","is each area working?"],
+["gtm","card","Ideas by area and status","ideas by area and status"],
+["gtm","table","Which channel paid back","which channel paid back"],
+["gtm","table","Every growth idea","every growth idea"],
+["gtm","table","Six checks: is growth working?","six checks: is growth working?"],
+["gtm","table","Where visits and orders come from","where visits and orders come from"],
+["gtm","table","From contact to repeat buyer","from contact to repeat buyer"],
+["gtm","table","Email program in numbers","email program in numbers"],
+["gtm","table","People who left a checkout","people who left a checkout"],
+["gtm","chart","Email list","email list"],
+["gtm","chart","Left checkouts","left checkouts"],
+["gtm","chart","Instagram: different people reached","instagram: different people reached"],
+["gtm","chart","Search: Google clicks","search: google clicks"],
+["gtm","chart","The shop: buying steps","the shop: buying steps"],
+["gtm","chart","Delivery promise","delivery promise"],
+["gtm","kpi","Buyers who come back","buyers who come back"],
+["gtm","kpi","Email list and left checkouts","email list and left checkouts"],
+["gtm","kpi","Instagram","instagram"],
+["gtm","kpi","Search, AI answers and press","search, ai answers and press"],
+["gtm","kpi","The shop: buying steps and trust","the shop: buying steps and trust"],
+["gtm","kpi","Ads, partners and events (later)","ads, partners and events (later)"],
+["channels","card","Visits by device over time","visits by device over time"],
+["channels","card","Where visits came from, at a glance","where visits came from, at a glance"],
+["channels","card","From the place they came from to an order","from the place they came from to an order"],
+["channels","card","How the biggest places compare","how the biggest places compare"],
+["channels","table","Where visitors come from","where visitors come from"],
+["channels","card","Visits against buying","visits against buying"],
+["channels","card","Visits and orders together","visits and orders together"],
+["channels","table","Groups inside each place, last 28 days","groups inside each place, last # days"],
+["channels","table","Every source","every source"],
+["channels","card","Visits over time, biggest six sources","visits over time, biggest six sources"],
+["channels","table","First page people saw","first page people saw"],
+["channels","table","Links we tagged (campaigns)","links we tagged (campaigns)"],
+["channels","table","New people and people who came back","new people and people who came back"],
+["channels","table","Phone, laptop or tablet","phone, laptop or tablet"],
+["channels","kpi","Visits","visits, # of # days"],
+["channels","kpi","Orders","orders"],
+["channels","kpi","Revenue","revenue"],
+["channels","kpi","Sources with visits","sources with visits"],
+["social","table","Channels side by side","channels side by side"],
+["social","card","Reach over time, one chart per channel","reach over time, one chart per channel"],
+["social","table","The same piece on several channels","the same piece on several channels"],
+["social","table","Posts: best and worst on every channel","posts: best and worst on every channel"],
+["social","card","What works: average reach by topic","what works: average reach by topic"],
+["social","chart","Instagram views","instagram views"],
+["social","chart","Pinterest impressions","pinterest impressions"],
+["social","chart","YouTube views","youtube views"],
+["social","chart","Threads profile views","threads profile views"],
+["social","chart","Facebook views","facebook views"],
+["social","chart","LinkedIn impressions","linkedin impressions"],
+["social","kpi","Followers, all channels","followers, all channels"],
+["social","kpi","Posts in these dates","posts in these dates"],
+["social","kpi","Visits to the shop from social","visits to the shop from social"],
+["social","kpi","Orders from social","orders from social"],
+["search","card","Brand searches over time","brand searches over time"],
+["search","card","Other searches over time","other searches over time"],
+["search","table","What people typed","what people typed"],
+["search","card","Is the market moving toward us?","is the market moving toward us?"],
+["search","table","Range gaps","range gaps"],
+["search","table","Price position","price position"],
+["search","table","Which pages Google shows","which pages google shows"],
+["search","card","Google shop listings and shop panel","google shop listings and shop panel"],
+["search","card","Bing search","bing search"],
+["search","card","Visits sent by AI assistants","visits sent by ai assistants"],
+["search","table","Competitors over time","competitors over time"],
+["search","kpi","Brand searches shown (impressions)","brand searches shown (impressions)"],
+["search","kpi","Brand clicks","brand clicks"],
+["search","kpi","Other searches shown","other searches shown"],
+["search","kpi","Other clicks","other clicks"],
+["email","card","From a contact to a repeat buyer","from a contact to a repeat buyer"],
+["email","table","Checkouts that were left, by month","checkouts that were left, by p"],
+["email","table","How each automatic email did, last 30 days","how each automatic email did, last # days"],
+["email","table","The automatic emails","the automatic emails"],
+["email","card","People on the email list, since the first sign up","people on the email list, since the first sign up"],
+["email","table","List growth by week","list growth by p"],
+["email","kpi","People on the email list","people on the email list"],
+["email","kpi","Buyers who agreed to email","buyers who agreed to email"],
+["email","kpi","Left a checkout and can be emailed","left a checkout and can be emailed"],
+["email","kpi","Left the list","left the list"],
+["payments","card","Razorpay at a glance","razorpay at a glance"],
+["payments","card","Money paid, and what Razorpay kept","money paid, and what razorpay kept"],
+["payments","table","Payouts to the bank","payouts to the bank"],
+["payments","card","Payments that went through, week by week","payments that went through, week by p"],
+["payments","card","How buyers paid, in detail","how buyers paid, in detail"],
+["payments","card","What Razorpay keeps for each way of paying","what razorpay keeps for each way of paying"],
+["payments","card","Money collected, paid out and still waiting","money collected, paid out and still waiting"],
+["payments","table","Days from payment to the bank","days from payment to the bank"],
+["payments","card","Payments that failed, and why","payments that failed, and why"],
+["payments","card","Checkouts that reached the payment step and did not end in a payment","checkouts that reached the payment step and did not end in a payment"],
+["payments","table","When buyers pay: weekday and hour of the day","when buyers pay: weekday and hour of the day"],
+["payments","card","Payments from India and from outside India","payments from india and from outside india"],
+["payments","card","GST paid on Razorpay fees (input credit)","gst paid on razorpay fees (input credit)"],
+["payments","card","Where the money came from","where the money came from"],
+["payments","card","Razorpay against the shop, day by day","razorpay against the shop, day by p"],
+["payments","card","Refunds and disputes","refunds and disputes"],
+["payments","card","How fast buyers pay, and who has paid before","how fast buyers pay, and who has paid before"],
+["payments","table","Every payment, one line each","every payment, one line each"],
+["payments","chart","The share that went through, by way of paying","the share that went through, by way of paying"],
+["payments","chart","Money by way of paying","money by way of paying"],
+["payments","chart","UPI apps","upi apps"],
+["payments","chart","Kind of card","kind of card"],
+["payments","chart","Where the payment came from","where the payment came from"],
+["payments","chart","The share Razorpay kept over time","the share razorpay kept over time"],
+["payments","chart","How long payments took","how long payments took"],
+["payments","chart","Days to the bank, by the weekday of the payment","days to the bank, by the weekday of the payment"],
+["payments","chart","Payout calendar: money that reached the bank each day","payout calendar: money that reached the bank each p"],
+["payments","chart","Payments not paid out yet","payments not paid out yet"],
+["payments","chart","Why they failed","why they failed"],
+["payments","chart","At which step","at which step"],
+["payments","chart","Who stopped it","who stopped it"],
+["payments","chart","By way of paying","by way of paying"],
+["payments","chart","Failed tries, week by week","failed tries, week by p"],
+["payments","chart","The busiest blocks of the day","the busiest blocks of the day"],
+["payments","chart","GST inside the fees, month by month","gst inside the fees, month by p"],
+["payments","chart","Week by week","week by p"],
+["payments","chart","Why days differ, counted in payments or orders","why days differ, counted in payments or orders"],
+["payments","chart","Money, week by week","money, week by p"],
+["payments","chart","Every day with a payment or an order","every day with a payment or an order"],
+["payments","chart","Time from the payment step to the payment","time from the payment step to the payment"],
+["payments","chart","Average time, by way of paying","average time, by way of paying"],
+["payments","chart","Tries","tries"],
+["payments","chart","Share that went through","share that went through"],
+["payments","chart","Collected and paid out, added up","collected and paid out, added up"],
+["payments","chart","Checkouts each week","checkouts each p"],
+["payments","kpi","Paid by buyers","paid by buyers"],
+["payments","kpi","Razorpay kept","razorpay kept"],
+["payments","kpi","Reached the bank","reached the bank"],
+["payments","kpi","Payments that failed","payments that failed"],
+["payments","kpi","Payments that went through","payments that went through"],
+["payments","kpi","Checkouts that ended in a payment","checkouts that ended in a payment"],
+["payments","kpi","What Razorpay kept","what razorpay kept"],
+["payments","kpi","Still waiting at Razorpay","still waiting at razorpay"],
+["payments","kpi","Checkouts left behind","checkouts left behind"],
+["payments","kpi","Time to pay","time to pay"],
+["payments","kpi","Paid by someone who paid before","paid by someone who paid before"],
+["payments","kpi","Collected after fees, all time","collected after fees, all time"],
+["payments","kpi","Paid out to the bank, all time","paid out to the bank, all time"],
+["payments","kpi","Waiting at Razorpay","waiting at razorpay"],
+["payments","kpi","Razorpay's own balance","razorpay's own balance"],
+["payments","kpi","Average days to the bank","average days to the bank"],
+["payments","kpi","Quickest","quickest"],
+["payments","kpi","Slowest","slowest"],
+["payments","kpi","Money paid out","money paid out"],
+["payments","kpi","Failed tries","failed tries"],
+["payments","kpi","Money in failed tries","money in failed tries"],
+["payments","kpi","Failed, then paid on a later try","failed, then paid on a later try"],
+["payments","kpi","Reached the payment step","reached the payment step"],
+["payments","kpi","Left without trying to pay","left without trying to pay"],
+["payments","kpi","Tried to pay and stopped","tried to pay and stopped"],
+["payments","kpi","Money in the checkouts left","money in the checkouts left"],
+["payments","kpi","GST paid on Razorpay fees","gst paid on razorpay fees"],
+["payments","kpi","Fees before GST","fees before gst"],
+["payments","kpi","Fees with GST","fees with gst"],
+["payments","kpi","Through Razorpay","through razorpay"],
+["payments","kpi","Marked paid by hand","marked paid by hand"],
+["payments","kpi","Collected by Razorpay","collected by razorpay"],
+["payments","kpi","Shop orders paid through Razorpay","shop orders paid through razorpay"],
+["payments","kpi","Payments and orders that agree","payments and orders that agree"],
+["payments","kpi","Days that differ","days that differ"],
+["payments","kpi","Refunded","refunded"],
+["payments","kpi","Disputes","disputes"],
+["payments","kpi","Before Razorpay was live","before razorpay was live"],
+["shipping","card","Parcels each day or week","parcels each p"],
+["shipping","card","What the parcels cost each day or week","what the parcels cost each p"],
+["shipping","table","Which courier is best","which courier is best"],
+["shipping","card","Is the promise kept?","is the promise kept?"],
+["shipping","table","Every order and where it is","every order and where it is"],
+["shipping","card","Parcels that could not be delivered","parcels that could not be delivered"],
+["shipping","table","Delivery days by state","delivery days by state"],
+["shipping","table","Where every parcel is now","where every parcel is now"],
+["shipping","card","Three clocks: days waited, courier days, order to the door","three clocks: days waited, courier days, order to the door"],
+["shipping","card","How many days parcels took with the courier","how many days parcels took with the courier"],
+["shipping","card","Where the time goes in a parcel's journey","where the time goes in a parcel's journey"],
+["shipping","card","What a parcel costs, and what share of the order that is","what a parcel costs, and what share of the order that is"],
+["shipping","card","Extra weight the couriers charged","extra weight the couriers charged"],
+["shipping","card","Shiprocket wallet","shiprocket wallet"],
+["shipping","card","Failed delivery tries and missed pickups","failed delivery tries and missed pickups"],
+["shipping","card","Orders waiting before the courier came","orders waiting before the courier came"],
+["shipping","card","Parcels by the weight the courier billed","parcels by the weight the courier billed"],
+["shipping","table","Cost and days by state and by zone","cost and days by state and by zone"],
+["shipping","table","Couriers side by side","couriers side by side"],
+["shipping","card","Could a cheaper courier have carried it?","could a cheaper courier have carried it?"],
+["shipping","card","Is the Shiprocket catalogue right?","is the shiprocket catalogue right?"],
+["shipping","card","Catalogue health over the nights","catalogue health over the nights"],
+["shipping","card","GST inside the shipping charges","gst inside the shipping charges"],
+["shipping","card","Exchange parcels (booked by Madhu, not in Shiprocket)","exchange parcels (booked by madhu, not in shiprocket)"],
+["shipping","chart","The same cost as a share of what the orders were worth","the same cost as a share of what the orders were worth"],
+["shipping","chart","How the parcels ended","how the # parcels ended"],
+["shipping","chart","Why delivery failed","why delivery failed"],
+["shipping","chart","Why the pickup was missed","why the pickup was missed"],
+["shipping","chart","By zone (how far the parcel travelled)","by zone (how far the parcel travelled)"],
+["shipping","kpi","Parcels sent","parcels sent"],
+["shipping","kpi","Cost of sending","cost of sending"],
+["shipping","kpi","Days to deliver","days to deliver"],
+["shipping","kpi","Came back","came back"],
+["shipping","kpi","Ready to ship pieces","ready to ship pieces"],
+["shipping","kpi","Made to order pieces","made to order pieces"],
+["shipping","kpi","Waited before the courier came","waited before the courier came"],
+["shipping","kpi","Courier days","courier days"],
+["shipping","kpi","Order to the door","order to the door"],
+["shipping","kpi","Days promised on Google","days promised on google"],
+["shipping","kpi","Cost of a parcel","cost of a parcel"],
+["shipping","kpi","Share of the order value","share of the order value"],
+["shipping","kpi","Share of sales","share of sales"],
+["shipping","kpi","Extra weight charged","extra weight charged"],
+["shipping","kpi","Average extra","average extra"],
+["shipping","kpi","Share of freight","share of freight"],
+["shipping","kpi","Wallet at the last reading","wallet at the last reading"],
+["shipping","kpi","Orders waiting to ship","orders waiting to ship"],
+["shipping","kpi","Failed delivery tries","failed delivery tries"],
+["shipping","kpi","Missed pickups","missed pickups"],
+["shipping","kpi","Average wait","average wait"],
+["shipping","kpi","Paid for these parcels","paid for these parcels"],
+["shipping","kpi","Same parcels at the cheapest rate today","same parcels at the cheapest rate today"],
+["shipping","kpi","Difference","difference"],
+["shipping","kpi","Items with everything set","items with everything set"],
+["shipping","kpi","Weight set","weight set"],
+["shipping","kpi","Size set","size set"],
+["shipping","kpi","HSN code set","hsn code set"],
+["shipping","kpi","GST on the tax invoices of these dates","gst on the tax invoices of these dates"],
+["shipping","kpi","Freight and extra charges billed","freight and extra charges billed"],
+["shipping","kpi","WhatsApp tracking fees billed","whatsapp tracking fees billed"],
+["shipping","kpi","GST inside the parcel charges","gst inside the parcel charges"],
+["tables","table","Reviews","reviews"],
+["tables","table","Returns and exchanges","returns and exchanges"],
+["tables","card","Reviews over time","reviews over time"],
+["tables","table","Every order","every order"],
+["tables","table","Money in the bank, month by month","money in the bank, month by p"],
+["tables","table","Numbers written in by hand","numbers written in by hand"],
+["tables","table","Dates the business owes","dates the business owes"],
+["tables","table","Seasons coming up","seasons coming up"],
+["tables","table","Is it growing?","is it growing?"],
+["tables","table","Cost to win a buyer","cost to win a buyer"],
+["tables","table","Listings and links to the shop","listings and links to the shop"],
+["tables","table","Customer questions","customer questions"],
+["tables","table","Every set of numbers","every set of numbers"],
+["tables","kpi","Sets of numbers","sets of numbers"],
+["tables","kpi","With data","with data"],
+["tables","kpi","No data yet","no data yet"],
+["tables","kpi","Rows kept","rows kept"],
+["tables","kpi","Reviews published","reviews published"],
+["tables","kpi","Average rating","average rating"],
+["tables","kpi","Product reviews for every 100 delivered orders","product reviews for every # delivered orders"],
+["tables","kpi","Exchanges","exchanges"],
+["tables","kpi","Refunds","refunds"],
+["tables","kpi","Disputes","disputes"],
+["tables","kpi","Cancelled orders","cancelled orders"],
+["health","card","How fast pages load for real shoppers","how fast pages load for real shoppers"],
+["health","card","How fast the shop is for real shoppers, from Google","how fast the shop is for real shoppers, from google"],
+["health","table","What shoppers do on a page","what shoppers do on a page"],
+["health","table","Every shop action, day by day","every shop action, day by p"],
+["health","table","Errors on each page","errors on each page"],
+["health","table","Do Shopify and Google count the same orders?","do shopify and google count the same orders?"],
+["health","table","Page speed test, week by week","page speed test, week by p"],
+["health","table","What shoppers search for on the shop","what shoppers search for on the shop"],
+["tax","table","Sales register for the Accountant","sales register for the accountant"],
+["tax","table","Sales by state for the Accountant","sales by state for the accountant"],
+["tax","card","Check these in Shopify","check these in shopify"],
+["tax","table","GSTR-3B: what to enter","gstr-#b: what to enter"],
+["tax","table","GSTR-1: sales by state","gstr-#: sales by state"],
+["tax","table","GSTR-1: HSN summary","gstr-#: hsn summary"],
+["tax","card","Credit notes and refunds","credit notes and refunds"],
+["tax","card","Tax by month","tax by p"],
+["tax","card","Tax by state","tax by state"],
+["tax","table","Tax by rate","tax by rate"],
+["tax","table","Months, quarters and years","months, quarters and years"],
+["tax","table","What is due next","what is due next"],
+["tax","table","What to hand to the Accountant each month","what to hand to the accountant each p"],
+["tax","table","GST paid on costs (input credit)","gst paid on costs (input credit)"],
+["tax","kpi","Tax to pay (whole rupees)","tax to pay (whole rupees)"],
+["tax","kpi","Taxable value","taxable value"],
+["tax","kpi","Total paid by customers","total paid by customers"],
+["tax","kpi","CGST + SGST + IGST","cgst + sgst + igst"],
+["tax","kpi","GST paid to Shiprocket","gst paid to shiprocket"],
+["tax","kpi","GST paid on Razorpay fees","gst paid on razorpay fees"],
+["tax","kpi","GST on Shopify bills (reverse charge)","gst on shopify bills (reverse charge)"],
+["tax","kpi","Credit to claim","credit to claim"],
+["growth","card","Sales since the first sale","sales since the first sale"],
+["growth","card","Sales each week, against the period before","sales each week, against the period before"],
+["growth","card","Orders each week, against the period before","orders each week, against the period before"],
+["growth","card","Visits each week, against the period before","visits each week, against the period before"],
+["growth","card","Sales over 4 weeks at a time","sales over # weeks at a time"],
+["growth","card","Sales month by month","sales month by p"],
+["growth","card","Average order value","average order value"],
+["growth","card","Buyers built up since the first sale","buyers built up since the first sale"],
+["growth","card","Sales by collection, week by week","sales by collection, week by p"],
+["growth","card","Visits that bought, week by week","visits that bought, week by p"],
+["growth","kpi","Sales in the dates picked","sales in the dates picked"],
+["growth","kpi","Last 4 weeks","last # weeks"],
+["growth","kpi","Best week so far","best week so far"],
+["growth","card","Sales each week","sales each p"],
+["growth","card","Orders each week","orders each p"],
+["growth","card","Visits each week","visits each p"]
+];
 
 /* mazo dashboard date choice for tables (T857 round 2, 2 Nov 2026).
    Owner: "that table doesn't have any way to filter dates". Every table and every "Show the numbers as a table" list whose rows are dated (a day, a week, a month, a post date) gets one
@@ -6516,6 +7068,8 @@ M.PAGES.functions.render = function () {
 
 /* ================================================================ HISTORY */
 M.LEVEL = /followers|subscribers|reviews_published|published_reviews|stock|units_on_hand|rating/i;
+/* T1085 (12 Nov 2026): a nightly picture of a running count (returns by reason so far) must not be added up night after night: one return would count seven times after a week. Read it as the latest value. */
+M.LEVEL_TABLES = /^exchange_reasons_hist$/;
 M.NOTRECORDED = /followers|subscribers|reviews_published|published_reviews/i;
 M.RATIO = /pct|rate|avg|average|position|per_order|days|share|ratio|lift/i;
 /* T814 (1 Nov 2026): a daily ratio must never be averaged across days (October conversion read 0.287 percent instead of the true 0.388). For the ratio columns of kpi_daily the period value is
@@ -6642,7 +7196,7 @@ M.PAGES.history.render = function (r) {
   }
   var ents = ['*']; if (meta.hasEntity) { var set = {}; meta.t.rows.forEach(function (x) { var e = meta.entity(x); if (e) set[e] = 1; }); ents = ['*'].concat(Object.keys(set).sort()); }
   var ent = ents.indexOf(s.hent) >= 0 ? s.hent : '*';
-  var autoAgg = M.LEVEL.test(col) ? 'last' : M.RATIO.test(col) ? 'avg' : 'sum', agg = ['sum', 'avg', 'last'].indexOf(s.hagg) >= 0 ? s.hagg : autoAgg;
+  var autoAgg = M.LEVEL.test(col) || M.LEVEL_TABLES.test(src) ? 'last' : M.RATIO.test(col) ? 'avg' : 'sum', agg = ['sum', 'avg', 'last'].indexOf(s.hagg) >= 0 ? s.hagg : autoAgg;
   var sel = M.histSel;
   var ctl = M.h('div', { class: 'row-ctl' }, [
     sel('h-src', 'Table', srcs.map(function (x) { return [x.id, x.label]; }), src, 'hsrc'),
@@ -14098,6 +14652,14 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var ap = M.h('p', { class: 'small' }, [M.num(R.cntOf(apple)) + ' of these ' + (R.cntOf(apple) === 1 ? 'payment' : 'payments') + ' came through Apple Pay (counted as card). '].concat(D.countIs(D.paySpec(apple, { title: 'Payments through Apple Pay', noApple: true }), R.cntOf(apple)) ? [R.seeLink(D.paySpec(apple, { title: 'Payments through Apple Pay', noApple: true }), 'See which')] : []));
       kids.push(ap);      /* T1036: the note names the payments behind it */
     }
+    /* T1096 (12 Nov 2026, owner: "mz1039 was not synced?? the payment was made through google pay"): an order Madhu marks as paid by hand in Shopify has no Razorpay payment, so these rings
+       (Razorpay payments only) cannot hold it, and Shopify does not record how that money reached her. Say so under the rings and open the orders, instead of leaving the owner to think it is missing. */
+    var MT = c.MAT || [], nHand = R.sum(MT, 'manual_orders'), mHand = R.sum(MT, 'manual_amount');
+    if (nHand > 0) {
+      var hd = {}; MT.forEach(function (x) { if (R.num(x.manual_orders)) hd[String(x.date).slice(0, 10)] = 1; });
+      var hs = D.same(D.paidOrdersSpec(D.unpaidOrdersOn(hd), { title: 'Marked paid by hand', lead: 'Orders entered in Shopify as paid. Shopify does not record how this money reached the shop.', note: 'Marked paid by hand' }), mHand);
+      kids.push(M.h('p', { class: 'small' }, [M.num(nHand) + (nHand === 1 ? ' order' : ' orders') + ' (' + R.inr0(mHand) + ') ' + (nHand === 1 ? 'was' : 'were') + ' marked paid by hand in Shopify, so ' + (nHand === 1 ? 'it is' : 'they are') + ' not in these rings: the rings count Razorpay payments only, and Shopify does not record how that money was received. '].concat(hs ? [R.seeLink(hs, 'See which')] : [])));
+    }
     return R.card(title, why, kids);
   });
 
@@ -16188,8 +16750,10 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       function () {
         var ship = shipState();
         return rows.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : (a.order < b.order ? 1 : -1); }).map(function (x) {
-          var st = ship(x.order);
-          return { ref: { kind: 'order', value: x.order, copy: x.order }, date: x.date, amount: x.net_sales, status: st.status, tone: st.tone, note: x.new_customer === 'yes' ? 'First order of this buyer' : x.new_customer === 'no' ? 'A buyer who came back' : '' };
+          var st = ship(x.order), tp = taxMap()[x.order], paid = tp && tp.kind === 'sale' ? num(tp.total_paid) : 0, extra = paid && Math.abs(paid - num(x.net_sales)) >= 0.5 ? 'The buyer paid ' + M.inr(r2(paid)) + ' with shipping' : '';
+          /* T1098 (12 Nov 2026, owner: "the order was 2070 but I see 1950"): the amount here is the sales after discounts, shipping left out. Each row now says what the buyer paid in all when that is more. */
+          var tag = x.new_customer === 'yes' ? 'First order of this buyer' : x.new_customer === 'no' ? 'A buyer who came back' : '';
+          return { ref: { kind: 'order', value: x.order, copy: x.order }, date: x.date, amount: x.net_sales, status: st.status, tone: st.tone, note: [extra, tag].filter(Boolean).join('. ') };
         });
       });
   };
