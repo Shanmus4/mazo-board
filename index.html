@@ -13727,7 +13727,7 @@ M.annot = (function () {
 (function () {
   var pc = function (x) { return Math.round((+x || 0) * 100); };
   var rs = function (p) { return Math.round(p) / 100; };
-  var COLS = ['orders', 'gross_sales', 'discounts', 'net_sales', 'gst_included', 'shipping_charged', 'refunds', 'product_cost', 'est_payment_fee', 'est_parcel_cost', 'est_packaging', 'est_shopify_fee', 'gst_on_shipping'];
+  var COLS = ['orders', 'gross_sales', 'discounts', 'net_sales', 'gst_included', 'shipping_charged', 'refunds', 'product_cost', 'est_payment_fee', 'est_parcel_cost', 'est_packaging', 'est_shopify_fee', 'gst_on_shipping', 'hand_parcel_cost'];
   var zero = function () { var o = {}; COLS.forEach(function (c) { o[c] = 0; }); return o; };
   var inputs = function () { var hi = {}; M.rows('human_inputs').forEach(function (x) { if (x.key && x.value !== '' && x.value != null && !isNaN(+x.value)) hi[x.key] = +x.value; }); return hi; };
 
@@ -13766,10 +13766,11 @@ M.annot = (function () {
       /* 9 Nov 2026 (T1016, owner: "these charges should be applied for profit calculation too, in the Overview"): the Razorpay fee and the courier charge both have 18 percent GST INSIDE them (a fee or a
          freight of Rs. 118 is Rs. 100 plus Rs. 18). That GST is input credit the shop takes off the GST it owes, so it is not a lasting cost. The Shopify bill is paid under reverse charge and claimed in the
          same month, so it adds nothing. The credit = the GST inside the Razorpay fee and the parcel cost = 18/118 of each, in whole paise, and it is an ESTIMATE until the invoices show in GSTR-2B. */
-      var cR = Math.round(raz * 18 / 118), cP = Math.round(pa * 18 / 118), credit = cR + cP;      /* pa already holds the WhatsApp tracking fee, which also carries 18 percent GST */
+      var hd = s.hand_parcel_cost || 0;      /* T1116 (13 Nov 2026): the part of the parcel cost that Madhu paid BY HAND outside Shiprocket (a first parcel booked herself, exchange parcels net of what buyers paid back). No GST invoice in the shop's name is on file for it, so no credit is taken on it (a positive part only) */
+      var cR = Math.round(raz * 18 / 118), cP = Math.round((pa - Math.max(0, hd)) * 18 / 118), credit = cR + cP;      /* pa already holds the WhatsApp tracking fee, which also carries 18 percent GST */
       var conf = left - bill - raz - pa;      /* 7 Nov 2026: the parcel cost is Shiprocket's own billed charge for the parcels it knows, so it sits with the confirmed costs */
       return { gross: gross, disc: disc, gst: s.gst_included, refunds: s.refunds, left: left, bill: bill, billReal: pc(bm.real), billEst: pc(bm.est), razor: raz, confirmed: conf, making: mk, pack: pk, parcel: pa, other: ot,
-        credit: credit, creditRazor: cR, creditParcel: cP, whatsapp: wa,
+        credit: credit, creditRazor: cR, creditParcel: cP, whatsapp: wa, hand: hd,
         pending: mk + pk + ot, profit: conf - mk - pk - ot + credit, charges: s.est_shopify_fee, orders: s.orders, net: net, ship: s.shipping_charged, gstShip: s.gst_on_shipping };
     };
     var otherOf = function (d) { return Math.round(pc(other) * d / B.cycle); };
@@ -13788,7 +13789,22 @@ M.annot = (function () {
   /* ---------------------------------------------------------------- the chart items and the table rows from one calculation */
   var R = function (p) { return rs(p); };
   var packText = function (C) { return C.packFee > 0 ? 'Rs. ' + M.num(C.packFee, C.packFee % 1 ? 2 : 0) + ' a parcel, the figure Madhu gave. Not checked against real bills.' : 'A default figure per parcel. Not checked against real bills.'; };
-  var parcelText = function (C) { return 'The courier charge Shiprocket billed for each parcel it knows (freight, charges for a parcel that came back, extra weight), plus its WhatsApp tracking fee. A parcel Shiprocket does not know yet counts' + (C.parcelFee > 0 ? ' Rs. ' + M.num(C.parcelFee, C.parcelFee % 1 ? 2 : 0) + ' (the figure Madhu gave).' : ' at a default figure.'); };
+  /* T1116 (13 Nov 2026, owner: 'the exchanges cost, and shipping paid by hand cost ... make sure these costs are accounted for'): the shipping line holds what Madhu paid couriers outside Shiprocket. The exchange
+     part is worked out from the typed table exchange_parcels (paid to the courier minus what the buyer paid back, on each row's own day); the rest of the hand paid money is first parcels booked by hand. */
+  var handWords = function (C) {
+    var h = C.t.hand || 0;
+    if (!h) return '';
+    var from = C.r.from, to = C.r.to, paid = 0, back = 0, n = 0;
+    if (M.has('exchange_parcels')) M.rows('exchange_parcels').forEach(function (x) {
+      if ((x.leg !== 'return' && x.leg !== 'resend') || typeof x.date !== 'string' || x.date < from || x.date > to) return;
+      paid += pc(x.paid_to_courier); back += pc(x.collected_from_buyer); n++;
+    });
+    var first = h - (paid - back), net = paid - back, bits = [], rup = function (p) { return 'Rs. ' + M.num(R(Math.abs(p)), R(Math.abs(p)) % 1 ? 2 : 0); };
+    if (first) bits.push(rup(first) + ' for first parcels Madhu booked herself');
+    if (n) bits.push('exchange parcels: ' + rup(paid) + ' paid to couriers, ' + rup(back) + ' paid back by buyers' + (net ? ', so ' + rup(net) + ' is the shop\'s cost' : ', so nothing is the shop\'s cost'));
+    return ' Includes ' + rup(h) + ' paid by hand outside Shiprocket (' + bits.join('; ') + '). No GST credit is taken on it, because no GST invoice for it is on file.';
+  };
+  var parcelText = function (C) { return 'The courier charge Shiprocket billed for each parcel it knows (freight, charges for a parcel that came back, extra weight), plus its WhatsApp tracking fee. A parcel Shiprocket does not know yet counts' + (C.parcelFee > 0 ? ' Rs. ' + M.num(C.parcelFee, C.parcelFee % 1 ? 2 : 0) + ' (the figure Madhu gave).' : ' at a default figure.') + handWords(C); };
   var basisWord = function (B) { return B.real && B.est ? 'real and estimate' : B.real ? 'real' : B.est ? 'estimate' : 'not known'; };
   M.moneyRows = function (C) {
     var t = C.t, B = C.B, rows = [], billWord = basisWord(B);
@@ -13826,7 +13842,7 @@ M.annot = (function () {
     it.push({ label: 'Shopify bill', value: R(t.bill), kind: 'minus', tone: 'confirmed', status: B.known ? 'Confirmed (' + billWord + ')' : 'Confirmed (not known yet)', none: B.known ? null : 'no bill on record',
       tip: B.known && B.planPart != null ? [{ k: 'The plan', v: M.inr(B.planPart) }, { k: 'Shopify\'s charges', v: M.inr(B.chargePart) }] : [] });
     it.push({ label: 'Razorpay charges', value: R(t.razor), kind: 'minus', tone: 'confirmed', status: 'Confirmed' });
-    it.push({ label: 'Shipping and parcel', value: R(t.parcel), kind: 'minus', tone: 'confirmed', status: 'Confirmed', tip: t.whatsapp ? [{ k: 'Courier charges', v: M.inr(R(t.parcel - t.whatsapp)) }, { k: 'WhatsApp tracking fee', v: M.inr(R(t.whatsapp)) }] : [] });
+    it.push({ label: 'Shipping and parcel', value: R(t.parcel), kind: 'minus', tone: 'confirmed', status: 'Confirmed', tip: (t.whatsapp ? [{ k: 'Courier charges', v: M.inr(R(t.parcel - t.whatsapp)) }, { k: 'WhatsApp tracking fee', v: M.inr(R(t.whatsapp)) }] : []).concat(t.hand ? [{ k: 'Of this, paid by hand outside Shiprocket', v: M.inr(R(t.hand)) }] : []) });
     it.push({ label: 'Left after confirmed costs', value: R(t.confirmed), kind: 'total', tone: 'result', tip: [{ k: 'Note', v: 'Not the profit: the making cost is not taken off yet' }] });
     it.push({ head: 'NOT CONFIRMED YET' });
     it.push({ label: 'Manufacturing and material', value: R(t.making), kind: 'minus', tone: 'pending' });
@@ -13901,13 +13917,13 @@ M.annot = (function () {
   var monthCard = function (r, C) {
     if (!C.months.length) return null;
     var word = function (b) { return b === 'Real and estimate' ? 'Real and estimated' : b === 'Estimate' ? 'Estimated' : b; };
-    var rows = C.months.map(function (m) { return { month: m.ym, days: m.days, left: R(m.left), bill: m.bill ? -R(m.bill) : 0, razor: -R(m.razor), parcel: -R(m.parcel), confirmed: R(m.confirmed), pending: -R(m.pending), credit: R(m.credit), profit: R(m.profit), basis: word(m.basis) }; });
+    var rows = C.months.map(function (m) { return { month: m.ym, days: m.days, left: R(m.left), bill: m.bill ? -R(m.bill) : 0, razor: -R(m.razor), parcel: -R(m.parcel), hand: R(m.hand || 0), confirmed: R(m.confirmed), pending: -R(m.pending), credit: R(m.credit), profit: R(m.profit), basis: word(m.basis) }; });
     var mix = function (rs2) { var set = {}; rs2.forEach(function (x) { set[x.basis] = 1; }); var k = Object.keys(set); return k.length === 1 ? k[0] : 'Mixed'; };
     var cols = [{ k: 'month', label: 'Month' }, { k: 'days', label: 'Days in these dates', num: true, hidden: true, fmt: M.num }, { k: 'left', label: 'Money left before costs', num: true, fmt: M.inr }, { k: 'bill', label: 'Shopify bill', num: true, fmt: M.inr },
-      { k: 'razor', label: 'Razorpay charges', num: true, fmt: M.inr }, { k: 'parcel', label: 'Shipping and parcel', num: true, fmt: M.inr }, { k: 'confirmed', label: 'Left after confirmed costs', num: true, fmt: M.inr },
+      { k: 'razor', label: 'Razorpay charges', num: true, fmt: M.inr }, { k: 'parcel', label: 'Shipping and parcel', num: true, fmt: M.inr }, { k: 'hand', label: 'Of which paid by hand', num: true, fmt: M.inr, hidden: !rows.some(function (x) { return x.hand; }) }, { k: 'confirmed', label: 'Left after confirmed costs', num: true, fmt: M.inr },
       { k: 'pending', label: 'Costs not confirmed yet', num: true, fmt: M.inr }, { k: 'credit', label: 'GST credit on costs', num: true, fmt: M.inr }, { k: 'profit', label: 'Profit after everything', num: true, fmt: M.inr },
       { k: 'basis', label: 'Shopify bill is', entity: false, groupText: mix }];
-    var tot = function (rs2) { var o = { _label: 'Total' }; ['days', 'left', 'bill', 'razor', 'parcel', 'confirmed', 'pending', 'credit', 'profit'].forEach(function (k) { var v = rs2.reduce(function (a, x) { return a + (+x[k] || 0); }, 0); o[k] = k === 'days' ? M.num(v) : M.inr(Math.round(v * 100) / 100); }); o.basis = mix(rs2); return o; };
+    var tot = function (rs2) { var o = { _label: 'Total' }; ['days', 'left', 'bill', 'razor', 'parcel', 'hand', 'confirmed', 'pending', 'credit', 'profit'].forEach(function (k) { var v = rs2.reduce(function (a, x) { return a + (+x[k] || 0); }, 0); o[k] = k === 'days' ? M.num(v) : M.inr(Math.round(v * 100) / 100); }); o.basis = mix(rs2); return o; };
     return M.card('Month by month', 'The same steps for each month of the dates you picked: the Shopify bill is different every month, and so is the rest. A month that your dates cut shows only the days inside them.',
       [M.table(cols, { rows: rows, sortKey: 'month', sortDir: -1, detail: false, name: 'money-month-by-month', totals: rows.length > 1 ? tot : null, empty: 'No months in these dates.' })], 'mg-card');
   };
@@ -17079,7 +17095,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
         { k: 'how_collected', label: 'How', fmt: function (v) { return v === 'gpay' ? 'GPay to Madhu' : v === 'out of pocket' ? 'Paid by Madhu, not collected' : (v || ''); } }, { k: 'status', label: 'State', fmt: function (v) { return v === 'booked' ? 'Booked' : v === 'to book' ? 'Not booked yet' : (v || ''); } },
         { k: 'note', label: 'Note', wrap: true }], { rows: rows.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }), sortKey: 'date', sortDir: -1, name: 'exchange-parcels', detail: false, empty: 'None.' }));
     }
-    var card = M.card('Parcels booked by hand (not in Shiprocket)', 'Parcels Madhu books herself, outside Shiprocket: the two parcels of a size exchange (the buyer pays Madhu by GPay and Madhu pays Delhivery) and an order whose Shiprocket shipment was cancelled and sent by another courier (the shop pays). This money never passes through Shopify, Razorpay or Shiprocket, so it is listed here and nothing is missing. These amounts are not in the Shiprocket averages above, so those stay true; a first delivery paid by the shop is counted in the profit of its order day. Typed in by scripts/exchange_parcel_add.py.', kids);
+    var card = M.card('Parcels booked by hand (not in Shiprocket)', 'Parcels Madhu books herself, outside Shiprocket: the two parcels of a size exchange (the buyer pays Madhu by GPay and Madhu pays Delhivery) and an order whose Shiprocket shipment was cancelled and sent by another courier (the shop pays). This money never passes through Shopify, Razorpay or Shiprocket, so it is listed here and nothing is missing. These amounts are not in the Shiprocket averages above, so those stay true; what the shop pays here is counted in the shipping cost and in profit: a first delivery on its order day, an exchange parcel on its own day as what Madhu paid the courier minus what the buyer paid back (so an exchange the buyer pays for adds nothing, and one the shop pays for lowers profit). Typed in by scripts/exchange_parcel_add.py.', kids);
     root.appendChild(card);
   });
 })();
