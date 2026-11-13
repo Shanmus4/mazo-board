@@ -2621,6 +2621,24 @@ tr.drill-row td:first-child .drill-go { position: absolute; right: 6px; top: 50%
 /* T1100: the sum under an order's amount: "Items Rs. 1,950 + Shipping Rs. 120 = Rs. 2,070". Calm, one line, wraps on a phone, digits line up. */
 .drill-sum { font-size: var(--fs-sm, 14px); color: var(--ink2); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
+/* T1115 (13 Nov 2026): the side panel behind a line of "Where the money goes". A line may be a day or a step with a title (no reference chip), several order chips, or a button that opens its own list. */
+.drill-title { font-weight: 600; color: var(--ink); }
+.drill-top .ref { flex: 0 0 auto; }
+.drill-item.drill-open { cursor: pointer; position: relative; padding-right: 26px; }
+.drill-item.drill-open:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.drill-item.drill-open .drill-go { position: absolute; right: 4px; top: 22px; margin: 0; }
+.drill-item.drill-open:hover .drill-go { color: var(--maroon); transform: translateX(2px); }
+.drill-back { align-self: flex-start; }
+.drill-money .drill-item { gap: 6px; }
+/* the arrow of a bar of the chart */
+.mg-chart svg g.drill-g { cursor: pointer; }
+.mg-chart svg path.mg-go { stroke: var(--ink2); }
+.mg-chart svg g.drill-g:hover path.mg-go, .mg-chart svg g.drill-g:focus path.mg-go { stroke: var(--maroon); }
+/* a ledger row that opens a list: the same look as every other row that does */
+.mg-table tr.drill-row td.mg-name { position: relative; padding-right: 26px; }
+.mg-table tr.drill-row td.mg-name .drill-go { position: absolute; right: 6px; top: 50%; margin: -8px 0 0; }
+.mg-table tr.drill-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
 #lock[hidden]{display:none}
@@ -12751,7 +12769,8 @@ M.evenHeaders = function (root) {
     return lines;
   };
   M.moneyFall = function (host, w, items) {
-    var narrow = w < 520, L = narrow ? Math.round(w * 0.4) : Math.min(230, Math.round(w * 0.3)), R = narrow ? 72 : 88, T = 4, pw = w - L - R, chars = Math.max(10, Math.floor((L - 12) / 6.1));
+    var anyDrill = items.some(function (x) { return x.drill; });      /* T1115: a row with a list behind it keeps room for its arrow */
+    var narrow = w < 520, L = narrow ? Math.round(w * 0.4) : Math.min(230, Math.round(w * 0.3)), R = (narrow ? 72 : 88) + (anyDrill ? 18 : 0), T = 4, pw = w - L - R, chars = Math.max(10, Math.floor((L - 12) / 6.1));
     var rhBar = 36, rhHead = narrow ? 44 : 32, id = 'mgh' + (++uid);
     /* layout: where each row sits, and the running total */
     var run = 0, y = T, rows = items.map(function (it) {
@@ -12826,7 +12845,15 @@ M.evenHeaders = function (root) {
       gp.addEventListener('pointerleave', M.tipHide);
       gp.addEventListener('blur', M.tipHide);
       gp.classList.add('has-tip');
-      var pin = function () { M.tipHide(); var d = facts(); if (d && M.detail) M.detail.open({ title: d.title, rows: d.rows, opener: gp }); };
+      var pin = function () {
+        M.tipHide(); var d = facts();
+        if (it.drill && M.drill && M.drill.ok(it.drill)) { M.drill.open(it.drill, gp, d ? d.rows : []); return; }      /* T1115: the side panel lists what adds up to this bar, under the bar's own numbers */
+        if (d && M.detail) M.detail.open({ title: d.title, rows: d.rows, opener: gp });
+      };
+      if (it.drill && M.drill && M.drill.ok(it.drill) && !it.none) {
+        gp.classList.add('drill-g', 'detail-open'); gp.setAttribute('aria-label', M.drill.attrs(it.drill, gp.getAttribute('aria-label') || it.label));
+        gp.appendChild(M.s('path', { d: 'M0 0 L5 5 L0 10', class: 'mg-go', transform: 'translate(' + (w - 14) + ' ' + (r.y + r.h / 2 - 5) + ')', fill: 'none', 'stroke-width': 1.7, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' }));
+      }
       gp.addEventListener('click', pin);
       gp.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target === gp) { e.preventDefault(); pin(); } });
       svg.appendChild(gp);
@@ -13736,25 +13763,26 @@ M.annot = (function () {
      month is an inference from those two). It is a real cost that was never in the profit. Each invoice is spread over the days of the month before its date; a range takes the days inside it. Whole
      paise. The invoice for a month that has just ended arrives on the 3rd, so the newest month has none yet. */
   var monthEnd = function (ym) { var y = +ym.slice(0, 4), m = +ym.slice(5, 7); return M.add((m === 12 ? (y + 1) + '-01' : y + '-' + String(m + 1).padStart(2, '0')) + '-01', -1); };
-  var whatsApp = function (from, to) {
-    if (!M.has('shipping_invoices')) return 0;
-    var tot = 0;
+  var waPieces = function (from, to) {      /* T1115: the same sum as before, kept piece by piece so the side panel can list the invoices: [{inv, date, p (paise), days, of}] */
+    var out = [];
+    if (!M.has('shipping_invoices')) return out;
     M.rows('shipping_invoices').forEach(function (x) {
       if (!x.invoice || !/service/i.test(x.kind || '') || typeof x.date !== 'string') return;
       var um = M.add(x.date.slice(0, 7) + '-01', -1).slice(0, 7), a = um + '-01', b = monthEnd(um), lo = a > from ? a : from, hi = b < to ? b : to;
       if (hi < lo) return;
-      tot += Math.round(pc(x.total) * (M.diff(lo, hi) + 1) / (M.diff(a, b) + 1));
+      out.push({ inv: x.invoice, date: x.date, month: um, p: Math.round(pc(x.total) * (M.diff(lo, hi) + 1) / (M.diff(a, b) + 1)), days: M.diff(lo, hi) + 1, of: M.diff(a, b) + 1 });
     });
-    return tot;
+    return out;
   };
+  var whatsApp = function (from, to) { return waPieces(from, to).reduce(function (a, x) { return a + x.p; }, 0); };
 
   /* ---------------------------------------------------------------- the numbers of one set of dates (everything in paise inside; rupees out) */
   M.moneyCalc = function (r) {
-    var from = r.from, to = r.to, hi = inputs(), B = M.bill(from, to), tot = zero(), mo = {};
+    var from = r.from, to = r.to, hi = inputs(), B = M.bill(from, to), tot = zero(), mo = {}, byDay = {};
     M.idx('money_daily').forEach(function (rows, d) {
       if (d < from || d > to) return;
-      var m = mo[d.slice(0, 7)] || (mo[d.slice(0, 7)] = zero());
-      rows.forEach(function (x) { COLS.forEach(function (c) { var p = pc(x[c]); m[c] += p; tot[c] += p; }); });
+      var m = mo[d.slice(0, 7)] || (mo[d.slice(0, 7)] = zero()), bd = byDay[d] = zero();      /* T1115: every day's own paise, so the side panel of a line lists the days that add up to it */
+      rows.forEach(function (x) { COLS.forEach(function (c) { var p = pc(x[c]); m[c] += p; tot[c] += p; bd[c] += p; }); });
     });
     var other = hi.monthly_fixed_cost > 0 ? hi.monthly_fixed_cost : 0;      /* another monthly cost, only if one is ever typed in the data sheet */
     var days = M.diff(from, to) + 1;
@@ -13782,7 +13810,7 @@ M.annot = (function () {
     if (months.length && cs !== all.credit) { var lm = months[months.length - 1], dc = all.credit - cs; lm.credit += dc; lm.profit += dc; }      /* the credit is rounded per month: the last month takes the paisa that is left */
     var o2 = months.reduce(function (t, m) { return t + m.other; }, 0);
     if (months.length && o2 !== all.other) { var last = months[months.length - 1]; last.other += all.other - o2; last.pending += all.other - o2; last.profit -= all.other - o2; }
-    return { r: r, days: days, B: B, t: all, months: months, hasSales: tot.orders > 0 || tot.gross_sales > 0, otherMonthly: other, razorPct: hi.payment_fee_pct, packFee: hi.packaging_cost, parcelFee: hi.parcel_cost,
+    return { r: r, days: days, B: B, t: all, months: months, byDay: byDay, waPieces: B.months.reduce(function (a, bm) { return a.concat(waPieces(bm.from, bm.to)); }, []), hasSales: tot.orders > 0 || tot.gross_sales > 0, otherMonthly: other, razorPct: hi.payment_fee_pct, packFee: hi.packaging_cost, parcelFee: hi.parcel_cost,
       covered: M.daysCovered('money_daily', from, to) };
   };
 
@@ -13857,7 +13885,7 @@ M.annot = (function () {
   /* the table is one ledger: the step with its plain explanation under it, the amount on the right, and a heading row for each group (the same two headings as the chart). It always shows every
      row (14 at most, it cannot grow), so it has no filter box. Its CSV holds Step, Group, Rs. and the explanation. */
   var csvCols = [{ k: 'step', label: 'Step' }, { k: 'group', label: 'Group' }, { k: 'amount', label: 'Rs.', num: true }, { k: 'how', label: 'How it is worked out' }];
-  var ledger = function (rows) {
+  var ledger = function (rows, specs) {
     var tb = M.h('tbody'), last = '';
     rows.forEach(function (x) {
       if (x.group !== last && x.group === 'Not confirmed yet') {
@@ -13870,6 +13898,14 @@ M.annot = (function () {
       tr.appendChild(M.h('td', { class: 'n mg-amt', text: x.amount == null ? 'not known' : x.none ? 'none recorded' : M.inr(x.amount) }));
       tb.appendChild(tr);
       if (x.isTotal) M.totalRow(tr);
+      var sp = specs && M.moneyKey ? specs[M.moneyKey(x.step)] : null;
+      if (sp && M.drill && M.drill.ok(sp) && x.amount != null && !x.none) {      /* T1115: the row opens the side panel with what adds up to it */
+        var go = function () { M.drill.open(sp, tr); };
+        tr.classList.add('click', 'drill-row', 'detail-open'); tr.tabIndex = 0; tr.setAttribute('aria-label', M.drill.attrs(sp, x.step));
+        tr.firstChild.appendChild(M.drill.chevron());
+        tr.addEventListener('click', function (e) { if (e.target.closest('a, button')) return; go(); });
+        tr.addEventListener('keydown', function (e) { if (e.target === tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); go(); } });
+      }
     });
     var tbl = M.h('table', { class: 'mg-table', 'aria-label': 'Where the money goes, step by step' }, [M.h('thead', null, M.h('tr', null, [M.h('th', { scope: 'col', text: 'Step' }), M.h('th', { scope: 'col', class: 'n', text: 'Rs.' })])), tb]);
     var box = M.h('div', { class: 'tw mg-tw' }, tbl);
@@ -13884,9 +13920,9 @@ M.annot = (function () {
     var why = 'From what customers were charged to what is left. The costs above the Not confirmed yet line are real: the Shopify bill, the Razorpay charges and the parcel cost. The costs below it are placeholders, because the real cost of making and packing a piece is not recorded, so the last line is a good guide, not accounts. A bill is spread evenly over the days it covers. There are only ' + M.num(M.totalOrders()) + ' orders so far, so one order moves a percentage a lot. Sales are counted from ' + M.fd(M.cover('money_daily').first) + '.';
     if (!C.covered && !B.known) return M.card('Where the money goes', why, [M.emptyWhy ? M.emptyWhy('money_daily', r) : M.empty('No sales in this range, so there is nothing to split.')]);
     if (!C.hasSales && !t.bill) return M.card('Where the money goes', why, [M.empty('No sales in this range, so there is nothing to split.')]);
-    var kids = [];
-    kids.push(M.chart('mg-chart', function (h, w) { M.moneyFall(h, w, items(C)); }));
-    kids.push(ledger(M.moneyRows(C)));
+    var kids = [], specs = M.moneySpecs ? M.moneySpecs(C) : {};      /* T1115: the list behind each line, kept only where it adds up to the line (dashboard_56_money_specs.js) */
+    kids.push(M.chart('mg-chart', function (h, w) { M.moneyFall(h, w, items(C).map(function (it) { if (it.label && specs[M.moneyKey(it.label)]) it.drill = specs[M.moneyKey(it.label)]; return it; })); }));
+    kids.push(ledger(M.moneyRows(C), specs));
     var lines = M.h('div', { class: 'mg-lines' });
     if (C.covered < C.days) lines.appendChild(M.h('p', { class: 'small mg-how', text: 'Sales are known for ' + M.num(C.covered) + ' of these ' + M.num(C.days) + ' days' + (M.missingWhy ? M.missingWhy('money_daily', r.from, r.to) : '') + '.' }));
     if (B.gapDays || (B.estDays > 35 && B.newestEnd)) lines.appendChild(M.h('p', { class: 'small mg-how', text: B.estDays > 35 && B.newestEnd ? 'The newest Shopify bill on record ended on ' + M.fd(B.newestEnd) + ': no newer bill is recorded.' : M.num(B.gapDays) + ' days have no Shopify bill on record and are not counted.' }));
@@ -13968,6 +14004,170 @@ M.annot = (function () {
       return root;
     };
   }
+})();
+
+/* mazo dashboard: THE SIDE PANEL BEHIND EVERY LINE OF "WHERE THE MONEY GOES" (T1115, 13 Nov 2026).
+   Owner note on the Overview card: "You know earlier I asked you if on click of an item, in side panel we can show what and all adds up to this.. can you do that for every item on this section?"
+   M.moneySpecs(C) takes the ONE calculation of the card (C = M.moneyCalc(range), dashboard_56_money.js) and returns a spec (dashboard_76_drill.js) for each line, keyed by KEY below. A spec is the list of
+   what adds up to the line, and its money is the SAME number the line shows, to the paisa:
+     gross, disc, gst, refunds, razor, making, pack   the days of the range (money_daily's own figure for each day), each day with the orders of that day
+     bill, plan, charges                              the Shopify bills that fall in the range (the part of each bill that lies inside it) and the estimated days
+     parcel                                           the days (Shiprocket's charge or the guess), the parcels paid by hand outside Shiprocket (T1114, T1116), and Shiprocket's WhatsApp invoices
+     wa                                               the WhatsApp tracking invoices
+     other, credit                                    the months of the range
+     left, confirmed, profit                          the lines that make the total, plus and minus; each of them opens its own list
+   RULE (dashboard_76_drill.js): a line gets a spec only when what is listed adds up to the figure the line shows. Every spec is checked here against its line (D.same) and dropped when it does not.
+   Only what the card already reads is read here: money_daily (through C), order_sources and exchange_parcels between the chosen dates, shipping_invoices. No name, e-mail, phone or address is ever used. */
+(function () {
+  var D = null, num = function (v) { return v == null || v === '' || isNaN(+v) ? 0 : +v; };
+  var pc = function (x) { return Math.round((+x || 0) * 100); }, rs = function (p) { return Math.round(p) / 100; };
+  var KEY = { 'Gross sales': 'gross', 'Discounts': 'disc', 'GST in the orders': 'gst', 'Refunds': 'refunds', 'Money left before costs': 'left', 'Shopify bill': 'bill', 'of which the Shopify plan': 'plan',
+    'of which Shopify\'s charges': 'charges', 'Razorpay charges': 'razor', 'Shipping and parcel': 'parcel', 'of which Shiprocket\'s WhatsApp tracking fee': 'wa', 'Left after confirmed costs': 'confirmed',
+    'Manufacturing and material': 'making', 'Packaging': 'pack', 'Other costs': 'other', 'GST credit on these costs': 'credit', 'Profit after everything': 'profit' };
+  M.moneyKey = function (label) { return KEY[label] || ''; };
+  var rup = function (v) { return M.inr(v); };
+  var span = function (r) { return M.billSpan ? M.billSpan(r.from, r.to) : M.fd(r.from) + ' to ' + M.fd(r.to); };
+  var orderNum = function (n) { var m = String(n).match(/(\d+)\s*$/); return m ? +m[1] : -1; };
+  var chipOf = function (n) { return { kind: 'order', value: n, copy: n }; };
+  var byNewest = function (a, b) { var f = function (x) { return { date: x.date, ref: (x.refs && x.refs[0]) || x.ref || null }; }; return D.newest(f(a), f(b)); };
+
+  /* the orders of each day of the range (order_sources, only the chosen dates), highest number first */
+  var ordersByDay = function (from, to) {
+    var by = {};
+    if (M.has('order_sources')) M.rowsIn('order_sources', from, to).forEach(function (x) { var d = String(x.date || '').slice(0, 10); if (x.order && d) (by[d] = by[d] || []).push(x.order); });
+    Object.keys(by).forEach(function (d) { by[d].sort(function (a, b) { return orderNum(b) - orderNum(a); }); });
+    return by;
+  };
+  /* the parcels paid by hand outside Shiprocket (Sheet tab exchange_parcels), by day: the same two rules as the nightly job (kpi_collectors.py): a first parcel (leg delivery) replaces the order's cost,
+     an exchange parcel (return, resend) is paid to the courier minus paid back by the buyer, on its own day */
+  var handByDay = function (from, to) {
+    var by = {};
+    if (!M.has('exchange_parcels')) return by;
+    M.rowsIn('exchange_parcels', from, to).forEach(function (x) {
+      var d = String(x.date || '').slice(0, 10), leg = String(x.leg || '').toLowerCase();
+      if (!d || !x.order) return;
+      (by[d] = by[d] || []).push({ order: x.order, leg: leg, paid: num(x.paid_to_courier), back: num(x.collected_from_buyer), carrier: x.carrier || '' });
+    });
+    return by;
+  };
+  var handNote = function (rows) {
+    var bits = [], paid = 0, back = 0, ex = 0;
+    rows.forEach(function (h) {
+      if (h.leg === 'delivery') bits.push(h.order + ' first parcel' + (h.carrier ? ' by ' + h.carrier : '') + ', ' + rup(h.paid) + ' paid by Madhu');
+      else if (h.leg === 'return' || h.leg === 'resend') { paid += h.paid; back += h.back; ex++; }
+    });
+    if (ex) bits.push('exchange parcels: ' + rup(paid) + ' paid to couriers, ' + rup(back) + ' paid back by buyers');
+    return bits.join('. ');
+  };
+
+  /* ---------------------------------------------------------------- the pieces */
+  var mk = function (C, o, items) {
+    items = items.filter(function (x) { return x; });
+    var money = 0; items.forEach(function (x) { money += num(x.amount); });
+    var sp = D.mk({ title: o.title + ', ' + span(C.r), sentence: o.sentence, n: items.length, money: money, noun: 'line', kind: 'money', signed: !!o.signed, foot: o.foot || '' }, function () { return items.slice().sort(o.keepOrder ? function () { return 0; } : byNewest); });
+    return sp;
+  };
+  /* one line per day that holds something: pick(day figures in paise) -> paise (0 or a missing day is left out) */
+  var dayLines = function (C, o, orders) {
+    var out = [];
+    Object.keys(C.byDay).forEach(function (d) {
+      var p = o.pick(C.byDay[d], d); if (!p) return;
+      out.push({ date: d, amount: rs(p), refs: (orders[d] || []).map(chipOf), note: o.note ? o.note(d, C.byDay[d], orders[d] || []) : '' });
+    });
+    return out;
+  };
+  var billPieces = function (B) {      /* the same arithmetic as M.bill (dashboard_51_bill.js): the part of each bill inside the range, and its plan part */
+    return B.bills.map(function (x) {
+      var bl = x.bill, whole = !(bl.from && bl.to && bl.to >= bl.from), n = whole ? 1 : x.cycleDays, D1 = whole ? 1 : x.days;
+      var tot = Math.round(pc(bl.total) * D1 / n), plan = bl.plan != null ? Math.round(pc(bl.plan) * D1 / n) : null;
+      return { bl: bl, days: x.days, of: x.cycleDays, whole: whole, p: pc(x.amount), plan: plan, tot: tot };
+    });
+  };
+
+  M.moneySpecs = function (C) {
+    var t = C.t, B = C.B, out = {}, r = C.r;
+    D = M.drill;
+    if (!D || !D.mk || !C.byDay) return out;
+    var orders = ordersByDay(r.from, r.to), hand = handByDay(r.from, r.to);
+    var give = function (key, spec, value) { var s = spec && D.same(spec, spec.signed ? value : Math.abs(value)); if (s) out[key] = s; };      /* kept only when the list adds up to the line (a total's lines carry their signs) */
+
+    /* the sales part */
+    give('gross', mk(C, { title: 'Gross sales', sentence: 'The list price of every piece sold, day by day. ' + 'The orders of each day are named under it.' },
+      dayLines(C, { pick: function (b) { return b.gross_sales; }, note: function (d, b, os) { return os.length === 1 ? '1 order' : os.length + ' orders'; } }, orders)), rs(t.gross));
+    give('disc', mk(C, { title: 'Discounts', sentence: 'Money taken off by discount codes and sale prices, day by day (the list price minus what was charged for the pieces).' },
+      dayLines(C, { pick: function (b) { return b.gross_sales - b.net_sales; }, note: function (d, b, os) { return os.length === 1 ? '1 order' : os.length + ' orders'; } }, orders)), rs(t.disc));
+    give('gst', mk(C, { title: 'GST in the orders', sentence: 'The GST already inside what customers paid, day by day. It belongs to the government, so it is taken off.' },
+      dayLines(C, { pick: function (b) { return b.gst_included; }, note: function (d, b, os) { return os.length === 1 ? '1 order' : os.length + ' orders'; } }, orders)), rs(t.gst));
+    if (t.refunds) give('refunds', mk(C, { title: 'Refunds', sentence: 'Money given back to customers, on the day of the order it belongs to.' },
+      dayLines(C, { pick: function (b) { return b.refunds; } }, orders)), rs(t.refunds));
+
+    /* the Shopify bill and its two parts */
+    if (B.known) {
+      var pcs = billPieces(B), est = pc(B.est);
+      var billLine = function (x, which) {
+        var amt = which === 'plan' ? x.plan : which === 'charges' ? (x.plan == null ? null : x.p - x.plan) : x.p;
+        if (amt == null || amt === 0) return null;
+        return { ref: { kind: 'bill', value: x.bl.number, copy: x.bl.number }, date: x.bl.date, amount: rs(amt), note: (x.whole ? 'Counted whole, on the day it came (its dates are not known)' : x.days === x.of ? 'All ' + x.of + ' days of this bill are inside the dates' : x.days + ' of the ' + x.of + ' days of this bill are inside the dates, so that share of it is counted') };
+      };
+      var estLine = function (which) {
+        var a = which === 'plan' ? pc(B.estPlan) : which === 'charges' ? pc(B.estFee) : est;
+        if (!a) return null;
+        return { title: 'Estimated, not billed yet', date: B.estTo, amount: rs(a), note: B.estDays + (B.estDays === 1 ? ' day' : ' days') + ' after the newest bill (' + M.fd(B.estFrom) + (B.estFrom === B.estTo ? '' : ' to ' + M.fd(B.estTo)) + '): ' + (which === 'plan' ? 'the plan, shared by days' : which === 'charges' ? '2.0 percent of the Razorpay orders, or the real charges so far' : 'the plan shared by days plus the charges') };
+      };
+      var billSpec = function (which, title, sentence) { return mk(C, { title: title, sentence: sentence }, pcs.map(function (x) { return billLine(x, which); }).concat([estLine(which)])); };
+      give('bill', billSpec('all', 'Shopify bill', 'Each Shopify bill that falls inside the dates, with the part of it that lies inside them, and the days after the newest bill, which are estimated.'), rs(pc(B.total)));
+      if (B.planPart != null) {
+        give('plan', billSpec('plan', 'The Shopify plan', 'The plan part of the bill. Part of the Shopify bill, not taken off again.'), B.planPart);
+        give('charges', billSpec('charges', 'Shopify\'s charges', '2.0 percent of the order total on orders paid through Razorpay. Part of the Shopify bill, not taken off again.'), B.chargePart);
+      }
+    }
+
+    /* Razorpay */
+    var razBasis = {};
+    if (M.has('razorpay_payments_daily')) M.rowsIn('razorpay_payments_daily', r.from, r.to).forEach(function (x) { razBasis[String(x.date).slice(0, 10)] = x.cost_basis; });
+    give('razor', mk(C, { title: 'Razorpay charges', sentence: 'Razorpay\'s charge, day by day, with the GST inside it. A day Razorpay has paid for uses its own charge; any other day is an estimate.' },
+      dayLines(C, { pick: function (b) { return b.est_payment_fee; }, note: function (d, b, os) { return razBasis[d] === 'real' ? 'Razorpay\'s own charge' : 'Estimate'; } }, orders)), rs(t.razor));
+
+    /* shipping and parcel: the days, the parcels paid by hand, the WhatsApp invoices */
+    var wp = C.waPieces || [];
+    var viaShiprocket = {};      /* the orders whose first parcel was paid by hand are not on the Shiprocket line: they have their own line "Paid by hand" */
+    Object.keys(hand).forEach(function (d) { viaShiprocket[d] = {}; hand[d].forEach(function (h) { if (h.leg === 'delivery') viaShiprocket[d][h.order] = 1; }); });
+    var shipOrders = {}; Object.keys(orders).forEach(function (d) { shipOrders[d] = orders[d].filter(function (n) { return !(viaShiprocket[d] && viaShiprocket[d][n]); }); });
+    var parcelItems = dayLines(C, { pick: function (b) { return b.est_parcel_cost - (b.hand_parcel_cost || 0); }, note: function (d, b, os) { return 'Shiprocket\'s charge for the ' + (os.length === 1 ? 'parcel' : 'parcels') + ' of ' + (os.length === 1 ? 'this order' : 'these orders') + ', or the stated guess for a parcel it does not know'; } }, shipOrders);
+    Object.keys(C.byDay).forEach(function (d) {
+      var h = C.byDay[d].hand_parcel_cost || 0; if (!h) return;
+      var rows = hand[d] || [], first = rows.filter(function (x) { return x.leg === 'delivery'; }), seen = {}, refs = [];
+      rows.forEach(function (x) { if (!seen[x.order]) { seen[x.order] = 1; refs.push(x.order); } });
+      parcelItems.push({ title: 'Paid by hand', date: d, amount: rs(h), refs: refs.sort(function (a, b) { return orderNum(b) - orderNum(a); }).map(chipOf), note: handNote(rows) || 'Paid by hand outside Shiprocket' });
+    });
+    wp.forEach(function (x) { parcelItems.push({ ref: { kind: 'bill', value: x.inv, copy: x.inv }, title: 'WhatsApp tracking messages', date: x.date, amount: rs(x.p), note: x.days === x.of ? 'The invoice for ' + x.month : x.days + ' of the ' + x.of + ' days of ' + x.month + ' are inside the dates' }); });
+    give('parcel', mk(C, { title: 'Shipping and parcel', sentence: 'What sending the parcels cost, day by day: Shiprocket\'s charge (or the stated guess for a parcel it does not know), the parcels Madhu paid for by hand outside Shiprocket, and Shiprocket\'s WhatsApp tracking invoices.' }, parcelItems), rs(t.parcel));
+    if (t.whatsapp) give('wa', mk(C, { title: 'Shiprocket\'s WhatsApp tracking fee', sentence: 'Rs. 5 plus GST for each tracking message, billed on Shiprocket\'s own invoice on the 3rd of the next month and shared over the days of the month it is for.' },
+      wp.map(function (x) { return { ref: { kind: 'bill', value: x.inv, copy: x.inv }, date: x.date, amount: rs(x.p), note: x.days === x.of ? 'The invoice for ' + x.month : x.days + ' of the ' + x.of + ' days of ' + x.month + ' are inside the dates' }; })), rs(t.whatsapp));
+
+    /* the costs not confirmed yet */
+    give('making', mk(C, { title: 'Manufacturing and material', sentence: 'The cost price typed in Shopify for each piece sold (cloth, tailoring and labour together), day by day. Madhu has not confirmed it yet.' },
+      dayLines(C, { pick: function (b) { return b.product_cost; } }, orders)), rs(t.making));
+    give('pack', mk(C, { title: 'Packaging', sentence: 'Packaging is worked out per order: the number of orders of the day times ' + (C.packFee > 0 ? 'Rs. ' + M.num(C.packFee, C.packFee % 1 ? 2 : 0) + ', the figure Madhu gave' : 'a default figure') + '. Not checked against real bills.' },
+      dayLines(C, { pick: function (b) { return b.est_packaging; }, note: function (d, b, os) { return os.length + (os.length === 1 ? ' order' : ' orders'); } }, orders)), rs(t.pack));
+    if (t.other) give('other', mk(C, { title: 'Other costs', sentence: 'Another monthly cost typed in the data sheet, shared by days. The month lines add up to it.' },
+      C.months.map(function (m) { return m.other ? { title: m.ym, date: m.to, amount: rs(m.other), note: m.days + (m.days === 1 ? ' day' : ' days') + ' of this month are inside the dates' } : null; })), rs(t.other));
+    give('credit', mk(C, { title: 'GST credit on these costs', sentence: 'The Razorpay fee and the courier charge each have 18 percent GST inside. The shop pays it and takes it off the GST it owes, so it comes back. Worked out for each month. An estimate until the invoices show in GSTR-2B. Nothing is taken on the parcels paid by hand, because no GST invoice for them is on file.' },
+      C.months.map(function (m) { return m.credit ? { title: m.ym, date: m.to, amount: rs(m.credit), note: 'On the Razorpay fee ' + rup(rs(m.creditRazor)) + ', on the courier charges ' + rup(rs(m.creditParcel)) } : null; })), rs(t.credit));
+
+    /* the totals: the lines that make them. Each line opens its own list. */
+    var part = function (title, amount, key, note) { return amount ? { title: title, amount: rs(amount), open: out[key] || null, note: note || '' } : null; };
+    give('left', mk(C, { title: 'Money left before costs', signed: true, keepOrder: true, sentence: 'Gross sales minus discounts, GST and refunds. Each line opens the days behind it.' },
+      [part('Gross sales', t.gross, 'gross'), part('Discounts', -(t.disc), 'disc'), part('GST in the orders', -(t.gst), 'gst'), t.refunds ? part('Refunds', -(t.refunds), 'refunds') : null]), rs(t.left));
+    var cl = [part('Money left before costs', t.left, 'left', 'Gross sales minus discounts, GST and refunds')];
+    if (B.known) cl.push(part('Shopify bill', -(t.bill), 'bill'));
+    cl.push(part('Razorpay charges', -(t.razor), 'razor'), part('Shipping and parcel', -(t.parcel), 'parcel'));
+    give('confirmed', mk(C, { title: 'Left after confirmed costs', signed: true, keepOrder: true, sentence: 'Money left before costs, minus the Shopify bill, the Razorpay charges and the parcel cost. This is not the profit: the making cost is not taken off yet. Each line opens what is behind it.' }, cl), rs(t.confirmed));
+    give('profit', mk(C, { title: 'Profit after everything', signed: true, keepOrder: true, sentence: 'Left after confirmed costs, minus the costs not confirmed yet, plus the GST credit. Some of these costs are placeholders, so this is an estimate. Each line opens what is behind it.' },
+      [part('Left after confirmed costs', t.confirmed, 'confirmed'), part('Manufacturing and material', -(t.making), 'making', 'Not confirmed yet'), part('Packaging', -(t.pack), 'pack', 'Not confirmed yet'),
+        t.other ? part('Other costs', -(t.other), 'other', 'Not confirmed yet') : null, part('GST credit on these costs', t.credit, 'credit', 'An estimate')]), rs(t.profit));
+    return out;
+  };
 })();
 
 /* mazo dashboard: A TABLE THAT FITS ITS CARD (F2, 4 Nov 2026). Owner (3 Nov): "baskets and couriers part can be made better; side by side is not working."
@@ -16739,6 +16939,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
      M.drill.parcelSpec(rows, o)    rows of shiprocket_parcels -> spec
      M.drill.paidOrdersSpec(orders, o)  order numbers          -> spec (the amount the buyer paid, from the tax register)
      M.drill.promiseSpec(list, o)   rows of the "Is the promise kept" list -> spec
+     M.moneySpecs(C)                every line of "Where the money goes" -> spec (dashboard_56_money.js, T1115, 13 Nov 2026): a day by day list, the bills, the parcels, or the lines that make a total; a line of a total opens its own list
    Wired in: M.donut (part.drill), M.bars (row.drill), M.kpi (o.drill), M.table (row.drill), M.timeChart (o.drill(i, bucket)). Each is optional; a mark without a spec behaves exactly as before. */
 (function () {
   var D = M.drill = {}, PAGE = 30, MORE_CAP = 10;
@@ -16765,7 +16966,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   D.sum = function (items) { var t = 0; items.forEach(function (it) { if (it.amount != null && it.amount !== '' && !it.noSum) t += num(it.amount); }); return r2(t); };
   /* a spec whose lines are built only when read */
   D.mk = function (o, build) {
-    var spec = { title: o.title, sentence: o.sentence, n: o.n, money: r2(num(o.money)), more: o.more || [], moreTitle: o.moreTitle, noun: o.noun || 'line', foot: o.foot || '' }, made = null;
+    var spec = { title: o.title, sentence: o.sentence, n: o.n, money: r2(num(o.money)), more: o.more || [], moreTitle: o.moreTitle, noun: o.noun || 'line', foot: o.foot || '', kind: o.kind || '', signed: !!o.signed }, made = null;
     Object.defineProperty(spec, 'items', { enumerable: true, get: function () { return made || (made = build()); }, set: function (v) { made = v; } });
     return spec;
   };
@@ -16790,25 +16991,41 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
 
   /* ---------------------------------------------------------------- the panel body: one line per thing */
   function chip(r) { return r && r.value != null && r.value !== '' ? M.ref(r.kind, r.value, { full: r.copy != null ? r.copy : r.value }) : null; }
-  function line(it) {
+  /* T1115 (13 Nov 2026, "Where the money goes"): a line may also carry
+       title   a plain label when the line is a day or a step and not one order (the line then has no reference chip)
+       refs    several reference chips (the orders of a day)
+       open    another spec: the line is a button that opens it in the same panel (a total opens the parts that make it) */
+  function line(it, opener, parent) {
     var meta = [it.date ? M.fd(it.date) : '', it.way, it.note].filter(Boolean).join(', ');
-    var top = M.h('div', { class: 'drill-top' }, [chip(it.ref), it.ref2 ? chip(it.ref2) : null, it.amount != null && it.amount !== '' ? M.h('span', { class: 'drill-amt', text: M.inr(it.amount) }) : null]);
-    return M.h('li', { class: 'drill-item' }, [top, it.sum ? M.h('div', { class: 'drill-sum', text: it.sum }) : null, meta ? M.h('div', { class: 'drill-meta small muted', text: meta }) : null,
+    var kids = [it.title ? M.h('span', { class: 'drill-title', text: it.title }) : null, chip(it.ref), it.ref2 ? chip(it.ref2) : null].concat((it.refs || []).map(chip));
+    kids.push(it.amount != null && it.amount !== '' ? M.h('span', { class: 'drill-amt', text: M.inr(it.amount) }) : null);
+    if (it.open && D.ok(it.open)) kids.push(D.chevron());
+    var top = M.h('div', { class: 'drill-top' }, kids);
+    var li = M.h('li', { class: 'drill-item' + (it.open && D.ok(it.open) ? ' drill-open' : '') }, [top, it.sum ? M.h('div', { class: 'drill-sum', text: it.sum }) : null, meta ? M.h('div', { class: 'drill-meta small muted', text: meta }) : null,
       it.status ? M.h('div', { class: 'drill-st ' + (it.tone || '') }, [M.h('i', { 'aria-hidden': 'true' }), M.h('span', { text: it.status })]) : null]);
+    if (it.open && D.ok(it.open)) {
+      var go = function () { D.open(it.open, opener, null, parent); };
+      li.tabIndex = 0; li.setAttribute('role', 'button'); li.setAttribute('aria-label', D.attrs(it.open, it.title || 'This line'));
+      li.addEventListener('click', function (e) { if (e.target.closest('.ref')) return; go(); });
+      li.addEventListener('keydown', function (e) { if (e.target === li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); go(); } });
+    }
+    return li;
   }
   /* what "Copy all references" copies: the part a person pastes into Shopify, Razorpay or Shiprocket (the order number, or the payment tail for a try with no order), once each, in the order shown */
   D.copyText = function (items) {
     var seen = {}, out = [];
-    items.forEach(function (it) { var v = it.ref && it.ref.value != null ? String(it.ref.copy != null ? it.ref.copy : it.ref.value) : ''; if (v && !seen[v]) { seen[v] = 1; out.push(v); } });
+    items.forEach(function (it) {
+      [it.ref].concat(it.refs || []).forEach(function (rf) { var v = rf && rf.value != null ? String(rf.copy != null ? rf.copy : rf.value) : ''; if (v && !seen[v]) { seen[v] = 1; out.push(v); } });
+    });
     return out.join(', ');
   };
-  function body(spec) {
-    var root = M.h('div', { class: 'drill' }), shown = PAGE, items = spec.items || [];
+  function body(spec, opener, parent) {
+    var root = M.h('div', { class: 'drill' + (spec.kind === 'money' ? ' drill-money' : '') }), shown = PAGE, items = spec.items || [];
     var list = M.h('ul', { class: 'drill-list' }), more = M.h('button', { type: 'button', class: 'btn sm drill-more' });
     var copyBtn = M.h('button', { type: 'button', class: 'btn sm drill-copy', text: 'Copy all references' });
     function draw() {
       M.clear(list);
-      items.slice(0, shown).forEach(function (it) { list.appendChild(line(it)); });
+      items.slice(0, shown).forEach(function (it) { list.appendChild(line(it, opener, spec)); });
       var left = items.length - shown;
       more.hidden = left <= 0;
       if (left > 0) more.textContent = 'Show ' + M.num(Math.min(PAGE, left)) + ' more (' + M.num(left) + ' not shown)';
@@ -16818,6 +17035,11 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var txt = D.copyText(items), label = D.countText(items.length, spec.noun) + ' (' + txt.slice(0, 40) + (txt.length > 40 ? ' ...' : '') + ')';
       M.refCopyText(txt, label, function (ok) { copyBtn.classList.toggle('copied', ok); copyBtn.textContent = ok ? 'Copied' : 'Select the list and copy by hand'; clearTimeout(copyBtn.__t); copyBtn.__t = setTimeout(function () { copyBtn.classList.remove('copied'); copyBtn.textContent = 'Copy all references'; }, 1500); });
     });
+    if (parent && D.ok(parent)) {      /* T1115: a line of a total opened its own list: one tap goes back to the total */
+      var back = M.h('button', { type: 'button', class: 'btn sm drill-back', text: 'Back to ' + parent.title.replace(/,\s[^,]*$/, '') });
+      back.addEventListener('click', function () { D.open(parent, opener); });
+      root.appendChild(back);
+    }
     root.appendChild(list); draw();
     var acts = M.h('div', { class: 'drill-acts' }, [more]);
     if (D.copyText(items)) acts.appendChild(copyBtn);
@@ -16833,10 +17055,10 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     if (spec.foot) root.appendChild(M.h('p', { class: 'small muted drill-foot', text: spec.foot }));
     return root;
   }
-  D.open = function (spec, opener) {
+  D.open = function (spec, opener, facts, parent) {      /* facts: optional {k, v} rows shown above the list (the chart row's own numbers: taken off, left after this step) */
     if (!spec || !M.detail || !M.detail.open) return;
     M.tipHide();
-    M.detail.open({ title: spec.title, sub: spec.sentence, rows: [], node: body(spec), actions: [], opener: opener, force: true });
+    M.detail.open({ title: spec.title, sub: spec.sentence, rows: facts || [], node: body(spec, opener, parent), actions: [], opener: opener, force: true });
   };
   /* the small arrow that tells the eye a row or part opens a list (the dashboard's own chevron, turned to point right by the stylesheet) */
   D.chevron = function () { return M.h('span', { class: 'drill-go', 'aria-hidden': 'true' }, [M.icon ? M.icon('i-chev', 'go') : '>']); };
@@ -17430,7 +17652,7 @@ M.unlock = function () {
                 'facebook_daily', 'youtube_daily', 'pinterest_account_daily', 'linkedin_posts_daily', 'instagram_more_daily', 'instagram_window', 'instagram_format_daily',
                 'facebook_more_daily', 'youtube_more_daily', 'youtube_split_daily', 'pinterest_split_daily', 'linkedin_more_daily'];               /* followers over time, the post list, the Instagram view; every measure of the other channels (T884, 6 Nov 2026, dashboard_70_social_measures.js); social_post_measures is a table of lifetime numbers per post and social_audience a small snapshot, both read whole */
   M.WINDOWS = {
-    overview:  [[['money_daily', 'ga4_funnel_daily'], 55]],                                                   /* the goal card: orders of the 28 days and the 28 before */
+    overview:  [[['money_daily', 'ga4_funnel_daily'], 55], [['order_sources', 'exchange_parcels'], 'own']],      /* the goal card: orders of the 28 days and the 28 before. T1115: the side panel of each line of Where the money goes names the orders and the hand paid parcels of the CHOSEN dates only (rowsIn), so the months of those dates are enough and no other month is opened ('all' here opened every month file and broke the audit's coverage probe) */
     funnel:    [[['shopify_visits_daily'], 'all']],                                                                    /* the steps card from Shopify's count: it names the first day with a visit, so it reads every stored day */
     growth:    [[['money_daily', 'shopify_daily', 'ga4_funnel_daily', 'visits_joined_daily'], 'all']],                                       /* sales since the first sale, month by month, buyers built up: every stored day */
     products:  [[['stock_daily', 'product_sales_daily', 'product_ledger_hist', 'product_daily'], 'all']],     /* price over time since the first sale; stock night by night; the product in depth */
