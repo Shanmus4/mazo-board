@@ -5741,7 +5741,7 @@ M.SEARCH_INDEX = [
 ["payments","table","Payouts to the bank","payouts to the bank"],
 ["payments","card","Payments that went through, week by week","payments that went through, week by p"],
 ["payments","card","How buyers paid, in detail","how buyers paid, in detail"],
-["payments","card","Other ways of paying","other ways of paying"],
+["payments","card","Direct payments, not through Razorpay","direct payments, not through razorpay"],
 ["payments","card","What Razorpay keeps for each way of paying","what razorpay keeps for each way of paying"],
 ["payments","card","Money collected, paid out and still waiting","money collected, paid out and still waiting"],
 ["payments","table","Days from payment to the bank","days from payment to the bank"],
@@ -5783,7 +5783,7 @@ M.SEARCH_INDEX = [
 ["payments","chart","Collected and paid out, added up","collected and paid out, added up"],
 ["payments","chart","Checkouts each week","checkouts each p"],
 ["payments","kpi","Paid by buyers","paid by buyers"],
-["payments","kpi","Paid another way","paid another way"],
+["payments","kpi","Direct payments","direct payments"],
 ["payments","kpi","Razorpay kept","razorpay kept"],
 ["payments","kpi","Reached the bank","reached the bank"],
 ["payments","kpi","Payments that failed","payments that failed"],
@@ -5794,8 +5794,7 @@ M.SEARCH_INDEX = [
 ["payments","kpi","Checkouts left behind","checkouts left behind"],
 ["payments","kpi","Time to pay","time to pay"],
 ["payments","kpi","Paid by someone who paid before","paid by someone who paid before"],
-["payments","kpi","Paid outside Razorpay","paid outside razorpay"],
-["payments","kpi","Way of paying not told yet","way of paying not told yet"],
+["payments","kpi","Share of all the money paid","share of all the money paid"],
 ["payments","kpi","Collected after fees, all time","collected after fees, all time"],
 ["payments","kpi","Paid out to the bank, all time","paid out to the bank, all time"],
 ["payments","kpi","Waiting at Razorpay","waiting at razorpay"],
@@ -8516,7 +8515,7 @@ M.sumCol = function (tab, col, r) { var t = M.total({ tab: tab, col: col }, r.fr
 M.ratio = function (a, b, dp) { return b ? M.pct(a / b * 100, dp == null ? 1 : dp) : 'not tracked'; };
 
 /* ================================================================ PAYMENTS */
-M.sp('payments', 'Payments', 'Payments', 'All the money buyers paid, however it came: through Razorpay or another way. How much reaches the bank, what Razorpay keeps, which payments fail and why, and whether Razorpay agrees with the shop.', [], { dates: true });
+M.sp('payments', 'Payments', 'Payments', 'All the money buyers paid, however it came: through Razorpay or directly. How much reaches the bank, what Razorpay keeps, which payments fail and why, and whether Razorpay agrees with the shop.', [], { dates: true });
 M.PAGES.payments.render = function (r) {
   var root = M.h('div');
   if (!M.isConnected('razorpay', 'razorpay_payments_daily')) {
@@ -8541,11 +8540,11 @@ M.PAGES.payments.render = function (r) {
   /* T1096 (13 Nov 2026, owner: "payments is all payments, not just razorpay"): the headline is ALL the money paid, Razorpay plus the orders paid another way (Google Pay, a bank transfer, cash...), which
      Shopify records only as 'manual'. The note says how the two parts split. Fees, the bank and the failed tries below stay Razorpay's own. */
   var OP = M.otherPay ? M.otherPay(r) : [], opSum = M.otherPaySum ? M.otherPaySum(OP) : 0, allAmt = Math.round((amt + opSum) * 100) / 100;
-  var opSpec = OP.length && M.otherPaySpec ? M.drill.same(M.otherPaySpec('Paid outside Razorpay', OP), opSum) : null;
-  var allSpec = paidSpec && opSpec ? M.drill.same(M.drill.mk({ title: 'Paid by buyers', sentence: M.num(cap + OP.length) + ' payments, ' + M.inr(allAmt) + ': ' + M.num(cap) + ' through Razorpay (' + M.inr(amt) + ') and ' + M.num(OP.length) + ' another way (' + M.inr(opSum) + ').',
+  var opSpec = OP.length && M.otherPaySpec ? M.drill.same(M.otherPaySpec('Direct payments', OP), opSum) : null;
+  var allSpec = paidSpec && opSpec ? M.drill.same(M.drill.mk({ title: 'Paid by buyers', sentence: M.num(cap + OP.length) + ' payments, ' + M.inr(allAmt) + ': ' + M.num(cap) + ' through Razorpay (' + M.inr(amt) + ') and ' + M.num(OP.length) + ' direct (' + M.inr(opSum) + ').',
     n: cap + OP.length, money: allAmt, more: [], noun: 'payment' }, function () { return paidSpec.items.concat(opSpec.items).sort(M.drill.newest); }), allAmt) : (OP.length ? null : paidSpec);
-  kp.appendChild(M.kpi({ label: 'Paid by buyers', value: M.inr(allAmt), hero: true, note: OP.length ? M.num(cap + OP.length) + ' payments: ' + M.inr(amt) + ' through Razorpay and ' + M.inr(opSum) + ' another way' : M.num(cap) + ' payments went through', drill: allSpec }));
-  if (OP.length) kp.appendChild(M.kpi({ label: 'Paid another way', value: M.inr(opSum), note: M.num(OP.length) + (OP.length === 1 ? ' order' : ' orders') + ' paid outside Razorpay, no Razorpay fee', drill: opSpec }));
+  kp.appendChild(M.kpi({ label: 'Paid by buyers', value: M.inr(allAmt), hero: true, note: OP.length ? M.num(cap + OP.length) + ' payments: ' + M.inr(amt) + ' through Razorpay and ' + M.inr(opSum) + ' direct' : M.num(cap) + ' payments went through', drill: allSpec }));
+  if (OP.length) kp.appendChild(M.kpi({ label: 'Direct payments', value: M.inr(opSum), note: M.num(OP.length) + (OP.length === 1 ? ' order' : ' orders') + ' paid directly, not through Razorpay, no Razorpay fee', drill: opSpec }));
   kp.appendChild(M.kpi({ label: 'Razorpay kept', value: M.inr(fee), note: amt ? M.pct(fee / amt * 100, 2) + ' of what was paid, GST included' : '' }));
   kp.appendChild(M.kpi({ label: 'Reached the bank', value: M.inr(net), note: 'after Razorpay\'s charge' }));
   kp.appendChild(M.kpi({ label: 'Payments that failed', value: M.num(fail), note: pays ? M.pct(fail / pays * 100, 1) + ' of ' + M.num(pays) + ' tries' : '', drill: failSpec }));
@@ -14747,12 +14746,12 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     /* T1096 (13 Nov 2026): the ring of money by way of paying holds ALL the money, so the orders paid outside Razorpay are parts of it, named by the way a person typed (Google Pay, NEFT, cash...) */
     var OPL = M.otherPay ? M.otherPay(c.r) : [], opBy = {};
     OPL.forEach(function (x) { (opBy[x.method] = opBy[x.method] || []).push(x); });
-    Object.keys(opBy).forEach(function (k) { var v = M.otherPaySum(opBy[k]); money.push({ label: k === 'Not told yet' ? 'Another way (not told yet)' : k, value: v, drill: M.drill.same(M.otherPaySpec(k + ': the orders', opBy[k]), v) }); });
+    Object.keys(opBy).forEach(function (k) { var v = M.otherPaySum(opBy[k]); money.push({ label: k === 'Direct payment' ? 'Direct payments' : k, value: v, drill: M.drill.same(M.otherPaySpec(k + ': the orders', opBy[k]), v) }); });
     var upi = R.by(C.filter(function (x) { return String(x.method).toLowerCase() === 'upi'; }), function (x) { return x.upi_app || 'Not given'; }).map(function (g) { return { label: g.key, value: R.cntOf(g.rows), drill: byCount(g.key + ': UPI payments', g.rows, R.cntOf(g.rows)) }; });
     var cards = R.by(C.filter(function (x) { return String(x.method).toLowerCase() === 'card'; }), function (x) { return [x.card_network, x.card_type].filter(Boolean).join(' ') || 'Card, kind not given'; }).map(function (g) { return { label: g.key, value: R.cntOf(g.rows), drill: byCount(g.key + ': card payments', g.rows, R.cntOf(g.rows)) }; });
     var origin = R.by(C, function (x) { return x.international === 'yes' ? 'From outside India' : 'From India'; }).map(function (g) { var v = R.sum(g.rows, 'amount'); return { label: g.key, value: v, drill: R.originSpec(c, g.key, g.rows, v) }; });
     /* T1096: the 'where from' ring holds ALL the money too. An order paid another way has no card or UPI details; Shopify's address is not read here, so these parts are labelled for what is known: paid outside Razorpay. */
-    if (OPL.length) origin.push({ label: 'Paid outside Razorpay (place not recorded)', value: M.otherPaySum(OPL), drill: M.drill.same(M.otherPaySpec('Paid outside Razorpay', OPL), M.otherPaySum(OPL)) });
+    if (OPL.length) origin.push({ label: 'Direct payments (place not recorded)', value: M.otherPaySum(OPL), drill: M.drill.same(M.otherPaySpec('Direct payments', OPL), M.otherPaySum(OPL)) });
     var kids = [M.grid([
       box('Money by way of paying', money, { name: 'Money by way of paying', total: 'paid', unit: 'money', fmt: R.inr0, empty: 'No payment went through.' }),
       box('UPI apps', upi, { name: 'UPI apps', total: 'UPI payments', unit: 'payments', empty: 'No UPI payment in these dates.' }),
@@ -14767,8 +14766,8 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     /* T1096 (13 Nov 2026): the first ring now holds the orders paid outside Razorpay too. The rings for the UPI app, the kind of card and where the card came from describe Razorpay payments only
        (Shopify does not record these details for a payment made another way), so a short line under the rings says so and opens the orders paid another way. */
     if (OPL.length) {
-      var opTotal = M.otherPaySum(OPL), opSp = M.drill.same(M.otherPaySpec('Paid another way', OPL), opTotal);
-      kids.push(M.h('p', { class: 'small' }, [M.num(OPL.length) + (OPL.length === 1 ? ' order' : ' orders') + ' (' + R.inr0(opTotal) + ') ' + (OPL.length === 1 ? 'was' : 'were') + ' paid another way and ' + (OPL.length === 1 ? 'is' : 'are') + ' part of the first ring. The other rings describe Razorpay payments only: Shopify does not record the UPI app or the card for a payment made another way. '].concat(opSp ? [R.seeLink(opSp, 'See which')] : [])));
+      var opTotal = M.otherPaySum(OPL), opSp = M.drill.same(M.otherPaySpec('Direct payments', OPL), opTotal);
+      kids.push(M.h('p', { class: 'small' }, [M.num(OPL.length) + (OPL.length === 1 ? ' order' : ' orders') + ' (' + R.inr0(opTotal) + ') ' + (OPL.length === 1 ? 'was a direct payment' : 'were direct payments') + ' (not through Razorpay) and ' + (OPL.length === 1 ? 'is' : 'are') + ' part of the first ring. The other rings describe Razorpay payments only: Shopify does not record the UPI app or the card for a direct payment. '].concat(opSp ? [R.seeLink(opSp, 'See which')] : [])));
     }
     return R.card(title, why, kids);
   });
@@ -17085,10 +17084,10 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   });
 })();
 
-/* dashboard_78_other_payments.js: PAYMENTS THAT DID NOT GO THROUGH RAZORPAY (T1096, 13 Nov 2026).
+/* dashboard_78_other_payments.js: PAYMENTS THAT DID NOT GO THROUGH RAZORPAY, called DIRECT PAYMENTS (T1096, 13 Nov 2026; the collective term was chosen by the owner at 10:48: "just have a collective term for all outside payments").
    Owner, 13 Nov 2026: "please include non razorpay payments also in payments, payments is all payments not just razorpay. dont put google pay, because payment can be gpay, neft or anything else".
    Shopify keeps only the word "manual" for an order marked paid by hand, so HOW the money came is typed by a person in the Sheet tab manual_payments (scripts/manual_payment_add.py). Nothing is guessed:
-   an order with no method typed shows "Not told yet". This file adds (1) M.otherPay(r), the orders paid outside Razorpay in the chosen dates, joined to the typed method, and (2) the card
+   an order with no method typed is simply a "Direct payment" (nobody is asked). This file adds (1) M.otherPay(r), the orders paid outside Razorpay in the chosen dates, joined to the typed method, and (2) the card
    "Other ways of paying" on the Payments page. The headline tiles and the rings of dashboard_68_razorpay*.js read M.otherPay too, so every figure on the page is ALL payments. */
 (function () {
   var R = M.rz;
@@ -17104,28 +17103,29 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var dateOf = {}; M.rows('order_sources').forEach(function (x) { dateOf[x.order] = x.date; });
     return orders.map(function (o) {
       var t = typed[o] || {}, paid = tx[o] ? num(tx[o].total_paid) : 0, method = String(t.method || '').trim();
-      return { order: o, date: dateOf[o] || (tx[o] && tx[o].date) || '', amount: paid, method: method || 'Not told yet', told: !!method, received_on: t.received_on || '', note: t.note || '' };
+      return { order: o, date: dateOf[o] || (tx[o] && tx[o].date) || '', amount: paid, method: method || 'Direct payment', told: !!method, received_on: t.received_on || '', note: t.note || '' };
     }).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : (a.order < b.order ? 1 : -1); });
   };
   M.otherPaySum = function (list) { var t = 0; list.forEach(function (x) { t += x.amount; }); return Math.round(t * 100) / 100; };
   /* one drill list for a group of these orders */
   M.otherPaySpec = function (title, list, lead) {
-    return M.drill.paidOrdersSpec(list.map(function (x) { return x.order; }), { title: title, lead: lead || 'Orders marked paid by hand in Shopify. How the money came is typed in by a person; Shopify does not record it.', note: 'Paid outside Razorpay' });
+    return M.drill.paidOrdersSpec(list.map(function (x) { return x.order; }), { title: title, lead: lead || 'Orders marked paid by hand in Shopify. How the money came is typed in by a person; Shopify does not record it.', note: 'Direct payment' });
   };
   R.cards.push(function otherWays(c) {
-    var title = 'Other ways of paying', why = 'Orders that were paid without going through Razorpay: Google Pay, a bank transfer, cash or anything else. Madhu marks such an order as paid in Shopify, and Shopify does not record how the money came, so the way of paying is typed in by a person (Sheet tab manual_payments). Until it is typed it says "Not told yet". These payments carry no Razorpay fee.';
+    var title = 'Direct payments, not through Razorpay', why = 'Orders that were paid without going through Razorpay: Google Pay, a bank transfer, cash or anything else. Madhu marks such an order as paid in Shopify, and Shopify does not record how the money came, so they are all shown together as Direct payments. These payments carry no Razorpay fee. If someone types the way of paying in the Sheet tab manual_payments, it is shown here too.';
     var list = M.otherPay(c.r);
-    if (!list.length) return R.card(title, why, [M.empty('No order was paid outside Razorpay in these dates.')]);
+    if (!list.length) return R.card(title, why, [M.empty('No order was paid directly in these dates.')]);
     var by = {}; list.forEach(function (x) { (by[x.method] = by[x.method] || []).push(x); });
-    var parts = Object.keys(by).map(function (k) { return { label: k, value: M.otherPaySum(by[k]), drill: M.drill.same(M.otherPaySpec(k + ': the orders', by[k]), M.otherPaySum(by[k])) }; });
-    var total = M.otherPaySum(list), unt = list.filter(function (x) { return !x.told; });
+    var parts = Object.keys(by).map(function (k) { return { label: k === 'Direct payment' ? 'Direct payments' : k, value: M.otherPaySum(by[k]), drill: M.drill.same(M.otherPaySpec(k + ': the orders', by[k]), M.otherPaySum(by[k])) }; });
+    var total = M.otherPaySum(list), typed = list.some(function (x) { return x.told; });
     var tiles = M.h('div', { class: 'kpis rz' }, [
-      M.kpi({ label: 'Paid outside Razorpay', value: R.inr(total), note: M.num(list.length) + (list.length === 1 ? ' order' : ' orders') + ', no Razorpay fee', drill: M.drill.same(M.otherPaySpec('Paid outside Razorpay', list), total) }),
-      M.kpi({ label: 'Way of paying not told yet', value: M.num(unt.length), note: unt.length ? R.inr(M.otherPaySum(unt)) + ' in ' + (unt.length === 1 ? 'one order' : 'these orders') + '. Shown as Not told yet until it is recorded.' : 'Every order has its way of paying.', drill: unt.length ? M.drill.same(M.otherPaySpec('Way of paying not told yet', unt), M.otherPaySum(unt)) : null })]);
-    var kids = [M.grid([M.h('div', null, [R.sub('Money by way of paying'), M.donut(parts, { name: 'Other ways of paying', total: 'paid', unit: 'money', fmt: R.inr0 })]), tiles], 'wide')];
+      M.kpi({ label: 'Direct payments', value: R.inr(total), note: M.num(list.length) + (list.length === 1 ? ' order' : ' orders') + ', no Razorpay fee', drill: M.drill.same(M.otherPaySpec('Direct payments', list), total) }),
+      M.kpi({ label: 'Share of all the money paid', value: R.pct(total, total + R.sum(c.C, 'amount'), 0), note: 'of Razorpay plus direct payments together' })]);
+    var kids = [M.grid([M.h('div', null, [R.sub('Money by way of paying'), M.donut(parts, { name: 'Direct payments', total: 'paid', unit: 'money', fmt: R.inr0 })]), tiles], 'wide')];
     kids.push(M.table([M.refCol('order', 'order', 'Order'), { k: 'date', label: 'Order day', fmt: M.fd }, { k: 'amount', label: 'Paid by the buyer', num: true, fmt: M.inr },
-      { k: 'method', label: 'Way of paying', fmt: function (v) { return v; } }, { k: 'received_on', label: 'Money arrived on', fmt: function (v) { return v ? M.fd(v) : 'Not told yet'; } }, { k: 'note', label: 'Note', wrap: true, hidden: !list.some(function (x) { return x.note; }) }],
-      { rows: list, sortKey: 'date', sortDir: -1, name: 'other-ways-of-paying', detail: false, empty: 'None.' }));
+      { k: 'method', label: 'Way of paying', hidden: !typed }, { k: 'received_on', label: 'Money arrived on', hidden: !list.some(function (x) { return x.received_on; }), fmt: function (v) { return v ? M.fd(v) : ''; } },
+      { k: 'note', label: 'Note', wrap: true, hidden: !list.some(function (x) { return x.note; }) }],
+      { rows: list, sortKey: 'date', sortDir: -1, name: 'direct-payments', detail: false, empty: 'None.' }));
     return R.card(title, why, kids);
   });
 })();
