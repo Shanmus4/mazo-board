@@ -5845,7 +5845,7 @@ M.SEARCH_INDEX = [
 ["shipping","card","Is the Shiprocket catalogue right?","is the shiprocket catalogue right?"],
 ["shipping","card","Catalogue health over the nights","catalogue health over the nights"],
 ["shipping","card","GST inside the shipping charges","gst inside the shipping charges"],
-["shipping","table","Exchange parcels (booked by Madhu, not in Shiprocket)","exchange parcels (booked by madhu, not in shiprocket)"],
+["shipping","table","Parcels booked by hand (not in Shiprocket)","parcels booked by hand (not in shiprocket)"],
 ["shipping","chart","The same cost as a share of what the orders were worth","the same cost as a share of what the orders were worth"],
 ["shipping","chart","How the parcels ended","how the # parcels ended"],
 ["shipping","chart","Why delivery failed","why delivery failed"],
@@ -5883,7 +5883,7 @@ M.SEARCH_INDEX = [
 ["shipping","kpi","Freight and extra charges billed","freight and extra charges billed"],
 ["shipping","kpi","WhatsApp tracking fees billed","whatsapp tracking fees billed"],
 ["shipping","kpi","GST inside the parcel charges","gst inside the parcel charges"],
-["shipping","kpi","Exchange orders","exchange orders"],
+["shipping","kpi","Orders","orders"],
 ["shipping","kpi","Paid to the courier","paid to the courier"],
 ["shipping","kpi","Paid by the buyers","paid by the buyers"],
 ["shipping","kpi","Left with the shop","left with the shop"],
@@ -17047,7 +17047,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   };
 })();
 
-/* mazo dashboard: EXCHANGE PARCELS (T1085, 12 Nov 2026). Owner: order #MZ1037 is a size exchange. The buyer pays BOTH Delhivery parcels (70 + 70 = Rs. 140) by GPay to Madhu, and Madhu pays Delhivery.
+/* mazo dashboard: PARCELS BOOKED BY HAND (T1085, 12 Nov 2026; T1114, 13 Nov 2026: the card also holds an order's own first parcel when its Shiprocket shipment was cancelled and sent by another courier, leg 'delivery', the shop paid, for example #MZ1039 by DTDC Rs. 560). Owner: order #MZ1037 is a size exchange. The buyer pays BOTH Delhivery parcels (70 + 70 = Rs. 140) by GPay to Madhu, and Madhu pays Delhivery.
    None of it passes through Shopify, Razorpay or Shiprocket, so no other card could see it ("how this should be updated everywhere, even in our dashboard, because we have shipping cost also").
    One card at the bottom of the Shipping page, from the typed table exchange_parcels (scripts/exchange_parcel_add.py): each exchange parcel with its order, leg, courier, what Madhu paid the courier
    and what the buyer paid her. It is a PASS THROUGH: the card adds its own two totals and says plainly that they are not part of the Shiprocket cost figures above, so the Shiprocket averages stay true.
@@ -17065,21 +17065,21 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var kids = [];
     if (!rows.length) {
       var newest = all.map(function (x) { return x.date; }).sort().pop(), later = newest > r.to && newest > M.D.anchor;
-      kids.push(M.empty('No exchange parcel was booked between the dates chosen. ' + M.num(all.length) + ' stored in all' + (later ? ', the newest on ' + M.fd(newest) + ', which is after the newest day the dashboard holds (' + M.fd(M.D.anchor) + '). It shows here from the next nightly update.' : ', from ' + M.fd(all.map(function (x) { return x.date; }).sort()[0]) + '.')));
+      kids.push(M.empty('No parcel booked by hand between the dates chosen. ' + M.num(all.length) + ' stored in all' + (later ? ', the newest on ' + M.fd(newest) + ', which is after the newest day the dashboard holds (' + M.fd(M.D.anchor) + '). It shows here from the next nightly update.' : ', from ' + M.fd(all.map(function (x) { return x.date; }).sort()[0]) + '.')));
     } else {
       kids.push(M.h('div', { class: 'kpis' }, [
-        M.kpi({ label: 'Exchange orders', value: M.num(Object.keys(orders).length), note: M.num(rows.length) + ' parcel' + (rows.length === 1 ? '' : 's') + ' in these dates' }),
+        M.kpi({ label: 'Orders', value: M.num(Object.keys(orders).length), note: M.num(rows.length) + ' parcel' + (rows.length === 1 ? '' : 's') + ' in these dates' }),
         M.kpi({ label: 'Paid to the courier', value: M.inr(paid), note: 'What Madhu paid Delhivery for these parcels' }),
         M.kpi({ label: 'Paid by the buyers', value: M.inr(got), note: 'What the buyers sent Madhu for them' }),
         M.kpi({ label: 'Left with the shop', value: M.inr(got - paid), note: got - paid === 0 ? 'Nothing: the buyers pay the courier cost' : got - paid > 0 ? 'Paid by buyers, not yet paid to the courier' : 'Paid to the courier, not paid back by the buyers' })]));
       kids.push(M.table([M.refCol('order', 'order', 'Order'), { k: 'date', label: 'Date', fmt: M.fd },
-        { k: 'leg', label: 'Which parcel', fmt: function (v) { return v === 'return' ? 'Piece coming back' : v === 'resend' ? 'New size going out' : v; } },
+        { k: 'leg', label: 'Which parcel', fmt: function (v) { return v === 'return' ? 'Piece coming back' : v === 'resend' ? 'New size going out' : v === 'delivery' ? 'First delivery' : v; } },
         { k: 'carrier', label: 'Courier' }, { k: 'awb_tail', label: 'Tracking (end)', fmt: function (v) { return v ? 'AWB ' + v : 'to book'; } },
         { k: 'paid_to_courier', label: 'Paid to the courier', num: true, fmt: M.inr }, { k: 'collected_from_buyer', label: 'Paid by the buyer', num: true, fmt: M.inr },
-        { k: 'how_collected', label: 'How', fmt: function (v) { return v === 'gpay' ? 'GPay to Madhu' : (v || ''); } }, { k: 'status', label: 'State', fmt: function (v) { return v === 'booked' ? 'Booked' : v === 'to book' ? 'Not booked yet' : (v || ''); } },
+        { k: 'how_collected', label: 'How', fmt: function (v) { return v === 'gpay' ? 'GPay to Madhu' : v === 'out of pocket' ? 'Paid by Madhu, not collected' : (v || ''); } }, { k: 'status', label: 'State', fmt: function (v) { return v === 'booked' ? 'Booked' : v === 'to book' ? 'Not booked yet' : (v || ''); } },
         { k: 'note', label: 'Note', wrap: true }], { rows: rows.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }), sortKey: 'date', sortDir: -1, name: 'exchange-parcels', detail: false, empty: 'None.' }));
     }
-    var card = M.card('Exchange parcels (booked by Madhu, not in Shiprocket)', 'The buyer pays both parcels of a size exchange to Madhu by GPay and Madhu pays Delhivery, so this money never passes through Shopify, Razorpay or Shiprocket. It is listed here so nothing about an exchange is missing. These amounts are not part of the Shiprocket cost figures above, so those averages stay true. Typed in by scripts/exchange_parcel_add.py.', kids);
+    var card = M.card('Parcels booked by hand (not in Shiprocket)', 'Parcels Madhu books herself, outside Shiprocket: the two parcels of a size exchange (the buyer pays Madhu by GPay and Madhu pays Delhivery) and an order whose Shiprocket shipment was cancelled and sent by another courier (the shop pays). This money never passes through Shopify, Razorpay or Shiprocket, so it is listed here and nothing is missing. These amounts are not in the Shiprocket averages above, so those stay true; a first delivery paid by the shop is counted in the profit of its order day. Typed in by scripts/exchange_parcel_add.py.', kids);
     root.appendChild(card);
   });
 })();
