@@ -17069,12 +17069,12 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     } else {
       kids.push(M.h('div', { class: 'kpis' }, [
         M.kpi({ label: 'Orders', value: M.num(Object.keys(orders).length), note: M.num(rows.length) + ' parcel' + (rows.length === 1 ? '' : 's') + ' in these dates' }),
-        M.kpi({ label: 'Paid to the courier', value: M.inr(paid), note: 'What Madhu paid Delhivery for these parcels' }),
+        M.kpi({ label: 'Paid to the courier', value: M.inr(paid), note: 'What Madhu paid the couriers for these parcels' }),
         M.kpi({ label: 'Paid by the buyers', value: M.inr(got), note: 'What the buyers sent Madhu for them' }),
         M.kpi({ label: 'Left with the shop', value: M.inr(got - paid), note: got - paid === 0 ? 'Nothing: the buyers pay the courier cost' : got - paid > 0 ? 'Paid by buyers, not yet paid to the courier' : 'Paid to the courier, not paid back by the buyers' })]));
       kids.push(M.table([M.refCol('order', 'order', 'Order'), { k: 'date', label: 'Date', fmt: M.fd },
         { k: 'leg', label: 'Which parcel', fmt: function (v) { return v === 'return' ? 'Piece coming back' : v === 'resend' ? 'New size going out' : v === 'delivery' ? 'First delivery' : v; } },
-        { k: 'carrier', label: 'Courier' }, { k: 'awb_tail', label: 'Tracking (end)', fmt: function (v) { return v ? 'AWB ' + v : 'to book'; } },
+        { k: 'carrier', label: 'Courier' }, { k: 'awb_tail', label: 'Tracking (end)', fmt: function (v, row) { return v ? 'AWB ' + v : row && row.status === 'booked' ? 'Not told' : 'to book'; } },
         { k: 'paid_to_courier', label: 'Paid to the courier', num: true, fmt: M.inr }, { k: 'collected_from_buyer', label: 'Paid by the buyer', num: true, fmt: M.inr },
         { k: 'how_collected', label: 'How', fmt: function (v) { return v === 'gpay' ? 'GPay to Madhu' : v === 'out of pocket' ? 'Paid by Madhu, not collected' : (v || ''); } }, { k: 'status', label: 'State', fmt: function (v) { return v === 'booked' ? 'Booked' : v === 'to book' ? 'Not booked yet' : (v || ''); } },
         { k: 'note', label: 'Note', wrap: true }], { rows: rows.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }), sortKey: 'date', sortDir: -1, name: 'exchange-parcels', detail: false, empty: 'None.' }));
