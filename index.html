@@ -5958,6 +5958,7 @@ M.SEARCH_INDEX = [
 ["tax","kpi","GST paid to Shiprocket","gst paid to shiprocket"],
 ["tax","kpi","GST paid on Razorpay fees","gst paid on razorpay fees"],
 ["tax","kpi","GST on Shopify bills (reverse charge)","gst on shopify bills (reverse charge)"],
+["tax","kpi","GST on parcels paid by hand","gst on parcels paid by hand"],
 ["tax","kpi","Credit to claim","credit to claim"],
 ["growth","card","Sales since the first sale","sales since the first sale"],
 ["growth","card","Sales each week, against the period before","sales each week, against the period before"],
@@ -13754,7 +13755,7 @@ M.annot = (function () {
 (function () {
   var pc = function (x) { return Math.round((+x || 0) * 100); };
   var rs = function (p) { return Math.round(p) / 100; };
-  var COLS = ['orders', 'gross_sales', 'discounts', 'net_sales', 'gst_included', 'shipping_charged', 'refunds', 'product_cost', 'est_payment_fee', 'est_parcel_cost', 'est_packaging', 'est_shopify_fee', 'gst_on_shipping', 'hand_parcel_cost'];
+  var COLS = ['orders', 'gross_sales', 'discounts', 'net_sales', 'gst_included', 'shipping_charged', 'refunds', 'product_cost', 'est_payment_fee', 'est_parcel_cost', 'est_packaging', 'est_shopify_fee', 'gst_on_shipping', 'hand_parcel_cost', 'hand_gst_credit'];
   var zero = function () { var o = {}; COLS.forEach(function (c) { o[c] = 0; }); return o; };
   var inputs = function () { var hi = {}; M.rows('human_inputs').forEach(function (x) { if (x.key && x.value !== '' && x.value != null && !isNaN(+x.value)) hi[x.key] = +x.value; }); return hi; };
 
@@ -13795,10 +13796,11 @@ M.annot = (function () {
          freight of Rs. 118 is Rs. 100 plus Rs. 18). That GST is input credit the shop takes off the GST it owes, so it is not a lasting cost. The Shopify bill is paid under reverse charge and claimed in the
          same month, so it adds nothing. The credit = the GST inside the Razorpay fee and the parcel cost = 18/118 of each, in whole paise, and it is an ESTIMATE until the invoices show in GSTR-2B. */
       var hd = s.hand_parcel_cost || 0;      /* T1116 (13 Nov 2026): the part of the parcel cost that Madhu paid BY HAND outside Shiprocket (a first parcel booked herself, exchange parcels net of what buyers paid back). No GST invoice in the shop's name is on file for it, so no credit is taken on it (a positive part only) */
-      var cR = Math.round(raz * 18 / 118), cP = Math.round((pa - Math.max(0, hd)) * 18 / 118), credit = cR + cP;      /* pa already holds the WhatsApp tracking fee, which also carries 18 percent GST */
+      var hg = s.hand_gst_credit || 0;      /* T1116b (14 Nov 2026, owner: 'yes all charges have gst, even exchanges and stuff will have'): the GST credit on the parcels paid by hand is worked out when the day is stored (scripts/kpi_collectors.py hand_gst_credit): 18 percent inside a DTDC or Delhivery charge, nothing for Porter (5 percent paid under reverse charge and claimed back, so it cancels). Exchange parcels count only what the shop bears. An estimate until each carrier's tax invoice in the shop's name is on file. */
+      var cR = Math.round(raz * 18 / 118), cP = Math.round((pa - Math.max(0, hd)) * 18 / 118), cH = hg, credit = cR + cP + cH;      /* pa already holds the WhatsApp tracking fee, which also carries 18 percent GST */
       var conf = left - bill - raz - pa;      /* 7 Nov 2026: the parcel cost is Shiprocket's own billed charge for the parcels it knows, so it sits with the confirmed costs */
       return { gross: gross, disc: disc, gst: s.gst_included, refunds: s.refunds, left: left, bill: bill, billReal: pc(bm.real), billEst: pc(bm.est), razor: raz, confirmed: conf, making: mk, pack: pk, parcel: pa, other: ot,
-        credit: credit, creditRazor: cR, creditParcel: cP, whatsapp: wa, hand: hd,
+        credit: credit, creditRazor: cR, creditParcel: cP, creditHand: cH, whatsapp: wa, hand: hd,
         pending: mk + pk + ot, profit: conf - mk - pk - ot + credit, charges: s.est_shopify_fee, orders: s.orders, net: net, ship: s.shipping_charged, gstShip: s.gst_on_shipping };
     };
     var otherOf = function (d) { return Math.round(pc(other) * d / B.cycle); };
@@ -13830,7 +13832,7 @@ M.annot = (function () {
     var first = h - (paid - back), net = paid - back, bits = [], rup = function (p) { return 'Rs. ' + M.num(R(Math.abs(p)), R(Math.abs(p)) % 1 ? 2 : 0); };
     if (first) bits.push(rup(first) + ' for first parcels Madhu booked herself');
     if (n) bits.push('exchange parcels: ' + rup(paid) + ' paid to couriers, ' + rup(back) + ' paid back by buyers' + (net ? ', so ' + rup(net) + ' is the shop\'s cost' : ', so nothing is the shop\'s cost'));
-    return ' Includes ' + rup(h) + ' paid by hand outside Shiprocket (' + bits.join('; ') + '). No GST credit is taken on it, because no GST invoice for it is on file.';
+    return ' Includes ' + rup(h) + ' paid by hand outside Shiprocket (' + bits.join('; ') + '). The GST inside it is counted in the GST credit below (18 percent inside a DTDC or Delhivery charge; Porter\'s 5 percent is paid under reverse charge and claimed back, so it adds nothing). Keep each tax invoice in the shop\'s name for the Accountant: until it is on file this credit is an estimate.';
   };
   var parcelText = function (C) { return 'The courier charge Shiprocket billed for each parcel it knows (freight, charges for a parcel that came back, extra weight), plus its WhatsApp tracking fee. A parcel Shiprocket does not know yet counts' + (C.parcelFee > 0 ? ' Rs. ' + M.num(C.parcelFee, C.parcelFee % 1 ? 2 : 0) + ' (the figure Madhu gave).' : ' at a default figure.') + handWords(C); };
   var basisWord = function (B) { return B.real && B.est ? 'real and estimate' : B.real ? 'real' : B.est ? 'estimate' : 'not known'; };
@@ -13856,7 +13858,7 @@ M.annot = (function () {
     add({ step: 'Manufacturing and material', amount: -R(t.making), group: 'Not confirmed yet', pending: true, how: 'The cost price typed in Shopify for each piece sold (cloth, tailoring and labour together). Madhu has not confirmed the real figures.' });
     add({ step: 'Packaging', amount: -R(t.pack), group: 'Not confirmed yet', pending: true, how: packText(C) });
     add({ step: 'Other costs', amount: t.other ? -R(t.other) : 0, none: !t.other, group: 'Not confirmed yet', pending: true, how: t.other ? 'Another monthly cost typed in the data sheet, shared by days.' : 'None recorded. Anything else Madhu pays is not in these figures.' });
-    add({ step: 'GST credit on these costs', amount: R(t.credit), group: 'Not confirmed yet', pending: true, plus: true, how: 'Razorpay\'s fee and the courier\'s charge each have 18 percent GST inside. The shop pays it, then takes the same amount off the GST it owes, so it comes back. An estimate: it counts once the invoice shows in the GST portal. The Shopify bill adds nothing: its GST is paid and claimed in the same month.' });
+    add({ step: 'GST credit on these costs', amount: R(t.credit), group: 'Not confirmed yet', pending: true, plus: true, how: 'Razorpay\'s fee, Shiprocket\'s charge and the parcels paid by hand each have GST inside (18 percent for DTDC and Delhivery). The shop pays it, then takes the same amount off the GST it owes, so it comes back. An estimate: it counts once the invoice shows in the GST portal. The Shopify bill adds nothing: its GST is paid and claimed in the same month.' });
     add({ step: 'Profit after everything', amount: R(t.profit), group: 'Not confirmed yet', pending: true, how: 'Left after confirmed costs, minus the costs not confirmed yet, plus the GST credit. Some of these are not confirmed, so read it as a good guide.', isTotal: true });
     return rows;
   };
@@ -13876,7 +13878,7 @@ M.annot = (function () {
     it.push({ label: 'Manufacturing and material', value: R(t.making), kind: 'minus', tone: 'pending' });
     it.push({ label: 'Packaging', value: R(t.pack), kind: 'minus', tone: 'pending' });
     it.push({ label: 'Other costs', value: R(t.other), kind: 'minus', tone: 'pending', none: t.other ? null : 'none recorded' });
-    it.push({ label: 'GST credit on these costs', value: R(t.credit), kind: 'plus', tone: 'pending', tip: [{ k: 'On the Razorpay fee', v: M.inr(R(t.creditRazor)) }, { k: 'On the courier charges', v: M.inr(R(t.creditParcel)) }, { k: 'Why', v: 'GST paid inside these costs is taken off the GST owed' }] });
+    it.push({ label: 'GST credit on these costs', value: R(t.credit), kind: 'plus', tone: 'pending', tip: [{ k: 'On the Razorpay fee', v: M.inr(R(t.creditRazor)) }, { k: 'On the courier charges', v: M.inr(R(t.creditParcel)) }, { k: 'On the parcels paid by hand', v: M.inr(R(t.creditHand)) }, { k: 'Why', v: 'GST paid inside these costs is taken off the GST owed' }] });
     it.push({ label: 'Profit after everything', value: R(t.profit), kind: 'total', tone: 'final' });
     return it;
   };
@@ -14152,8 +14154,8 @@ M.annot = (function () {
       dayLines(C, { pick: function (b) { return b.est_packaging; }, note: function (d, b, os) { return os.length + (os.length === 1 ? ' order' : ' orders'); } }, orders)), rs(t.pack));
     if (t.other) give('other', mk(C, { title: 'Other costs', sentence: 'Another monthly cost typed in the data sheet, shared by days. The month lines add up to it.' },
       C.months.map(function (m) { return m.other ? { title: m.ym, date: m.to, amount: rs(m.other), note: m.days + (m.days === 1 ? ' day' : ' days') + ' of this month are inside the dates' } : null; })), rs(t.other));
-    give('credit', mk(C, { title: 'GST credit on these costs', sentence: 'The Razorpay fee and the courier charge each have 18 percent GST inside. The shop pays it and takes it off the GST it owes, so it comes back. Worked out for each month. An estimate until the invoices show in GSTR-2B. Nothing is taken on the parcels paid by hand, because no GST invoice for them is on file.' },
-      C.months.map(function (m) { return m.credit ? { title: m.ym, date: m.to, amount: rs(m.credit), note: 'On the Razorpay fee ' + rup(rs(m.creditRazor)) + ', on the courier charges ' + rup(rs(m.creditParcel)) } : null; })), rs(t.credit));
+    give('credit', mk(C, { title: 'GST credit on these costs', sentence: 'The Razorpay fee and the courier charge each have 18 percent GST inside. The shop pays it and takes it off the GST it owes, so it comes back. Worked out for each month. An estimate until the invoices show in GSTR-2B. The parcels paid by hand count too: 18 percent inside a DTDC or Delhivery charge; the Porter 5 percent is paid under reverse charge and claimed back, so it adds nothing.' },
+      C.months.map(function (m) { return m.credit ? { title: m.ym, date: m.to, amount: rs(m.credit), note: 'On the Razorpay fee ' + rup(rs(m.creditRazor)) + ', on the courier charges ' + rup(rs(m.creditParcel)) + (m.creditHand ? ', on the parcels paid by hand ' + rup(rs(m.creditHand)) : '') } : null; })), rs(t.credit));
 
     /* the totals: the lines that make them. Each line opens its own list. */
     var part = function (title, amount, key, note) { return amount ? { title: title, amount: rs(amount), open: out[key] || null, note: note || '' } : null; };
@@ -14711,6 +14713,10 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   var MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   var mname = function (m) { return MON[+m.slice(5, 7) - 1] + ' ' + m.slice(0, 4); };
   var RCM = 0.18;      /* the rate on online services bought from outside India (IGST, the same 18 percent as on the other two suppliers) */
+  /* T1116b (14 Nov 2026, owner: 'yes all charges have gst, even exchanges and stuff will have'): parcels Madhu pays outside Shiprocket (Sheet tab exchange_parcels). The same rule as scripts/kpi_collectors.py HAND_GST:
+     DTDC and Delhivery are couriers (SAC 9968), 18 percent INSIDE the charge; Porter is goods transport by road, 5 percent that the shop pays itself under reverse charge and claims back (Porter's FAQ), so it cancels;
+     any other carrier is taken as a courier at 18 percent and the line says so. A first parcel counts what was paid; an exchange parcel counts only what the shop bears (paid minus what the buyer paid back). */
+  var handRule = function (carrier) { var c = String(carrier || '').toLowerCase(); if (c.indexOf('porter') >= 0) return { rate: 5, how: 'reverse', known: true }; if (c.indexOf('dtdc') >= 0 || c.indexOf('delhivery') >= 0) return { rate: 18, how: 'inside', known: true }; return { rate: 18, how: 'inside', known: false }; };
   var REGISTERED = '2026-05-14';      /* 9 Nov 2026 (owner: "14 may 2026"): mazo registered for GST on this day. Credit counts only for a document dated on or after it (the April 2026 Shopify bill of Rs. 23.60, with Rs. 3.60 IGST, is before it) */
 
   /* ---------------------------------------------------------------- the lines of the period (one object per bill, all in whole paise) */
@@ -14752,6 +14758,16 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var tax = Math.round(base * RCM);
       out.push({ who: 'Shopify', doc: 'Bill ' + b.bill_number, date: b.bill_date, what: 'Plan and transaction fees', taxable: base, cgst: 0, sgst: 0, igst: tax, gst: tax, total: base, how: 'reverse', proof: 'Shopify bill (no GST on it)', month: m, mine: true });
     });
+    /* 4 parcels paid by hand outside Shiprocket: one line per parcel dated in the period (T1116b) */
+    (M.has('exchange_parcels') ? M.rows('exchange_parcels') : []).forEach(function (x) {
+      var day = typeof x.date === 'string' ? x.date : '', m = day.slice(0, 7); if (!set[m] || day < REGISTERED || !x.order) return;
+      var paid = P(x.paid_to_courier), got = P(x.collected_from_buyer), bear = x.leg === 'delivery' ? paid : Math.max(0, paid - got);
+      if (bear <= 0 || (x.leg !== 'delivery' && x.leg !== 'return' && x.leg !== 'resend')) return;
+      var r = handRule(x.carrier), inside = r.how === 'inside', gst = inside ? Math.round(bear * r.rate / (100 + r.rate)) : Math.round(bear * r.rate / 100);
+      out.push({ who: 'Paid by hand', doc: x.order + ' ' + (x.leg === 'delivery' ? 'first parcel' : x.leg === 'return' ? 'exchange, piece coming back' : 'exchange, new size going out') + ' (' + (x.carrier || 'carrier not told') + ')', date: day,
+        what: (r.how === 'reverse' ? 'Transport at ' + r.rate + ' percent, paid by the shop under reverse charge' : 'Courier charge, ' + r.rate + ' percent inside') + (r.known ? '' : ' (carrier not in the list: taken as 18 percent, an assumption)'),
+        taxable: inside ? bear - gst : bear, cgst: 0, sgst: 0, igst: 0, gst: gst, total: inside ? bear : bear + gst, how: inside ? 'claim' : 'reverse', proof: 'The carrier\'s tax invoice in the shop\'s name (ask Madhu)', month: m, mine: true, hand: true });
+    });
     return out;
   };
 
@@ -14772,16 +14788,18 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   var inputCard = function (p) {
     if (!p || !p.months || !p.months.length) return null;
     var L = lines(p), by = function (w) { return L.filter(function (x) { return x.who === w; }); }, tot = function (a, k) { return a.reduce(function (s, x) { return s + x[k]; }, 0); };
-    var ship = by('Shiprocket'), rzp = by('Razorpay'), shp = by('Shopify');
+    var ship = by('Shiprocket'), rzp = by('Razorpay'), shp = by('Shopify'), hnd = by('Paid by hand');
     var kp = M.h('div', { class: 'kpis lead tax-kpis' }), kids = [kp];
     var gShip = tot(ship, 'gst'), gRzp = tot(rzp, 'gst'), gRcm = tot(shp.filter(function (x) { return x.how === 'reverse'; }), 'gst'), gOn = tot(shp.filter(function (x) { return x.how === 'claim'; }), 'gst');
-    var credit = gShip + gRzp + gRcm + gOn;
+    var gHand = tot(hnd.filter(function (x) { return x.how === 'claim'; }), 'gst'), gHandRcm = tot(hnd.filter(function (x) { return x.how === 'reverse'; }), 'gst');
+    var credit = gShip + gRzp + gRcm + gOn + gHand + gHandRcm;
     kp.appendChild(M.kpi({ label: 'GST paid to Shiprocket', value: rs2(gShip), hero: true, note: ship.length ? 'on ' + rs2(tot(ship, 'taxable')) + ' of bills, ' + M.num(ship.length) + ' invoice' + (ship.length === 1 ? '' : 's') : 'no Shiprocket invoice dated in this period' }));
     kp.appendChild(M.kpi({ label: 'GST paid on Razorpay fees', value: rs2(gRzp), note: rzp.length ? 'inside ' + rs2(tot(rzp, 'total')) + ' of fees Razorpay took' : 'no Razorpay fee in this period' }));
     kp.appendChild(M.kpi({ label: 'GST on Shopify bills (reverse charge)', value: rs2(gRcm), note: shp.length ? 'pay it first, claim the same amount back' : 'no Shopify bill paid in this period' }));
+    kp.appendChild(M.kpi({ label: 'GST on parcels paid by hand', value: rs2(gHand + gHandRcm), note: hnd.length ? M.num(hnd.length) + ' parcel' + (hnd.length === 1 ? '' : 's') + ' Madhu paid outside Shiprocket' + (gHandRcm ? ' (Porter is paid under reverse charge)' : '') : 'no parcel paid by hand in this period' }));
     kp.appendChild(M.kpi({ label: 'Credit to claim', value: rs2(credit), note: 'when each invoice shows in GSTR-2B' }));
-    var gstSales = salesGst(p), net = gstSales - (gShip + gRzp + gOn);      /* the reverse charge is paid and claimed in the same month: it cancels */
-    kids.push(M.h('p', { class: 'small', text: 'Tax on sales ' + rs2(gstSales) + ' minus credit on Shiprocket and Razorpay ' + rs2(gShip + gRzp + gOn) + ' = ' + (net < 0 ? 'credit left over ' + rs2(-net) : 'tax to pay ' + rs2(net)) + '. The Shopify amount is paid and claimed in the same month, so it adds nothing. This is an estimate: credit counts only for invoices that show in GSTR-2B, and the Accountant files the real figure.' }));
+    var gstSales = salesGst(p), net = gstSales - (gShip + gRzp + gOn + gHand);      /* the reverse charge is paid and claimed in the same month: it cancels */
+    kids.push(M.h('p', { class: 'small', text: 'Tax on sales ' + rs2(gstSales) + ' minus credit on Shiprocket, Razorpay and the parcels paid by hand ' + rs2(gShip + gRzp + gOn + gHand) + ' = ' + (net < 0 ? 'credit left over ' + rs2(-net) : 'tax to pay ' + rs2(net)) + '. The Shopify amount, and the Porter 5 percent, are paid and claimed in the same month, so they add nothing. This is an estimate: credit counts only for invoices that show in GSTR-2B, and the Accountant files the real figure.' }));
     var cols = [{ k: 'who', label: 'Supplier' }, { k: 'doc', label: 'Document', wrap: true }, { k: 'date', label: 'Date', fmt: function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(v) ? M.fd(v) : isMonth(v) ? mname(v) : v; } },
       { k: 'what', label: 'For', wrap: true }, { k: 'taxable', label: 'Taxable value', num: true, fmt: function (v) { return rs2(v); } }, { k: 'cgst', label: 'CGST', num: true, fmt: function (v) { return rs2(v); } },
       { k: 'sgst', label: 'SGST', num: true, fmt: function (v) { return rs2(v); } }, { k: 'igst', label: 'IGST', num: true, fmt: function (v) { return rs2(v); } },
