@@ -5227,7 +5227,7 @@ M.ALIAS = {
   tables: 'business tables reviews rating returns exchanges refunds disputes finance bank fees compliance dates renewals calendar seasons festival listings backlinks questions makers typed in human inputs growth board ad cost every set of numbers',
   payments: 'razorpay payment payments fee fees failed failure upi card netbanking wallet payout payouts settlement bank refund refunds dispute money in gateway',
   tax: 'tax taxes gst cgst sgst igst gstr gstr-1 gstr-3b b2cs hsn itc input tax credit filing return due date challan accountant financial year quarter income tax advance tax 44ad professional tax place of supply rate credit note refund rounding',
-  shipping: 'shiprocket shipping parcel parcels courier couriers freight cost delivery days rto returned return to origin ndr failed delivery weight discrepancy awb tracking promise on time'
+  shipping: 'shiprocket shipping parcel parcels courier couriers freight cost delivery days rto returned return to origin ndr failed delivery weight discrepancy extra weight awb tracking tracking number promise on time by hand porter dtdc delhivery exchange parcel'
 };
 M.SRCH_ORDER = ['Pages', 'Cards and numbers', 'Products', 'Collections', 'Channels', 'Devices', 'Sizes', 'Measures and tables', 'Rows in a table', 'Google searches', 'Content topics'];
 M.SRCH_PER = 5;      /* most results one group shows */
@@ -5839,9 +5839,12 @@ M.SEARCH_INDEX = [
 ["payments","kpi","Days that differ","days that differ"],
 ["payments","kpi","Refunded","refunded"],
 ["payments","kpi","Disputes","disputes"],
-["payments","kpi","Before Razorpay was live","before razorpay was live"],
+["payments","kpi","Paid before our Razorpay record starts","paid before our razorpay record starts"],
+["payments","kpi","Before our Razorpay record starts","before our razorpay record starts"],
+["shipping","table","What sending cost","what sending cost"],
 ["shipping","card","Parcels each day or week","parcels each p"],
 ["shipping","card","What the parcels cost each day or week","what the parcels cost each p"],
+["shipping","table","Every parcel and what it cost","every parcel and what it cost"],
 ["shipping","table","Which courier is best","which courier is best"],
 ["shipping","card","Is the promise kept?","is the promise kept?"],
 ["shipping","table","Every order and where it is","every order and where it is"],
@@ -5863,14 +5866,13 @@ M.SEARCH_INDEX = [
 ["shipping","card","Is the Shiprocket catalogue right?","is the shiprocket catalogue right?"],
 ["shipping","card","Catalogue health over the nights","catalogue health over the nights"],
 ["shipping","card","GST inside the shipping charges","gst inside the shipping charges"],
-["shipping","table","Parcels booked by hand (not in Shiprocket)","parcels booked by hand (not in shiprocket)"],
 ["shipping","chart","The same cost as a share of what the orders were worth","the same cost as a share of what the orders were worth"],
 ["shipping","chart","How the parcels ended","how the # parcels ended"],
 ["shipping","chart","Why delivery failed","why delivery failed"],
 ["shipping","chart","Why the pickup was missed","why the pickup was missed"],
 ["shipping","chart","By zone (how far the parcel travelled)","by zone (how far the parcel travelled)"],
 ["shipping","kpi","Parcels sent","parcels sent"],
-["shipping","kpi","Cost of sending","cost of sending"],
+["shipping","kpi","What shipping cost","what shipping cost"],
 ["shipping","kpi","Days to deliver","days to deliver"],
 ["shipping","kpi","Came back","came back"],
 ["shipping","kpi","Ready to ship pieces","ready to ship pieces"],
@@ -5901,10 +5903,6 @@ M.SEARCH_INDEX = [
 ["shipping","kpi","Freight and extra charges billed","freight and extra charges billed"],
 ["shipping","kpi","WhatsApp tracking fees billed","whatsapp tracking fees billed"],
 ["shipping","kpi","GST inside the parcel charges","gst inside the parcel charges"],
-["shipping","kpi","Orders","orders"],
-["shipping","kpi","Paid to the courier","paid to the courier"],
-["shipping","kpi","Paid by the buyers","paid by the buyers"],
-["shipping","kpi","Left with the shop","left with the shop"],
 ["tables","table","Reviews","reviews"],
 ["tables","table","Returns and exchanges","returns and exchanges"],
 ["tables","card","Reviews over time","reviews over time"],
@@ -6705,13 +6703,16 @@ M.productRows = function (r) {
      two days late and had counted only 7 of the 37 pieces ever sold. Units and revenue now come from the Shopify order lines (product_sales_daily), the same table Sales by collection reads, so the
      two always agree and yesterday's order shows at once. Revenue is before order codes (gross). When the order lines are missing the Google numbers are used, as before. */
   var lines = M.has('product_sales_daily');
-  M.rowsIn('product_daily', r.from, r.to).forEach(function (x) { if (!x.product) return; var o = agg[x.product] || (agg[x.product] = { views: 0, carts: 0, units: 0, revenue: 0 }); o.views += +x.views || 0; o.carts += +x.carts || 0; if (!lines) { o.units += +x.units || 0; o.revenue += +x.revenue || 0; } });
-  if (lines) M.rowsIn('product_sales_daily', r.from, r.to).forEach(function (x) { if (!x.product) return; var o = agg[x.product] || (agg[x.product] = { views: 0, carts: 0, units: 0, revenue: 0 }); o.units += +x.units || 0; o.revenue += +x.gross_sales || 0; });
+  M.rowsIn('product_daily', r.from, r.to).forEach(function (x) { if (!x.product) return; var o = agg[x.product] || (agg[x.product] = { views: 0, carts: 0, units: 0, revenue: 0, unitsSeen: 0 }); o.views += +x.views || 0; o.carts += +x.carts || 0; if (!lines) { o.units += +x.units || 0; o.revenue += +x.revenue || 0; } });
+  /* T1130 item 6 (14 Nov 2026): "Views that bought" divided units sold over ALL the dates by views that exist only from the first day Google holds product views (Bluebell 9 units / 91 views = 9.89%, but 2 of the 9
+     units were sold in the days the views cover: 2.2%). A second count, `unitsSeen`, holds the units sold on the days that have product views, and the rate uses it. The Units sold column stays the whole range. */
+  var vFirst = M.has('product_daily') ? M.cover('product_daily').first : null;
+  if (lines) M.rowsIn('product_sales_daily', r.from, r.to).forEach(function (x) { if (!x.product) return; var o = agg[x.product] || (agg[x.product] = { views: 0, carts: 0, units: 0, revenue: 0, unitsSeen: 0 }); o.units += +x.units || 0; o.revenue += +x.gross_sales || 0; if (vFirst && String(x.date).slice(0, 10) >= vFirst) o.unitsSeen += +x.units || 0; });
   var names = {}; Object.keys(led).forEach(function (k) { names[k] = 1; }); Object.keys(agg).forEach(function (k) { names[k] = 1; });
   return Object.keys(names).filter(M.prodOk).map(function (k) {
-    var l = led[k] || {}, a = agg[k] || { views: 0, carts: 0, units: 0, revenue: 0 }, rt = rat[String(k).toLowerCase()] || null;
+    var l = led[k] || {}, a = agg[k] || { views: 0, carts: 0, units: 0, revenue: 0, unitsSeen: 0 }, rt = rat[String(k).toLowerCase()] || null;
     var mto = M.isMadeToOrder(k);      /* F3: a piece made after the order has no stock to count, so it shows Made to order, not 0 */
-    return { mto: mto, rating: rt && rt.rating !== '' ? +rt.rating : null, reviews: rt ? +rt.reviews || 0 : 0, product: k, collection: l.collection || M.facts().coll[k] || '', views: a.views, carts: a.carts, units: a.units, revenue: a.revenue, stock: mto ? null : l.stock_units, sell: mto ? null : l.sell_through_pct, price: l.price, margin: l.margin_pct, cover: mto ? null : l.weeks_of_cover, verdict: l.verdict || '', reason: l.reason || '', buyRate: a.views ? a.units / a.views * 100 : null, cartRate: a.views ? a.carts / a.views * 100 : null };
+    return { mto: mto, rating: rt && rt.rating !== '' ? +rt.rating : null, reviews: rt ? +rt.reviews || 0 : 0, product: k, collection: l.collection || M.facts().coll[k] || '', views: a.views, carts: a.carts, units: a.units, revenue: a.revenue, stock: mto ? null : l.stock_units, sell: mto ? null : l.sell_through_pct, price: l.price, margin: l.margin_pct, cover: mto ? null : l.weeks_of_cover, verdict: l.verdict || '', reason: l.reason || '', buyRate: a.views ? (lines ? (a.unitsSeen || 0) : a.units) / a.views * 100 : null, viewsFrom: vFirst, cartRate: a.views ? a.carts / a.views * 100 : null };
   });
 };
 /* ---- Products helpers (T829, 1 Nov 2026): plain verdict words, one product in depth, two products side by side, collections */
@@ -6734,7 +6735,7 @@ M.productCols = function (withRank) {
     { k: 'price', label: 'Price', num: true, hidden: true, fmt: function (v) { return v == null ? '' : M.inr(v); } }, { k: 'margin', label: 'Margin', num: true, hidden: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } },
     { k: 'cover', label: 'Weeks of stock left', num: true, hidden: true, fmt: function (v) { return v == null ? 'not available' : M.num(v, v % 1 ? 1 : 0); } },
     { k: 'cartRate', label: 'Views that added to cart', num: true, hidden: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (M.thin(x.views) ? ' *' : ''); } },
-    { k: 'buyRate', label: 'Views that bought', num: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (M.thin(x.views) ? ' *' : ''); } },
+    { k: 'buyRate', label: 'Views that bought', tip: 'Pieces sold on the days Google holds product views, divided by the views. Google holds product views only from ' + (M.has('product_daily') ? M.fd(M.cover('product_daily').first || '') : 'the day it was connected') + ', so earlier sales are left out of this rate (they are in Units sold).', num: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (M.thin(x.views) ? ' *' : ''); } },
     { k: 'verdict', label: 'What to do', render: function (x) { return M.verdictBadge(x.verdict); }, sort: function (x) { return x.verdict || ''; } }
   ];
 };
@@ -6846,7 +6847,7 @@ M.PAGES.products.render = function (r) {
   var cb = M.stateRows('collection_board').filter(function (x) { return !s.collection || x.collection === s.collection; });
   if (cb.length) root.appendChild(M.card('Collections side by side', 'Each collection as a whole, from the latest saved picture. Each heading says its own period: all time, or the last 28 days.', [M.table([
     { k: 'collection', label: 'Collection' }, { k: 'products', label: 'Products', num: true, fmt: M.num }, { k: 'units_sold', label: 'Units sold, all time', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue, all time', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
-    { k: 'profit_est', label: 'Profit estimate, all time', num: true, fmt: M.inr }, { k: 'margin_pct', label: 'Margin, all time', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } }, { k: 'views_28d', label: 'Views, 28 days', num: true, fmt: M.num }, { k: 'buys_28d', label: 'Bought, 28 days', num: true, fmt: M.num },
+    { k: 'profit_est', label: 'Profit before shipping, parcel and fees, all time', tip: 'Sales after discounts, minus the GST inside them, minus the product cost. It leaves out shipping, parcels, packaging and the Razorpay and Shopify fees, so it is higher than the Profit after everything on the Overview.', num: true, fmt: M.inr }, { k: 'margin_pct', label: 'Margin, all time', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } }, { k: 'views_28d', label: 'Views, 28 days', num: true, fmt: M.num }, { k: 'buys_28d', label: 'Bought, 28 days', num: true, fmt: M.num },
     { k: 'buy_rate_pct', label: 'Views that bought, 28 days', num: true, fmt: function (v) { return v == null ? '' : M.pct(v); } }, { k: 'stock_units', label: 'In stock now', num: true, fmt: M.num }, { k: 'stock_value_cost', label: 'Stock at cost now', num: true, fmt: M.inr }, { k: 'sell_through_pct', label: 'Share sold, all time', num: true, fmt: function (v) { return v == null ? '' : M.pct(v, 0); } }
   ], { rows: cb, sortKey: 'revenue', empty: 'No collection record yet.', name: 'collections' })]));
   if (rows.length > 1) root.appendChild(M.card('Compare two products', 'Pick any two and see every number side by side.', [M.productCompare(rows)]));
@@ -7006,7 +7007,7 @@ M.PAGES.customers.render = function (r) {
     var shown = function (v) { return cw[0] === 'payment' ? M.payName(v) : v; };      /* F6: the stored payment name is not shown as it is stored */
     var parts = rows.map(function (x, i) { return { name: shown(x.value), label: shown(x.value), value: +x.orders || 0, color: M.CAT[i % 6] }; }), total = parts.reduce(function (a, p) { return a + p.value; }, 0);
     var body = rows.length <= 4 ? M.donut(parts, { label: cw[1], unit: 'Orders' }) : M.bars(rows.slice(0, 8).map(function (x) { return { label: shown(x.value), value: +x.orders || 0, text: M.num(x.orders) + ' (' + M.pct(x.share_pct, 0) + ')', tip: { title: cw[1] + ': ' + shown(x.value), rows: [{ k: 'Orders', v: M.num(x.orders) }, { k: 'Share', v: M.pct(x.share_pct, 1) }] } }; }));
-    cards.push(M.card(cw[1], 'Share of the ' + M.num(total) + (total === orders ? ' orders' : ' items') + ' in this split' + (total === orders ? '.' : ' (an order with two items counts twice).'), [M.thinTag(total, total === orders ? 'orders' : 'items'), body].filter(Boolean)));
+    cards.push(M.card(cw[1], 'Share of the ' + M.num(total) + (total === orders ? ' orders' : ' items') + ' in this split' + (total === orders ? '.' : ' (an order with two items counts twice).') + (cw[0] === 'first visit source' ? ' The place of the FIRST visit Shopify saw for the buyer, from every order since the first (the Growth and Channels pages count the visit that ended in the purchase, from 5 Oct only, so their Instagram order counts are smaller).' : ''), [M.thinTag(total, total === orders ? 'orders' : 'items'), body].filter(Boolean)));
   });
   root.appendChild(M.h('h3', { text: 'What buyers have in common', style: 'margin:1rem 0 0' }));
   root.appendChild(M.grid(cards));
@@ -7091,7 +7092,7 @@ M.customerExtras = function (root) {
   M.rows('place_device_daily').forEach(function (x) { if (x.kind !== 'city' || !x.place || x.place === '(not set)') return; var o = cities[x.place] || (cities[x.place] = { city: x.place, visits: 0, orders: 0 }); o.visits += +x.sessions || 0; o.orders += +x.purchases || 0; });
   var cityRows = Object.keys(cities).map(function (k) { var o = cities[k]; o.rate = o.visits ? o.orders / o.visits * 100 : null; return o; });
   var kids = [];
-  if (geo.length) kids.push(M.card('Where orders go', 'Share of orders by delivery state. The bar is that state\'s share of all ' + M.num(gmax) + ' orders.', [M.thinTag(gmax, 'orders'), M.bars(geo.slice().sort(function (a, b) { return (+b.orders || 0) - (+a.orders || 0); }).map(function (x) { return { label: x.state, value: +x.orders || 0, text: M.num(x.orders) + ' (' + M.pct((+x.orders || 0) / (gmax || 1) * 100, 0) + '), ' + M.inr(x.revenue), sub: x.avg_delivery_days != null ? 'Delivered in ' + M.num(x.avg_delivery_days, 1) + ' days on average' : null }; }))]));
+  if (geo.length) kids.push(M.card('Where orders go', 'Share of orders by delivery state. The bar is that state\'s share of all ' + M.num(gmax) + ' orders.', [M.thinTag(gmax, 'orders'), M.bars(geo.slice().sort(function (a, b) { return (+b.orders || 0) - (+a.orders || 0); }).map(function (x) { return { label: x.state, value: +x.orders || 0, text: M.num(x.orders) + ' (' + M.pct((+x.orders || 0) / (gmax || 1) * 100, 0) + '), ' + M.inr(x.revenue), sub: x.avg_delivery_days != null ? 'Delivered in ' + M.num(x.avg_delivery_days, 1) + ' days on average, from the day the order was marked sent in Shopify to the day Shopify marked it delivered (the Shipping page counts from the courier pickup, so its state figures differ)' : null }; }))]));
   if (cityRows.length) kids.push(M.card('Cities that visit', 'Where website visits come from, by city, over everything stored. Orders are the purchases Google Analytics matched to that city.', [M.table([{ k: 'city', label: 'City' }, { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'orders', label: 'Orders', num: true, fmt: M.num }, { k: 'rate', label: 'Visits that bought', num: true, fmt: function (v, x) { return v == null ? '' : M.pct(v) + (x.visits < M.MIN_EVENTS ? ' *' : ''); } }], { rows: cityRows, sortKey: 'visits', limit: 15, empty: 'No city data yet.', name: 'cities' }), M.h('p', { class: 'small muted', text: '* under ' + M.MIN_EVENTS + ' visits: too few to trust the percentage.' })]));
   if (kids.length) root.appendChild(M.grid(kids, 'wide'));
   /* 3 how big is an order, and how are orders spread over the weeks */
@@ -7103,7 +7104,7 @@ M.customerExtras = function (root) {
   }
   /* 4 the repeat buyer line, week by week (customers_weekly) */
   var cw = M.rows('customers_weekly');
-  if (cw.length) root.appendChild(M.card('Customers, week by week', 'One line a week, kept so a year from now the trend can be read. New customers, buyers who came back, and the share of customers who agreed to email.', [M.table([{ k: 'week', label: 'Week starting', fmt: M.fd }, { k: 'customers_total', label: 'Contacts on file', num: true, fmt: M.num }, { k: 'new_customers', label: 'New buyers', num: true, fmt: M.num }, { k: 'repeat_customers', label: 'Bought again', num: true, fmt: M.num }, { k: 'repeat_rate_pct', label: 'Bought again, share', num: true, fmt: function (v) { return v == null ? 'not available' : M.pct(v, 0); } }, { k: 'avg_days_to_second_order', label: 'Days to the second order', num: true, fmt: function (v) { return v == null ? 'not yet' : M.num(v); } }, { k: 'avg_order_value', label: 'Average order', num: true, fmt: M.inr }, { k: 'customers_with_email_consent', label: 'Agreed to email', num: true, fmt: M.num }], { rows: cw, sortKey: 'week', empty: 'No weekly line yet.', name: 'customers-weekly' })]));
+  if (cw.length) root.appendChild(M.card('Customers, week by week', 'One line a week, kept so a year from now the trend can be read. New customers, buyers who came back, and the share of customers who agreed to email.', [M.table([{ k: 'week', label: 'Week starting', fmt: M.fd }, { k: 'customers_total', label: 'Contacts on file', num: true, fmt: M.num }, { k: 'new_customers', label: 'New buyers', num: true, fmt: M.num }, { k: 'repeat_customers', label: 'Bought again', num: true, fmt: M.num }, { k: 'repeat_rate_pct', label: 'Bought again, share', num: true, fmt: function (v) { return v == null ? 'not available' : M.pct(v, 0); } }, { k: 'avg_days_to_second_order', label: 'Days to the second order', num: true, fmt: function (v) { return v == null ? 'not yet' : M.num(v); } }, { k: 'avg_order_value', label: 'Average order', num: true, fmt: M.inr }, { k: 'customers_agreed_to_contact', label: 'Agreed to email', num: true, fmt: M.num }], { rows: cw, sortKey: 'week', empty: 'No weekly line yet.', name: 'customers-weekly' })]));
 };
 
 /* Pages: Forecast and stock, Business functions, History, Data quality. */
@@ -7466,6 +7467,15 @@ M.sp('gtm', 'Growth', 'Growth', 'What should we do next to grow, and is it worki
 
 /* the last 28 days up to the newest day we hold; this page does not follow the date picker */
 M.growWin = function () { var to = M.D.anchor; return { from: M.add(to, -27), to: to }; };
+/* T1130 item 10 (14 Nov 2026): the idea "Fix the checkout leak: 42 people began checkout and 7 paid" was typed in text and went stale (the funnel says 74 and 14 for the same 28 days). The two counts are now read from the funnel
+   when the board is drawn, with the window named, so the sentence is always true on the day it is read. Any idea text with {checkout} gets the sentence. */
+M.ideaText = function (idea) {
+  var t = String(idea || '');
+  if (t.indexOf('{checkout}') < 0) return t;
+  var w = M.growWin ? M.growWin() : null, sum = function (c) { return w && M.has('ga4_funnel_daily') ? (M.total({ tab: 'ga4_funnel_daily', col: c }, w.from, w.to).v || 0) : null; };
+  var b = sum('begin_checkout'), p = sum('purchase');
+  return t.replace('{checkout}', b == null ? 'people began checkout and some paid (the counts are read from the Shopping steps page)' : M.num(b) + ' people began checkout and ' + M.num(p) + ' paid, in the 28 days to ' + M.fd(w.to));
+};
 M.growSum = function (tab, col) { var w = M.growWin(); if (!M.has(tab)) return null; return M.total({ tab: tab, col: col }, w.from, w.to).v; };
 M.growRow = function (tab, key, val) { var r = M.stateRows(tab).filter(function (x) { return x[key] === val; }); return r.length ? r[0] : null; };
 
@@ -7511,7 +7521,7 @@ M.growIdeasCard = function () {
   var rowsOf = function () {
     var pred = M.growViews.filter(function (v) { return v[0] === st.view; })[0][2];
     return ideas.filter(function (x) { return pred(x) && (!st.lever || x.lever === st.lever); }).map(function (x) {
-      var o = { id: x.id, idea: x.idea, area: lv[x.lever] || x.lever, status: x.status, needs: x.y ? 'Needs your yes' : '', when: x.when, proof: x.proof };
+      var o = { id: x.id, idea: M.ideaText(x.idea), area: lv[x.lever] || x.lever, status: x.status, needs: x.y ? 'Needs your yes' : '', when: x.when, proof: x.proof };
       o['why (numbers as written)'] = x.why; o.cost = x.cost; o['who does it'] = x.who; o['first said'] = x.first;
       return o;
     });
@@ -7574,7 +7584,7 @@ M.PAGES.gtm.render = function () {
       { k: 'next_step', label: 'Next step', wrap: true }], { rows: sc, sortKey: 'status', sortDir: 1, empty: 'No scorecard yet.' })]));
   /* channel groups */
   var totV = cg.reduce(function (a, x) { return a + (+x.visits_28d || 0); }, 0), totO = cg.reduce(function (a, x) { return a + (+x.orders_28d || 0); }, 0);
-  root.appendChild(M.card('Where visits and orders come from', 'Messy source names (instagram / bio, l.instagram.com / referral, ig / social) are grouped into one channel. Last 28 days of complete data. A channel under ' + M.MIN_EVENTS + ' visits is too few to read.', [
+  root.appendChild(M.card('Where visits and orders come from', 'Messy source names (instagram / bio, l.instagram.com / referral, ig / social) are grouped into one channel. Last 28 days of complete data. An order is counted under the place Google Analytics saw the visit that ended in the purchase (the last visit), from the day Google holds data (5 Oct); the Customers page counts the FIRST visit instead, so the same order can sit under two places. A channel under ' + M.MIN_EVENTS + ' visits is too few to read.', [
     M.thinTag(totO, 'orders'),
     M.bars(cg.filter(function (x) { return (+x.visits_28d || 0) > 0; }).sort(function (a, b) { return (+b.visits_28d || 0) - (+a.visits_28d || 0); }).slice(0, 10).map(function (x, i) {
       return { label: x.channel_group, value: +x.visits_28d || 0, text: M.num(x.visits_28d) + ' visits, ' + M.num(x.orders_28d) + ' orders', color: (+x.orders_28d || 0) > 0 ? M.COLORS.green : M.COLORS.grey,
@@ -7644,7 +7654,7 @@ M.GROW_IDEAS = [
   {"id": "G34", "lever": "search", "idea": "Reddit: comments are hidden, one appeal planned", "status": "parked", "y": 0, "proof": "Comments visible (task list)", "when": "Second appeal 4 Nov", "why": "Reddit and Crunchbase are backlink sources only, never promoted.", "cost": "Free", "who": "Agent", "first": "T635"},
   {"id": "G35", "lever": "search", "idea": "YouTube Shopping: tag our products under the Shorts", "status": "parked", "y": 0, "proof": "Subscribers (Social page)", "when": "At 500 subscribers or 31 Jan 2027", "why": "Needs 500 to 1,000 subscribers. The channel had 15 on 31 Oct.", "cost": "Free", "who": "Agent", "first": "31 Oct 2026, ROADMAP section 4"},
   {"id": "G36", "lever": "search", "idea": "YouTube ad money (monetisation)", "status": "parked", "y": 1, "proof": "Not applicable", "when": "Not planned", "why": "Not a goal for now.", "cost": "Free", "who": "Tech Guy decides", "first": "31 Oct 2026"},
-  {"id": "G37", "lever": "shop", "idea": "Fix the checkout leak: 42 people began checkout and 7 paid", "status": "running", "y": 0, "proof": "Checkout to paid percent (Shopping steps page)", "when": "Now", "why": "The biggest leak we can fix for free. Shipping is free, so the likely causes are trust at payment, the Razorpay warning, and the form. At 10 points better, about 4 more orders in 28 days (Forecast page, levers).", "cost": "Free", "who": "Agent and Tech Guy", "first": "28 Oct 2026, ROADMAP C1, T754"},
+  {"id": "G37", "lever": "shop", "idea": "Fix the checkout leak: {checkout}", "status": "running", "y": 0, "proof": "Checkout to paid percent (Shopping steps page)", "when": "Now", "why": "The biggest leak we can fix for free. Shipping is free, so the likely causes are trust at payment, the Razorpay warning, and the form. At 10 points better, about 4 more orders in 28 days (Forecast page, levers).", "cost": "Free", "who": "Agent and Tech Guy", "first": "28 Oct 2026, ROADMAP C1, T754"},
   {"id": "G38", "lever": "shop", "idea": "Resolve the Razorpay warning that a buyer saw while paying", "status": "approved", "y": 0, "proof": "Checkout to paid percent (Shopping steps page)", "when": "You said go on 2 Nov", "why": "A friend saw a 'suspicious business' warning at payment. This can kill sales at the last step.", "cost": "Free", "who": "Tech Guy gives access, agent sets up", "first": "27 Oct 2026, T707"},
   {"id": "G39", "lever": "shop", "idea": "Trust near the buy button: delivery date, exchange rule, founder line, reviews", "status": "idea", "y": 1, "proof": "Add to bag to checkout rate (Shopping steps page)", "when": "After the first deliveries", "why": "New brand with 24 reviews. A page change, so you approve it first.", "cost": "Free", "who": "Agent builds, Tech Guy approves", "first": "28 Oct 2026, ROADMAP C4"},
   {"id": "G40", "lever": "shop", "idea": "Test the product page one change at a time: size guide above the fold, video first, price line", "status": "idea", "y": 1, "proof": "Add to cart rate (Overview and Shopping steps pages)", "when": "After the design round (T236)", "why": "Add to bag is about 2.7% of product viewers; small fashion shops see 3 to 8%.", "cost": "Free", "who": "Agent builds, Tech Guy approves", "first": "28 Oct 2026, ROADMAP C2"},
@@ -8548,7 +8558,16 @@ M.PAGES.payments.render = function (r) {
     return root;
   }
   var tab = 'razorpay_payments_daily', cov = M.cover(tab), days = M.daysCovered(tab, r.from, r.to);
-  if (!days) { root.appendChild(M.emptyWhy(tab, r)); return root; }
+  if (!days) {
+    /* T1131: before the first Razorpay payment (26 May) there are still orders, and they were paid. The page says how much, from the orders, so it never disagrees with the Overview for those dates. */
+    var A0 = M.payAll ? M.payAll(r) : null;
+    if (A0 && A0.total > 0) {
+      var SP0 = M.payAllSpecs(A0);
+      root.appendChild(M.h('div', { class: 'kpis lead' }, [M.kpi({ label: 'Paid by buyers', value: M.inr(A0.total), hero: true, note: M.num(A0.orders.all.length) + (A0.orders.all.length === 1 ? ' order' : ' orders') + ': ' + M.inr(A0.total) + ' paid before our Razorpay record starts, the same as "Total paid by customers" on the Overview. The Razorpay record we hold starts on 26 May, so no payment is on record for ' + (A0.orders.all.length === 1 ? 'it' : 'them') + ' and nothing more can be shown about how ' + (A0.orders.all.length === 1 ? 'it was' : 'they were') + ' paid.', drill: SP0.all })]));
+      return root;
+    }
+    root.appendChild(M.emptyWhy(tab, r)); return root;
+  }
   var S = function (c) { return M.sumCol(tab, c, r).v || 0; };
   var pays = S('payments'), cap = S('captured'), fail = S('failed'), amt = S('amount'), fee = S('fee'), tax = S('tax'), net = S('net');
   var kp = M.h('div', { class: 'kpis lead' });
@@ -8558,12 +8577,14 @@ M.PAGES.payments.render = function (r) {
   var failSpec = PD.countIs(PD.paySpec(PR.filter(function (x) { return x.status === 'failed'; }), { title: 'Payments that failed' }), fail);
   /* T1096 (13 Nov 2026, owner: "payments is all payments, not just razorpay"): the headline is ALL the money paid, Razorpay plus the orders paid another way (Google Pay, a bank transfer, cash...), which
      Shopify records only as 'manual'. The note says how the two parts split. Fees, the bank and the failed tries below stay Razorpay's own. */
-  var OP = M.otherPay ? M.otherPay(r) : [], opSum = M.otherPaySum ? M.otherPaySum(OP) : 0, allAmt = Math.round((amt + opSum) * 100) / 100;
-  var opSpec = OP.length && M.otherPaySpec ? M.drill.same(M.otherPaySpec('Direct payments', OP), opSum) : null;
-  var allSpec = paidSpec && opSpec ? M.drill.same(M.drill.mk({ title: 'Paid by buyers', sentence: M.num(cap + OP.length) + ' payments, ' + M.inr(allAmt) + ': ' + M.num(cap) + ' through Razorpay (' + M.inr(amt) + ') and ' + M.num(OP.length) + ' direct (' + M.inr(opSum) + ').',
-    n: cap + OP.length, money: allAmt, more: [], noun: 'payment' }, function () { return paidSpec.items.concat(opSpec.items).sort(M.drill.newest); }), allAmt) : (OP.length ? null : paidSpec);
-  kp.appendChild(M.kpi({ label: 'Paid by buyers', value: M.inr(allAmt), hero: true, note: OP.length ? M.num(cap + OP.length) + ' payments: ' + M.inr(amt) + ' through Razorpay and ' + M.inr(opSum) + ' direct' : M.num(cap) + ' payments went through', drill: allSpec }));
-  if (OP.length) kp.appendChild(M.kpi({ label: 'Direct payments', value: M.inr(opSum), note: M.num(OP.length) + (OP.length === 1 ? ' order' : ' orders') + ' paid directly, not through Razorpay, no Razorpay fee', drill: opSpec }));
+  var OP = M.otherPay ? M.otherPay(r) : [], opSum = M.otherPaySum ? M.otherPaySum(OP) : 0;
+  /* T1131: the headline is EVERY order's paid total, equal to the Overview's "Total paid by customers" for any dates: through Razorpay, direct, and paid before our Razorpay record starts */
+  var A = M.payAll ? M.payAll(r) : null, SP = A ? M.payAllSpecs(A) : null;
+  var allAmt = A ? A.total : Math.round((amt + opSum) * 100) / 100;
+  var parts = A ? ['Rs. ' + M.num(A.rz, A.rz % 1 ? 2 : 0) + ' through Razorpay'].concat(A.hand ? ['Rs. ' + M.num(A.hand, A.hand % 1 ? 2 : 0) + ' direct'] : [], A.early ? ['Rs. ' + M.num(A.early, A.early % 1 ? 2 : 0) + ' paid before our Razorpay record starts'] : []) : [];
+  kp.appendChild(M.kpi({ label: 'Paid by buyers', value: M.inr(allAmt), hero: true, note: A ? M.num(A.n.all || A.orders.all.length) + ' orders: ' + parts.join(', ') + '. The same as "Total paid by customers" on the Overview.' : M.num(cap) + ' payments went through', drill: SP ? SP.all : null }));
+  if (A && A.hand) kp.appendChild(M.kpi({ label: 'Direct payments', value: M.inr(A.hand), note: M.num(A.orders.direct.length) + (A.orders.direct.length === 1 ? ' order' : ' orders') + ' paid directly, not through Razorpay, no Razorpay fee', drill: SP ? SP.hand : null }));
+  if (A && A.early) kp.appendChild(M.kpi({ label: 'Paid before our Razorpay record starts', value: M.inr(A.early), note: M.num(A.orders.early.length) + (A.orders.early.length === 1 ? ' order' : ' orders') + ' that Shopify shows as paid through Razorpay, with no payment in the Razorpay history we hold (it starts on 26 May)', drill: SP ? SP.early : null }));
   kp.appendChild(M.kpi({ label: 'Razorpay kept', value: M.inr(fee), note: amt ? M.pct(fee / amt * 100, 2) + ' of what was paid, GST included' : '' }));
   kp.appendChild(M.kpi({ label: 'Reached the bank', value: M.inr(net), note: 'after Razorpay\'s charge' }));
   kp.appendChild(M.kpi({ label: 'Payments that failed', value: M.num(fail), note: pays ? M.pct(fail / pays * 100, 1) + ' of ' + M.num(pays) + ' tries' : '', drill: failSpec }));
@@ -8613,9 +8634,14 @@ M.PAGES.shipping.render = function (r) {
   var tab = 'shiprocket_shipments_daily', days = M.daysCovered(tab, r.from, r.to);
   if (!days) { root.appendChild(M.emptyWhy(tab, r)); return root; }
   var S = function (c) { return M.sumCol(tab, c, r).v || 0; };
-  var n = S('shipments'), fr = S('freight'), rtoc = S('rto_charges'), oth = S('other_charges'), dl = S('delivered'), rto = S('rto');
+  var dl = S('delivered'), rto = S('rto');
+  /* T1126 (14 Nov 2026, owner: "I see rs 107 a parcel in one place, and 115 in another"): the headline cost and count come from the ONE list of parcels the shop paid for (dashboard_77_exchange_parcels.js,
+     M.shipLedger), dated like the Overview, so the tile, the cards below and the Overview's "Shipping and parcel" agree for any dates. The courier clock figures below (delivered, came back, days) stay Shiprocket's own. */
+  var L = M.shipLedger ? M.shipLedger(r) : null, O = L ? M.shipOverview(r, L) : null;
+  var n = L ? L.n : S('shipments'), fr = L ? L.total : S('freight'), rtoc = 0, oth = 0;
   /* 6 Nov 2026: Shiprocket's order list carries no freight and its statement endpoint returns one blank line, so until the freight is read the cost is NOT zero, it is unknown. The page says so instead of Rs. 0. */
-  var costKnown = (fr + rtoc + oth) > 0;
+  var costKnown = L ? true : (fr + rtoc + oth) > 0;      /* with the ledger a quiet day is a real Rs. 0, never 'not read'; without it the old rule stands */
+  var rs2 = function (p) { return Math.round(p) / 100; };
   var dd = M.rowsIn(tab, r.from, r.to).filter(function (x) { return x.avg_delivery_days != null && x.avg_delivery_days !== ''; });
   /* 6 Nov 2026 (owner: "avg parcel delivery time is 2.8 in dashboard, but in Merchant Center I see 10 days"): each day's average is weighted by the parcels it was made from (`timed`: parcels that carry BOTH a pickup
      and a delivered time), not by the day's delivered count. Weighting by delivered gave 2.8; the exact figure is 2.54. M.shipClocks (dashboard_72_shiprocket.js) shows all three clocks side by side. */
@@ -8623,32 +8649,51 @@ M.PAGES.shipping.render = function (r) {
   var avgDays = dd.length && dd.reduce(function (a, x) { return a + wt(x); }, 0) ? dd.reduce(function (a, x) { return a + (+x.avg_delivery_days) * wt(x); }, 0) / dd.reduce(function (a, x) { return a + wt(x); }, 0) : null;
   var kp = M.h('div', { class: 'kpis lead' });
   /* T1036: the parcels behind the headline figures, from Shiprocket's own parcel list. Attached only when the list adds up to the figure. */
-  var SD = M.drill, sentSpec = SD.countIs(SD.parcelSpec(SD.parcelsBetween(r.from, r.to, true), { title: 'Parcels sent' }), n);
-  var costSpec = SD.same(SD.parcelSpec(SD.parcelsBetween(r.from, r.to, true), { title: 'What these parcels cost' }), fr + rtoc + oth);
+  var SD = M.drill, sentSpec = L && L.n ? SD.countIs(M.shipSpec('Parcels sent', SD.countText(L.n, 'parcel') + ' for ' + M.num(L.nOrders) + ' orders, however they were sent.', L.rows), L.n) : null;
+  var costSpec = L && O ? M.shipSpec('What shipping cost', SD.countText(L.n, 'parcel') + ' and the WhatsApp tracking fee, ' + M.inr(O.total) + '.', L.rows, M.shipWhatsApp(O)) : null;
+  if (costSpec && !SD.same(costSpec, O.total)) costSpec = null;
   var backSpec = rto ? SD.countIs(SD.parcelSpec(SD.parcelsBetween(r.from, r.to, true).filter(function (x) { return /return|rto/i.test(x.status || ''); }), { title: 'Parcels that came back' }), rto) : null;
-  kp.appendChild(M.kpi({ label: 'Parcels sent', value: M.num(n), hero: true, note: M.num(dl) + ' delivered, ' + M.num(Math.max(0, n - dl - rto)) + ' on the way', drill: sentSpec }));
-  kp.appendChild(costKnown ? M.kpi({ label: 'Cost of sending', value: M.inr(fr + rtoc + oth), note: n ? M.inr((fr + rtoc + oth) / n) + ' a parcel' : '', drill: costSpec })
-    : M.kpi({ label: 'Cost of sending', na: 'Not read yet', note: 'No parcel in these dates carries a readable price. Parcels from 19 May on are priced from Shiprocket\'s own shipment record.' }));
+  var by = L ? L.by : null, part = function (k) { return by && by[k] ? by[k].n : 0; };
+  var sentNote = L ? M.num(part('Shiprocket')) + ' through Shiprocket' + (part('By hand') ? ', ' + M.num(part('By hand')) + ' booked by hand' : '') + (part('Exchange') ? ', ' + M.num(part('Exchange')) + ' for exchanges and second parcels' : '') + (part('Guess') ? ', ' + M.num(part('Guess')) + ' not billed yet' : '') + '.' : M.num(dl) + ' delivered, ' + M.num(Math.max(0, n - dl - rto)) + ' on the way';
+  kp.appendChild(M.kpi({ label: 'Parcels sent', value: M.num(n), hero: true, note: sentNote, drill: sentSpec }));
+  kp.appendChild(costKnown ? M.kpi({ label: 'What shipping cost', value: M.inr(O ? O.total : fr), note: L ? (n ? M.inr(L.avg) + ' a parcel (' + M.inr(L.total) + ' for ' + M.num(n) + ' parcels' + (O && O.wa ? ', plus ' + M.inr(O.wa) + ' of Shiprocket tracking messages' : '') + ')' : 'No parcel was paid for in these dates' + (O && O.wa ? ', only ' + M.inr(O.wa) + ' of Shiprocket tracking messages' : '')) : (n ? M.inr(fr / n) + ' a parcel' : ''), drill: costSpec })
+    : M.kpi({ label: 'What shipping cost', na: 'Not read yet', note: 'No parcel in these dates carries a readable price.' }));
   kp.appendChild(M.kpi({ label: 'Days to deliver', value: avgDays == null ? 'not tracked' : M.num(avgDays, 1), note: 'courier time, from pickup to the door. It leaves out the days an order waited before the courier came.' }));
   kp.appendChild(M.kpi({ label: 'Came back', value: M.num(rto), note: n ? M.pct(rto / n * 100, 1) + ' of parcels' : '', drill: backSpec }));
   root.appendChild(kp);
   var cbl = M.costBasisLine('shiprocket'); if (cbl) root.appendChild(cbl);
+  if (L && M.shipStory) M.shipStory(r, root, L, O);      /* T1126: where the shipping money went, in one plain table that adds up to the Overview */
   var buckets = M.buckets(r.from, r.to, r.mode), seriesFor = function (c) { return Array.prototype.slice.call(M.series({ tab: tab, col: c }, buckets)); };      /* 6 Nov 2026: this table has a row only on days a parcel was picked up, so a quiet day is a real zero, not 'no data stored' */
   var cnt = seriesFor('shipments'), frS = seriesFor('freight');
+  /* T1126: the two charts are drawn from the same list as the tiles (parcels and what they cost, by the day of the order), so a column adds up to the figure above it */
+  var inBk = function (b) { return L ? L.rows.filter(function (x) { return x.day >= b.from && x.day <= b.to; }) : []; };
+  if (L) { cnt = buckets.map(function (b) { return inBk(b).length; }); frS = buckets.map(function (b) { return rs2(inBk(b).reduce(function (a, x) { return a + Math.round(x.cost * 100); }, 0)); }); }
+  var colSpec = function (what) { return M.drill.cache(function (i, b, v) { var rows = inBk(b), sp = rows.length ? M.shipSpec(what + ', ' + M.drill.when(b), M.drill.countText(rows.length, 'parcel') + '.', rows) : null; return what === 'Parcels' ? M.drill.countIs(sp, v) : M.drill.same(sp, v); }); };
   root.appendChild(M.grid([
-    M.card('Parcels each ' + r.mode, 'The parcels the couriers picked up. The line is the average of the last few ' + r.mode + 's.', [
-      M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Parcels', drill: M.drill.parcelChart('Parcels picked up'), series: [{ name: 'Parcels', values: cnt, color: M.COLORS.teal, fmt: M.num }] }); }),
+    M.card('Parcels each ' + r.mode, 'Every parcel the shop paid for, however it was sent, on the day of its order. The line is the average of the last few ' + r.mode + 's.', [
+      M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Parcels', drill: L ? colSpec('Parcels') : M.drill.parcelChart('Parcels picked up'), series: [{ name: 'Parcels', values: cnt, color: M.COLORS.teal, fmt: M.num }] }); }),
       M.tableView([{ k: 'label', label: 'Period' }, { k: 'n', label: 'Parcels', num: true }], buckets.map(function (b, i) { return { label: b.label, n: cnt[i], _from: b.from, _to: b.to }; }))]),
-    !costKnown ? null : M.card('What the parcels cost each ' + r.mode, 'Rupees paid to the couriers: freight, charges for parcels that came back, and extra charges.', [
-      M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Cost of sending', yfmt: function (v) { return 'Rs. ' + M.short(v); }, series: [{ name: 'Cost of sending', values: frS, color: M.COLORS.maroon, fmt: M.inr }] }); }),
+    !costKnown ? null : M.card('What the parcels cost each ' + r.mode, 'Rupees the shop paid for sending: Shiprocket parcels, parcels booked by hand and exchange parcels, on the day of the order. Shiprocket\'s WhatsApp tracking fee is not in the columns.', [
+      M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'What shipping cost', yfmt: function (v) { return 'Rs. ' + M.short(v); }, drill: L ? colSpec('What shipping cost') : null, series: [{ name: 'What shipping cost', values: frS, color: M.COLORS.maroon, fmt: M.inr }] }); }),
       M.tableView([{ k: 'label', label: 'Period' }, { k: 'c', label: 'Cost', num: true, fmt: M.inr }], buckets.map(function (b, i) { return { label: b.label, c: frS[i], _from: b.from, _to: b.to }; }))])
   ].filter(Boolean), 'wide'));
   /* couriers */
-  var cour = M.stateRows('shiprocket_courier');
-  root.appendChild(M.card('Which courier is best', 'Every courier Shiprocket used in the last 180 days. A courier with under 10 parcels is too few to judge.', [
+  if (L && M.shipTable) M.shipTable(r, root, L);      /* T1126: every parcel, one line each */
+  /* T1130 item 7 (14 Nov 2026): "Which courier is best" read the stored all-time tab shiprocket_courier: it ignored the dates chosen (29 parcels under a tile of 13) and its cost left out the extra weight
+     (Delhivery Air Rs 71.72 here, Rs 135.22 in "Couriers side by side"). It is now drawn from the same Shiprocket parcels as the cards of the Shipping cost list, in the dates chosen, with the cost of a
+     parcel = freight + charges for a parcel that came back + extra weight, GST inside, so the two courier cards give the same figure. */
+  var shipRows = L ? L.by.Shiprocket.rows.map(function (x) { return x.src; }) : [];
+  var byC = {}; shipRows.forEach(function (x) {
+    var o = byC[x.courier] || (byC[x.courier] = { courier: x.courier, shipments: 0, delivered: 0, back: 0, cost: 0, dd: [] });
+    o.shipments++; o.cost += (+x.freight || 0) + (+x.rto_charges || 0) + (+x.other_charges || 0);
+    if (/return|rto/i.test(x.status || '')) o.back++;
+    if (x.status === 'delivered') { o.delivered++; if (x.picked_up_at && x.delivered_at && M.hoursBetween) o.dd.push(M.hoursBetween(x.picked_up_at, x.delivered_at) / 24); }
+  });
+  var cour = Object.keys(byC).map(function (k) { var o = byC[k]; return { courier: o.courier, shipments: o.shipments, avg_freight: o.shipments ? o.cost / o.shipments : null, avg_days: o.dd.length ? o.dd.reduce(function (a, v) { return a + v; }, 0) / o.dd.length : null, rto_rate_pct: o.shipments ? o.back * 100 / o.shipments : null }; }).sort(function (a, b) { return b.shipments - a.shipments; });
+  root.appendChild(M.card('Which courier is best', 'Every courier Shiprocket used for the parcels in the dates chosen. The cost of a parcel is the whole charge: freight, a charge for a parcel that came back, and extra weight, GST inside. A courier with under 10 parcels is too few to judge.', [
     cour.length ? M.table([{ k: 'courier', label: 'Courier', wrap: true }, { k: 'shipments', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'avg_freight', label: 'Cost a parcel', num: true, fmt: function (v) { return +v > 0 ? M.inr(v) : 'not read'; } }, { k: 'avg_days', label: 'Days to deliver', num: true, fmt: function (v) { return v == null ? 'not tracked' : M.num(v, 1); } },
       { k: 'rto_rate_pct', label: 'Came back', num: true, fmt: function (v) { return v == null ? 'not tracked' : M.pct(v, 1); } }, { k: 'read', label: 'Verdict', render: function (x) { return x.shipments < 10 ? M.tag('too few to read', 'thin') : M.verdict(x.rto_rate_pct > 10 ? 'work' : x.rto_rate_pct > 4 ? 'close' : 'ok'); }, sort: function (x) { return x.rto_rate_pct; } }],
-      { rows: cour.map(function (x) { return x; }), sortKey: 'shipments', empty: 'No couriers yet.', limit: 20 }) : M.empty('No courier data yet.')]));
+      { rows: cour, sortKey: 'shipments', empty: 'No couriers yet.', limit: 20 }) : M.empty('No parcel went through Shiprocket in these dates.')]));
   /* promise: made to order and ready to ship */
   var P = M.PROMISE;
   /* 7 Nov 2026 (Tech Guy: 'on Google Merchant Center it says 10 days'): the promise is kept or broken from the BUYER's side, so the days that count are order to the door (the courier days alone are 2.5 and
@@ -8688,7 +8733,7 @@ M.PAGES.shipping.render = function (r) {
     promiseKids.push(M.h('p', { class: 'small', text: 'Days are counted from the order to the door. ' + M.num(rowsAll.length) + ' orders in these dates: ' + M.num(door.length) + ' delivered, ' + M.num(openAll.length) + ' on the way or not sent yet, ' + M.num(byHand.length) + ' handed over by hand. The courier alone takes ' + (avgDays == null ? 'about 2 to 3' : M.num(avgDays, 1)) + ' days; the rest is the wait before the pickup.' }));
   }
   /* every order, one line each, from the same list: the owner can check any delivery against Shopify and Shiprocket */
-  var awbOf = {}; if (M.has('shiprocket_parcels')) M.rows('shiprocket_parcels').forEach(function (x) { if (x.order && x.awb_tail) awbOf[x.order] = x.awb_tail; });      /* T1036: the courier's tracking number end, from Shiprocket's own parcel list */
+  var awbOf = {}; if (M.has('shiprocket_parcels')) M.rows('shiprocket_parcels').forEach(function (x) { if (x.order && (x.awb_last6 || x.awb_tail)) awbOf[x.order] = x.awb_last6 || x.awb_tail; });      /* T1036: the courier's tracking number end, from Shiprocket's own parcel list */
   var everyOrder = rowsAll.length ? M.card('Every order and where it is', 'One line for every real order placed in these dates (cancelled and test orders are left out). The cards above all count these same orders.', [
     M.table([M.refCol('order', 'order', 'Order'), M.refCol('parcel', 'awb', 'Parcel', { none: 'none' }), { k: 'at', label: 'Ordered', fmt: M.fd }, { k: 'kindName', label: 'Kind' }, { k: 'carrier', label: 'Courier', wrap: true }, { k: 'sent', label: 'Sent', fmt: function (v) { return v ? M.fd(v) : 'not yet'; } },
       { k: 'delivered', label: 'Delivered', fmt: function (v) { return v ? M.fd(v) : ''; } }, { k: 'days', label: 'Days since the order', num: true, fmt: function (v) { return M.num(v, 0); } }, { k: 'status', label: 'Where it is' }, { k: 'late', label: 'Against the promise', render: function (x) { return M.tag(x.late, x.late === 'late' ? 'thin' : 'ok'); } }],
@@ -8703,7 +8748,7 @@ M.PAGES.shipping.render = function (r) {
   var pr = M.has('shiprocket_parcels') ? M.rows('shiprocket_parcels') : [], st = {};
   pr.forEach(function (x) { if (!x.state || x.courier === 'Self fulfilled') return; var o = st[x.state] || (st[x.state] = { state: x.state, n: 0, dl: 0, days: 0 }); o.n++; if (x.status === 'delivered' && (x.picked_up_at || x.dispatch_date) && (x.delivered_at || x.delivered_date)) { o.dl++; o.days += x.picked_up_at && x.delivered_at ? M.hoursBetween(x.picked_up_at, x.delivered_at) / 24 : M.diff(x.dispatch_date, x.delivered_date); } });
   var stl = Object.keys(st).map(function (k) { var o = st[k]; return { state: o.state, parcels: o.n, delivered: o.dl, days: o.dl ? o.days / o.dl : null }; });
-  if (stl.length) root.appendChild(M.card('Delivery days by state', 'Pickup to the door, average, for parcels that arrived. State level only.', [M.table([{ k: 'state', label: 'State' }, { k: 'parcels', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'delivered', label: 'Arrived', num: true, fmt: M.num }, { k: 'days', label: 'Days', num: true, fmt: function (v) { return v == null ? 'not tracked' : M.num(v, 1); } }], { rows: stl, sortKey: 'parcels', limit: 40 })]));
+  if (stl.length) root.appendChild(M.card('Delivery days by state', 'Pickup to the door, average, for every Shiprocket parcel that arrived since the first one (not only the dates chosen), counted from the courier pickup. State level only.', [M.table([{ k: 'state', label: 'State' }, { k: 'parcels', label: 'Parcels', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'delivered', label: 'Arrived', num: true, fmt: M.num }, { k: 'days', label: 'Days', num: true, fmt: function (v) { return v == null ? 'not tracked' : M.num(v, 1); } }], { rows: stl, sortKey: 'parcels', limit: 40 })]));
   return root;
 };
 
@@ -8954,7 +8999,7 @@ M.PAGES.tables.render = function () {
   /* 4. growth, ad cost, listings, assistants, makers, questions */
   var gb = M.stateRows('growth_board'), ac = M.stateRows('acquisition_cost'), bl = M.rows('backlinks'), qw = M.rows('queries_weekly'), ai = M.rows('ai_weekly');
   var k5 = [];
-  if (gb.length) k5.push(M.card('Is it growing?', 'The last 4 weeks against the 4 weeks before. "No baseline" means there is nothing earlier to compare with yet.', [M.table([{ k: 'metric', label: 'Number', wrap: true }, { k: 'last_4w', label: 'Last 4 weeks', num: true, fmt: M.num }, { k: 'prev_4w', label: 'The 4 weeks before', num: true, fmt: M.num }, { k: 'change_pct', label: 'Change', num: true, fmt: function (v) { return v == null ? 'no baseline' : (v > 0 ? '+' : '') + M.pct(v, 0); } }, { k: 'trend', label: 'Direction', render: function (x) { return M.h('span', { text: x.trend === 'growing' ? 'Growing' : x.trend === 'flat' ? 'Flat' : x.trend === 'falling' ? 'Falling' : x.trend === 'no baseline' ? 'Nothing to compare with' : (x.trend || '') }); } }, { k: 'last_week', label: 'Last week', num: true, fmt: M.num, hidden: true }, { k: 'prev_week', label: 'The week before', num: true, fmt: M.num, hidden: true }], { rows: gb, sortKey: 'metric', sortDir: 1, empty: 'None.', noTools: true })]));
+  if (gb.length) k5.push(M.card('Is it growing?', 'The last 4 weeks against the 4 weeks before. "Not enough history" means the earlier 4 weeks are only partly covered (Google Analytics starts on 5 Oct), so a percent would be wrong. "No baseline" means there is nothing earlier to compare with yet.', [M.table([{ k: 'metric', label: 'Number', wrap: true }, { k: 'last_4w', label: 'Last 4 weeks', num: true, fmt: M.num }, { k: 'prev_4w', label: 'The 4 weeks before', num: true, fmt: M.num }, { k: 'change_pct', label: 'Change', num: true, fmt: function (v, x) { return v == null ? (x && x.trend === 'not enough history' ? 'not enough history' : 'no baseline') : (v > 0 ? '+' : '') + M.pct(v, 0); } }, { k: 'trend', label: 'Direction', render: function (x) { return M.h('span', { text: x.trend === 'growing' ? 'Growing' : x.trend === 'flat' ? 'Flat' : x.trend === 'falling' ? 'Falling' : x.trend === 'no baseline' ? 'Nothing to compare with' : x.trend === 'not enough history' ? 'Not enough history' : (x.trend || '') }); } }, { k: 'last_week', label: 'Last week', num: true, fmt: M.num, hidden: true }, { k: 'prev_week', label: 'The week before', num: true, fmt: M.num, hidden: true }], { rows: gb, sortKey: 'metric', sortDir: 1, empty: 'None.', noTools: true })]));
   if (ac.length) k5.push(M.card('Cost to win a buyer', 'Ad spend divided by new buyers. No ad has run yet, so there is no cost to show: it will fill in with the first rupee spent.', [M.table([{ k: 'channel', label: 'Where' }, { k: 'spend_28d', label: 'Spent, 28 days', num: true, fmt: M.inr }, { k: 'new_customers_28d', label: 'New buyers, 28 days', num: true, fmt: M.num }, { k: 'cost_per_new_customer', label: 'Cost per new buyer', num: true, fmt: function (v) { return v == null ? 'no ads yet' : M.inr(v); } }, { k: 'first_order_profit', label: 'Profit on a first order', num: true, fmt: M.inr }], { rows: ac, empty: 'None.', noTools: true })]));
   if (bl.length) k5.push(M.card('Listings and links to the shop', 'Websites that list or link to mazo and whether the link works.', [M.table([{ k: 'listing', label: 'Where', wrap: true }, { k: 'kind', label: 'Kind' }, { k: 'status', label: 'Status', wrap: true }, { k: 'links shopmazo.in', label: 'Links to the shop' }, { k: 'links Instagram', label: 'Links to Instagram' }, { k: 'checked', label: 'Checked', fmt: M.fd }, { k: 'made', label: 'Made', fmt: M.fd, hidden: true }], { rows: bl, sortKey: 'checked', sortDir: -1, empty: 'None.', name: 'listings', limit: 20 })]));
   if (qw.length) k5.push(M.card('Customer questions', 'How many questions came in by topic, and how many were answered the same day. Counted by hand, so an empty week means not counted, not zero.', [M.table([{ k: 'week', label: 'Week starting', fmt: M.fd }, { k: 'topic', label: 'Topic' }, { k: 'count', label: 'Questions', num: true, fmt: function (v) { return v == null ? 'not counted' : M.num(v); } }, { k: 'same_day_replies', label: 'Answered the same day', num: true, fmt: function (v) { return v == null ? 'not counted' : M.num(v); } }], { rows: qw, sortKey: 'week', sortDir: -1, empty: 'None.', limit: 14 })]));
@@ -9536,7 +9581,7 @@ M.TERMS = [
     var vis = M.total({ tab: 'source_daily', col: 'sessions', pred: M.srcOfChannel('instagram') }, r.from, r.to), ord = M.total({ tab: 'source_daily', col: 'purchases', pred: M.srcOfChannel('instagram') }, r.from, r.to);
     var gcov = M.cover('source_daily'), gFrom = gcov.first && gcov.first > r.from ? gcov.first : r.from, gTo = gcov.last && gcov.last < r.to ? gcov.last : r.to;      /* visits to the shop are counted by Google Analytics, which starts on its own first day */
     var short = gFrom > r.from || gTo < r.to;
-    kp.appendChild(vis.v == null ? M.kpiWhy('Visits to the shop from Instagram', 'source_daily', r) : M.kpi({ label: 'Visits to the shop from Instagram', value: M.num(vis.v), note: M.num(ord.v) + ' orders. Counted by Google Analytics from links we tagged and from the Instagram app, ' + M.fds(gFrom) + ' to ' + M.fds(gTo) + (short ? ' (' + dayWord(vis.days) + '; Google Analytics holds the shop\'s visits only from ' + M.fd(gcov.first) + ')' : '') + '.' }));
+    kp.appendChild(vis.v == null ? M.kpiWhy('Visits to the shop from Instagram', 'source_daily', r) : M.kpi({ label: 'Visits to the shop from Instagram', value: M.num(vis.v), note: M.num(ord.v) + ' orders from those visits (the visit that ended in the purchase, as Google Analytics saw it; the Customers page counts the first visit instead). Counted from links we tagged and from the Instagram app, ' + M.fds(gFrom) + ' to ' + M.fds(gTo) + (short ? ' (' + dayWord(vis.days) + '; Google Analytics holds the shop\'s visits only from ' + M.fd(gcov.first) + ')' : '') + '.' }));
     root.appendChild(kp);
     if (cover.first && cover.first > r.from) root.appendChild(M.note('Instagram numbers are stored from ' + M.fd(cover.first) + '. The dates you picked start earlier, so the figures above cover ' + dayWord(Math.max(0, M.diff(cover.first, r.to) + 1)) + '.'));
 
@@ -9811,7 +9856,7 @@ M.glueMarks = function () {
     rows.forEach(function (x) { by[x.category] = (by[x.category] || 0) + x.visits; });
     var parts = Object.keys(by).filter(function (k) { return by[k] > 0; }).map(function (k) { return { label: k, value: by[k] }; });
     if (parts.length < 2) return null;
-    return M.card('Where visits came from, at a glance', 'The share of all visits for each of the places visitors arrive from, ' + dates(r) + '. The table below this has the same numbers and the groups inside each place. It counts the days the by source table holds, so it can be a day short of the Overview.', [M.donut(parts, { unit: 'visits', total: 'visits', name: 'Visits by place they came from', what: 'Place', other: 'Smaller places' })]);
+    return M.card('Where visits came from, at a glance', 'The share of all visits for each of the places visitors arrive from, ' + dates(r) + '. The table below this has the same numbers and the groups inside each place. It adds up Google\'s visits by source, and Google\'s own split by source can differ from its overall count by a visit or two on some days, so a total here can be a visit or two away from the Overview.', [M.donut(parts, { unit: 'visits', total: 'visits', name: 'Visits by place they came from', what: 'Place', other: 'Smaller places' })]);
   });
 
   /* Shopping steps: visits by device */
@@ -9943,7 +9988,7 @@ M.glueMarks = function () {
     var yes = sh.filter(function (x) { return x.on_time === 'yes'; }).length;
     var promise = sh.length ? M.bars([{ label: 'Arrived inside the promise', value: yes, text: M.num(yes) + ' of ' + M.num(sh.length) + ' (' + M.pct(yes / sh.length * 100, 0) + ')', color: M.COLORS.green }, { label: 'Arrived late', value: sh.length - yes, text: M.num(sh.length - yes), color: sh.length - yes ? M.COLORS.terra : M.COLORS.grey }]) : few('No delivered order has a promise date yet.');
     cards.push(mini('Delivery promise', 'Of the orders that have been delivered, how many arrived inside the days we promised on the product page. Made to order pieces promise about 20 days, ready to ship pieces 3 to 7.', promise,
-      sh.length ? M.num(sh.length) + ' delivered orders with a promise date.' + (sh.length < 30 ? ' Under 30: direction only.' : '') : ''));
+      sh.length ? M.num(sh.length) + ' delivered orders, counted from the order to the door, the same days and the same promise as the Shipping page (ready to ship 7 days, made to order 20). The orders still on the way are not counted here; the Shipping page counts them as late once they pass their promise.' + (sh.length < 30 ? ' Under 30: direction only.' : '') : ''));
     return cards;
   };
 
@@ -9966,12 +10011,12 @@ M.glueMarks = function () {
     var lv = {}; levers.forEach(function (l) { lv[l[0]] = l[1]; });
     box.appendChild(M.h('h4', { class: 'sub', text: 'The next three to start (no yes needed from you)' }));
     box.appendChild(next.length ? M.table([{ k: 'id', label: 'ID' }, { k: 'idea', label: 'Idea', wrap: true }, { k: 'area', label: 'Area', wrap: true }, { k: 'proof', label: 'How we will know it worked', wrap: true }],
-      { rows: next.map(function (x) { return { id: x.id, idea: x.idea, area: lv[x.lever] || x.lever, proof: x.proof }; }), sortKey: 'id', sortDir: 1, empty: 'None.', noTools: true, detail: false }) : few('Every ready idea needs your yes first.'));
+      { rows: next.map(function (x) { return { id: x.id, idea: M.ideaText(x.idea), area: lv[x.lever] || x.lever, proof: x.proof }; }), sortKey: 'id', sortDir: 1, empty: 'None.', noTools: true, detail: false }) : few('Every ready idea needs your yes first.'));
     /* the running ideas and where the proof can be read */
     var running = ideas.filter(function (x) { return x.status === 'running'; });
     box.appendChild(M.h('h4', { class: 'sub', text: 'Running now, and where its proof is' }));
     box.appendChild(running.length ? M.table([{ k: 'id', label: 'ID', sort: function (r) { return +r.id.slice(1); } }, { k: 'idea', label: 'Idea', wrap: true }, { k: 'area', label: 'Area', wrap: true }, { k: 'proof', label: 'Proof to read', wrap: true }],
-      { rows: running.map(function (x) { return { id: x.id, idea: x.idea, area: lv[x.lever] || x.lever, proof: x.proof }; }), sortKey: 'id', sortDir: 1, empty: 'None.', name: 'running growth ideas', detail: false }) : few('No idea is running.'));
+      { rows: running.map(function (x) { return { id: x.id, idea: M.ideaText(x.idea), area: lv[x.lever] || x.lever, proof: x.proof }; }), sortKey: 'id', sortDir: 1, empty: 'None.', name: 'running growth ideas', detail: false }) : few('No idea is running.'));
     return box;
   };
 
@@ -11285,6 +11330,17 @@ M.glueMarks = function () {
     var nInv = count('shipping_invoices', function (x) { return x.invoice && typeof x.date === 'string' && set[x.date.slice(0, 7)]; });
     var nBill = count('shopify_bills', function (x) { return set[String(x.paid_on || x.bill_date || '').slice(0, 7)] && (+x.plan_fee > 0 || +x.transaction_fees > 0); });
     var nVoid = count('tax_orders', function (x) { return (x.kind === 'void' || x.kind === 'not_a_sale') && typeof x.date === 'string' && set[x.date.slice(0, 7)]; });
+    /* T1129 (14 Nov 2026, owner note on this card: "make sure to update this also"): the Accountant now also needs what came from the new money rules: the shipping buyers pay (output tax), the GST credit on parcels
+       paid by hand and how each carrier is treated, the tax invoice of every hand paid courier charge, and the orders sent outside Shiprocket. All figures are read from the tabs the page already holds. */
+    var P2 = function (v) { return Math.round((+v || 0) * 100); }, rs2 = function (p2) { return M.inr(Math.round(p2) / 100); };
+    var shipT = 0, shipG = 0, shipN = 0, shipNoGst = 0;
+    if (M.has('tax_orders')) M.rows('tax_orders').forEach(function (x) { if (x.kind !== 'sale' || typeof x.date !== 'string' || !set[x.date.slice(0, 7)]) return; var t = P2(x.shipping_taxable); if (t <= 0) return; var g = P2(x.ship_cgst) + P2(x.ship_sgst) + P2(x.ship_igst); shipT += t; shipG += g; shipN++; if (!g) shipNoGst++; });
+    var hl = M.taxInputLines ? M.taxInputLines(p).filter(function (x) { return x.hand; }) : [], hClaim = 0, hRcm = 0, hPaid = 0, hDocs = {}, hCarriers = {};
+    hl.forEach(function (x) { if (x.how === 'claim') hClaim += x.gst; else hRcm += x.gst; hPaid += x.total; hDocs[x.doc.split(' ')[0]] = 1; var c = (/\(([^)]*)\)\s*$/.exec(x.doc) || [])[1] || 'carrier not told'; hCarriers[c] = (hCarriers[c] || 0) + 1; });
+    var carriers = Object.keys(hCarriers).map(function (c) { return c + ' ' + hCarriers[c]; }).join(', ');
+    var outside = [];
+    if (M.has('exchange_parcels')) M.rows('exchange_parcels').forEach(function (x) { if (x.order && x.leg === 'delivery' && typeof x.date === 'string' && set[x.date.slice(0, 7)]) outside.push(x.order + (+x.paid_to_courier > 0 ? ' (' + (x.carrier || 'carrier not told') + ', ' + M.inr(+x.paid_to_courier) + ')' : ' (handed over, no cost)')); });
+    var nExch = M.has('exchange_parcels') ? M.rows('exchange_parcels').filter(function (x) { return x.leg !== 'delivery' && typeof x.date === 'string' && set[x.date.slice(0, 7)]; }).length : 0;
     var check = [
       ['1. Sales register and its CSV for the month (every sale, refund and cancelled order, goods and shipping GST side by side)', true, 'On this page, above. Download the CSV and send it.'],
       ['2. Shiprocket tax invoices dated in the month, with the PDF of each (freight, extra weight, return to origin, failed delivery, re-attempt, WhatsApp fee)', nInv > 0, nInv ? M.num(nInv) + ' invoice' + (nInv === 1 ? '' : 's') + ' in the Sheet for this period. PDFs: Shiprocket, Bills, Invoices, View Invoice.' : 'None dated in this period (they come about every two weeks and lag the parcels by weeks). Download the PDFs from Shiprocket, Bills, Invoices.'],
@@ -11297,7 +11353,11 @@ M.glueMarks = function () {
       ['9. Orders cancelled or returned and how the money went back (outside Shopify too, for example Google Pay)', nVoid === 0 || has(/cancel|refund|return/i), nVoid ? M.num(nVoid) + ' order' + (nVoid === 1 ? '' : 's') + ' in the register shown as cancelled or not a sale, with a remark. Madhu confirms how the money went back.' : 'None in this period.'],
       ['10. Tax already paid by challan for the month', has(/paid|challan/i), 'Only the Accountant can give this: it shows how much of the tax to pay is already paid.'],
       ['11. Filing choice and registration date (one time): the shop files GST returns monthly; registered on 14 May 2026', true, 'Both are on record. The calendar lists the monthly dates only. Credit counts from invoices dated 14 May 2026 or later.'],
-      ['12. Income tax: scheme in use and advance tax paid', has(/advance|income/i), 'Only the Accountant can give this.']
+      ['12. Income tax: scheme in use and advance tax paid', has(/advance|income/i), 'Only the Accountant can give this.'],
+      ['13. Shipping the buyers paid at checkout (output tax): the GST inside it is in the sales register, goods and shipping side by side', true, shipN ? M.num(shipN) + ' order' + (shipN === 1 ? '' : 's') + ' paid ' + rs2(shipT) + ' for shipping in this period, with ' + rs2(shipG) + ' of GST inside it (shown in the register as the shipping part).' + (shipNoGst ? ' ' + M.num(shipNoGst) + ' of them carry no GST on the shipping line in Shopify: ask the Accountant how to treat it, the shop has not decided.' : '') : 'No order paid for shipping in this period.'],
+      ['14. GST credit on parcels Madhu paid by hand outside Shiprocket (DTDC, Delhivery, Porter, exchange parcels)', hl.length ? has(/hand|dtdc|delhivery|porter|exchange|courier/i) : true, hl.length ? M.num(hl.length) + ' parcel' + (hl.length === 1 ? '' : 's') + ' (' + carriers + '), ' + rs2(hPaid) + ' in all: credit ' + rs2(hClaim) + ' on DTDC, Delhivery and any carrier not in the list (18 percent inside the charge, taken as an assumption for a carrier not told), and ' + rs2(hRcm) + ' of Porter transport that the shop pays at 5 percent under reverse charge and claims back, so it adds nothing. An estimate until each invoice is on file.' : 'No parcel paid by hand in this period.'],
+      ['15. The carrier\'s tax invoice in the shop\'s name for EVERY hand paid courier charge: DTDC, Delhivery, Porter and each exchange parcel (the shop\'s GSTIN 29GSUPM4389G1ZO on it)', hl.length === 0 || has(/hand|dtdc|delhivery|porter|exchange/i), hl.length ? 'Needed for the ' + M.num(hl.length) + ' parcel' + (hl.length === 1 ? '' : 's') + ' above before the credit can be claimed. Without the invoice there is no credit. Madhu asks each carrier; type its number in tax_inputs and this ticks.' : 'None needed in this period.'],
+      ['16. The list of orders sent outside Shiprocket, with the courier, what Madhu paid and who paid it', true, outside.length ? M.num(outside.length) + ' order' + (outside.length === 1 ? '' : 's') + ' in this period: ' + outside.join('; ') + '.' + (nExch ? ' Plus ' + M.num(nExch) + ' exchange or second parcel' + (nExch === 1 ? '' : 's') + ' (what Madhu paid the courier minus what the buyer paid back).' : '') + ' The list is on the Shipping page, card Every parcel and what it cost.' : (nExch ? M.num(nExch) + ' exchange or second parcel' + (nExch === 1 ? '' : 's') + ' in this period. The list is on the Shipping page, card Every parcel and what it cost.' : 'No order was sent outside Shiprocket in this period.')]
     ];
     var rowsT = check.map(function (c) { return { item: c[0], status: c[1] ? 'Have it' : 'Needed', how: c[2] }; });
     var card = M.card('What to hand to the Accountant each month', 'Send these by the 5th of the next month so the GSTR-1 (due 11th or 13th) and GSTR-3B (due 20th or 22nd) can be filed. Items marked Have it are already in the Sheet or on this page. For the others, type a row into the Google Sheet on the sheet named tax_inputs (month like 2026-10, the item, the amount in rupees, the invoice or challan number, who gave it) and it ticks here the next morning. Why each one is needed: the guide linked below.', [
@@ -13309,7 +13369,8 @@ M.evenHeaders = function (root) {
         { k: 'match', label: 'Same?', render: function (x) { return x.match === 'yes' ? M.badge('Same', 'green') : x.match ? M.badge('Different', 'red') : null; }, sort: function (x) { return x.match === 'yes' ? 1 : 0; } }].concat(tr.some(function (x) { return x.note !== '' && x.note != null; }) ? [{ k: 'note', label: 'Note', wrap: true }] : []),      /* F4: a note is written only on a day that differs; with none, there is no Note column and no line about it */
       { rows: tr.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }), sortKey: 'date', sortDir: -1, name: 'shopify-and-google-orders', detail: false, totals: true }) : noData('data_trust_daily', r)];
       var card5 = M.card('Do Shopify and Google count the same orders?', 'Orders in Shopify against purchases Google Analytics saw, on the days we checked. A mismatch can mean an order placed with tracking switched off.' + (tr.length ? ' ' + ok + ' of ' + tr.length + ' days in these dates match.' : ''), kids5);
-      note(card5, 'Numbers for ' + span(r.from, r.to) + '. It counts orders, not visits, so it is not split by page.');
+      var trFirst = trAll.map(function (x) { return x.date; }).sort()[0], trLast = trAll.map(function (x) { return x.date; }).sort().pop();
+      note(card5, 'Days checked: ' + (trFirst ? M.fd(trFirst) + ' to ' + M.fd(trLast) : 'none yet') + ' (Google Analytics holds purchases from 5 Oct only, and the two newest days are left out while Google settles). It counts orders, not visits, so it is not split by page.');      /* T1130 item 9: the dates the table really holds, not the dates picked */
       root.appendChild(card5);
     }
 
@@ -13379,7 +13440,7 @@ M.evenHeaders = function (root) {
         return M.h('div', { class: 'fld' }, [M.h('label', { text: label }), sel]);
       };
       var bar = M.h('div', { class: 'row-ctl', 'data-ux': '1' }, [mk('First came from', sources, function (v) { src = v; }), mk('Buyer', ['New buyer', 'Came back', 'Not known'].filter(function (v) { return all.some(function (x) { return x.buyer === v; }); }), function (v) { buy = v; })]);
-      var card = M.card('Every order', 'One row for each order: the day, where the buyer first came from, sales after discounts (the money for the clothes, after discounts, GST inside, shipping not included) and whether they were new or came back. No name, address, email or phone is shown. Group by month, quarter or year to read years of orders in a few rows: a grouped row is one period, with the number of orders, new buyers, buyers who came back and the sales after discounts.', [bar, tbl]);
+      var card = M.card('Every order', 'One row for each order: the day, where the buyer first came from (the first visit Shopify saw, with the different spellings of Instagram counted together: ig, instagram, l.instagram.com), sales after discounts (the money for the clothes, after discounts, GST inside, shipping not included) and whether they were new or came back. No name, address, email or phone is shown. Group by month, quarter or year to read years of orders in a few rows: a grouped row is one period, with the number of orders, new buyers, buyers who came back and the sales after discounts.', [bar, tbl]);
       M.fnote(card, 'Every order stored, ' + M.fd(first) + ' to ' + M.fd(last) + ' (' + M.num(all.length) + (all.length === 1 ? ' order' : ' orders') + '). The dates at the top do not change it: use the date choice inside the card.');
       var rows = all;
       var grids = root.querySelectorAll(':scope > .grid'), at = null;
@@ -14581,7 +14642,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     kp.appendChild(M.kpi({ label: 'Sales since the first sale', value: inr(allT.v || 0), note: 'From ' + M.fd(first) + ' to ' + M.fd(last) + '.' }));
     var wk = weeksOf(first, last), wv = M.series(sales, wk), recent = wv.slice(-4), before = wv.slice(-8, -4);
     var r4 = recent.reduce(function (a, b) { return a + b; }, 0), b4 = before.reduce(function (a, b) { return a + b; }, 0);
-    kp.appendChild(M.kpi({ label: 'Last 4 weeks', value: inr(r4), change: before.length === 4 && b4 > 0 ? M.change(r4, b4) : null, goodUp: true, cmpNote: before.length === 4 && b4 > 0 ? '' : 'nothing to compare with', note: 'The 4 weeks before: ' + inr(b4) + '.' }));
+    kp.appendChild(M.kpi({ label: 'Last 4 weeks', value: inr(r4), change: before.length === 4 && b4 > 0 ? M.change(r4, b4) : null, goodUp: true, cmpNote: before.length === 4 && b4 > 0 ? '' : 'nothing to compare with', note: 'The 4 weeks before: ' + inr(b4) + '. Whole weeks, Monday to Sunday, so it is not the same dates as "the last 28 days" on the Overview.' }));
     var best = wv.reduce(function (m, v, i) { return v > m.v ? { v: v, i: i } : m; }, { v: -1, i: 0 });
     kp.appendChild(M.kpi({ label: 'Best week so far', value: inr(Math.max(0, best.v)), note: wk[best.i] ? wk[best.i].label : '' }));
     root.appendChild(kp);
@@ -15267,12 +15328,12 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   });
 
   /* ================================================================ 11b. where the money came from (7 Nov 2026, Tech Guy: "I remember Madhu got some payment from Google also, so create some sort of data viz showing where the money came from")
-     Every order the shop took, by HOW IT WAS PAID: through Razorpay, marked paid by hand (a draft order, gateway "manual"), or paid before the Razorpay account was live. The three add up to the total
+     Every order the shop took, by HOW IT WAS PAID: through Razorpay, marked paid by hand (a draft order, gateway "manual"), or paid before our Razorpay record starts. The three add up to the total
      buyers paid, to the paisa. Read from razorpay_match, which counts each order once. Shopify does not record the way a hand paid order was paid (no note, no tag), so the card says what is
      known, and never names Google Pay or any other route for those orders. */
   R.cards.push(function sources(c) {
     var title = 'Where the money came from', M0 = c.MAT;
-    var why = 'Every order, by the way it was paid. "Through Razorpay" is money Razorpay collected. "Marked paid by hand" is an order Madhu entered in Shopify herself as paid (a draft order); Shopify does not record how that money reached her. "Before Razorpay was live" is the first orders, paid before the Razorpay account existed. The three add up to what buyers paid in the shop.';
+    var why = 'Every order, by the way it was paid. "Through Razorpay" is money Razorpay collected. "Marked paid by hand" is an order Madhu entered in Shopify herself as paid (a draft order); Shopify does not record how that money reached her. "Before our Razorpay record starts" is an order with no payment in the Razorpay history we hold, which starts on 26 May (#MZ1002, 19 May: Shopify shows it as paid through Razorpay, but Razorpay has no record of it, and why is not known). The three add up to what buyers paid in the shop, the same as "Total paid by customers" on the Overview.';
     if (!M0.length) return R.card(title, why, [M.emptyWhy(R.T.mat, c.r)]);
     var S = function (col) { return R.sum(M0, col); };
     var rz = S('shop_amount'), hand = S('manual_amount'), nR = S('shop_orders'), nH = S('manual_orders'), nB = S('before_live');
@@ -15283,23 +15344,23 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var D = M.drill, dayOf = function (col) { var d = {}; M0.forEach(function (x) { if (R.num(x[col])) d[String(x.date).slice(0, 10)] = 1; }); return d; };
     var spRz = D.same(D.paySpec(c.C, { title: 'Paid through Razorpay', lead: 'Money Razorpay collected.' }), rz);
     var spHand = D.same(D.paidOrdersSpec(D.unpaidOrdersOn(dayOf('manual_orders')), { title: 'Marked paid by hand', lead: 'Orders entered in Shopify as paid. Shopify does not record how this money reached the shop.', note: 'Marked paid by hand' }), hand);
-    var spEarly = D.same(D.paidOrdersSpec(D.unpaidOrdersOn(dayOf('before_live')), { title: 'Paid before Razorpay was live', lead: 'The first orders, paid before the Razorpay account existed.', note: 'Razorpay has no record of it' }), Math.max(0, early));
-    var parts = [{ label: 'Through Razorpay', value: rz, n: nR, drill: spRz }, { label: 'Marked paid by hand', value: hand, n: nH, drill: spHand }, { label: 'Before Razorpay was live', value: Math.max(0, early), n: nB, drill: spEarly }].filter(function (x) { return x.value > 0; });
+    var spEarly = D.same(D.paidOrdersSpec(D.unpaidOrdersOn(dayOf('before_live')), { title: 'Paid before our Razorpay record starts', lead: 'Orders Shopify shows as paid, with no payment in the Razorpay history we hold (it starts on 26 May).', note: 'Razorpay has no record of it' }), Math.max(0, early));
+    var parts = [{ label: 'Through Razorpay', value: rz, n: nR, drill: spRz }, { label: 'Marked paid by hand', value: hand, n: nH, drill: spHand }, { label: 'Before our Razorpay record starts', value: Math.max(0, early), n: nB, drill: spEarly }].filter(function (x) { return x.value > 0; });
     var box = M.h('div', null, [M.donut(parts.map(function (x) { return { label: x.label, value: x.value, drill: x.drill }; }), { name: 'Where the money came from', total: 'paid', unit: 'money', fmt: R.inr0 })]);
     var tiles = M.h('div', { class: 'kpis rz' }, parts.map(function (x) { return M.kpi({ label: x.label, value: R.inr(x.value), note: M.num(x.n) + (x.n === 1 ? ' order' : ' orders') + ', ' + R.pct(x.value, tot, 0) + ' of the money', drill: x.drill }); }));
     var kids = [M.grid([box, tiles], 'wide')];
     /* week by week: the three routes stacked, so a day the money came a different way is visible */
     var sp = mode0(c), G = R.spread(M0, sp.B, 'date');
     var a = G.map(function (g) { return R.sum(g, 'shop_amount'); }), h = G.map(function (g) { return R.sum(g, 'manual_amount'); });
-    /* the rest of each period is the money paid before Razorpay was live: what the shop took in the period, minus the two routes above */
+    /* the rest of each period is the money paid before our Razorpay record starts: what the shop took in the period, minus the two routes above */
     var P2 = R.spread(M.has('money_daily') ? M.rowsIn('money_daily', c.r.from, c.r.to) : [], sp.B, 'date');
     var e = P2.map(function (g, i) { var t = R.sum(g, 'net_sales') + R.sum(g, 'shipping_charged'); return Math.max(0, Math.round((t - a[i] - h[i]) * 100) / 100); });
     if (hand > 0 || early > 0) {
       kids.push(R.sub('Week by week'));
-      kids.push(R.tc(sp.B, sp.mode, 'Where the money came from', [{ name: 'Through Razorpay', values: a, color: COL.maroon, fmt: R.inr }, { name: 'Marked paid by hand', values: h, color: COL.mustard, fmt: R.inr }, { name: 'Before Razorpay was live', values: e, color: COL.terra, fmt: R.inr }], { yfmt: R.yRs, h: 170 }));
+      kids.push(R.tc(sp.B, sp.mode, 'Where the money came from', [{ name: 'Through Razorpay', values: a, color: COL.maroon, fmt: R.inr }, { name: 'Marked paid by hand', values: h, color: COL.mustard, fmt: R.inr }, { name: 'Before our Razorpay record starts', values: e, color: COL.terra, fmt: R.inr }], { yfmt: R.yRs, h: 170 }));
     }
     if (hand > 0) kids.push(R.small('The ' + M.num(nH) + (nH === 1 ? ' order' : ' orders') + ' marked paid by hand (' + R.inr(hand) + ') carry no Razorpay fee and no Shopify charge on the payment, and Razorpay shows no payment for them. Shopify holds no note on how that money was received.'));
-    if (nB) kids.push(R.small('The ' + M.num(nB) + ' first orders (' + R.inr(Math.max(0, early)) + ', 19 May) were paid before the Razorpay account was live, so Razorpay has no record of them either.'));
+    if (nB) kids.push(R.small('The ' + M.num(nB) + ' first orders (' + R.inr(Math.max(0, early)) + ', 19 May) were paid before our Razorpay record starts, so Razorpay has no record of them either.'));
     return R.card(title, why, kids);
   });
 
@@ -15316,7 +15377,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       M.kpi({ label: 'Shop orders paid through Razorpay', value: R.inr(S('shop_amount')), note: M.num(S('shop_orders')) + ' orders.' }),
       M.kpi({ label: 'Payments and orders that agree', value: M.num(S('matched')), note: 'Same order, same amount, to the paisa.' }),
       M.kpi({ label: 'Days that differ', value: M.num(bad.length), note: ok ? 'Every day with a payment or an order agrees.' : 'Of ' + M.num(active.length) + ' days with a payment or an order.' })])];
-    var parts = [['Amount differs', 'amount_differs'], ['Order cancelled in the shop', 'cancelled_in_shop'], ['Payment with no order in the shop', 'not_in_shop'], ['Order says paid, no payment in Razorpay', 'no_payment'], ['Orders marked paid by hand', 'manual_orders'], ['Paid before the Razorpay account was live', 'before_live']];
+    var parts = [['Amount differs', 'amount_differs'], ['Order cancelled in the shop', 'cancelled_in_shop'], ['Payment with no order in the shop', 'not_in_shop'], ['Order says paid, no payment in Razorpay', 'no_payment'], ['Orders marked paid by hand', 'manual_orders'], ['Paid before our Razorpay record starts', 'before_live']];
     /* T1036: each kind of difference opens the payments or orders it counts. Only the kinds the tabs can name; a list is kept only when it holds exactly the counted number. */
     var D = M.drill, dayOf = function (col) { var d = {}; M0.forEach(function (x) { if (R.num(x[col])) d[String(x.date).slice(0, 10)] = 1; }); return d; };
     var payAll = M.has(R.T.pay) ? M.rows(R.T.pay) : [];
@@ -15325,12 +15386,12 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       not_in_shop: function () { var d = dayOf('not_in_shop'); return D.paySpec(payAll.filter(function (p) { return d[p.date] && R.isCap(p) && !p.shop_order; }), { title: 'Payments with no order in the shop' }); },
       no_payment: function () { return D.paidOrdersSpec(D.unpaidOrdersOn(dayOf('no_payment')), { title: 'Orders that say paid, with no payment in Razorpay', note: 'No payment in Razorpay' }); },
       manual_orders: function () { return D.paidOrdersSpec(D.unpaidOrdersOn(dayOf('manual_orders')), { title: 'Orders marked paid by hand', note: 'Marked paid by hand' }); },
-      before_live: function () { return D.paidOrdersSpec(D.unpaidOrdersOn(dayOf('before_live')), { title: 'Paid before the Razorpay account was live', note: 'Razorpay has no record of it' }); }
+      before_live: function () { return D.paidOrdersSpec(D.unpaidOrdersOn(dayOf('before_live')), { title: 'Paid before our Razorpay record starts', note: 'Razorpay has no record of it' }); }
     };
     var lines = parts.map(function (p) { return { label: p[0], value: S(p[1]), text: M.num(S(p[1])), color: p[1] === 'manual_orders' || p[1] === 'before_live' ? COL.grey : COL.terra, drill: drillOf[p[1]] && S(p[1]) ? D.countIs(drillOf[p[1]](), S(p[1])) : null }; });
     kids.push(R.sub('Why days differ, counted in payments or orders'));
     kids.push(M.bars(lines, { max: Math.max.apply(null, lines.map(function (l) { return l.value; }).concat([1])) }));
-    kids.push(R.small('The last two lines are not differences: orders marked paid by hand were not paid through Razorpay, and the first shop orders were paid before Razorpay\'s live account existed.'));
+    kids.push(R.small('The last two lines are not differences: orders marked paid by hand were not paid through Razorpay, and an order with no payment in the Razorpay history we hold (it starts on 26 May) has nothing to compare.'));
     var sp = mode0(c), G = R.spread(M0, sp.B, 'date'), a = G.map(function (g) { return R.sum(g, 'rzp_amount'); }), b = G.map(function (g) { return R.sum(g, 'shop_amount'); });
     kids.push(R.sub('Money, week by week'));
     kids.push(R.tc(sp.B, sp.mode, 'Razorpay and the shop', [{ name: 'Collected by Razorpay', values: a, color: COL.maroon, fmt: R.inr }, { name: 'Shop orders paid through Razorpay', values: b, color: COL.teal, fmt: R.inr }], { yfmt: R.yRs, h: 170 }));
@@ -15354,10 +15415,10 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       { k: 'difference', label: 'Difference', num: true, fmt: function (v) { var n = R.num(v); return (n > 0 ? '+' : '') + R.inr(n); } },
       { k: 'state', label: 'Result', sort: function (x) { return diffDays(x) ? 1 : 0; }, render: function (x) { return diffDays(x) ? R.mark('Differs', false) : R.mark('Agrees', true); } },
       M.refsCol('order', 'which', 'Which orders', { title: function (r) { return M.fd(r.date) + ': the orders'; }, none: 'none' }),
-      { k: 'why', label: 'What differs', render: function (x) { var t = parts.filter(function (p) { return R.num(x[p[1]]) && p[1] !== 'manual_orders' && p[1] !== 'before_live'; }).map(function (p) { return R.num(x[p[1]]) + ' ' + p[0].toLowerCase(); }); if (R.num(x.manual_orders)) t.push(R.num(x.manual_orders) + ' paid by hand'); if (R.num(x.before_live)) t.push(R.num(x.before_live) + ' before Razorpay was live'); return M.h('span', { text: t.join('; ') || 'Nothing' }); } }],
+      { k: 'why', label: 'What differs', render: function (x) { var t = parts.filter(function (p) { return R.num(x[p[1]]) && p[1] !== 'manual_orders' && p[1] !== 'before_live'; }).map(function (p) { return R.num(x[p[1]]) + ' ' + p[0].toLowerCase(); }); if (R.num(x.manual_orders)) t.push(R.num(x.manual_orders) + ' paid by hand'); if (R.num(x.before_live)) t.push(R.num(x.before_live) + ' before our Razorpay record starts'); return M.h('span', { text: t.join('; ') || 'Nothing' }); } }],
       { rows: active.map(function (x) {
           var o = {}; Object.keys(x).forEach(function (k) { o[k] = x[k]; }); var w = diffDays(x) || R.num(x.manual_orders) ? namesFor(x) : []; o.which_list = w; o.which = M.refList('order', w);
-          /* T1036: a day opens its payments (captured). When the day also holds orders that no payment names (paid by hand, before Razorpay was live, no payment found), they are listed apart under the payments. */
+          /* T1036: a day opens its payments (captured). When the day also holds orders that no payment names (paid by hand, before our Razorpay record starts, no payment found), they are listed apart under the payments. */
           var d = String(x.date).slice(0, 10), pays = payAll.filter(function (p) { return p.date === d && R.isCap(p); }), q = {}; q[d] = 1;
           var un = D.unpaidOrdersOn(q), sp = D.paySpec(pays, { title: M.fd(d) + ': the payments', lead: un.length ? 'The ' + (un.length === 1 ? 'order' : D.countText(un.length, 'order')) + ' with no Razorpay payment ' + (un.length === 1 ? 'is' : 'are') + ' in the list apart: ' + un.join(', ') + '.' : '' });
           o.drill = D.countIs(sp, R.num(x.rzp_payments));
@@ -15457,7 +15518,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var s = M.seam(); if (!s || !r) return '';
     var a = 0, b = 0, n = 0, from = r.from > s.from ? r.from : s.from;
     M.rowsIn(JOIN, from, r.to).forEach(function (x) { if (x.source === 'Google Analytics' && x.shopify_sessions != null && x.shopify_sessions !== '') { a += +x.sessions || 0; b += +x.shopify_sessions || 0; n++; } });
-    return a > 0 && n >= 7 ? 'On the ' + M.num(n) + ' days of these dates that both count, Shopify counts ' + M.pct((b - a) / a * 100, 1) + ' more visits than Google Analytics (' + M.num(b) + ' against ' + M.num(a) + '), because Shopify also counts people who block Google\'s tag.' : '';
+    return a > 0 && n >= 7 ? 'On the ' + M.num(n) + ' days of these dates that both count, Shopify counts ' + (b >= a ? M.pct((b - a) / a * 100, 1) + ' more' : M.pct((a - b) / a * 100, 1) + ' fewer') + ' visits than Google Analytics (' + M.num(b) + ' against ' + M.num(a) + ')' + (b >= a ? ', because Shopify also counts people who block Google\'s tag.' : '. The two tools count a visit by different rules, so a small gap either way is normal.') : '';      /* T1130 item 5: the direction is read from the numbers, never written in */
   };
   M.seamText = function (r) {
     var s = M.seam(); if (!s) return '';
@@ -15719,7 +15780,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     if (!tot[0].value) return;
     var b = M.buckets(r.from, r.to, r.mode), ser = steps.slice(0, 3).map(function (st, i) { return { name: st[0], values: M.series({ tab: SHOP, col: st[1] }, b), color: [COL.mustard, COL.teal, COL.maroon][i], type: 'line', fmt: M.num }; });
     ser.push({ name: 'Bought', values: M.series({ tab: SHOP, col: 'bought_sessions' }, b), color: COL.green, type: 'line', fmt: M.num });
-    var card = M.card('The steps from Shopify\'s own count of visits', 'How many visits added to the cart, reached checkout and bought, ' + M.fd(r.from) + ' to ' + M.fd(r.to) + ', counted by Shopify for every day since the shop had its first visit (' + M.fd(M.firstVisit() || r.from) + '). This counts VISITS that did each thing, so a visit that adds three pieces counts once; the six steps above count actions and only start on ' + M.fd(M.cover('funnel_device_daily').first || r.from) + '. Shopify counts about 6 percent more visits than Google Analytics.', [
+    var card = M.card('The steps from Shopify\'s own count of visits', 'How many visits added to the cart, reached checkout and bought, ' + M.fd(r.from) + ' to ' + M.fd(r.to) + ', counted by Shopify for every day since the shop had its first visit (' + M.fd(M.firstVisit() || r.from) + '). This counts VISITS that did each thing, so a visit that adds three pieces counts once; the six steps above count actions and only start on ' + M.fd(M.cover('funnel_device_daily').first || r.from) + '. ' + (cmpText(r) || 'Google Analytics and Shopify count a visit by different rules, so their totals differ a little.'), [
       M.h('div', { class: 'stepbars' }, [M.funnel(tot, { color: COL.teal, empty: 'No visit in these dates.' })]),
       M.chart('', function (h, w) { M.timeChart(h, w, { noEvents: true, buckets: b, mode: r.mode, title: 'Visits and the steps (Shopify)', h: 200, series: ser }); }),
       M.tableView([{ k: 'label', label: 'Period' }, { k: 'a', label: 'Visits', num: true, fmt: M.num }, { k: 'b', label: 'Added to the cart', num: true, fmt: M.num }, { k: 'c', label: 'Reached checkout', num: true, fmt: M.num }, { k: 'd', label: 'Bought', num: true, fmt: M.num }], b.map(function (bk, i) { return { label: bk.label, a: ser[0].values[i], b: ser[1].values[i], c: ser[2].values[i], d: ser[3].values[i] }; }))], 'stepcard');
@@ -16123,7 +16184,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   };
   var parcels = function (r) {
     if (!M.has('shiprocket_parcels')) return [];
-    return M.rows('shiprocket_parcels').filter(function (x) { return x.courier !== 'Self fulfilled'; }).filter(function (x) { var d = (x.picked_up_at || x.dispatch_date || x.order_date || '').slice(0, 10); return !r || (d >= r.from && d <= r.to); });
+    return M.rows('shiprocket_parcels').filter(function (x) { return x.courier !== 'Self fulfilled' && !/cancel/i.test(x.status || ''); }).filter(function (x) { var d = (x.picked_up_at || x.dispatch_date || x.order_date || '').slice(0, 10); return !r || (d >= r.from && d <= r.to); });
   };
   var money = function (x) { return (+x.freight || 0) + (+x.rto_charges || 0) + (+x.other_charges || 0); };
   var pickDay = function (x) { return (x.picked_up_at || x.dispatch_date || x.order_date || '').slice(0, 10); };
@@ -16142,6 +16203,12 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   M.addPageCards('shipping', function (r, root) {
     if (!M.isConnected('shiprocket', 'shiprocket_shipments_daily') || !M.has('shiprocket_parcels')) return;
     var P = parcels(r), allP = parcels(null), mode = r.mode;
+    /* T1126 (14 Nov 2026): the cards about MONEY (extra weight, weight slabs, states, couriers, cheaper courier, GST) use exactly the parcels of the Shipping cost list (dashboard_77_exchange_parcels.js,
+       M.shipLedger): dated by the day of the order like the Overview, a cancelled and refunded booking left out. The cards about TIME (the three clocks, days with the courier, the journey) keep the pickup day,
+       because a clock starts at the pickup. */
+    var LG = M.shipLedger ? M.shipLedger(r) : null, PM = LG ? LG.by.Shiprocket.rows.map(function (x) { return x.src; }) : P;
+    var ordDay = {}; if (M.has('order_sources')) M.rows('order_sources').forEach(function (x) { if (x.order && x.date) ordDay[x.order] = String(x.date).slice(0, 10); });
+    var inDates = function (x) { var d = ordDay[x.order] || ''; return d >= r.from && d <= r.to; };
     var add = function (node, afterRx) { if (!node) return; if (afterRx && M.vizPlace) M.vizPlace(root, node, afterRx); else root.appendChild(node); };
     var cards = [];
 
@@ -16200,31 +16267,37 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
           T.slice().sort(function (a, b2) { return a.date < b2.date ? -1 : 1; }), 'Show every parcel', { name: 'Journey of each parcel' })]));
     })();
 
-    /* ============================================================ 3. cost of a parcel over time, against the order value and against sales */
+    /* ============================================================ 3. cost of a parcel over time, against the order value and against sales
+       T1126 (14 Nov 2026, owner: "I see rs 107 a parcel in one place and 115 in another"): this card is the same list as the headline tile, so the average is the same number: every parcel the shop paid for
+       (Shiprocket, booked by hand, exchange parcels), dated by the day of its order. An order can have two parcels, so the card says "parcel" and "order" apart. */
     (function () {
-      if (!P.length) return none(cards, 'What a parcel costs, and what share of the order that is', 'The average cost of a parcel picked up in each period, and that cost as a share of what the orders were worth.');
-      var b = bk(r), cnt = b.map(function (x) { return inBucket(P, x, money).length; }), tot = b.map(function (x) { return inBucket(P, x, money).reduce(function (a, v) { return a + v; }, 0); });
+      var L = M.shipLedger ? M.shipLedger(r) : null;
+      if (!L || !L.n) return none(cards, 'What a parcel costs, and what share of the order that is', 'The average cost of a parcel in each period, and that cost as a share of what the orders were worth.');
+      var b = bk(r), in2 = function (x) { return L.rows.filter(function (y) { return y.day >= x.from && y.day <= x.to; }); };
+      var cnt = b.map(function (x) { return in2(x).length; }), tot = b.map(function (x) { return in2(x).reduce(function (a, v) { return a + v.cost; }, 0); });
       var avg = tot.map(function (v, i) { return cnt[i] ? v / cnt[i] : null; });
-      var val = b.map(function (x) { return inBucket(P, x, function (p) { return +p.order_value || 0; }).reduce(function (a, v) { return a + v; }, 0); });
+      var val = b.map(function (x) { return in2(x).reduce(function (a, v) { return a + v.value; }, 0); });
       var pctVal = tot.map(function (v, i) { return val[i] ? v / val[i] * 100 : null; });
-      var sumT = tot.reduce(function (a, v) { return a + v; }, 0), sumV = val.reduce(function (a, v) { return a + v; }, 0);
+      var sumT = L.total, sumV = L.orderValue;
       var sales = M.has('money_daily') ? M.total({ tab: 'money_daily', col: 'net_sales' }, r.from, r.to).v : null;
-      var kids = [M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Cost of a parcel', value: inr2(sumT / P.length), note: M.num(P.length) + ' parcels, ' + inr2(sumT) + ' in all. Freight, extra weight and return charges, GST inside.' }),
-        M.kpi({ label: 'Share of the order value', value: sumV ? M.pct(sumT / sumV * 100, 1) : 'n/a', note: 'The parcels\' cost against what those orders were worth to the buyer (' + inr(sumV) + ').' }),
+      var tileSpec = M.shipSpec('What these parcels cost', M.drill.countText(L.n, 'parcel') + ', ' + M.inr(sumT) + ' in all, before the WhatsApp tracking fee.', L.rows);
+      var kids = [M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Cost of a parcel', value: inr2(L.avg), note: M.num(L.n) + ' parcels, ' + inr2(sumT) + ' in all (Shiprocket, booked by hand and exchange parcels), GST inside. The same as the tile at the top.', drill: M.drill.same(tileSpec, sumT) }),
+        M.kpi({ label: 'Share of the order value', value: sumV ? M.pct(sumT / sumV * 100, 1) : 'n/a', note: 'The parcels\' cost against what the orders were worth to the buyer (' + inr(sumV) + '). An exchange parcel adds cost and no order value.' }),
         M.kpi({ label: 'Share of sales', value: sales ? M.pct(sumT / sales * 100, 1) : 'n/a', note: 'The same cost against all sales after discounts in these dates (' + inr(sales) + '). Standard shipping is free for the buyer, so this comes out of the margin.' })])];
+      if (L.perOrder != null && L.nOrders !== L.n) kids[0].appendChild(M.h('p', { class: 'small', text: 'An order can have two parcels (a second delivery, an exchange): ' + M.num(L.n) + ' parcels for ' + M.num(L.nOrders) + ' orders, so a parcel costs ' + inr2(L.avg) + ' and an order ' + inr2(L.perOrder) + ' on average.' }));
       var gm = b.length && b[0].from === b[0].to ? 'day' : 'week';
       kids.push(chart(function (h, w) { M.timeChart(h, w, { buckets: b, mode: gm, title: 'Average cost of a parcel', yfmt: yRs, h: 200, series: [{ name: 'Average cost of a parcel', values: avg, color: COL.maroon, fmt: inr2 }] }); }));
       kids.push(M.h('h4', { class: 'sub-h ship-sub', text: 'The same cost as a share of what the orders were worth' }));
       kids.push(chart(function (h, w) { M.timeChart(h, w, { buckets: b, mode: gm, title: 'Share of the order value', h: 170, yfmt: function (v) { return M.num(v, 0) + '%'; }, series: [{ name: 'Share of the order value', values: pctVal, color: COL.mustard, type: 'line', fmt: function (v) { return M.pct(v, 1); } }] }); }));
       kids.push(M.tableView([{ k: 'label', label: 'Period' }, { k: 'n', label: 'Parcels', num: true }, { k: 'avg', label: 'Average cost', num: true, fmt: inr2 }, { k: 'tot', label: 'Total cost', num: true, fmt: inr2 }, { k: 'p', label: 'Share of order value', num: true, fmt: function (v) { return v == null ? 'n/a' : M.pct(v, 1); } }],
         b.map(function (x, i) { return { label: x.label, n: cnt[i], avg: avg[i], tot: tot[i], p: pctVal[i], _from: x.from, _to: x.to }; }), 'Show the numbers as a table', { name: 'Cost of a parcel' }));
-      cards.push(card('What a parcel costs, and what share of the order that is', 'Each point is a week (a day when the dates are under 15 days) with at least one parcel picked up. A week with no parcel has no bar and no point.', kids));
+      cards.push(card('What a parcel costs, and what share of the order that is', 'Each point is a week (a day when the dates are under 15 days) with at least one parcel. A week with no parcel has no bar and no point. A parcel is dated the day of its order, as on the Overview.', kids));
     })();
 
     /* ============================================================ 4. extra weight, with the plain reason */
     (function () {
       if (!M.has('shiprocket_discrepancy')) return none(cards, 'Extra weight the couriers charged', 'Couriers bill the larger of the real weight and the size weight, in steps of 0.5 kg.', 'The extra weight table has not been saved yet. It is read from Shiprocket every night.');
-      var D = M.rows('shiprocket_discrepancy').filter(function (x) { return x.date >= r.from && x.date <= r.to; });
+      var D = M.rows('shiprocket_discrepancy').filter(function (x) { return x.order && !/^api\|/.test(x.key || '') && (+x.extra_amount > 0) && inDates(x); });      /* by the day of the order, like the Overview; the row Shiprocket's billing route adds for a parcel that already has one is merged into it by the night job */
       var kids = [];
       var all = M.rows('shiprocket_discrepancy'), extraAll = all.reduce(function (a, x) { return a + (+x.extra_amount || 0); }, 0);
       if (!D.length) { cards.push(card('Extra weight the couriers charged', 'Couriers bill the larger of the real weight and the size weight (length x width x height in cm, divided by 5000), in steps of 0.5 kg. When the packed parcel is bigger than the size declared, the courier bills more.', [empty(all.length ? 'No extra weight charge in these dates. ' + M.num(all.length) + ' parcels have carried one so far, ' + inr2(extraAll) + ' in all, the first on ' + M.fd(all.map(function (x) { return x.date; }).sort()[0]) + '.' : 'No courier has billed extra weight on any parcel so far.')])); return; }
@@ -16237,8 +16310,8 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var why = same ? 'The courier measured these parcels as heavier than declared: the size declared (' + D[0].declared_size_cm + ' cm, ' + d2(D[0].declared_kg) + ' kg) gives a size weight of ' + d2(D[0].volumetric_kg) + ' kg, and the courier billed ' + d2(D[0].billed_kg) + ' kg after measuring the packed parcel. The rest of the freight was charged at the declared weight; the difference is the extra.'
         : 'The courier measured these parcels as heavier than the weight declared and billed the higher weight. The rest of the freight was charged at the declared weight; the difference is the extra. Most common declared size: ' + common('declared_size_cm') + ' cm.';
       var exSpec = M.drill.same(M.drill.extraSpec(D, { title: 'Parcels billed for extra weight' }), tot);      /* T1036: the parcels behind the extra money */
-      kids.push(M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Extra weight charged', value: inr2(tot), note: M.num(D.length) + ' of ' + M.num(P.length) + ' parcels (' + M.pct(D.length / Math.max(1, P.length) * 100, 0) + ')', drill: exSpec }),
-        M.kpi({ label: 'Average extra', value: inr2(tot / D.length), note: 'per parcel that carried it', drill: exSpec }), M.kpi({ label: 'Share of freight', value: M.pct(tot / Math.max(1, P.reduce(function (a, x) { return a + (+x.freight || 0); }, 0)) * 100, 1), note: 'of the freight at the declared weight' })]));
+      kids.push(M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Extra weight charged', value: inr2(tot), note: M.num(D.length) + ' of ' + M.num(PM.length) + ' Shiprocket parcels (' + M.pct(D.length / Math.max(1, PM.length) * 100, 0) + ')', drill: exSpec }),
+        M.kpi({ label: 'Average extra', value: inr2(tot / D.length), note: 'per parcel that carried it', drill: exSpec }), M.kpi({ label: 'Share of freight', value: M.pct(tot / Math.max(1, PM.reduce(function (a, x) { return a + (+x.freight || 0); }, 0)) * 100, 1), note: 'of the freight at the declared weight' })]));
       kids.push(M.h('p', { class: 'small', text: why + ' Dispute result: ' + dtxt + '.' }));
       kids.push(chart(function (h, w) { M.timeChart(h, w, { buckets: b, mode: b.length && b[0].from === b[0].to ? 'day' : 'week', title: 'Extra weight charged', yfmt: yRs, series: [{ name: 'Extra weight charged', values: vals, color: COL.terra, fmt: inr2 }] }); }));
       kids.push(M.tableView([{ k: 'date', label: 'Picked up', fmt: M.fd }, M.refCol('order', 'order', 'Order'), { k: 'courier', label: 'Courier' }, { k: 'collection', label: 'Collection' }, { k: 'declared_kg', label: 'Declared kg', num: true, fmt: d2 }, { k: 'declared_size_cm', label: 'Declared size (cm)' }, { k: 'billed_kg', label: 'Billed kg', num: true, fmt: d2 }, { k: 'extra_amount', label: 'Extra paid', num: true, fmt: inr2 }, { k: 'dispute', label: 'Dispute' }],
@@ -16296,7 +16369,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
 
     /* ============================================================ 8. weight slabs */
     (function () {
-      var bySlab = {}; P.forEach(function (x) { var kg = +x.billed_kg || +x.declared_kg || 0, k = !kg ? 'not weighed' : kg <= 2 ? M.num(Math.ceil(kg * 2 - 1e-9) / 2, 1).replace(/\.0$/, '') + ' kg' : 'over 2 kg'; var o = bySlab[k] || (bySlab[k] = { slab: k, n: 0, cost: 0, rows: [] }); o.n++; o.cost += money(x); o.rows.push(x); });
+      var bySlab = {}; PM.forEach(function (x) { var kg = +x.billed_kg || +x.declared_kg || 0, k = !kg ? 'not weighed' : kg <= 2 ? M.num(Math.ceil(kg * 2 - 1e-9) / 2, 1).replace(/\.0$/, '') + ' kg' : 'over 2 kg'; var o = bySlab[k] || (bySlab[k] = { slab: k, n: 0, cost: 0, rows: [] }); o.n++; o.cost += money(x); o.rows.push(x); });
       var list = Object.keys(bySlab).map(function (k) { return bySlab[k]; }).sort(function (a, b2) { return (parseFloat(a.slab) || 99) - (parseFloat(b2.slab) || 99); });
       if (!list.length) return none(cards, 'Parcels by the weight the courier billed', 'Couriers bill in steps of 0.5 kg.');
       cards.push(card('Parcels by the weight the courier billed', 'Couriers bill in steps of 0.5 kg. A parcel that steps up to the next kg costs a lot more: On 6 Nov 2026 the rate to Mumbai was Rs. 63 to Rs. 79 higher at 1 kg than at 0.5 kg.', [
@@ -16307,7 +16380,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     /* ============================================================ 9. by state and by zone */
     (function () {
       var Z = M.has('shiprocket_zones') ? M.stateRows('shiprocket_zones').filter(function (x) { return x.kind === 'zone'; }) : [];
-      var st = {}; P.forEach(function (x) { if (!x.state) return; var o = st[x.state] || (st[x.state] = { state: x.state, n: 0, cost: 0, dl: 0, days: 0, back: 0, which: [], rows: [] }); o.which.push({ kind: 'order', value: x.order }); o.rows.push(x); o.n++; o.cost += money(x); if (x.status === 'returned') o.back++; if (x.status === 'delivered' && x.picked_up_at && x.delivered_at) { o.dl++; o.days += M.hoursBetween(x.picked_up_at, x.delivered_at) / 24; } });
+      var st = {}; PM.forEach(function (x) { if (!x.state) return; var o = st[x.state] || (st[x.state] = { state: x.state, n: 0, cost: 0, dl: 0, days: 0, back: 0, which: [], rows: [] }); o.which.push({ kind: 'order', value: x.order }); o.rows.push(x); o.n++; o.cost += money(x); if (x.status === 'returned') o.back++; if (x.status === 'delivered' && x.picked_up_at && x.delivered_at) { o.dl++; o.days += M.hoursBetween(x.picked_up_at, x.delivered_at) / 24; } });
       var S = Object.keys(st).map(function (k) { var o = st[k]; return { state: o.state, n: o.n, avg: o.cost / o.n, cost: o.cost, days: o.dl ? o.days / o.dl : null, back: o.back, which: M.refList('order', o.which), which_list: o.which, drill: M.drill.countIs(M.drill.parcelSpec(o.rows, { title: o.state + ': the parcels' }), o.n) }; }).sort(function (a, b2) { return b2.n - a.n; });
       if (!S.length) return none(cards, 'Cost and days by state and by zone', 'A zone is Shiprocket\'s measure of distance: A is the same city, B the same state, C metro to metro, D the rest of India, E the north east and hill states.');
       var kids = [];
@@ -16318,7 +16391,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
 
     /* ============================================================ 10. courier comparison */
     (function () {
-      var by = {}; P.forEach(function (x) { var o = by[x.courier] || (by[x.courier] = { courier: x.courier, n: 0, cost: 0, extra: 0, dl: 0, days: 0, back: 0, tries: 0, which: [], extraWhich: [], rows: [] }); o.n++; o.rows.push(x); o.which.push({ kind: 'order', value: x.order }); o.cost += money(x); o.extra += +x.other_charges || 0; if (+x.other_charges > 0) o.extraWhich.push({ kind: 'order', value: x.order }); if (x.status === 'returned') o.back++; if (x.status === 'delivered' && x.picked_up_at && x.delivered_at) { o.dl++; o.days += M.hoursBetween(x.picked_up_at, x.delivered_at) / 24; } });
+      var by = {}; PM.forEach(function (x) { var o = by[x.courier] || (by[x.courier] = { courier: x.courier, n: 0, cost: 0, extra: 0, dl: 0, days: 0, back: 0, tries: 0, which: [], extraWhich: [], rows: [] }); o.n++; o.rows.push(x); o.which.push({ kind: 'order', value: x.order }); o.cost += money(x); o.extra += +x.other_charges || 0; if (+x.other_charges > 0) o.extraWhich.push({ kind: 'order', value: x.order }); if (x.status === 'returned') o.back++; if (x.status === 'delivered' && x.picked_up_at && x.delivered_at) { o.dl++; o.days += M.hoursBetween(x.picked_up_at, x.delivered_at) / 24; } });
       var att = M.has('shiprocket_attempts') ? M.rows('shiprocket_attempts') : [];
       att.forEach(function (a) { if (by[a.courier]) by[a.courier].tries++; });
       var C = Object.keys(by).map(function (k) { var o = by[k]; return { courier: o.courier, n: o.n, avg: o.cost / o.n, extra: o.extra, days: o.dl ? o.days / o.dl : null, tries: o.tries, back: o.back, which: M.refList('order', o.which), which_list: o.which, extra_which: M.refList('order', o.extraWhich), extra_which_list: o.extraWhich, drill: M.drill.countIs(M.drill.parcelSpec(o.rows, { title: o.courier + ': the parcels' }), o.n) }; }).sort(function (a, b2) { return b2.n - a.n; });
@@ -16332,7 +16405,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     /* ============================================================ 11. what the cheapest courier would charge today */
     (function () {
       if (!M.has('shiprocket_rate_check')) return none(cards, 'Could a cheaper courier have carried it?', 'What the cheapest courier on Shiprocket would charge today at the weight the courier measured.', 'No parcel has been rated yet. Each parcel is rated once, the night after it is picked up.');
-      var R = M.rows('shiprocket_rate_check').filter(function (x) { return x.date >= r.from && x.date <= r.to && x.cheapest_rate !== '' && x.cheapest_rate != null; });
+      var R = M.rows('shiprocket_rate_check').filter(function (x) { return inDates(x) && x.cheapest_rate !== '' && x.cheapest_rate != null; });      /* by the order day, like the other money cards */
       var title = 'Could a cheaper courier have carried it?';
       if (!R.length) { cards.push(card(title, 'For each parcel, what the cheapest courier on Shiprocket would charge today at the weight the courier measured, against what was paid.', [empty('No parcel in these dates has been rated yet. Each parcel is rated once, the night after it is picked up.' + WHEN('shiprocket_rate_check'))])); return; }
       var save = R.map(function (x) { return Math.max(0, (+x.paid || 0) - (+x.cheapest_rate || 0)); }), tot = save.reduce(function (a, v) { return a + v; }, 0), paid = R.reduce(function (a, x) { return a + (+x.paid || 0); }, 0);
@@ -16366,7 +16439,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
        The parcel table holds the freight WITH its GST, so GST inside = 18/118 of it. Invoices come about every two weeks, so the newest parcels have none yet. */
     (function () {
       if (!P.length) return none(cards, 'GST inside the shipping charges', 'Shiprocket charges 18 percent IGST on freight.');
-      var paid = P.reduce(function (a, x) { return a + money(x); }, 0), inside = paid * IGST / (100 + IGST);
+      var paid = PM.reduce(function (a, x) { return a + money(x); }, 0), inside = paid * IGST / (100 + IGST);
       var all = M.has('shipping_invoices') ? M.rows('shipping_invoices').filter(function (x) { return x.invoice; }) : [];
       var inv = all.filter(function (x) { return x.date >= r.from && x.date <= r.to; });
       var isSvc = function (x) { return /service/i.test(x.kind || ''); };
@@ -16377,7 +16450,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
         M.kpi({ label: 'GST on the tax invoices of these dates', value: inr2(gstInv), hero: true, note: inv.length ? M.num(inv.length) + ' invoice' + (inv.length === 1 ? '' : 's') + ': ' + inr2(sum(inv, 'total')) + ' with GST. Credit the Accountant can claim.' : 'No tax invoice is dated in these dates.' }),
         M.kpi({ label: 'Freight and extra charges billed', value: inr2(sum(fr, 'total')), note: M.num(fr.length) + ' invoice' + (fr.length === 1 ? '' : 's') + ', GST ' + inr2(sum(fr, 'igst')) }),
         M.kpi({ label: 'WhatsApp tracking fees billed', value: inr2(sum(sv, 'total')), note: M.num(sv.length) + ' invoice' + (sv.length === 1 ? '' : 's') + ', GST ' + inr2(sum(sv, 'igst')) + '. Rs. 5 + GST a message, billed on the 3rd for the month before.' }),
-        M.kpi({ label: 'GST inside the parcel charges', value: inr2(inside), note: 'Of ' + inr2(paid) + ' paid to couriers through Shiprocket in these dates (' + inr2(paid - inside) + ' before tax), worked out as 18/118.' })])];
+        M.kpi({ label: 'GST inside the parcel charges', value: inr2(inside), note: 'Of ' + inr2(paid) + ' paid to Shiprocket in these dates (' + inr2(paid - inside) + ' before tax), worked out as 18/118. Parcels booked by hand carry their own GST: see the Overview and the Taxes page.' })])];
       /* freight booked on parcels (all of them) against freight invoiced so far (all of them): what is still to be billed */
       var booked = allP.reduce(function (a, x) { return a + money(x); }, 0), billed = sum(all.filter(function (x) { return !isSvc(x); }), 'total'), left = booked - billed;
       if (left > 0.5) kids.push(M.note('Shiprocket has booked ' + inr2(booked) + ' of freight and extra charges on parcels so far and billed ' + inr2(billed) + '. The ' + inr2(left) + ' not yet billed carries about ' + inr2(left * IGST / (100 + IGST)) + ' of GST that arrives on the next invoices.', false));
@@ -16397,8 +16470,8 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
    Two kinds of item:
      NEEDS ATTENTION  a condition that is still true now (a size almost out, a parcel stuck, data gone stale). It stays until it is fixed, then disappears by itself.
      RECENT           an event of the last 7 days (a payment refused, a cancelled order, a low review). It stays 7 days, nothing is older than 30.
-   Every item has a deterministic id built from the data, so "new" and "read" survive a reload. Kinds (the only ones): payment refused, dispute, parcel stuck, size almost out, wallet low,
-   shop data stale, return or tax due in 7 days, dated item due in 7 days, low review, cancelled order. */
+   Every item has a deterministic id built from the data, so "new" and "read" survive a reload. Kinds (the only ones): payment refused, dispute, parcel stuck, extra weight billed, size almost out, wallet low,
+   shop data stale, return or tax due in 7 days, dated item due in 7 days, low review, cancelled order, extra weight billed (T1128). */
 (function () {
   var STORE = 'mazo-bell-v1', MAX_SHOWN = 8, MAX_HELD = 30, RECENT_DAYS = 7, HOLD_DAYS = 30;
   var SEV = { act: { word: 'Needs action', rank: 0 }, check: { word: 'Check', rank: 1 }, info: { word: 'Info', rank: 2 } };
@@ -16454,6 +16527,28 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       push({ id: 'stock|' + x.product + '|' + x.size + '|' + (none ? 'zero' : 'low'), kind: 'stock', sev: none ? 'act' : 'check', group: 'attention', date: today,
         title: none ? x.product + ', size ' + x.size + ' is sold out' : x.product + ', size ' + x.size + ' is almost out',
         why: none ? 'None left, and it sold ' + x.sold_28d + ' in the last 28 days.' : x.stock + ' left, and it sold ' + x.sold_28d + ' in the last 28 days: about ' + left + ' days at the fast pace.', page: 'forecast', card: /stock|size|run out|sold out/i });
+    });
+
+    /* 4b. a courier billed extra weight (T1128, 14 Nov 2026, owner: "yesterday we had a weight discrepancy, why was it not notified to me in dashboard"). Two items from the table
+       shiprocket_discrepancy, which holds one row per parcel the courier billed above the weight declared:
+         RECENT           a charge dated in the last 7 days: what was billed, and what to do about it;
+         NEEDS ATTENTION  a dispute that was raised but is still not answered after 7 days (the courier can still accept it, but the money is out of the wallet meanwhile).
+       The id holds the order and the tracking end, so the same charge is one item; an old charge the courier already rejected is history and is not shown. */
+    rows('shiprocket_discrepancy').forEach(function (x) {
+      if (!x.order || String(x.key || '').indexOf('api|') === 0 && !+x.extra_amount) return;
+      var d = String(x.charged_on || x.date || '').slice(0, 10), extra = +x.extra_amount || 0, st = String(x.dispute || '').toLowerCase();      /* charged_on = the day Shiprocket recorded the charge (its billing route); the row's own date is the pickup day */
+      if (!M.isDate(d) || !extra) return;
+      var age = daysAgo(d, today), id = x.order + '|' + (x.awb_tail || '');
+      var closed = /reject|accept|resolved|won|lost|closed/.test(st);
+      if (age >= 0 && age <= RECENT_DAYS && !closed) {
+        push({ id: 'weight|' + id, kind: 'weight', sev: 'check', group: 'recent', date: d, title: 'Order ' + x.order + ' was billed for extra weight: ' + rup(extra),
+          why: (x.courier ? x.courier + ' billed ' : 'The courier billed ') + M.num(x.billed_kg, 1) + ' kg against ' + M.num(x.declared_kg, 1) + ' kg declared. ' + (/raise|pending|open/.test(st) ? 'A dispute is already raised in Shiprocket.' : 'Raise a dispute in Shiprocket (Weight discrepancy), or fix the declared size of the box in the Shiprocket catalogue.'),
+          page: 'shipping', card: /extra weight/i });
+      }
+      if (/raise|pending|open/.test(st) && age > RECENT_DAYS) {
+        push({ id: 'weightopen|' + id, kind: 'weight', sev: 'check', group: 'attention', date: d, title: 'A weight dispute is still open for ' + x.order,
+          why: 'It was raised after ' + rup(extra) + ' extra weight was billed on ' + M.fd(d) + ' and the courier has not answered after ' + age + ' days. Look at Weight discrepancy in Shiprocket.', page: 'shipping', card: /extra weight/i });
+      }
     });
 
     /* 5. the Shiprocket wallet is low. It is the money that pays for parcels. */
@@ -16581,7 +16676,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   var wrap, btn, panel, inner, badge, list, tabsEl, tipEl, built = false, expanded = false, tab = 'attention', picked = false, cur = { items: [], today: '' };
   var SEVWORD = { act: 'Needs action', check: 'Check', info: 'Info' };
   var TABS = [['attention', 'Needs attention'], ['recent', 'Recent']];
-  var KINDIC = { payfail: 'pay', dispute: 'pay', wallet: 'pay', parcel: 'parcel', stock: 'stock', tax: 'date', dated: 'date', review: 'review', cancel: 'order', stale: 'data' };
+  var KINDIC = { payfail: 'pay', dispute: 'pay', wallet: 'pay', parcel: 'parcel', weight: 'parcel', stock: 'stock', tax: 'date', dated: 'date', review: 'review', cancel: 'order', stale: 'data' };
 
   var whenOf = function (o, today) {
     if (o.kind === 'tax' || o.kind === 'dated') return 'Due ' + M.fds(o.date);
@@ -16853,7 +16948,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
      order       #MZ1035            (Shopify order number; the primary thing)
      payment     pay_...Z25h        (the last 4 to 8 letters of Razorpay's payment id; the dashboard never keeps more)
      payout      UTR ...6721        (the bank reference end)
-     parcel      AWB ...1334        (the tracking number end)
+     parcel      AWB ...739990      (the last 6 digits of the tracking number, as Shiprocket and the courier print it; T1127, 14 Nov 2026)
      bill        Bill 610490926
      post        a short label that opens the post
    A reference is a small button: click it to copy. The reference itself turns into a check mark and "Copied" for 1.4 seconds (13 Nov 2026, owner: "I dont like the copied text that appears, choose a better UI"), and one small notice at the bottom centre says "Copied #MZ1035" (M.copied); a polite announcement says it too. Posts are links. A reference is plain text in the table search, the row detail and the CSV, so the filter box finds it.
@@ -16867,7 +16962,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     order: { word: 'Shop order', show: function (v) { v = String(v).trim(); return /^#/.test(v) ? v : '#' + v; } },
     payment: { word: 'Payment', show: function (v) { return 'pay ' + String(v).trim().slice(-8); } },
     payout: { word: 'Payout', show: function (v) { v = String(v).trim(); return 'UTR ' + (v.length > 6 ? v.slice(-6) : v); } },
-    parcel: { word: 'Parcel', show: function (v) { return 'AWB ' + String(v).trim().slice(-6); } },
+    parcel: { word: 'Parcel', show: function (v) { return 'AWB ...' + String(v).trim().slice(-6); } },      /* T1127: the ellipsis says it is the END of the number; before, 'AWB 9990' looked like a whole (wrong) number */
     bill: { word: 'Bill', show: function (v) { return 'Bill ' + String(v).trim(); } },
     post: { word: 'Post', show: function (v) { return String(v).trim().slice(0, 28); } }
   };
@@ -17220,7 +17315,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       function () {
         return rows.slice().sort(byRow(D.parcelDay, function (x) { return x.order; })).map(function (x) {
           var st = String(x.status || ''), done = st === 'delivered', back = /return|rto/i.test(st);
-          return { ref: { kind: 'order', value: x.order, copy: x.order }, ref2: x.awb_tail ? { kind: 'parcel', value: x.awb_tail, copy: x.awb_tail } : null, date: D.parcelDay(x), amount: D.parcelCost(x) || null,
+          return { ref: { kind: 'order', value: x.order, copy: x.order }, ref2: (x.awb_last6 || x.awb_tail) ? { kind: 'parcel', value: x.awb_last6 || x.awb_tail, copy: x.awb_last6 || x.awb_tail } : null, date: D.parcelDay(x), amount: D.parcelCost(x) || null,
             way: [x.courier, x.state].filter(Boolean).join(', '), status: cap1(st), tone: done ? 'good' : back || /fail/i.test(st) ? 'bad' : '', note: x.weight_note || '' };
         });
       });
@@ -17265,7 +17360,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var money = 0; rows.forEach(function (x) { money += num(x.extra_amount); });
     return D.mk({ title: o.title, sentence: D.countText(rows.length, 'parcel') + ' billed above the weight declared, ' + M.inr(r2(money)) + ' extra in all.', n: rows.length, money: money, noun: 'parcel' }, function () {
       return rows.slice().sort(byRow(function (x) { return x.date; }, function (x) { return x.order; })).map(function (x) {
-        return { ref: { kind: 'order', value: x.order, copy: x.order }, ref2: x.awb_tail ? { kind: 'parcel', value: x.awb_tail, copy: x.awb_tail } : null, date: x.date, amount: x.extra_amount, way: x.courier,
+        return { ref: { kind: 'order', value: x.order, copy: x.order }, ref2: (x.awb_last6 || x.awb_tail) ? { kind: 'parcel', value: x.awb_last6 || x.awb_tail, copy: x.awb_last6 || x.awb_tail } : null, date: x.date, amount: x.extra_amount, way: x.courier,
           status: 'Billed ' + M.num(x.billed_kg, 2) + ' kg, declared ' + M.num(x.declared_kg, 2) + ' kg', tone: 'bad', note: x.dispute || '' };
       });
     });
@@ -17273,7 +17368,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   D.attemptSpec = function (rows, o) {
     return D.mk({ title: o.title, sentence: D.countText(rows.length, 'try') + ', each in the courier\'s own words.', n: rows.length, money: 0, noun: 'try' }, function () {
       return rows.slice().sort(byRow(function (x) { return x.date; }, function (x) { return x.order; })).map(function (x) {
-        return { ref: { kind: 'order', value: x.order, copy: x.order }, ref2: x.awb_tail ? { kind: 'parcel', value: x.awb_tail, copy: x.awb_tail } : null, date: x.date, way: [x.courier, x.state].filter(Boolean).join(', '), status: x.reason || cap1(x.kind), tone: 'bad', note: x.outcome ? cap1(x.outcome) : '' };
+        return { ref: { kind: 'order', value: x.order, copy: x.order }, ref2: (x.awb_last6 || x.awb_tail) ? { kind: 'parcel', value: x.awb_last6 || x.awb_tail, copy: x.awb_last6 || x.awb_tail } : null, date: x.date, way: [x.courier, x.state].filter(Boolean).join(', '), status: x.reason || cap1(x.kind), tone: 'bad', note: x.outcome ? cap1(x.outcome) : '' };
       });
     });
   };
@@ -17314,46 +17409,144 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   };
 })();
 
-/* mazo dashboard: PARCELS BOOKED BY HAND (T1085, 12 Nov 2026; T1114, 13 Nov 2026: the card also holds an order's own first parcel when its Shiprocket shipment was cancelled and sent by another courier, leg 'delivery', the shop paid, for example #MZ1039 by DTDC Rs. 560). Owner: order #MZ1037 is a size exchange. The buyer pays BOTH Delhivery parcels (70 + 70 = Rs. 140) by GPay to Madhu, and Madhu pays Delhivery.
-   None of it passes through Shopify, Razorpay or Shiprocket, so no other card could see it ("how this should be updated everywhere, even in our dashboard, because we have shipping cost also").
-   One card at the bottom of the Shipping page, from the typed table exchange_parcels (scripts/exchange_parcel_add.py): each exchange parcel with its order, leg, courier, what Madhu paid the courier
-   and what the buyer paid her. It is a PASS THROUGH: the card adds its own two totals and says plainly that they are not part of the Shiprocket cost figures above, so the Shiprocket averages stay true.
-   A parcel not booked yet shows "to book". Only the order number and the end of the tracking number are kept: no name, address or phone. */
+/* mazo dashboard: SHIPPING IS ONE COST (T1126, 14 Nov 2026; replaces the card "Parcels booked by hand (not in Shiprocket)" of T1085, T1114 and T1118b).
+   Owner, 14 Nov 2026, note on the Shipping page: "the cards should include all parcel cost, not just Shiprocket please. I see Rs 107 a parcel in one place, and 115 in another place. Do not split into Shiprocket
+   specific data and outside parcel specific data: shipping is one cost no matter which way it goes, right?"
+   ONE list of every parcel the shop paid for, and every number about parcels on this page comes from it:
+     Shiprocket   a parcel Shiprocket booked and billed (freight, extra weight, return charges, GST inside); a cancelled booking is refunded, so it is no parcel and no cost
+     By hand      the first parcel of an order that Madhu booked herself (DTDC, Porter, Delhivery...), at what she paid
+     Exchange     a parcel of an exchange or a second parcel for an order: what Madhu paid the courier minus what the buyer paid back
+     Guess        an order whose parcel cost is not known yet: the stated guess (human_inputs parcel_cost), so no order is free by mistake
+   WHEN a parcel is dated: the same day the Overview uses, so the totals agree for ANY dates: a Shiprocket or hand first parcel on the day of its ORDER, an exchange parcel on its own day.
+   The cost of sending the Overview shows (Shipping and parcel) is this list plus Shiprocket's WhatsApp tracking fee; M.shipLedger checks that and the page shows the Overview figure.
+   A parcel is counted once, an order can have two parcels: the page says "a parcel" and "an order" apart.
+   Words for the reader: plain; no name, phone or address is ever read (only the order number, the courier, the end of the tracking number and rupees). */
 (function () {
-  if (!M.PAGES || !M.PAGES.shipping || !M.addPageCards) return;
   var num = function (v) { return v == null || v === '' || isNaN(+v) ? 0 : +v; };
-  M.addPageCards('shipping', function (r, root) {
-    if (!M.has('exchange_parcels')) return;
-    var all = M.rows('exchange_parcels').filter(function (x) { return x.order; });
-    if (!all.length) return;
-    var rows = all.filter(function (x) { return x.date >= r.from && x.date <= r.to; });
-    var paid = rows.reduce(function (a, x) { return a + num(x.paid_to_courier); }, 0), got = rows.reduce(function (a, x) { return a + num(x.collected_from_buyer); }, 0);
-    var orders = {}; rows.forEach(function (x) { orders[x.order] = 1; });
-    /* T1118b (14 Nov 2026, owner: 'madhu paid 160, but the customer paid 120 for express shipping, so 40 extra paid out of hand'): for an order whose FIRST parcel Madhu paid by hand, the shipping the buyer paid at checkout (tax_orders.shipping_taxable) is the other side of the same parcel, so the true net is what Madhu paid minus what the buyer paid for shipping minus what the buyer paid back. An exchange parcel has no checkout shipping of its own. */
-    var shipPaid = {}; if (M.has('tax_orders')) M.rows('tax_orders').forEach(function (x) { if (x.order && x.kind === 'sale' && num(x.shipping_taxable) > 0) shipPaid[x.order] = num(x.shipping_taxable); });
-    var atCheckout = 0, netOf = function (x) { return num(x.paid_to_courier) - num(x.collected_from_buyer) - (x.leg === 'delivery' ? (shipPaid[x.order] || 0) : 0); };
-    rows.forEach(function (x) { if (x.leg === 'delivery') atCheckout += shipPaid[x.order] || 0; });
-    var left = -rows.reduce(function (a, x) { return a + netOf(x); }, 0);      /* negative = a cost to the shop, as before */
+  var pc = function (v) { return Math.round(num(v) * 100); }, rs = function (p) { return Math.round(p) / 100; };
+  var orderNum = function (n) { var m = String(n).match(/(\d+)\s*$/); return m ? +m[1] : -1; };
+  var chipOf = function (n) { return { kind: 'order', value: n, copy: n }; };
+  var low = function (v) { return String(v == null ? '' : v).trim().toLowerCase(); };
+  var LEG = { return: 'Piece coming back', resend: 'Second parcel going out' };
+  var WAYS = [['Shiprocket', 'Sent through Shiprocket'], ['By hand', 'First parcel booked by Madhu'], ['Exchange', 'Exchange and second parcels'], ['Guess', 'Cost not known yet (the stated guess)']];
+
+  /* the ledger of the dates r = {from, to}. Never throws on missing tabs: a missing tab simply holds no parcel. */
+  M.shipLedger = function (r) {
+    var rows = [], free = [], last = (M.D && M.D.anchor) || '9999-12-31';
+    var inR = function (d) { return !!d && d >= r.from && d <= r.to && d <= last; };
+    var orderDay = {}; if (M.has('order_sources')) M.rows('order_sources').forEach(function (x) { if (x.order && x.date) orderDay[x.order] = String(x.date).slice(0, 10); });
+    var valueOf = {}; if (M.has('tax_orders')) M.rows('tax_orders').forEach(function (x) { if (x.order && x.kind === 'sale' && num(x.total_paid) > 0) valueOf[x.order] = num(x.total_paid); });
+    var hi = {}; if (M.has('human_inputs')) M.rows('human_inputs').forEach(function (x) { if (x.key && x.value !== '' && x.value != null && !isNaN(+x.value) && !(x.key in hi)) hi[x.key] = +x.value; });
+    var guessCost = hi.parcel_cost > 0 ? hi.parcel_cost : 100;
+    var hand = {}, ex = [];
+    if (M.has('exchange_parcels')) M.rows('exchange_parcels').forEach(function (x) {
+      if (!x.order) return;
+      var leg = low(x.leg), paid = x.paid_to_courier === '' || x.paid_to_courier == null ? null : num(x.paid_to_courier), st = low(x.status);
+      if (leg === 'delivery') { if (paid != null && (paid > 0 || (paid === 0 && st === 'no cost'))) hand[x.order] = x; }
+      else if (leg === 'return' || leg === 'resend') ex.push(x);
+    });
+    var known = {};
+    /* 1 Shiprocket parcels (a parcel that was cancelled and refunded costs nothing and is not listed; an order whose first parcel Madhu paid by hand is on the hand line, not here) */
+    if (M.has('shiprocket_parcels')) M.rows('shiprocket_parcels').forEach(function (x) {
+      if (x.courier === 'Self fulfilled' || /cancel/i.test(x.status || '') || !x.order || !(x.order in orderDay) || (x.order in hand)) return;
+      var cost = num(x.freight) + num(x.rto_charges) + num(x.other_charges); if (!(cost > 0)) return;
+      known[x.order] = 1;
+      var d = orderDay[x.order]; if (!inR(d)) return;
+      rows.push({ order: x.order, day: d, way: 'Shiprocket', courier: x.courier || '', awb: x.awb_last6 || x.awb_tail || '', cost: cost, paid: cost, back: 0, freight: num(x.freight), rto: num(x.rto_charges), extra: num(x.other_charges), state: x.status || '', note: x.weight_note || '', picked: String(x.picked_up_at || x.dispatch_date || '').slice(0, 10), src: x });      /* src: the parcel's own row, so the Shiprocket cards below use exactly this set */
+    });
+    /* 2 first parcels Madhu booked herself */
+    Object.keys(hand).forEach(function (o) {
+      var x = hand[o], d = orderDay[o] || String(x.date || '').slice(0, 10); known[o] = 1; if (!inR(d)) return;
+      var paid = num(x.paid_to_courier);
+      if (paid > 0) rows.push({ order: o, day: d, way: 'By hand', courier: x.carrier || 'not told', awb: x.awb_tail || '', cost: paid, paid: paid, back: 0, freight: paid, rto: 0, extra: 0, state: x.status === 'booked' ? 'booked' : (x.status || ''), note: x.note || '' });
+      else free.push(o);
+    });
+    /* 3 exchange parcels and second parcels, on their own day, at what the shop bears */
+    ex.forEach(function (x) {
+      var d = String(x.date || '').slice(0, 10), paid = num(x.paid_to_courier), back = num(x.collected_from_buyer); if (!inR(d) || !(paid > 0)) return;
+      rows.push({ order: x.order, day: d, way: 'Exchange', courier: x.carrier || 'not told', awb: x.awb_tail || '', cost: paid - back, paid: paid, back: back, freight: paid, rto: 0, extra: 0, state: x.status === 'booked' ? 'booked' : x.status === 'to book' ? 'not booked yet' : (x.status || ''), note: x.note || '', leg: LEG[low(x.leg)] || '' });
+    });
+    /* 4 an order with no known parcel cost is counted at the stated guess, so it is never free by mistake */
+    Object.keys(orderDay).forEach(function (o) {
+      if (known[o] || !inR(orderDay[o])) return;
+      rows.push({ order: o, day: orderDay[o], way: 'Guess', courier: '', awb: '', cost: guessCost, paid: guessCost, back: 0, freight: guessCost, rto: 0, extra: 0, state: 'not known yet', note: 'Shiprocket has not billed this parcel yet, so it is counted at the stated guess of ' + M.inr(guessCost) + '.' });
+    });
+    rows.sort(function (a, b) { return a.day < b.day ? 1 : a.day > b.day ? -1 : orderNum(b.order) - orderNum(a.order) || (a.way < b.way ? -1 : 1); });
+    var seen = {}; rows.forEach(function (x) { x.value = 0; if (!seen[x.order] && x.way !== 'Exchange') { seen[x.order] = 1; x.value = valueOf[x.order] || 0; } });
+    var out = { rows: rows, free: free.sort(function (a, b) { return orderNum(b) - orderNum(a); }), n: rows.length, p: 0, orders: {}, by: {}, from: r.from, to: r.to };
+    WAYS.forEach(function (w) { out.by[w[0]] = { n: 0, p: 0, rows: [], title: w[1] }; });
+    rows.forEach(function (x) { var p = pc(x.cost); out.p += p; out.orders[x.order] = 1; var b = out.by[x.way]; b.n++; b.p += p; b.rows.push(x); });
+    out.total = rs(out.p); out.nOrders = Object.keys(out.orders).length; out.avg = out.n ? out.total / out.n : null; out.perOrder = out.nOrders ? out.total / out.nOrders : null;
+    var sumV = 0; rows.forEach(function (x) { sumV += x.value; }); out.orderValue = sumV;
+    return out;
+  };
+
+  /* what the Overview calls "Shipping and parcel" for the same dates, split into its courier part and Shiprocket's WhatsApp tracking fee (both in paise) */
+  M.shipOverview = function (r, L) {
+    var C = M.moneyCalc ? M.moneyCalc({ from: r.from, to: r.to }) : null;
+    if (!C || !C.t) return { known: false, total: L.total, courier: L.total, wa: 0, same: true, C: null, waPieces: [] };
+    var wa = C.t.whatsapp || 0, courierP = C.t.parcel - wa;
+    return { known: true, total: rs(C.t.parcel), courier: rs(courierP), wa: rs(wa), same: courierP === L.p, C: C, waPieces: C.waPieces || [] };
+  };
+
+  var itemOf = function (x) {
+    var way = x.way === 'Shiprocket' ? [x.courier, x.state && x.state !== 'delivered' ? x.state : ''] : [x.courier, x.way === 'Exchange' ? x.leg : x.way === 'Guess' ? 'a guess' : 'booked by Madhu'];
+    return { ref: chipOf(x.order), ref2: x.awb ? { kind: 'parcel', value: x.awb, copy: x.awb } : null, date: x.day, amount: x.cost, way: way.filter(Boolean).join(', '),
+      status: x.way === 'Exchange' ? 'Paid ' + M.inr(x.paid) + ', buyer paid back ' + M.inr(x.back) : x.way === 'Guess' ? 'Not known yet' : (x.state ? x.state.charAt(0).toUpperCase() + x.state.slice(1) : ''), tone: x.way === 'Guess' ? 'bad' : '', note: x.way === 'Shiprocket' ? (x.extra ? 'Includes ' + M.inr(x.extra) + ' of extra charges' : '') : '' };
+  };
+  /* a list of parcels as a side panel spec; plus optional extra lines (the WhatsApp invoices) */
+  M.shipSpec = function (title, sentence, list, extra) {
+    if (!M.drill || !M.drill.mk) return null;
+    extra = extra || [];
+    var money = 0; list.forEach(function (x) { money += x.cost; }); extra.forEach(function (e) { money += num(e.amount); });
+    return M.drill.mk({ title: title, sentence: sentence, n: list.length + extra.length, money: money, noun: 'line' }, function () {
+      return list.map(itemOf).concat(extra).sort(M.drill.newest);
+    });
+  };
+  M.shipWhatsApp = function (O) {
+    return (O.waPieces || []).filter(function (x) { return x.p; }).map(function (x) { return { ref: { kind: 'bill', value: x.inv, copy: x.inv }, title: 'WhatsApp tracking messages', date: x.date, amount: rs(x.p), note: x.days === x.of ? 'The invoice for ' + x.month : x.days + ' of the ' + x.of + ' days of ' + x.month + ' are inside the dates' }; });
+  };
+
+  /* the story, drawn on the Shipping page right under the headline tiles: where the money went, then every parcel. r = {from, to}. */
+  M.shipStory = function (r, root, L, O) {
+    L = L || M.shipLedger(r); O = O || M.shipOverview(r, L);
     var kids = [];
-    if (!rows.length) {
-      var newest = all.map(function (x) { return x.date; }).sort().pop(), later = newest > r.to && newest > M.D.anchor;
-      kids.push(M.empty('No parcel booked by hand between the dates chosen. ' + M.num(all.length) + ' stored in all' + (later ? ', the newest on ' + M.fd(newest) + ', which is after the newest day the dashboard holds (' + M.fd(M.D.anchor) + '). It shows here from the next nightly update.' : ', from ' + M.fd(all.map(function (x) { return x.date; }).sort()[0]) + '.')));
-    } else {
-      kids.push(M.h('div', { class: 'kpis' }, [
-        M.kpi({ label: 'Orders', value: M.num(Object.keys(orders).length), note: M.num(rows.length) + ' parcel' + (rows.length === 1 ? '' : 's') + ' in these dates' }),
-        M.kpi({ label: 'Paid to the courier', value: M.inr(paid), note: 'What Madhu paid the couriers for these parcels' }),
-        M.kpi({ label: 'Paid by the buyers', value: M.inr(got + atCheckout), note: atCheckout ? M.inr(atCheckout) + ' of shipping paid at checkout and ' + M.inr(got) + ' sent to Madhu' : 'What the buyers sent Madhu for them' }),
-        M.kpi({ label: 'Left with the shop', value: M.inr(left), note: left === 0 ? 'Nothing: the buyers pay the courier cost' : left < 0 ? 'Cost to the shop after what the buyers paid' : 'Paid by buyers, not yet paid to the courier' })]));
-      kids.push(M.table([M.refCol('order', 'order', 'Order'), { k: 'date', label: 'Date', fmt: M.fd },
-        { k: 'leg', label: 'Which parcel', fmt: function (v) { return v === 'return' ? 'Piece coming back' : v === 'resend' ? 'New size going out' : v === 'delivery' ? 'First delivery' : v; } },
-        { k: 'carrier', label: 'Courier' }, { k: 'awb_tail', label: 'Tracking (end)', fmt: function (v, row) { return v ? 'AWB ' + v : row && row.status === 'booked' ? 'Not told' : 'to book'; } },
-        { k: 'paid_to_courier', label: 'Paid to the courier', num: true, fmt: M.inr }, { k: 'collected_from_buyer', label: 'Paid by the buyer', num: true, fmt: M.inr }, { k: 'ship_at_checkout', label: 'Shipping paid at checkout', num: true, fmt: function (v) { return v ? M.inr(v) : ''; } }, { k: 'cost_to_shop', label: 'Cost to the shop', num: true, fmt: M.inr },
-        { k: 'how_collected', label: 'How', fmt: function (v) { return v === 'gpay' ? 'GPay to Madhu' : v === 'out of pocket' ? 'Paid by Madhu, not collected' : (v || ''); } }, { k: 'status', label: 'State', fmt: function (v) { return v === 'booked' ? 'Booked' : v === 'to book' ? 'Not booked yet' : (v || ''); } },
-        { k: 'note', label: 'Note', wrap: true }], { rows: rows.map(function (x) { var c = {}; for (var k in x) c[k] = x[k]; c.ship_at_checkout = x.leg === 'delivery' ? (shipPaid[x.order] || 0) : 0; c.cost_to_shop = netOf(x); return c; }).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }), sortKey: 'date', sortDir: -1, name: 'exchange-parcels', detail: false, empty: 'None.' }));
-    }
-    var card = M.card('Parcels booked by hand (not in Shiprocket)', 'Parcels Madhu books herself, outside Shiprocket: the two parcels of a size exchange (the buyer pays Madhu by GPay and Madhu pays Delhivery) and an order whose Shiprocket shipment was cancelled and sent by another courier (the shop pays). This money never passes through Shopify, Razorpay or Shiprocket, so it is listed here and nothing is missing. These amounts are not in the Shiprocket averages above, so those stay true; what the shop pays here is counted in the shipping cost and in profit: a first delivery on its order day, an exchange parcel on its own day as what Madhu paid the courier minus what the buyer paid back (so an exchange the buyer pays for adds nothing, and one the shop pays for lowers profit). Typed in by scripts/exchange_parcel_add.py.', kids);
-    root.appendChild(card);
-  });
+    if (!L.n && !O.wa) { root.appendChild(M.card('What sending cost', 'Every parcel the shop paid for, however it was sent.', [M.empty('No parcel was paid for in these dates.')])); return; }
+    /* a plain breakdown: each way a parcel went, with how many and what they cost */
+    var wrows = WAYS.map(function (w) {
+      var b = L.by[w[0]]; if (!b.n) return null;
+      var paid = 0, back = 0; b.rows.forEach(function (x) { paid += x.paid; back += x.back; });
+      var sub = w[0] === 'Exchange' ? 'Paid to the courier ' + M.inr(paid) + ', paid back by buyers ' + M.inr(back) : w[0] === 'Shiprocket' ? 'Freight, extra weight and return charges, GST inside' : w[0] === 'By hand' ? 'What Madhu paid the courier. The GST on it is counted in the GST credit on the Overview' : 'Counted until Shiprocket bills it';
+      return { way: w[1], n: b.n, cost: rs(b.p), sub: sub, drill: M.shipSpec(w[1], M.drill ? M.drill.countText(b.n, 'parcel') + ', ' + M.inr(rs(b.p)) + '.' : '', b.rows) };
+    }).filter(Boolean);
+    if (O.wa) wrows.push({ way: 'Shiprocket\'s WhatsApp tracking messages', n: null, cost: O.wa, sub: 'Rs. 5 plus GST for each message, billed on its own invoice', drill: M.shipSpec('WhatsApp tracking fee', 'Shiprocket\'s tracking invoices inside these dates.', [], M.shipWhatsApp(O)) });
+    wrows.push({ way: 'What shipping cost', n: L.n, cost: O.total, sub: 'The same figure as "Shipping and parcel" on the Overview for these dates', total: true, drill: M.shipSpec('What shipping cost', M.drill ? M.drill.countText(L.n, 'parcel') + ' and the WhatsApp tracking fee, ' + M.inr(O.total) + '.' : '', L.rows, M.shipWhatsApp(O)) });
+    wrows.forEach(function (w) { if (w.drill && !(M.drill && M.drill.same(w.drill, w.cost))) w.drill = null; });
+    kids.push(M.table([{ k: 'way', label: 'How it was sent', wrap: true, dim: false }, { k: 'n', label: 'Parcels', num: true, fmt: function (v) { return v == null ? '' : M.num(v); } }, { k: 'cost', label: 'What it cost the shop', num: true, fmt: M.inr }, { k: 'sub', label: 'What this is', wrap: true, dim: false }],
+      { rows: wrows, sortKey: null, name: 'what-shipping-cost', detail: false, empty: 'None.', noTools: true }));
+    var more = [];
+    more.push((L.nOrders === L.n ? '' : M.num(L.n) + ' parcels for ' + M.num(L.nOrders) + ' orders: an order can have a second parcel. ') + 'A parcel costs ' + (L.avg == null ? 'nothing yet' : M.inr(L.avg) + ' on average') + (L.perOrder == null || L.nOrders === L.n ? '' : ', an order ' + M.inr(L.perOrder) + ' on average') + ' (courier charges only, the WhatsApp fee is not in it).');
+    if (L.free.length) more.push(M.num(L.free.length) + (L.free.length === 1 ? ' order was' : ' orders were') + ' handed over by hand at no cost (' + L.free.slice(0, 8).join(', ') + '), so they are not parcels.');
+    if (!O.same) more.push('The parcel list adds up to ' + M.inr(L.total) + ' and the Overview holds ' + M.inr(O.courier) + ' for the same dates: the Overview figure is shown above.');
+    kids.push(M.h('p', { class: 'small', text: more.join(' ') }));
+    root.appendChild(M.card('What sending cost', 'Every parcel the shop paid for, however it went: Shiprocket, or booked by Madhu by hand. A parcel is dated the day of its order (an exchange parcel on its own day), the same as the Overview, so both pages agree for any dates.', kids));
+  };
+
+  /* every parcel, one table (drawn lower on the page, after the charts) */
+  M.shipTable = function (r, root, L) {
+    L = L || M.shipLedger(r);
+    if (!L.n) return;
+    var cols = [M.refCol('order', 'order', 'Order'), M.refCol('parcel', 'awb', 'Parcel', { none: 'not told' }), { k: 'day', label: 'Date', fmt: M.fd }, { k: 'way', label: 'How it was sent', dim: false },
+      { k: 'courier', label: 'Courier', wrap: true, dim: false }, { k: 'cost', label: 'What it cost the shop', num: true, fmt: M.inr },
+      { k: 'detail', label: 'What this is', wrap: true, dim: false }];
+    var tr = L.rows.map(function (x) {
+      var d = x.way === 'Exchange' ? (x.leg || 'Exchange parcel') + '. Paid to the courier ' + M.inr(x.paid) + ', paid back by the buyer ' + M.inr(x.back) + '.' + (x.state ? ' ' + x.state.charAt(0).toUpperCase() + x.state.slice(1) + '.' : '') :
+        x.way === 'Shiprocket' ? 'Freight ' + M.inr(x.freight) + (x.rto ? ', return charge ' + M.inr(x.rto) : '') + (x.extra ? ', extra weight and other charges ' + M.inr(x.extra) : '') + '.' : x.way === 'Guess' ? 'Not billed yet: the stated guess.' : 'Booked and paid by Madhu' + (x.state && x.state !== 'booked' ? ' (' + x.state + ')' : '') + '.';
+      return { order: x.order, awb: x.awb, day: x.day, way: x.way === 'Shiprocket' ? 'Shiprocket' : x.way === 'Guess' ? 'Not known yet' : 'By hand', courier: x.courier, cost: x.cost, detail: d };
+    });
+    root.appendChild(M.card('Every parcel and what it cost', 'One line for each parcel counted above, so any number on this page can be traced to its parcels. The Parcel column is the end of the tracking number, as Shiprocket and the courier print it.', [
+      M.table(cols, { rows: tr, sortKey: 'day', sortDir: -1, name: 'every-parcel', detail: false, limit: 15, empty: 'None.' })]));
+  };
 })();
 
 /* dashboard_78_other_payments.js: PAYMENTS THAT DID NOT GO THROUGH RAZORPAY, called DIRECT PAYMENTS (T1096, 13 Nov 2026; the collective term was chosen by the owner at 10:48: "just have a collective term for all outside payments").
@@ -17378,6 +17571,32 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       return { order: o, date: dateOf[o] || (tx[o] && tx[o].date) || '', amount: paid, method: method || 'Direct payment', told: !!method, received_on: t.received_on || '', note: t.note || '' };
     }).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : (a.order < b.order ? 1 : -1); });
   };
+  /* T1131 (14 Nov 2026, owner note on the Payments page: "here the value is 67851 but on the Overview the total paid by customers is a different value. This is what I mean by inconsistency").
+     'Paid by buyers' is EVERY real order's paid total, the same figure as the Overview's "Total paid by customers" (money_daily: sales after discounts + shipping charged, dated by the order day), split in three
+     plain parts that add up to it to the paisa: through Razorpay (a payment on record), direct payments (marked paid by hand), and paid before our Razorpay record starts (an order Shopify shows as paid through
+     Razorpay but with no payment in the Razorpay history we hold, which starts on 26 May: #MZ1002 on 19 May, Rs. 1,619). The three come from razorpay_match, the same table "Where the money came from" reads.
+     Returns {total, rz, hand, early, orders: {all, direct, early, rz}} (rupees). The payments and fees of the page below stay Razorpay's own, dated by the day of the payment. */
+  M.payAll = function (r) {
+    var sum = function (col) { return M.has('money_daily') ? M.sumCol('money_daily', col, r).v || 0 : 0; };
+    var total = Math.round((sum('net_sales') + sum('shipping_charged')) * 100) / 100, rz = 0, hand = 0, nR = 0, nH = 0, nB = 0, dayB = {};
+    if (M.has('razorpay_match')) M.rowsIn('razorpay_match', r.from, r.to).forEach(function (x) { rz += num(x.shop_amount); hand += num(x.manual_amount); nR += num(x.shop_orders); nH += num(x.manual_orders); nB += num(x.before_live); if (num(x.before_live)) dayB[String(x.date).slice(0, 10)] = 1; });
+    rz = Math.round(rz * 100) / 100; hand = Math.round(hand * 100) / 100;
+    var early = Math.round((total - rz - hand) * 100) / 100;
+    if (early < 0.005) early = 0;
+    var direct = M.otherPay(r).map(function (x) { return x.order; }), earlyO = M.drill.unpaidOrdersOn(dayB), all = M.has('order_sources') ? M.rowsIn('order_sources', r.from, r.to).map(function (x) { return x.order; }) : [];
+    var skip = {}; direct.concat(earlyO).forEach(function (o) { skip[o] = 1; });
+    return { total: total, rz: rz, hand: hand, early: early, n: { all: all.length, rz: nR, hand: nH, early: nB }, orders: { all: all, direct: direct, early: earlyO, rz: all.filter(function (o) { return !skip[o]; }) } };
+  };
+  /* the three parts as drill lists of ORDERS (each kept only when it adds up to its part to the paisa) */
+  M.payAllSpecs = function (A) {
+    var D = M.drill, mk = function (title, list, lead, val, note) { return list.length ? D.same(D.paidOrdersSpec(list, { title: title, lead: lead, note: note }), val) : null; };
+    return {
+      all: mk('Paid by buyers', A.orders.all, 'Every real order in these dates, the same orders as "Total paid by customers" on the Overview.', A.total),
+      rz: mk('Paid through Razorpay', A.orders.rz, 'Orders with a payment in the Razorpay record.', A.rz),
+      hand: mk('Paid directly', A.orders.direct, 'Orders marked paid by hand in Shopify. How the money came is typed by a person; Shopify does not record it.', A.hand, 'Direct payment'),
+      early: mk('Paid before our Razorpay record starts', A.orders.early, 'Shopify shows these orders as paid through Razorpay, but the Razorpay payments we hold start on 26 May, so no payment is on record for them.', A.early, 'No payment on record')
+    };
+  };
   M.otherPaySum = function (list) { var t = 0; list.forEach(function (x) { t += x.amount; }); return Math.round(t * 100) / 100; };
   /* one drill list for a group of these orders */
   M.otherPaySpec = function (title, list, lead) {
@@ -17392,7 +17611,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var total = M.otherPaySum(list), typed = list.some(function (x) { return x.told; });
     var tiles = M.h('div', { class: 'kpis rz' }, [
       M.kpi({ label: 'Direct payments', value: R.inr(total), note: M.num(list.length) + (list.length === 1 ? ' order' : ' orders') + ', no Razorpay fee', drill: M.drill.same(M.otherPaySpec('Direct payments', list), total) }),
-      M.kpi({ label: 'Share of all the money paid', value: R.pct(total, total + R.sum(c.C, 'amount'), 0), note: 'of Razorpay plus direct payments together' })]);
+      M.kpi({ label: 'Share of all the money paid', value: R.pct(total, (M.payAll(c.r).total) || (total + R.sum(c.C, 'amount')), 0), note: 'of everything buyers paid in these dates (the Overview figure)' })]);
     var kids = [M.grid([M.h('div', null, [R.sub('Money by way of paying'), M.donut(parts, { name: 'Direct payments', total: 'paid', unit: 'money', fmt: R.inr0 })]), tiles], 'wide')];
     kids.push(M.table([M.refCol('order', 'order', 'Order'), { k: 'date', label: 'Order day', fmt: M.fd }, { k: 'amount', label: 'Paid by the buyer', num: true, fmt: M.inr },
       { k: 'method', label: 'Way of paying', hidden: !typed }, { k: 'received_on', label: 'Money arrived on', hidden: !list.some(function (x) { return x.received_on; }), fmt: function (v) { return v ? M.fd(v) : ''; } },
@@ -17702,7 +17921,7 @@ M.unlock = function () {
     search:    [[['competitor_social', 'kpi_daily', 'shopify_visits_split_daily', 'visits_joined_daily'], 'all'], [['search_pages_weekly'], 'own']],      /* visits from AI assistants: Shopify's split before 5 Oct, and the date of the first one */
     email:     [['email_weekly', 'all']],
     payments:  [[['razorpay_payments_daily', 'razorpay_payments', 'razorpay_orders', 'razorpay_recon', 'razorpay_match', 'razorpay_balance_daily', 'money_daily', 'manual_payments', 'order_sources', 'tax_orders'], 'all']],      /* T707: money waiting, success by method, left checkouts and the match with the shop look at every day since the first payment */
-    shipping:  [[['money_daily', 'shiprocket_rate_check', 'shipping_daily', 'shiprocket_parcels', 'exchange_parcels', 'tax_orders'], 'all']],      /* 7 Nov 2026 night: the promise card, the status card and the 'Every order' table all read the one list of orders (shipping_daily) and the hand-delivered parcels */      /* 7 Nov 2026: the line 'N of 24 sales days use real costs' counts every sales day, and 'Could a cheaper courier have carried it?' reads every parcel's check */
+    shipping:  [[['money_daily', 'shiprocket_rate_check', 'shipping_daily', 'shiprocket_parcels', 'exchange_parcels', 'tax_orders', 'order_sources', 'human_inputs', 'shipping_invoices', 'shiprocket_discrepancy'], 'all']],      /* T1126: the one shipping cost list reads every order's day, the stated parcel guess and the WhatsApp invoices */      /* 7 Nov 2026 night: the promise card, the status card and the 'Every order' table all read the one list of orders (shipping_daily) and the hand-delivered parcels */      /* 7 Nov 2026: the line 'N of 24 sales days use real costs' counts every sales day, and 'Could a cheaper courier have carried it?' reads every parcel's check */
     tables:    [[['finance_monthly', 'judgeme_daily', 'order_sources', 'queries_weekly', 'returns_weekly', 'review_weekly'], 'all']],
     health:    [[['vitals_daily', 'ux_daily', 'data_trust_daily', 'clarity_weekly', 'speed_weekly'], 'all']],
     tax:       [[['tax_orders', 'razorpay_payments_daily'], 'own']]                                                                      /* dashboard_98_taxload.js opens the months of the chosen period */
