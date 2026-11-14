@@ -12805,7 +12805,7 @@ M.evenHeaders = function (root) {
       var tone = it.tone || 'confirmed', pending = tone === 'pending';
       var fill = tone === 'sales' ? M.COLORS.maroon : tone === 'final' ? M.COLORS.green : tone === 'result' ? M.COLORS.teal : pending ? 'url(#' + id + ')' : M.COLORS.terra;
       var amt = it.kind === 'minus' ? -it.value : it.value;
-      var gp = M.s('g', { tabindex: '0', class: 'mk mg-row ' + 'mg-' + tone, role: 'img', 'aria-label': it.label + ': ' + (it.none || (it.kind === 'minus' ? 'taken off ' : it.kind === 'plus' ? 'added back ' : '') + M.inr(it.value)) + (pending ? ', not confirmed yet' : '') });
+      var gp = M.s('g', { tabindex: '0', class: 'mk mg-row ' + 'mg-' + tone, role: 'img', 'aria-label': it.label + ': ' + (it.none || (it.kind === 'minus' ? 'taken off ' : it.kind === 'plus' ? (it.plusWord || 'added back ') : '') + M.inr(it.value)) + (pending ? ', not confirmed yet' : '') });
       var lines = wrap(it.label, chars), cy = r.y + r.h / 2 + 4 - (lines.length - 1) * 7;
       var t = M.s('text', { x: L - 8, y: cy, 'text-anchor': 'end', class: 'strong mg-lab' + (pending ? ' mg-pend' : '') });
       lines.forEach(function (ln, i) { t.appendChild(M.s('tspan', { x: L - 8, dy: i ? 14 : 0 }, ln)); });
@@ -12826,7 +12826,7 @@ M.evenHeaders = function (root) {
          so it jumped twice per move and again at every row. Now it is built and placed ONCE when the pointer enters a row (or the row gets keyboard focus), sits above that row to the right of the label column,
          and does not move while the pointer stays in the row. When there is no room above (the first rows) it opens below the row. Click or Enter still opens the same facts as a pinned panel. */
       var facts = function () {
-        var rowsT = [{ k: it.kind === 'minus' ? 'Taken off' : it.kind === 'plus' ? 'Added back' : 'Amount', v: M.inr(it.value) }];
+        var rowsT = [{ k: it.kind === 'minus' ? 'Taken off' : it.kind === 'plus' ? (it.plusWord ? 'Added' : 'Added back') : 'Amount', v: M.inr(it.value) }];
         if (it.kind === 'minus' || it.kind === 'plus') rowsT.push({ k: it.kind === 'plus' ? 'Total after this step' : 'Left after this step', v: M.inr(r.after) });
         (it.tip || []).forEach(function (x) { rowsT.push(x); });
         rowsT.push({ k: 'Status', v: pending ? 'Not confirmed yet' : tone === 'confirmed' ? (it.status || 'Confirmed') : tone === 'sales' ? 'From Shopify orders' : 'Worked out' });
@@ -13746,11 +13746,11 @@ M.annot = (function () {
                           Razorpay is connected). Shopify's 2.0 percent charge on Razorpay orders is INSIDE the Shopify bill; it is shown as a part of that line and is never taken off twice.
      NOT CONFIRMED YET    manufacturing and material (the cost typed in Shopify), packaging, shipping and parcel, other costs: placeholders until Madhu gives the real numbers.
    The sums, in whole paise so every row adds up to the paisa:
-     money left before costs      = gross sales - discounts - GST in the orders - refunds
+     money left before costs      = gross sales - discounts + shipping charged to buyers - GST in the orders - refunds
      left after confirmed costs   = that - Shopify bill - Razorpay charges
      profit after everything      = that - manufacturing and material - packaging - other costs + the GST credit on the Razorpay fee and the parcel cost (9 Nov 2026, T1016)
    The stored profit estimate (money_daily) takes off Shopify's per order charge instead of the bill, so: profit after everything = stored profit + per order charges - Shopify bill.
-   Known and left as it is (finding for Tech Guy): the stored profit does not add the shipping customers paid (Rs. 240 in October) and takes off the GST inside it.
+   T1116c (14 Nov 2026): the shipping customers pay at checkout is now ADDED (it was left out while the GST inside it was taken off, so every Express order understated profit by Rs. 120): money left before costs = gross sales - discounts + shipping charged to buyers - GST in the orders - refunds.
    Whole shop only, as before: a collection, product, channel or device filter hides the card and the page says why (dashboard_50_filters.js). */
 (function () {
   var pc = function (x) { return Math.round((+x || 0) * 100); };
@@ -13789,7 +13789,7 @@ M.annot = (function () {
     var days = M.diff(from, to) + 1;
     var line = function (s, bm, om, wa) {      /* every figure of one set of sums (the whole range or one month) in paise; wa = the WhatsApp tracking fee of those dates */
       var gross = s.gross_sales, net = s.net_sales, disc = gross - net;      /* discounts = gross - net, so the rows always add up even if a day was rounded a paisa apart */
-      var left = net - s.gst_included - s.refunds;
+      var left = net + s.shipping_charged - s.gst_included - s.refunds;      /* T1116c (14 Nov 2026, owner: the buyer paid Rs 120 for Express and the shop paid Porter Rs 160, 'so 40 extra paid out of hand'): the shipping a buyer pays at checkout is income, counted ONCE here and in money_daily.contribution_profit; the GST on it is already inside gst_included, so it is taken off in the same line */
       var bill = pc(bm.total), raz = s.est_payment_fee;
       var mk = s.product_cost, pk = s.est_packaging, pa = s.est_parcel_cost + wa, ot = om;
       /* 9 Nov 2026 (T1016, owner: "these charges should be applied for profit calculation too, in the Overview"): the Razorpay fee and the courier charge both have 18 percent GST INSIDE them (a fee or a
@@ -13841,9 +13841,10 @@ M.annot = (function () {
     var add = function (o) { rows.push(o); return o; };
     add({ step: 'Gross sales', amount: R(t.gross), group: 'Sales', how: 'The list price of every piece sold, before any discount.' });
     add({ step: 'Discounts', amount: -R(t.disc), group: 'Sales', how: 'Money taken off by discount codes and sale prices.' });
-    add({ step: 'GST in the orders', amount: -R(t.gst), group: 'Sales', how: 'The GST already inside what customers paid. It belongs to the government, so it is taken off.' });
+    if (t.ship) add({ step: 'Shipping charged to buyers', amount: R(t.ship), group: 'Sales', plus: true, how: 'What buyers paid for delivery at checkout (Express Rs. 120). It is money the shop received, so it is added; the GST inside it is taken off in the next line.' });
+    add({ step: 'GST in the orders', amount: -R(t.gst), group: 'Sales', how: 'The GST already inside what customers paid, on the pieces and on the shipping. It belongs to the government, so it is taken off.' });
     if (t.refunds) add({ step: 'Refunds', amount: -R(t.refunds), group: 'Sales', how: 'Money given back to customers.' });
-    add({ step: 'Money left before costs', amount: R(t.left), group: 'Sales', how: 'Gross sales minus discounts, GST and refunds.', isTotal: true });
+    add({ step: 'Money left before costs', amount: R(t.left), group: 'Sales', how: 'Gross sales minus discounts, plus the shipping buyers paid, minus GST and refunds.', isTotal: true });
     add({ step: 'Shopify bill', amount: B.known ? -R(t.bill) : null, group: 'Confirmed', how: B.known ? 'The plan plus Shopify\'s 2.0 percent charge on Razorpay orders. Real bills where Shopify has billed, an estimate for the days not billed yet. Now: ' + billWord + '.' : 'Not known yet: no bill is on record.', real: !B.est, est: !!B.est });
     if (B.known && B.planPart != null) {
       add({ step: 'of which the Shopify plan', amount: R(pc(B.planPart)), group: 'Confirmed', part: true, how: 'Part of the Shopify bill above. Not taken off again.' });
@@ -13866,7 +13867,8 @@ M.annot = (function () {
     var t = C.t, B = C.B, it = [], billWord = basisWord(B);
     it.push({ label: 'Gross sales', value: R(t.gross), kind: 'start', tone: 'sales', tip: [{ k: 'What it is', v: 'List price of every piece sold' }] });
     it.push({ label: 'Discounts', value: R(t.disc), kind: 'minus', tone: 'sales' });
-    it.push({ label: 'GST in the orders', value: R(t.gst), kind: 'minus', tone: 'sales', tip: [{ k: 'What it is', v: 'GST already inside the price. It goes to the government.' }] });
+    if (t.ship) it.push({ label: 'Shipping charged to buyers', value: R(t.ship), kind: 'plus', plusWord: 'added ', tone: 'sales', tip: [{ k: 'What it is', v: 'What buyers paid for delivery at checkout. The GST inside it comes off in the next step.' }] });
+    it.push({ label: 'GST in the orders', value: R(t.gst), kind: 'minus', tone: 'sales', tip: [{ k: 'What it is', v: 'GST already inside the price, on the pieces and on the shipping. It goes to the government.' }] });
     if (t.refunds) it.push({ label: 'Refunds', value: R(t.refunds), kind: 'minus', tone: 'sales' });
     /* 7 Nov 2026 night (Tech Guy: 'remove the confirmed label, let the not confirmed label be there; why a separate confirmed label when discounts and GST are also confirmed'): only the NOT CONFIRMED YET heading is drawn. */
     it.push({ label: 'Shopify bill', value: R(t.bill), kind: 'minus', tone: 'confirmed', status: B.known ? 'Confirmed (' + billWord + ')' : 'Confirmed (not known yet)', none: B.known ? null : 'no bill on record',
@@ -14012,7 +14014,7 @@ M.annot = (function () {
    Owner note on the Overview card: "You know earlier I asked you if on click of an item, in side panel we can show what and all adds up to this.. can you do that for every item on this section?"
    M.moneySpecs(C) takes the ONE calculation of the card (C = M.moneyCalc(range), dashboard_56_money.js) and returns a spec (dashboard_76_drill.js) for each line, keyed by KEY below. A spec is the list of
    what adds up to the line, and its money is the SAME number the line shows, to the paisa:
-     gross, disc, gst, refunds, razor, making, pack   the days of the range (money_daily's own figure for each day), each day with the orders of that day
+     gross, disc, ship, gst, refunds, razor, making, pack   the days of the range (money_daily's own figure for each day), each day with the orders of that day
      bill, plan, charges                              the Shopify bills that fall in the range (the part of each bill that lies inside it) and the estimated days
      parcel                                           the days (Shiprocket's charge or the guess), the parcels paid by hand outside Shiprocket (T1114, T1116), and Shiprocket's WhatsApp invoices
      wa                                               the WhatsApp tracking invoices
@@ -14023,7 +14025,7 @@ M.annot = (function () {
 (function () {
   var D = null, num = function (v) { return v == null || v === '' || isNaN(+v) ? 0 : +v; };
   var pc = function (x) { return Math.round((+x || 0) * 100); }, rs = function (p) { return Math.round(p) / 100; };
-  var KEY = { 'Gross sales': 'gross', 'Discounts': 'disc', 'GST in the orders': 'gst', 'Refunds': 'refunds', 'Money left before costs': 'left', 'Shopify bill': 'bill', 'of which the Shopify plan': 'plan',
+  var KEY = { 'Gross sales': 'gross', 'Discounts': 'disc', 'Shipping charged to buyers': 'ship', 'GST in the orders': 'gst', 'Refunds': 'refunds', 'Money left before costs': 'left', 'Shopify bill': 'bill', 'of which the Shopify plan': 'plan',
     'of which Shopify\'s charges': 'charges', 'Razorpay charges': 'razor', 'Shipping and parcel': 'parcel', 'of which Shiprocket\'s WhatsApp tracking fee': 'wa', 'Left after confirmed costs': 'confirmed',
     'Manufacturing and material': 'making', 'Packaging': 'pack', 'Other costs': 'other', 'GST credit on these costs': 'credit', 'Profit after everything': 'profit' };
   M.moneyKey = function (label) { return KEY[label] || ''; };
@@ -14037,6 +14039,13 @@ M.annot = (function () {
   var ordersByDay = function (from, to) {
     var by = {};
     if (M.has('order_sources')) M.rowsIn('order_sources', from, to).forEach(function (x) { var d = String(x.date || '').slice(0, 10); if (x.order && d) (by[d] = by[d] || []).push(x.order); });
+    Object.keys(by).forEach(function (d) { by[d].sort(function (a, b) { return orderNum(b) - orderNum(a); }); });
+    return by;
+  };
+  /* the orders that paid for shipping, by day (tax_orders.shipping_taxable above 0; only the chosen dates are read): used to name the orders behind the line "Shipping charged to buyers" */
+  var shipOrdersByDay = function (from, to) {
+    var by = {};
+    if (M.has('tax_orders')) M.rowsIn('tax_orders', from, to).forEach(function (x) { var d = String(x.date || '').slice(0, 10); if (x.order && d && x.kind === 'sale' && num(x.shipping_taxable) > 0) (by[d] = by[d] || []).push(x.order); });
     Object.keys(by).forEach(function (d) { by[d].sort(function (a, b) { return orderNum(b) - orderNum(a); }); });
     return by;
   };
@@ -14090,7 +14099,7 @@ M.annot = (function () {
     var t = C.t, B = C.B, out = {}, r = C.r;
     D = M.drill;
     if (!D || !D.mk || !C.byDay) return out;
-    var orders = ordersByDay(r.from, r.to), hand = handByDay(r.from, r.to);
+    var orders = ordersByDay(r.from, r.to), hand = handByDay(r.from, r.to), shipOrdersOf = shipOrdersByDay(r.from, r.to);
     var give = function (key, spec, value) { var s = spec && D.same(spec, spec.signed ? value : Math.abs(value)); if (s) out[key] = s; };      /* kept only when the list adds up to the line (a total's lines carry their signs) */
 
     /* the sales part */
@@ -14098,7 +14107,9 @@ M.annot = (function () {
       dayLines(C, { pick: function (b) { return b.gross_sales; }, note: function (d, b, os) { return os.length === 1 ? '1 order' : os.length + ' orders'; } }, orders)), rs(t.gross));
     give('disc', mk(C, { title: 'Discounts', sentence: 'Money taken off by discount codes and sale prices, day by day (the list price minus what was charged for the pieces).' },
       dayLines(C, { pick: function (b) { return b.gross_sales - b.net_sales; }, note: function (d, b, os) { return os.length === 1 ? '1 order' : os.length + ' orders'; } }, orders)), rs(t.disc));
-    give('gst', mk(C, { title: 'GST in the orders', sentence: 'The GST already inside what customers paid, day by day. It belongs to the government, so it is taken off.' },
+    if (t.ship) give('ship', mk(C, { title: 'Shipping charged to buyers', sentence: 'What buyers paid for delivery at checkout, day by day (Express Rs. 120). The orders that paid it are named under each day. The GST inside it is taken off in the line "GST in the orders".' },
+      dayLines(C, { pick: function (b) { return b.shipping_charged; }, note: function (d, b, os) { var n = shipOrdersOf[d] ? shipOrdersOf[d].length : 0; return n === 1 ? '1 order paid for shipping' : n + ' orders paid for shipping'; } }, shipOrdersOf)), rs(t.ship));
+    give('gst', mk(C, { title: 'GST in the orders', sentence: 'The GST already inside what customers paid, on the pieces and on the shipping, day by day. It belongs to the government, so it is taken off.' },
       dayLines(C, { pick: function (b) { return b.gst_included; }, note: function (d, b, os) { return os.length === 1 ? '1 order' : os.length + ' orders'; } }, orders)), rs(t.gst));
     if (t.refunds) give('refunds', mk(C, { title: 'Refunds', sentence: 'Money given back to customers, on the day of the order it belongs to.' },
       dayLines(C, { pick: function (b) { return b.refunds; } }, orders)), rs(t.refunds));
@@ -14159,9 +14170,9 @@ M.annot = (function () {
 
     /* the totals: the lines that make them. Each line opens its own list. */
     var part = function (title, amount, key, note) { return amount ? { title: title, amount: rs(amount), open: out[key] || null, note: note || '' } : null; };
-    give('left', mk(C, { title: 'Money left before costs', signed: true, keepOrder: true, sentence: 'Gross sales minus discounts, GST and refunds. Each line opens the days behind it.' },
-      [part('Gross sales', t.gross, 'gross'), part('Discounts', -(t.disc), 'disc'), part('GST in the orders', -(t.gst), 'gst'), t.refunds ? part('Refunds', -(t.refunds), 'refunds') : null]), rs(t.left));
-    var cl = [part('Money left before costs', t.left, 'left', 'Gross sales minus discounts, GST and refunds')];
+    give('left', mk(C, { title: 'Money left before costs', signed: true, keepOrder: true, sentence: 'Gross sales minus discounts, plus the shipping buyers paid, minus GST and refunds. Each line opens the days behind it.' },
+      [part('Gross sales', t.gross, 'gross'), part('Discounts', -(t.disc), 'disc'), t.ship ? part('Shipping charged to buyers', t.ship, 'ship') : null, part('GST in the orders', -(t.gst), 'gst'), t.refunds ? part('Refunds', -(t.refunds), 'refunds') : null]), rs(t.left));
+    var cl = [part('Money left before costs', t.left, 'left', 'Gross sales minus discounts, plus shipping, minus GST and refunds')];
     if (B.known) cl.push(part('Shopify bill', -(t.bill), 'bill'));
     cl.push(part('Razorpay charges', -(t.razor), 'razor'), part('Shipping and parcel', -(t.parcel), 'parcel'));
     give('confirmed', mk(C, { title: 'Left after confirmed costs', signed: true, keepOrder: true, sentence: 'Money left before costs, minus the Shopify bill, the Razorpay charges and the parcel cost. This is not the profit: the making cost is not taken off yet. Each line opens what is behind it.' }, cl), rs(t.confirmed));
@@ -17318,6 +17329,11 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var rows = all.filter(function (x) { return x.date >= r.from && x.date <= r.to; });
     var paid = rows.reduce(function (a, x) { return a + num(x.paid_to_courier); }, 0), got = rows.reduce(function (a, x) { return a + num(x.collected_from_buyer); }, 0);
     var orders = {}; rows.forEach(function (x) { orders[x.order] = 1; });
+    /* T1118b (14 Nov 2026, owner: 'madhu paid 160, but the customer paid 120 for express shipping, so 40 extra paid out of hand'): for an order whose FIRST parcel Madhu paid by hand, the shipping the buyer paid at checkout (tax_orders.shipping_taxable) is the other side of the same parcel, so the true net is what Madhu paid minus what the buyer paid for shipping minus what the buyer paid back. An exchange parcel has no checkout shipping of its own. */
+    var shipPaid = {}; if (M.has('tax_orders')) M.rows('tax_orders').forEach(function (x) { if (x.order && x.kind === 'sale' && num(x.shipping_taxable) > 0) shipPaid[x.order] = num(x.shipping_taxable); });
+    var atCheckout = 0, netOf = function (x) { return num(x.paid_to_courier) - num(x.collected_from_buyer) - (x.leg === 'delivery' ? (shipPaid[x.order] || 0) : 0); };
+    rows.forEach(function (x) { if (x.leg === 'delivery') atCheckout += shipPaid[x.order] || 0; });
+    var left = -rows.reduce(function (a, x) { return a + netOf(x); }, 0);      /* negative = a cost to the shop, as before */
     var kids = [];
     if (!rows.length) {
       var newest = all.map(function (x) { return x.date; }).sort().pop(), later = newest > r.to && newest > M.D.anchor;
@@ -17326,14 +17342,14 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       kids.push(M.h('div', { class: 'kpis' }, [
         M.kpi({ label: 'Orders', value: M.num(Object.keys(orders).length), note: M.num(rows.length) + ' parcel' + (rows.length === 1 ? '' : 's') + ' in these dates' }),
         M.kpi({ label: 'Paid to the courier', value: M.inr(paid), note: 'What Madhu paid the couriers for these parcels' }),
-        M.kpi({ label: 'Paid by the buyers', value: M.inr(got), note: 'What the buyers sent Madhu for them' }),
-        M.kpi({ label: 'Left with the shop', value: M.inr(got - paid), note: got - paid === 0 ? 'Nothing: the buyers pay the courier cost' : got - paid > 0 ? 'Paid by buyers, not yet paid to the courier' : 'Paid to the courier, not paid back by the buyers' })]));
+        M.kpi({ label: 'Paid by the buyers', value: M.inr(got + atCheckout), note: atCheckout ? M.inr(atCheckout) + ' of shipping paid at checkout and ' + M.inr(got) + ' sent to Madhu' : 'What the buyers sent Madhu for them' }),
+        M.kpi({ label: 'Left with the shop', value: M.inr(left), note: left === 0 ? 'Nothing: the buyers pay the courier cost' : left < 0 ? 'Cost to the shop after what the buyers paid' : 'Paid by buyers, not yet paid to the courier' })]));
       kids.push(M.table([M.refCol('order', 'order', 'Order'), { k: 'date', label: 'Date', fmt: M.fd },
         { k: 'leg', label: 'Which parcel', fmt: function (v) { return v === 'return' ? 'Piece coming back' : v === 'resend' ? 'New size going out' : v === 'delivery' ? 'First delivery' : v; } },
         { k: 'carrier', label: 'Courier' }, { k: 'awb_tail', label: 'Tracking (end)', fmt: function (v, row) { return v ? 'AWB ' + v : row && row.status === 'booked' ? 'Not told' : 'to book'; } },
-        { k: 'paid_to_courier', label: 'Paid to the courier', num: true, fmt: M.inr }, { k: 'collected_from_buyer', label: 'Paid by the buyer', num: true, fmt: M.inr },
+        { k: 'paid_to_courier', label: 'Paid to the courier', num: true, fmt: M.inr }, { k: 'collected_from_buyer', label: 'Paid by the buyer', num: true, fmt: M.inr }, { k: 'ship_at_checkout', label: 'Shipping paid at checkout', num: true, fmt: function (v) { return v ? M.inr(v) : ''; } }, { k: 'cost_to_shop', label: 'Cost to the shop', num: true, fmt: M.inr },
         { k: 'how_collected', label: 'How', fmt: function (v) { return v === 'gpay' ? 'GPay to Madhu' : v === 'out of pocket' ? 'Paid by Madhu, not collected' : (v || ''); } }, { k: 'status', label: 'State', fmt: function (v) { return v === 'booked' ? 'Booked' : v === 'to book' ? 'Not booked yet' : (v || ''); } },
-        { k: 'note', label: 'Note', wrap: true }], { rows: rows.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }), sortKey: 'date', sortDir: -1, name: 'exchange-parcels', detail: false, empty: 'None.' }));
+        { k: 'note', label: 'Note', wrap: true }], { rows: rows.map(function (x) { var c = {}; for (var k in x) c[k] = x[k]; c.ship_at_checkout = x.leg === 'delivery' ? (shipPaid[x.order] || 0) : 0; c.cost_to_shop = netOf(x); return c; }).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }), sortKey: 'date', sortDir: -1, name: 'exchange-parcels', detail: false, empty: 'None.' }));
     }
     var card = M.card('Parcels booked by hand (not in Shiprocket)', 'Parcels Madhu books herself, outside Shiprocket: the two parcels of a size exchange (the buyer pays Madhu by GPay and Madhu pays Delhivery) and an order whose Shiprocket shipment was cancelled and sent by another courier (the shop pays). This money never passes through Shopify, Razorpay or Shiprocket, so it is listed here and nothing is missing. These amounts are not in the Shiprocket averages above, so those stay true; what the shop pays here is counted in the shipping cost and in profit: a first delivery on its order day, an exchange parcel on its own day as what Madhu paid the courier minus what the buyer paid back (so an exchange the buyer pays for adds nothing, and one the shop pays for lowers profit). Typed in by scripts/exchange_parcel_add.py.', kids);
     root.appendChild(card);
@@ -17670,7 +17686,7 @@ M.unlock = function () {
                 'facebook_daily', 'youtube_daily', 'pinterest_account_daily', 'linkedin_posts_daily', 'instagram_more_daily', 'instagram_window', 'instagram_format_daily',
                 'facebook_more_daily', 'youtube_more_daily', 'youtube_split_daily', 'pinterest_split_daily', 'linkedin_more_daily'];               /* followers over time, the post list, the Instagram view; every measure of the other channels (T884, 6 Nov 2026, dashboard_70_social_measures.js); social_post_measures is a table of lifetime numbers per post and social_audience a small snapshot, both read whole */
   M.WINDOWS = {
-    overview:  [[['money_daily', 'ga4_funnel_daily'], 55], [['order_sources', 'exchange_parcels'], 'own']],      /* the goal card: orders of the 28 days and the 28 before. T1115: the side panel of each line of Where the money goes names the orders and the hand paid parcels of the CHOSEN dates only (rowsIn), so the months of those dates are enough and no other month is opened ('all' here opened every month file and broke the audit's coverage probe) */
+    overview:  [[['money_daily', 'ga4_funnel_daily'], 55], [['order_sources', 'exchange_parcels', 'tax_orders'], 'own']],      /* the goal card: orders of the 28 days and the 28 before. T1115: the side panel of each line of Where the money goes names the orders and the hand paid parcels of the CHOSEN dates only (rowsIn), so the months of those dates are enough and no other month is opened ('all' here opened every month file and broke the audit's coverage probe) */
     funnel:    [[['shopify_visits_daily'], 'all']],                                                                    /* the steps card from Shopify's count: it names the first day with a visit, so it reads every stored day */
     growth:    [[['money_daily', 'shopify_daily', 'ga4_funnel_daily', 'visits_joined_daily'], 'all']],                                       /* sales since the first sale, month by month, buyers built up: every stored day */
     products:  [[['stock_daily', 'product_sales_daily', 'product_ledger_hist', 'product_daily'], 'all']],     /* price over time since the first sale; stock night by night; the product in depth */
@@ -17686,7 +17702,7 @@ M.unlock = function () {
     search:    [[['competitor_social', 'kpi_daily', 'shopify_visits_split_daily', 'visits_joined_daily'], 'all'], [['search_pages_weekly'], 'own']],      /* visits from AI assistants: Shopify's split before 5 Oct, and the date of the first one */
     email:     [['email_weekly', 'all']],
     payments:  [[['razorpay_payments_daily', 'razorpay_payments', 'razorpay_orders', 'razorpay_recon', 'razorpay_match', 'razorpay_balance_daily', 'money_daily', 'manual_payments', 'order_sources', 'tax_orders'], 'all']],      /* T707: money waiting, success by method, left checkouts and the match with the shop look at every day since the first payment */
-    shipping:  [[['money_daily', 'shiprocket_rate_check', 'shipping_daily', 'shiprocket_parcels', 'exchange_parcels'], 'all']],      /* 7 Nov 2026 night: the promise card, the status card and the 'Every order' table all read the one list of orders (shipping_daily) and the hand-delivered parcels */      /* 7 Nov 2026: the line 'N of 24 sales days use real costs' counts every sales day, and 'Could a cheaper courier have carried it?' reads every parcel's check */
+    shipping:  [[['money_daily', 'shiprocket_rate_check', 'shipping_daily', 'shiprocket_parcels', 'exchange_parcels', 'tax_orders'], 'all']],      /* 7 Nov 2026 night: the promise card, the status card and the 'Every order' table all read the one list of orders (shipping_daily) and the hand-delivered parcels */      /* 7 Nov 2026: the line 'N of 24 sales days use real costs' counts every sales day, and 'Could a cheaper courier have carried it?' reads every parcel's check */
     tables:    [[['finance_monthly', 'judgeme_daily', 'order_sources', 'queries_weekly', 'returns_weekly', 'review_weekly'], 'all']],
     health:    [[['vitals_daily', 'ux_daily', 'data_trust_daily', 'clarity_weekly', 'speed_weekly'], 'all']],
     tax:       [[['tax_orders', 'razorpay_payments_daily'], 'own']]                                                                      /* dashboard_98_taxload.js opens the months of the chosen period */
