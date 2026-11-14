@@ -5583,7 +5583,7 @@ M.SEARCH_INDEX = [
 ["funnel","table","Shopping steps: where they came from","shopping steps: where they came from (last # days)"],
 ["funnel","table","Shopping steps: which product","shopping steps: which product (last # days)"],
 ["funnel","card","The steps from Shopify's own count of visits","the steps from shopify's own count of visits"],
-["funnel","kpi","Visits","visits, # of # days"],
+["funnel","kpi","Visits counted by Google","visits counted by google, # of # days"],
 ["funnel","kpi","Viewed a product","viewed a product"],
 ["funnel","kpi","Product view to cart","product view to cart"],
 ["funnel","kpi","Checkout to bought","checkout to bought"],
@@ -5703,8 +5703,8 @@ M.SEARCH_INDEX = [
 ["channels","table","Links we tagged (campaigns)","links we tagged (campaigns)"],
 ["channels","table","New people and people who came back","new people and people who came back"],
 ["channels","table","Phone, laptop or tablet","phone, laptop or tablet"],
-["channels","kpi","Visits","visits, # of # days"],
-["channels","kpi","Orders","orders"],
+["channels","kpi","Visits with a source","visits with a source, # of # days"],
+["channels","kpi","Orders Google saw","orders google saw"],
 ["channels","kpi","Revenue","revenue"],
 ["channels","kpi","Sources with visits","sources with visits"],
 ["social","table","Channels side by side","channels side by side"],
@@ -5721,7 +5721,7 @@ M.SEARCH_INDEX = [
 ["social","kpi","Followers, all channels","followers, all channels"],
 ["social","kpi","Posts in these dates","posts in these dates"],
 ["social","kpi","Visits to the shop from social","visits to the shop from social"],
-["social","kpi","Orders from social","orders from social"],
+["social","kpi","Orders Google saw from social","orders google saw from social"],
 ["search","card","Brand searches over time","brand searches over time"],
 ["search","card","Other searches over time","other searches over time"],
 ["search","table","What people typed","what people typed"],
@@ -5868,6 +5868,7 @@ M.SEARCH_INDEX = [
 ["shipping","kpi","What shipping cost","what shipping cost"],
 ["shipping","kpi","Days to deliver","days to deliver"],
 ["shipping","kpi","Came back","came back"],
+["shipping","kpi","Delivered inside the promise","delivered inside the promise"],
 ["shipping","kpi","Ready to ship pieces","ready to ship pieces"],
 ["shipping","kpi","Made to order pieces","made to order pieces"],
 ["shipping","kpi","Waited before the courier came","waited before the courier came"],
@@ -6615,7 +6616,7 @@ M.PAGES.funnel.render = function (r) {
   if (days < r.days) root.appendChild(M.h('p', { class: 'small muted', text: 'Only ' + days + ' of these ' + r.days + ' days have shopping steps data' + (M.missingWhy ? M.missingWhy('funnel_device_daily', r.from, r.to) : '') + '.' }));
   var kp = M.h('div', { class: 'kpis' });
   var buys = cur.purchase, vi = cur.view_item;
-  kp.appendChild(M.kpi({ label: 'Visits', value: M.num(sessions.v), note: s.device ? 'all devices' : '' }));
+  kp.appendChild(M.kpi({ label: 'Visits counted by Google', value: M.num(sessions.v), note: (s.device ? 'all devices. ' : '') + 'Google Analytics\' own total, from ' + M.fd(M.cover('ga4_funnel_daily').first || r.from) + '. The Overview Visits adds Shopify\'s own count for the days before that.' }));      /* T1131: one name per count */
   kp.appendChild(M.kpi({ label: 'Viewed a product', value: M.num(vi) }));
   kp.appendChild(M.kpi({ label: 'Product view to cart', value: vi ? M.pct(cur.add_to_cart / vi * 100) : 'not available', note: M.thin(vi) ? 'too few to read' : '' }));
   kp.appendChild(M.kpi({ label: 'Checkout to bought', value: cur.begin_checkout ? M.pct(buys / cur.begin_checkout * 100) : 'not available', note: M.thin(cur.begin_checkout) ? 'too few to read' : '' }));
@@ -7211,7 +7212,7 @@ M.RATIO_PARTS = {
 /* a stored name in everyday words: capital first letter, no underscores, "pct" as percent, "hist" and "est" spelled out */
 M.niceName = function (n) {
   var t = String(n).replace(/_hist$/, '').replace(/funnel[ _]device/g, 'steps by device').replace(/funnel/g, 'shopping steps').replace(/_/g, ' ').replace(/\bpct\b/g, '(%)').replace(/\best\b/g, 'estimate').replace(/\bga4\b/g, 'website').replace(/\b(\d+)d\b/g, '$1 days').replace(/\bavg\b/g, 'average').replace(/^conversion\b/, 'visits that bought').replace(/\bn\b/g, 'count');
-  t = t.replace(/^net sales\b/i, 'sales after discounts').replace(/^contribution profit\b/i, 'profit before the Shopify bill (estimate)');      /* T884 (4 Nov 2026): the stored column net_sales is shown as Sales after discounts, the one name for it */
+  t = t.replace(/^net sales\b/i, 'sales after discounts').replace(/^contribution profit\b/i, 'profit before the Shopify bill and the GST credit (estimate)');      /* T884 (4 Nov 2026): the stored column net_sales is shown as Sales after discounts, the one name for it */
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 M.histSources = function () {
@@ -7238,7 +7239,7 @@ M.histMeta = function (src) {
   };
   return { t: t, isHist: isHist, dateCol: dateCol, num: num, entity: entity, hasEntity: isHist || !!ent };
 };
-M.rollupLabel = function (c) { return c.replace(/^net_sales$/, 'sales after discounts').replace(/_/g, ' ').replace('est fees parcel packaging', 'fees, parcel and packaging').replace('profit est', 'profit before the Shopify bill (estimate)').replace('profit after plan', 'profit after the Shopify plan only (estimate)').replace('shopify fee est', 'Shopify\'s charges on orders (estimate)'); };
+M.rollupLabel = function (c) { return c.replace(/^net_sales$/, 'sales after discounts').replace(/_/g, ' ').replace('est fees parcel packaging', 'fees, parcel and packaging').replace('profit est', 'profit before the Shopify bill and the GST credit (estimate)').replace('profit after plan', 'profit after the Shopify plan only (estimate)').replace('shopify fee est', 'Shopify\'s charges on orders (estimate)'); };
 M.rollupNums = function (src) { var t = M.tab(src); return t.cols.filter(function (c) { return c !== 'week' && c !== 'month' && c !== 'profit_read' && t.rows.some(function (x) { return typeof x[c] === 'number'; }); }); };
 /* 12 Nov 2026 (owner note on the History page: everything in the dropdowns must also be found in search): one list of what each dropdown offers, used by the dropdowns' own page
    and by the search box, so the two can never differ. Table = M.histSources(); Measure = M.histMeasures(table); Row = M.histEntities(table). */
@@ -7604,7 +7605,7 @@ M.PAGES.gtm.render = function () {
     M.h('p', { class: 'small muted', text: 'A green bar means the channel led to at least one order; a grey bar means it did not. ' + M.num(totV) + ' visits and ' + M.num(totO) + ' orders in the window.' }),
     M.table([{ k: 'channel_group', label: 'Channel', wrap: true, render: function (x) { return M.h('b', { text: x.channel_group }); } }, { k: 'visits_28d', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.teal } },
       { k: 'visit_change_pct', label: 'Change vs previous 28 days', num: true, fmt: function (v) { return v == null ? 'n/a' : M.pct(v, 0); } }, { k: 'carts_28d', label: 'Carts', num: true, fmt: M.num },
-      { k: 'orders_28d', label: 'Orders', num: true, fmt: M.num }, { k: 'revenue_28d', label: 'Revenue', num: true, fmt: M.inr }, { k: 'conversion_pct', label: 'Visits to order', num: true, fmt: function (v) { return v == null ? 'n/a' : M.pct(v, 2); } },
+      { k: 'orders_28d', label: 'Orders Google saw', num: true, fmt: M.num }, { k: 'revenue_28d', label: 'Revenue', num: true, fmt: M.inr }, { k: 'conversion_pct', label: 'Visits to order', num: true, fmt: function (v) { return v == null ? 'n/a' : M.pct(v, 2); } },
       { k: 'read', label: 'Read', wrap: true, render: function (x) { return x.read ? M.tag(x.read, /few|watch/.test(x.read) ? 'thin' : '') : null; } }], { rows: cg, sortKey: 'visits_28d', empty: 'No channel groups yet.', limit: 12 })]));
   /* lifecycle */
   var maxL = Math.max.apply(null, lc.map(function (x) { return +x.customers || 0; }).concat([1]));
@@ -7905,7 +7906,7 @@ M.catBlock = function (r, map) {
     { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } },
     { k: 'share', label: 'Share of visits', num: true, fmt: function (v) { return M.pct(v, 0); } },
     { k: 'change', label: 'Change on the dates before', num: true, fmt: function (v) { return v == null ? 'nothing to compare' : (v > 0 ? '+' : '') + M.pct(v, 0); } },
-    { k: 'orders', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.green } },
+    { k: 'orders', label: 'Orders Google saw', num: true, fmt: M.num, bar: { color: M.COLORS.green } },
     { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr },
     { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); }, hidden: true },
     { k: 'top', label: 'Biggest groups inside', wrap: true },
@@ -7934,12 +7935,14 @@ M.PAGES.channels.render = function (r) {
   var keep = function (q) { var mp = cmap[q.source_medium]; if (mp && mp.own_tool === 'yes') return false; if (s.channel && q.source_medium !== s.channel) return false; if (s.ccat && (!mp || mp.category !== s.ccat)) return false; return true; };
   var prevTot = function (col) { var t = M.total({ tab: 'source_daily', col: col, pred: keep }, r.pfrom, r.pto); return cmp ? t.v : null; };
   var kp = M.h('div', { class: 'kpis' });
-  [['Visits', M.num(tv), 'sessions'], ['Orders', M.num(to), 'purchases'], ['Revenue', M.inr(tr), 'revenue']].forEach(function (k, i) {
+  [['Visits with a source', M.num(tv), 'sessions'], ['Orders Google saw', M.num(to), 'purchases'], ['Revenue', M.inr(tr), 'revenue']].forEach(function (k, i) {
     var v = [tv, to, tr][i], pv = prevTot(k[2]), cf = M.cmpFor(v, pv, cmp, 'source_daily', r);
     kp.appendChild(M.kpi({ label: k[0], value: k[1], change: cf.change, cmpNote: cf.cmpNote }));
   });
   kp.appendChild(M.kpi({ label: 'Sources with visits', value: M.num(rows.length) }));
   root.appendChild(kp);
+  var SG = M.fig.visitsSplitGap ? M.fig.visitsSplitGap(r) : null;      /* T1131: the two Google counts of the same visits, named and compared */
+  if (SG && SG.gap) root.appendChild(M.h('p', { class: 'small muted', 'data-ux': '1', text: 'Visits with a source adds up Google\'s split by source (' + M.num(SG.split) + '). Google\'s own total for the same days (' + M.fd(SG.from) + ' to ' + M.fd(SG.to) + ') is ' + M.num(SG.google) + ', which is what the Overview Visits shows: Google\'s split differs from its total by ' + (SG.gap > 0 ? M.num(SG.gap) + ' more' : M.num(-SG.gap) + ' fewer') + ' on a few days, and the shop cannot change that.' }));
   root.appendChild(M.catBlock ? M.catBlock(r, cmap) : M.h('div'));
   var pts = rows.filter(function (x) { return x.visits > 0; }).map(function (x) {
     var thin = x.visits < M.MIN_EVENTS;
@@ -7959,7 +7962,7 @@ M.PAGES.channels.render = function (r) {
       { k: 'category', label: 'Place', wrap: true },
       { k: 'visits_28d', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } },
       { k: 'visit_change_pct', label: 'Change on the 28 days before', num: true, fmt: function (v) { return v == null || v === '' ? 'nothing to compare' : (v > 0 ? '+' : '') + M.pct(v, 0); } },
-      { k: 'carts_28d', label: 'Cart adds', num: true, fmt: M.num }, { k: 'orders_28d', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.green } },
+      { k: 'carts_28d', label: 'Cart adds', num: true, fmt: M.num }, { k: 'orders_28d', label: 'Orders Google saw', num: true, fmt: M.num, bar: { color: M.COLORS.green } },
       { k: 'revenue_28d', label: 'Revenue', num: true, fmt: M.inr }, { k: 'share_of_visits_pct', label: 'Share of visits', num: true, fmt: function (v) { return M.pct(v, 0); } },
       { k: 'read', label: 'Our read', wrap: true }], { rows: gr, sortKey: 'visits_28d', name: 'channel groups', limit: 20 })]));
   }
@@ -7969,7 +7972,7 @@ M.PAGES.channels.render = function (r) {
     { k: 'category', label: 'Place', wrap: true }, { k: 'group', label: 'Group', wrap: true, hidden: true },
     { k: 'how', label: 'How it is tagged', wrap: true, fmt: function (v) { return M.TAGWORD[v] || v; }, render: function (x) { return M.h('span', { class: 'src-cell' }, [M.h('span', { text: M.TAGWORD[x.how] || x.how }), M.infoMark((M.TAGTIP[x.how] || '') + (x.note ? ' ' + x.note : ''), M.TAGWORD[x.how] || x.how, 'src-info')]); }, sort: function (x) { return M.TAGWORD[x.how] || x.how; } },
     { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'eng', label: 'Stayed and looked around', num: true, fmt: function (v) { return M.pct(v, 0); }, bar: { color: M.COLORS.teal, max: 100 } },
-    { k: 'carts', label: 'Cart adds', num: true, fmt: M.num, bar: { color: M.COLORS.mustard } }, { k: 'orders', label: 'Orders', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
+    { k: 'carts', label: 'Cart adds', num: true, fmt: M.num, bar: { color: M.COLORS.mustard } }, { k: 'orders', label: 'Orders Google saw', num: true, fmt: M.num, bar: { color: M.COLORS.green } }, { k: 'revenue', label: 'Revenue', num: true, fmt: M.inr, bar: { color: M.COLORS.maroon } },
     { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); } }, { k: 'rpv', label: 'Revenue per visit', num: true, fmt: M.inr },
     { k: 'advice', label: 'What to do about it', wrap: true, hidden: true, fmt: function (v, x) { return M.srcAdvice(x); }, render: function (x) { return M.h('span', { text: M.srcAdvice(x) }); }, sort: function (x) { return x.visits; } },
     { k: 'sheetRead', label: 'Our read, last 28 days', wrap: true, hidden: true }
@@ -7995,7 +7998,7 @@ M.channelExtras = function (r, buckets) {
   var lrows = Object.keys(by).map(function (k) { var o = by[k], top = Object.keys(o.sources).sort(function (a, b) { return o.sources[b] - o.sources[a]; })[0]; o.top = top || ''; o.conv = o.visits ? o.orders / o.visits * 100 : 0; return o; });
   var lcover = M.daysCovered('landing_daily', r.from, r.to);
   box.appendChild(M.card('First page people saw', lrows.length ? 'The first page of each visit. A page with many visits and no orders is where to look first. Source = where most of its visits came from.' + (lcover < r.days ? ' Only ' + lcover + ' of these ' + r.days + ' days are stored.' : '') : 'The first-page numbers have not started for these dates.', [lrows.length ? M.table([
-    { k: 'page', label: 'Page', wrap: true }, { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'orders', label: 'Orders', num: true, fmt: M.num }, { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); } },
+    { k: 'page', label: 'Page', wrap: true }, { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'orders', label: 'Orders Google saw', num: true, fmt: M.num }, { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); } },
     { k: 'top', label: 'Main source', wrap: true, render: function (x) { return x.top ? M.srcCell(x.top, false) : document.createTextNode(''); } }], { rows: lrows, sortKey: 'visits', limit: 15, name: 'landing pages' }) : M.emptyWhy('landing_daily', r)]));
   var cp = M.rowsIn('campaign_daily', r.from, r.to), cb = {};
   cp.forEach(function (x) { if (s.channel && x.source_medium !== s.channel) return; var k = x.campaign + '|' + x.source_medium, o = cb[k] || (cb[k] = { campaign: x.campaign, source: x.source_medium, visits: 0, orders: 0 }); o.visits += +x.sessions || 0; o.orders += +x.purchases || 0; });
@@ -8003,7 +8006,7 @@ M.channelExtras = function (r, buckets) {
   box.appendChild(M.card('Links we tagged (campaigns)', crows.length ? 'The names we put inside our own links (for example "always-on" for the profile links and "shorts" for YouTube). "(not set)" and "(direct)" mean the link had no name.' : 'No tagged visits in these dates.', [crows.length ? M.table([
     { k: 'campaign', label: 'Link name', wrap: true, render: function (x) { return M.h('span', { class: 'src-cell' }, [M.h('span', { class: 'src-name', title: 'The tag in the link: ' + x.campaign, text: M.campPlain(x.campaign) }), M.infoMark(M.campMeaning(x.campaign) + ' The tag in the link is: ' + x.campaign + '.', M.campPlain(x.campaign), 'src-info')]); }, sort: function (x) { return x.campaign; } },
     { k: 'source', label: 'Source', wrap: true, render: function (x) { return M.srcCell(x.source, false); }, sort: function (x) { return x.source; } },
-    { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'orders', label: 'Orders', num: true, fmt: M.num }], { rows: crows, sortKey: 'visits', limit: 15, name: 'campaigns' }) : M.emptyWhy('campaign_daily', r)]));
+    { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'orders', label: 'Orders Google saw', num: true, fmt: M.num }], { rows: crows, sortKey: 'visits', limit: 15, name: 'campaigns' }) : M.emptyWhy('campaign_daily', r)]));
   var vt = M.rowsIn('visitor_type_daily', r.from, r.to), vb = {};
   vt.forEach(function (x) { var o = vb[x.visitor_type] || (vb[x.visitor_type] = { type: x.visitor_type, visits: 0, carts: 0, orders: 0 }); o.visits += +x.sessions || 0; o.carts += +x.carts || 0; o.orders += +x.purchases || 0; });
   var vrows = ['new', 'returning', '(not set)'].filter(function (k) { return vb[k]; }).map(function (k) { var o = vb[k]; o.name = k === 'new' ? 'New visitors' : k === 'returning' ? 'People who came before' : 'Kind of visitor not known'; o.conv = o.visits ? o.orders / o.visits * 100 : 0; return o; });
@@ -8012,9 +8015,9 @@ M.channelExtras = function (r, buckets) {
   var drows = Object.keys(db).map(function (k) { var o = db[k]; o.conv = o.visits ? o.orders / o.visits * 100 : 0; return o; });
   var cards = [];
   cards.push(M.card('New people and people who came back', vrows.length ? 'Is the shop bringing new people, or the same ones again? Everyone who has visited before is "came before".' : 'Not stored for these dates.', [vrows.length ? M.table([
-    { k: 'name', label: 'Who', wrap: true }, { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'carts', label: 'Cart adds', num: true, fmt: M.num }, { k: 'orders', label: 'Orders', num: true, fmt: M.num }, { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); } }], { rows: vrows, sortKey: 'visits', name: 'new and returning', detail: false }) : M.emptyWhy('visitor_type_daily', r)]));
+    { k: 'name', label: 'Who', wrap: true }, { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'carts', label: 'Cart adds', num: true, fmt: M.num }, { k: 'orders', label: 'Orders Google saw', num: true, fmt: M.num }, { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); } }], { rows: vrows, sortKey: 'visits', name: 'new and returning', detail: false }) : M.emptyWhy('visitor_type_daily', r)]));
   cards.push(M.card('Phone, laptop or tablet', drows.length ? 'What people used. Most of our visits are on phones, so a page must work well there first.' : 'Not stored for these dates.', [drows.length ? M.table([
-    { k: 'device', label: 'Device', dim: 'device' }, { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'orders', label: 'Orders', num: true, fmt: M.num }, { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); } }], { rows: drows, sortKey: 'visits', name: 'devices', detail: false }) : M.emptyWhy('place_device_daily', r)]));
+    { k: 'device', label: 'Device', dim: 'device' }, { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'orders', label: 'Orders Google saw', num: true, fmt: M.num }, { k: 'conv', label: 'Visits that bought', num: true, fmt: function (v) { return M.pct(v); } }], { rows: drows, sortKey: 'visits', name: 'devices', detail: false }) : M.emptyWhy('place_device_daily', r)]));
   box.appendChild(M.grid(cards, 'wide'));
   return box;
 };
@@ -8135,14 +8138,14 @@ M.socialAll = function (root, r, chs) {
   kp.appendChild(M.kpi({ label: 'Followers, all channels', value: M.num(totFol), note: 'newest count of each channel added up' }));
   kp.appendChild(M.kpi({ label: 'Posts in these dates', value: M.num(totPosts) }));
   kp.appendChild(M.kpi({ label: 'Visits to the shop from social', value: M.num(totVis), note: 'from the tagged links on each channel' }));
-  kp.appendChild(M.kpi({ label: 'Orders from social', value: M.num(totOrd) }));
+  kp.appendChild(M.kpi({ label: 'Orders Google saw from social', value: M.num(totOrd), note: 'purchases Google Analytics credited to the tagged links of each channel, from ' + M.fd(M.cover('source_daily').first || r.from) + '. The Shopify count by first visit is on each channel page.' }));
   root.appendChild(kp);
   root.appendChild(M.card('Channels side by side', 'Each channel counts reach in its own way (people, views, times shown), so compare the shape and the change, not the size across rows. Followers are the newest count.', [M.table([
     { k: 'name', label: 'Channel', render: function (x) { return M.h('button', { type: 'button', class: 'dimlink', title: 'Open ' + x.name, onclick: function (e) { e.stopPropagation(); M.go({ cch: x.id }); }, text: x.name }); }, sort: function (x) { return x.name; } },
     { k: 'reach', label: 'Seen, as each channel counts it', num: true, fmt: function (v, x) { return v == null ? 'not recorded' : x.roll ? 'counted again each day' : M.num(v) + ' ' + (x.unit || ''); }, bar: { color: M.COLORS.maroon }, render: null },
     { k: 'change', label: 'Change on the dates before', num: true, fmt: function (v) { return v == null ? 'nothing to compare' : (v > 0 ? '+' : '') + M.pct(v, 0); } },
     { k: 'followers', label: 'Followers', num: true, fmt: function (v) { return v == null ? 'not recorded' : M.num(v); } }, { k: 'gained', label: 'Followers gained', num: true, fmt: function (v) { return v == null ? '' : (v > 0 ? '+' : '') + M.num(v); } }, { k: 'fchange', label: 'Follower count change', num: true, hidden: true, fmt: function (v) { return v == null ? '' : (v > 0 ? '+' : '') + M.num(v); } },
-    { k: 'posts', label: 'Posts', num: true, fmt: M.num }, { k: 'visits', label: 'Shop visits', num: true, fmt: function (v) { return v == null ? 'not recorded' : M.num(v); } }, { k: 'orders', label: 'Orders', num: true, fmt: function (v) { return v == null ? '' : M.num(v); } },
+    { k: 'posts', label: 'Posts', num: true, fmt: M.num }, { k: 'visits', label: 'Shop visits', num: true, fmt: function (v) { return v == null ? 'not recorded' : M.num(v); } }, { k: 'orders', label: 'Orders Google saw', num: true, fmt: function (v) { return v == null ? '' : M.num(v); } },
     { k: 'best', label: 'Best post in these dates', wrap: true, hidden: true, fmt: function (v) { return v ? (v.caption || '') : ''; }, render: function (x) { return x.best ? M.postLinkText(x.best) : document.createTextNode('no posts'); } }
   ], { rows: rows, sortKey: 'reach', name: 'channels side by side', detail: false })]));
   /* the same dates drawn for every channel, each as its own small chart (reach in its own unit) */
@@ -8237,11 +8240,11 @@ M.socialOne = function (root, r, c) {
   M.patternCard(root, c.id, all);
 };
 M.reachToOrders = function (root, r, c, buckets, reach, visits, orders) {
-  var steps = [{ name: M.VIEWWORD[c.id] || 'Reach', value: reach || 0 }, { name: 'Visits to the shop', value: visits || 0 }, { name: 'Orders', value: orders || 0 }];
+  var steps = [{ name: M.VIEWWORD[c.id] || 'Reach', value: reach || 0 }, { name: 'Visits to the shop', value: visits || 0 }, { name: 'Orders Google saw', value: orders || 0 }];
   if (!reach && !visits) return;
   root.appendChild(M.card('From ' + c.name + ' to an order', 'Each step is a smaller group. Visits are counted from the tagged links on ' + c.name + '; the share shows how many of the step before moved on.' + (c.id === 'instagram' ? ' Instagram posts cannot hold a clickable link, so the visits mostly come from the link in the profile.' : ''), [
     M.funnel(steps, { color: c.color, empty: 'Nothing to follow in these dates.' }),
-    M.h('p', { class: 'small muted', text: reach && visits ? M.pct(visits / reach * 100, 2) + ' of ' + (M.VIEWWORD[c.id] || 'reach').toLowerCase() + ' became a visit.' + (visits ? ' ' + M.pct(orders / visits * 100, 2) + ' of visits became an order.' : '') : '' })
+    M.h('p', { class: 'small muted', text: reach && visits ? M.pct(visits / reach * 100, 2) + ' of ' + (M.VIEWWORD[c.id] || 'reach').toLowerCase() + ' became a visit.' + (visits ? ' ' + M.pct(orders / visits * 100, 2) + ' of visits ended in an order Google saw.' : '') : '' })
   ]));
 };
 /* the post list: best ten and worst ten of THIS channel (or of all), with a switch for all time, a format filter and a sort */
@@ -8719,14 +8722,7 @@ M.PAGES.shipping.render = function (r) {
      parcels, Shopify's fulfilled orders, and a 'collection' guess for made to order), so cards disagreed (3 of 3 ready to ship here, 12 of 18 in my earlier check). ONE list now feeds the promise card, the status card and
      the 'Every order' table: the shop's own record of every real order (table shipping_daily, one row per order that is not cancelled and not a test), with the promise the buyer was given when ordering (`kind`: ready or made).
      An order not sent yet is in the list and counts as late once past the promise. An order handed over by hand (a Shiprocket pickup that was cancelled) has no courier clock and is listed apart. */
-  var sd = M.has('shipping_daily') ? M.rows('shipping_daily').filter(function (x) { return x.ordered_at && !/test order/i.test(x.note || ''); }) : [];
-  var handSet = {}; (M.has('shiprocket_parcels') ? M.rows('shiprocket_parcels') : []).forEach(function (x) { if (/cancel/i.test(x.status || '')) handSet[x.order] = 1; });
-  var rowsAll = sd.map(function (x) {
-    var done = !!x.delivered, day0 = String(x.ordered_at).slice(0, 10), end = done ? x.delivered : nowD;
-    var days = (Date.UTC.apply(null, String(end).slice(0, 10).split('-').map(function (v, i) { return i === 1 ? +v - 1 : +v; })) - Date.UTC.apply(null, day0.split('-').map(function (v, i) { return i === 1 ? +v - 1 : +v; }))) / 864e5;
-    var stat = done ? 'delivered' : !x.dispatched ? 'not sent yet' : /ATTEMPTED/i.test(x.status || '') ? 'delivery failed' : /IN_TRANSIT|OUT_FOR/i.test(x.status || '') ? 'on the way' : handSet[x.order] ? 'handed over by hand' : 'sent';
-    return { order: x.order, kind: x.kind, coll: x.collection, days: days, done: done, hand: !done && !!handSet[x.order], status: stat, at: day0, sent: x.dispatched || '', carrier: x.carrier || '', delivered: x.delivered || '' };
-  }).filter(function (x) { return !isNaN(x.days) && x.at >= r.from && x.at <= r.to; });
+  var rowsAll = M.fig.promiseList(r);      /* T1131: the same list the Growth page counts (dashboard_80_figures2.js) */
   var door = rowsAll.filter(function (x) { return x.done; }), openAll = rowsAll.filter(function (x) { return !x.done && !x.hand; }), byHand = rowsAll.filter(function (x) { return x.hand; });
   var kept = function (list, hi) { return list.filter(function (x) { return x.days <= hi; }).length; };
   var promiseKids = [];
@@ -8740,7 +8736,8 @@ M.PAGES.shipping.render = function (r) {
     };
     var isMade = function (x) { return x.kind === 'made'; };
     var k1 = line('Ready to ship pieces', rowsAll.filter(function (x) { return !isMade(x) && !x.hand; }), Pm.ready[0] + ' to ' + Pm.ready[1] + ' working days', Pm.ready[1]), k2 = line('Made to order pieces', rowsAll.filter(function (x) { return isMade(x) && !x.hand; }), 'about 20 days', 20);
-    promiseKids.push(M.h('div', { class: 'kpis' }, [k1, k2].filter(Boolean)));
+    var PR = M.fig.promise(r), overall = PR.n ? M.kpi({ label: 'Delivered inside the promise', value: M.num(PR.k) + ' of ' + M.num(PR.n), note: 'of ' + M.num(PR.n) + ' delivered orders, counted from the order day to the delivery day (ready to ship ' + M.num(PR.ready.k) + ' of ' + M.num(PR.ready.n) + ', made to order ' + M.num(PR.made.k) + ' of ' + M.num(PR.made.n) + '). The Growth page shows this same count. Orders still on the way are not in it: the two tiles beside it count them as late once past their promise.' }) : null;
+    promiseKids.push(M.h('div', { class: 'kpis' }, [overall, k1, k2].filter(Boolean)));
     var promOf = function (x) { return isMade(x) ? 20 : Pm.ready[1]; };
     var waiting = openAll.slice().sort(function (p, q) { return q.days - p.days; });
     if (waiting.length) promiseKids.push(M.h('p', { class: 'small', text: 'Not delivered yet: ' + waiting.map(function (x) { return x.order + ' (' + M.num(x.days, 0) + ' days since the order, ' + x.status + (x.days > promOf(x) ? ', PAST the ' + promOf(x) + ' day promise' : ', promise ' + promOf(x) + ' days') + ')'; }).join('; ') + '.' }));
@@ -8963,7 +8960,8 @@ M.PAGES.tables.render = function () {
   if (rv.length || jd.length) {
     var last = rv.length ? rv[rv.length - 1] : null, jl = jd.length ? jd.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; })[jd.length - 1] : null;
     var k2 = M.h('div', { class: 'kpis' });
-    if (jl) { k2.appendChild(M.kpi({ label: 'Reviews published', value: M.num(jl.published_reviews), note: 'on ' + M.fd(jl.date) })); k2.appendChild(M.kpi({ label: 'Average rating', value: jl.average_rating != null ? M.num(jl.average_rating, 2) + ' of 5' : 'not available' })); }
+    var RV = M.fig.reviews();      /* T1131: one count and one rating for the whole dashboard (Judge.me, read at night); the product list adds up to it (checked before every publish) */
+    if (jl && RV) { k2.appendChild(M.kpi({ label: 'Reviews published', value: M.num(RV.count), note: 'Judge.me, read on ' + M.fd(RV.date) + '; the list by product adds up to it' })); k2.appendChild(M.kpi({ label: 'Average rating', value: RV.rating != null ? M.num(RV.rating, 2) + ' of 5' : 'not available', note: 'Judge.me, read on ' + M.fd(RV.date) })); }
     if (last && last.reviews_90d_per_100_delivered != null) k2.appendChild(M.kpi({ label: 'Product reviews for every 100 delivered orders', value: M.num(last.reviews_90d_per_100_delivered, 0), note: 'last 90 days; reviews of the shop itself are not counted' }));
     kids.push(M.card('Reviews', 'What customers say about us, from the reviews app. The rating moves slowly while there are only a few reviews.', [k2, rt.length ? M.table([{ k: 'theme', label: 'Mentioned in reviews' }, { k: 'mentions', label: 'Times', num: true, fmt: M.num, bar: { color: M.COLORS.teal } }, { k: 'avg_rating', label: 'Rating when mentioned', num: true, fmt: function (v) { return v == null ? 'not yet' : M.num(v, 1); } }, { k: 'read', label: 'What it means', wrap: true }], { rows: rt, sortKey: 'mentions', empty: 'No themes yet.', noTools: true, detail: false }) : null].filter(Boolean)));
   }
@@ -9151,7 +9149,7 @@ M.TERMS = [
   ['net sales', 'A word with three meanings, so the dashboard avoids it. Shopify\'s report: sales without the GST. Madhu: everything customers paid. Here: sales after discounts, GST inside.'],
   ['gross sales', 'The full price of everything sold before discounts.'],
   ['profit after everything', 'What is left of the money from sales after every cost: GST, the Shopify bill, the Razorpay charges, what the pieces cost us, packaging and the parcel. The Shopify bill is real for the days Shopify has billed and an estimate after that. The Razorpay charge and the parcel cost are the real figures wherever Razorpay and Shiprocket have them. The making and packing costs Madhu has not confirmed are placeholders, so read it as a good guide.'],
-  ['profit before the shopify bill', 'The profit worked out for each order and added up: sales after discounts minus GST, what the pieces cost us, the payment fee, Shopify\'s charge on that order, the parcel and the packaging. The Shopify plan is not taken off.'],
+  ['profit before the shopify bill and the gst credit', 'The profit worked out for each order and added up: sales after discounts minus GST, what the pieces cost us, the payment fee, Shopify\'s charge on that order, the parcel and the packaging. The Shopify plan is not taken off and the GST credit is not added. The Overview shows the profit after everything.'],
   ['profit estimate', 'Sales after discounts minus GST, what the pieces cost us, the payment fee, Shopify\'s charge on that order, the parcel and the packaging. The Shopify plan is not taken off. A day with a Razorpay payment uses Razorpay\'s real fee, and a parcel Shiprocket knows uses its real freight; any other day uses the stated rates.'],
   ['contribution profit', 'Sales after discounts minus GST, what the pieces cost us, the payment fee, Shopify\'s charge on that order, the parcel and the packaging. The Shopify plan is not taken off.'],
   ['gst', 'Goods and Services Tax. It is inside the price the customer pays, and we pass it on to the government, so it is not our money.'],
@@ -9604,10 +9602,14 @@ M.TERMS = [
     var fl = M.followers(c, r);
     kp.appendChild(fl.now == null ? M.kpi({ label: 'Followers now', na: 'Not recorded', note: 'No follower count is stored.' }) : M.kpi({ label: 'Followers now', value: M.num(fl.now), note: 'The newest count' + (fl.asOf ? ', taken ' + M.fd(fl.asOf) : '') + '.' }));
     kp.appendChild(M.kpi({ label: 'Posts in these dates', value: M.num(inR.length), note: all.length ? M.num(all.length) + ' posts altogether, since ' + M.fd(all.map(function (p) { return p.date; }).sort()[0]) + '.' : 'no post list' }));
-    var vis = M.total({ tab: 'source_daily', col: 'sessions', pred: M.srcOfChannel('instagram') }, r.from, r.to), ord = M.total({ tab: 'source_daily', col: 'purchases', pred: M.srcOfChannel('instagram') }, r.from, r.to);
+    var vis = M.total({ tab: 'source_daily', col: 'sessions', pred: M.srcOfChannel('instagram') }, r.from, r.to);
     var gcov = M.cover('source_daily'), gFrom = gcov.first && gcov.first > r.from ? gcov.first : r.from, gTo = gcov.last && gcov.last < r.to ? gcov.last : r.to;      /* visits to the shop are counted by Google Analytics, which starts on its own first day */
     var short = gFrom > r.from || gTo < r.to;
-    kp.appendChild(vis.v == null ? M.kpiWhy('Visits to the shop from Instagram', 'source_daily', r) : M.kpi({ label: 'Visits to the shop from Instagram', value: M.num(vis.v), note: M.num(ord.v) + ' orders from those visits (the visit that ended in the purchase, as Google Analytics saw it; the Customers page counts the first visit instead). Counted from links we tagged and from the Instagram app, ' + M.fds(gFrom) + ' to ' + M.fds(gTo) + (short ? ' (' + dayWord(vis.days) + '; Google Analytics holds the shop\'s visits only from ' + M.fd(gcov.first) + ')' : '') + '.' }));
+    kp.appendChild(vis.v == null ? M.kpiWhy('Visits to the shop from Instagram', 'source_daily', r) : M.kpi({ label: 'Visits to the shop from Instagram', value: M.num(vis.v), note: 'Counted from links we tagged and from the Instagram app, ' + M.fds(gFrom) + ' to ' + M.fds(gTo) + (short ? ' (' + dayWord(vis.days) + '; Google Analytics holds the shop\'s visits only from ' + M.fd(gcov.first) + ')' : '') + '.' }));
+    /* T1131: two names for two different counts of Instagram orders (owner 14 Nov 2026: one name, one value) */
+    var igF = M.fig.igOrdersFirst(r), igL = M.fig.igOrdersLast(r);
+    if (igF != null) kp.appendChild(M.kpi({ label: 'Orders from Instagram (first visit)', value: M.num(igF), note: 'Shopify\'s record: the buyer\'s FIRST visit to the shop came from Instagram. Every order since the first on ' + M.fd(M.cover('money_daily').first || r.from) + '. This is the Instagram figure to quote.' }));
+    if (igL != null) kp.appendChild(M.kpi({ label: 'Orders from Instagram (last click)', value: M.num(igL), note: 'Google Analytics: the visit that ended in the purchase came from Instagram. Google counts from ' + M.fd(M.cover('source_daily').first || r.from) + ', so it holds fewer orders.' }));
     root.appendChild(kp);
     if (cover.first && cover.first > r.from) root.appendChild(M.note('Instagram numbers are stored from ' + M.fd(cover.first) + '. The dates you picked start earlier, so the figures above cover ' + dayWord(Math.max(0, M.diff(cover.first, r.to) + 1)) + '.'));
 
@@ -9622,7 +9624,7 @@ M.TERMS = [
     root.appendChild(M.grid(cards, 'wide'));
     if (M.instagramMeasures) M.instagramMeasures(root, r, buckets);      /* T884 (5 Nov 2026): every measure on its own, by kind of post (dashboard_65_ig_measures.js) */
     M.instagramExtras(root, r, buckets);
-    M.reachToOrders(root, r, c, buckets, views.v, vis.v, ord.v);
+    M.reachToOrders(root, r, c, buckets, views.v, vis.v, M.fig.igOrdersLast(r));
     M.postsCard(root, r, inR, 'instagram', all);
     M.rhythmCard(root, r, all, c);
     M.patternCard(root, 'instagram', all);
@@ -10010,11 +10012,10 @@ M.glueMarks = function () {
       gcov.first ? span(gw.from < gcov.first ? gcov.first : gw.from, gw.to > gcov.last ? gcov.last : gw.to) + '.' : ''));
 
     /* delivery promise: delivered orders inside their promise */
-    var sh = M.rows('shipping_daily').filter(function (x) { return x.status === 'DELIVERED' && (x.on_time === 'yes' || x.on_time === 'no'); });
-    var yes = sh.filter(function (x) { return x.on_time === 'yes'; }).length;
+    var PRM = M.fig.promise(M.fig.ALL), sh = { length: PRM.n }, yes = PRM.k;      /* T1131: the SAME list and rule as the Shipping page tile 'Delivered inside the promise' (dashboard_80_figures2.js) */
     var promise = sh.length ? M.bars([{ label: 'Arrived inside the promise', value: yes, text: M.num(yes) + ' of ' + M.num(sh.length) + ' (' + M.pct(yes / sh.length * 100, 0) + ')', color: M.COLORS.green }, { label: 'Arrived late', value: sh.length - yes, text: M.num(sh.length - yes), color: sh.length - yes ? M.COLORS.terra : M.COLORS.grey }]) : few('No delivered order has a promise date yet.');
     cards.push(mini('Delivery promise', 'Of the orders that have been delivered, how many arrived inside the days we promised on the product page. Made to order pieces promise about 20 days, ready to ship pieces 3 to 7.', promise,
-      sh.length ? M.num(sh.length) + ' delivered orders, counted from the order to the door, the same days and the same promise as the Shipping page (ready to ship 7 days, made to order 20). The orders still on the way are not counted here; the Shipping page counts them as late once they pass their promise.' + (sh.length < 30 ? ' Under 30: direction only.' : '') : ''));
+      sh.length ? M.num(sh.length) + ' delivered orders, counted from the order to the door, the same count as the tile Delivered inside the promise on the Shipping page (ready to ship ' + M.num(PRM.ready.k) + ' of ' + M.num(PRM.ready.n) + ', made to order ' + M.num(PRM.made.k) + ' of ' + M.num(PRM.made.n) + '; ready to ship 7 days, made to order 20). The orders still on the way are not counted here.' + (sh.length < 30 ? ' Under 30: direction only.' : '') : ''));
     return cards;
   };
 
@@ -10909,9 +10910,9 @@ M.glueMarks = function () {
       if (Math.max.apply(null, vis.concat([0])) > 0) {
         var combo = M.vizCard('Visits and orders together', 'Columns are visits (left scale) and the line is orders (right scale). The two scales are different on purpose: visits are in the hundreds and orders are a handful, so on one scale the orders would be flat. Read the shape: do orders rise when visits rise? ' + M.vizDates(r) + '.', [
           M.vizChart(function (h, w) {
-            M.vizCombo(h, w, { buckets: buckets, mode: r.mode, title: 'Visits and orders', bars: { name: 'Visits', values: vis, color: COL.mustard, fmt: M.num, axis: 'Visits' }, line: { name: 'Orders', values: ord, color: COL.maroon, fmt: M.num, int: true, axis: 'Orders' } });
+            M.vizCombo(h, w, { buckets: buckets, mode: r.mode, title: 'Visits and orders Google saw', bars: { name: 'Visits', values: vis, color: COL.mustard, fmt: M.num, axis: 'Visits' }, line: { name: 'Orders Google saw', values: ord, color: COL.maroon, fmt: M.num, int: true, axis: 'Orders Google saw' } });
           }),
-          M.tableView([{ k: 'label', label: 'Period' }, { k: 'v', label: 'Visits', num: true, fmt: M.num }, { k: 'o', label: 'Orders', num: true, fmt: M.num }], buckets.map(function (b, i) { return { label: b.label, v: vis[i], o: ord[i], _from: b.from, _to: b.to }; }))]);
+          M.tableView([{ k: 'label', label: 'Period' }, { k: 'v', label: 'Visits', num: true, fmt: M.num }, { k: 'o', label: 'Orders Google saw', num: true, fmt: M.num }], buckets.map(function (b, i) { return { label: b.label, v: vis[i], o: ord[i], _from: b.from, _to: b.to }; }))]);
         var anchor = null; Array.prototype.forEach.call(root.children, function (c) { if (/Visits against buying/.test(M.vizTitle(c))) anchor = c; });
         if (anchor) root.insertBefore(combo, anchor.nextSibling); else root.appendChild(combo);
       }
@@ -13463,6 +13464,7 @@ M.evenHeaders = function (root) {
     if (/myshopify\.com|shopmazo\.in|mazo\.in/.test(l)) return 'The shop itself';
     var m = l.match(/^[a-z-]+:\/\/(?:www\.)?([^/]+)/); return m ? m[1] : v.charAt(0).toUpperCase() + v.slice(1);
   };
+  M.orderSourceName = sourceName;      /* T1131: the Instagram page counts orders by first visit with the same spelling rule */
   pg.render = function (r) {
     var root = base.apply(this, arguments);
     try {
@@ -14350,8 +14352,8 @@ M.followsGained = function (c, r) {
           if (days && days < r.days) {
             var tiles = root.querySelectorAll('.kpis .kpi .l');
             for (var i = 0; i < tiles.length; i++) {
-              if (tiles[i].textContent.trim() === 'Visits') {
-                tiles[i].textContent = 'Visits, ' + M.num(days) + ' of ' + M.num(r.days) + ' days';
+              if (/^Visits( counted by Google| with a source)?$/.test(tiles[i].textContent.trim())) {
+                tiles[i].textContent = tiles[i].textContent.trim() + ', ' + M.num(days) + ' of ' + M.num(r.days) + ' days';
                 var tile = tiles[i].closest('.kpi'), same = tile && Array.prototype.filter.call(tile.querySelectorAll('.ctx'), function (n) { return /^\d+ of \d+ days have data$/.test(n.textContent.trim()); });
                 (same || []).forEach(function (n) { n.parentNode.removeChild(n); });      /* the label says it now; the same words under the figure would repeat it */
                 break;
@@ -17886,6 +17888,146 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   ];
 })();
 
+/* mazo dashboard: ONE VALUE PER NAME, part 2 (T1131, 15 Nov 2026). Owner, 14 Nov 2026: "we cannot have inconsistent data!! how can there be two values for the same item?? I asked you to keep a proper scalable system."
+   Part 1 (dashboard_79_figures.js) moved the money figures. This file moves the rest of the figures that two pages could show differently, and registers them in M.FIGS so
+   scripts/dashboard_figures_check.js fails the publish when a card shows another number than the function. The rule for a word is the same as before: ONE name = ONE function. Where two tables count
+   the same kind of thing differently (Google and Shopify count visits and orders by different rules), each gets its OWN NAME and a card that shows it says which table it is.
+
+     visits            "Visits": the Overview's own figure (the joined series: Shopify's count before Google Analytics started on 5 Oct, Google's after)
+     visitsGoogle      "Visits counted by Google": Google Analytics' daily total, on the days its shopping steps table holds (Shopping steps page)
+     visitsBySource    "Visits with a source": the sum of Google's split by source (Channels page). Google's split can differ from its own total by a visit or two a day; the Channels page shows the difference
+     ordersShop        "Orders": every real order in Shopify (Overview, money_daily)
+     ordersGoogle      "Orders Google saw": purchases Google Analytics counted, from its first day (5 Oct) (Channels page)
+     igOrdersFirst     "Orders from Instagram (first visit)": orders whose buyer's FIRST visit came from Instagram (Shopify's record, order_sources)
+     igOrdersLast      "Orders from Instagram (last click)": the visit that ended in the purchase came from Instagram, as Google saw it (source_daily, from 5 Oct)
+     deliveredInPromise  delivered orders that arrived inside their promise, the same list on Shipping and Growth (M.fig.promiseList)
+     reviews           Judge.me's published reviews and average rating: the newest row of judgeme_daily, which the product list must agree with
+     profit            "Profit after everything": the Overview's own sum (M.moneyCalc). The stored column is named "Profit before the Shopify bill and the GST credit" wherever it is shown
+     emailSubscribers  people on the email list (email_program)
+   Not moved (listed in docs/work/T1131-figure-map.md): GST, refunds, stock counts (one table each, nothing shows them twice with a different rule). */
+(function () {
+  var rs = function (p) { return Math.round(p) / 100; };
+  var sum = function (rows, col) { return (rows || []).reduce(function (a, x) { return a + (+x[col] || 0); }, 0); };
+  var ALL = { from: '0000-01-01', to: '9999-12-31' };
+  M.fig = M.fig || {};
+  M.fig.ALL = ALL;
+
+  /* ---------------------------------------------------------------- visits */
+  M.fig.visits = function (r) {
+    var part = M.visitsPart ? M.visitsPart('sessions') : { tab: 'ga4_funnel_daily', col: 'sessions' };
+    var t = M.total(part, r.from, r.to);
+    return t.v == null ? null : { v: t.v, days: M.daysCovered(part.tab, r.from, r.to), tab: part.tab };
+  };
+  /* Google's daily total, only on the days the shopping steps table (by device) holds, so every tile of the Shopping steps page covers the same days (T865) */
+  M.fig.visitsGoogle = function (r) {
+    if (!M.has('ga4_funnel_daily')) return null;
+    var devLast = M.has('funnel_device_daily') ? M.cover('funnel_device_daily').last : null, to = devLast && devLast < r.to ? devLast : r.to;
+    var t = M.total({ tab: 'ga4_funnel_daily', col: 'sessions' }, r.from, to);
+    return t.v == null ? null : { v: t.v, to: to, days: M.daysCovered('ga4_funnel_daily', r.from, to) };
+  };
+  /* Google's total and Google's split by source for the same days: the split can be a visit or two off the total (6 Nov: 705 against 706; 12 Nov: 197 against 194) */
+  M.fig.visitsSplitGap = function (r) {
+    if (!M.has('ga4_funnel_daily') || !M.has('source_daily')) return null;
+    var cov = M.cover('source_daily'); if (!cov.first) return null;
+    var from = cov.first > r.from ? cov.first : r.from, to = cov.last && cov.last < r.to ? cov.last : r.to; if (to < from) return null;
+    var g = M.total({ tab: 'ga4_funnel_daily', col: 'sessions' }, from, to).v, s = M.total({ tab: 'source_daily', col: 'sessions' }, from, to).v;
+    return g == null || s == null ? null : { google: g, split: s, gap: s - g, from: from, to: to };
+  };
+  M.fig.visitsBySource = function (r) {
+    if (!M.has('source_daily') || !M.channelRows) return null;
+    var rows = M.channelRows(r); return rows.length ? rows.reduce(function (a, x) { return a + x.visits; }, 0) : null;
+  };
+
+  /* ---------------------------------------------------------------- orders */
+  M.fig.ordersShop = function (r) { var t = M.total({ tab: 'money_daily', col: 'orders' }, r.from, r.to); return t.v == null ? null : t.v; };
+  M.fig.ordersGoogle = function (r) {
+    if (!M.has('source_daily') || !M.channelRows) return null;
+    var rows = M.channelRows(r); return rows.length ? rows.reduce(function (a, x) { return a + x.orders; }, 0) : null;
+  };
+  /* Instagram orders, two definitions with two names. FIRST VISIT: the buyer's first visit to the shop came from Instagram (Shopify's record, by order day). LAST CLICK: the visit that ended in the purchase, as Google saw it. */
+  M.fig.igOrdersFirst = function (r) {
+    if (!M.has('order_sources') || !M.orderSourceName) return null;
+    return M.rowsIn('order_sources', r.from, r.to).filter(function (x) { return x.order && M.orderSourceName(x.first_visit_source) === 'Instagram'; }).length;
+  };
+  M.fig.igOrdersLast = function (r) {
+    if (!M.has('source_daily') || !M.srcOfChannel) return null;
+    var t = M.total({ tab: 'source_daily', col: 'purchases', pred: M.srcOfChannel('instagram') }, r.from, r.to); return t.v == null ? null : t.v;
+  };
+
+  /* ---------------------------------------------------------------- the delivery promise: ONE list of orders for Shipping and Growth */
+  M.fig.promiseHi = function (x) { return x.kind === 'made' ? 20 : M.PROMISE.ready[1]; };
+  M.fig.promiseList = function (r) {
+    var nowD = (M.D && M.D.anchor) || r.to;
+    var sd = M.has('shipping_daily') ? M.rows('shipping_daily').filter(function (x) { return x.ordered_at && !/test order/i.test(x.note || ''); }) : [];
+    var handSet = {}; (M.has('shiprocket_parcels') ? M.rows('shiprocket_parcels') : []).forEach(function (x) { if (/cancel/i.test(x.status || '')) handSet[x.order] = 1; });
+    var utc = function (s) { var p = String(s).slice(0, 10).split('-'); return Date.UTC(+p[0], +p[1] - 1, +p[2]); };
+    return sd.map(function (x) {
+      var done = !!x.delivered, day0 = String(x.ordered_at).slice(0, 10), end = done ? x.delivered : nowD;
+      var days = (utc(end) - utc(day0)) / 864e5;
+      var stat = done ? 'delivered' : !x.dispatched ? 'not sent yet' : /ATTEMPTED/i.test(x.status || '') ? 'delivery failed' : /IN_TRANSIT|OUT_FOR/i.test(x.status || '') ? 'on the way' : handSet[x.order] ? 'handed over by hand' : 'sent';
+      return { order: x.order, kind: x.kind, coll: x.collection, days: days, done: done, hand: !done && !!handSet[x.order], status: stat, at: day0, sent: x.dispatched || '', carrier: x.carrier || '', delivered: x.delivered || '' };
+    }).filter(function (x) { return !isNaN(x.days) && x.at >= r.from && x.at <= r.to; });
+  };
+  /* the overall figure: DELIVERED orders inside their promise (ready to ship 7 days, made to order 20, counted from the order day), with the split by kind and the orders still on the way named apart */
+  M.fig.promise = function (r) {
+    var L = M.fig.promiseList(r), del = L.filter(function (x) { return x.done; }), inP = function (x) { return x.days <= M.fig.promiseHi(x); };
+    var kind = function (k) { var a = del.filter(function (x) { return (x.kind === 'made') === (k === 'made'); }); return { n: a.length, k: a.filter(inP).length }; };
+    var open = L.filter(function (x) { return !x.done && !x.hand; });
+    return { n: del.length, k: del.filter(inP).length, ready: kind('ready'), made: kind('made'), open: open.length, openPast: open.filter(function (x) { return !inP(x); }).length, hand: L.filter(function (x) { return x.hand; }).length, total: L.length, list: L, delivered: del };
+  };
+
+  /* ---------------------------------------------------------------- reviews: ONE count, and the product list must agree with it */
+  M.fig.reviews = function () {
+    var jd = M.has('judgeme_daily') ? M.rows('judgeme_daily').filter(function (x) { return x.date && x.published_reviews !== '' && x.published_reviews != null; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; }) : [];
+    var jl = jd.length ? jd[jd.length - 1] : null;
+    var pr = M.has('product_ratings') ? M.stateRows('product_ratings') : [], n = sum(pr, 'reviews'), w = pr.reduce(function (a, x) { return a + (+x.rating || 0) * (+x.reviews || 0); }, 0);
+    var byProduct = n ? { count: n, rating: w / n } : null;
+    if (!jl) return null;
+    var rating = jl.average_rating === '' || jl.average_rating == null ? null : +jl.average_rating;
+    return { count: +jl.published_reviews, rating: rating, date: jl.date, byProduct: byProduct, agree: !byProduct || (byProduct.count === +jl.published_reviews && (rating == null || Math.abs(byProduct.rating - rating) < 0.011)) };
+  };
+
+  /* ---------------------------------------------------------------- profit and the email list */
+  M.fig.profit = function (r) { if (!M.has('money_daily') || !M.moneyCalc) return null; var C = M.moneyCalc(r); return C.hasSales || C.t.profit ? rs(C.t.profit) : null; };
+  M.fig.emailSubscribers = function () { var x = M.stateRows('email_program').filter(function (y) { return y.measure === 'subscribers'; })[0]; return x && x.value !== '' && !isNaN(+x.value) ? +x.value : null; };
+
+  /* ---------------------------------------------------------------- the registry entries (read by scripts/dashboard_figures_check.js) */
+  var v = function (f) { return function (r) { var o = f(r); return o == null ? null : o.v != null ? o.v : o; }; };
+  M.FIGS = M.FIGS.concat([
+    { id: 'visits', label: 'Visits (the Overview figure)', unit: 'count', value: v(M.fig.visits),
+      shownOn: [{ page: 'overview', kind: 'kpi', label: 'Visits', none: true }] },
+    { id: 'visitsGoogle', label: 'Visits counted by Google (Shopping steps)', unit: 'count', value: v(M.fig.visitsGoogle),
+      shownOn: [{ page: 'funnel', kind: 'kpi', label: 'Visits counted by Google', prefix: true, none: true }] },
+    { id: 'visitsBySource', label: 'Visits with a source (Channels)', unit: 'count', value: function (r) { return M.fig.visitsBySource(r); },
+      shownOn: [{ page: 'channels', kind: 'kpi', label: 'Visits with a source', prefix: true, none: true }] },
+    { id: 'ordersShop', label: 'Orders (every real order in Shopify)', unit: 'count', value: function (r) { return M.fig.ordersShop(r); },
+      shownOn: [{ page: 'overview', kind: 'kpi', label: 'Orders', none: true }] },
+    { id: 'ordersGoogle', label: 'Orders Google saw (Channels)', unit: 'count', value: function (r) { return M.fig.ordersGoogle(r); },
+      shownOn: [{ page: 'channels', kind: 'kpi', label: 'Orders Google saw', none: true }] },
+    { id: 'igOrdersFirst', label: 'Orders from Instagram (first visit)', unit: 'count', value: function (r) { return M.fig.igOrdersFirst(r); },
+      shownOn: [{ page: 'social', q: 'cch=instagram', kind: 'kpi', label: 'Orders from Instagram (first visit)', none: true }] },
+    { id: 'igOrdersLast', label: 'Orders from Instagram (last click)', unit: 'count', value: function (r) { return M.fig.igOrdersLast(r); },
+      shownOn: [{ page: 'social', q: 'cch=instagram', kind: 'kpi', label: 'Orders from Instagram (last click)', none: true }] },
+    { id: 'deliveredInPromise', label: 'Delivered orders inside their promise', unit: 'count', value: function (r) { var p = M.fig.promise(r); return p.total ? p.k : null; },
+      shownOn: [{ page: 'shipping', kind: 'kpi', label: 'Delivered inside the promise', none: true }, { page: 'gtm', kind: 'text', re: 'Arrived inside the promise\\s*([\\d,]+) of [\\d,]+', allDays: true, none: true, label: 'Delivery promise card' }] },
+    { id: 'deliveredCount', label: 'Delivered orders (the list the promise counts)', unit: 'count', value: function (r) { var p = M.fig.promise(r); return p.total ? p.n : null; },
+      shownOn: [{ page: 'shipping', kind: 'kpi', label: 'Delivered inside the promise', re: 'of ([\\d,]+) delivered', none: true }, { page: 'gtm', kind: 'text', re: 'Arrived inside the promise\\s*[\\d,]+ of ([\\d,]+)', allDays: true, none: true, label: 'Delivery promise card' }] },
+    { id: 'reviews', label: 'Reviews published (Judge.me)', unit: 'count', value: function () { var x = M.fig.reviews(); return x ? x.count : null; },
+      shownOn: [{ page: 'tables', kind: 'kpi', label: 'Reviews published', none: true }] },
+    { id: 'rating', label: 'Average rating (Judge.me)', unit: 'rating', value: function () { var x = M.fig.reviews(); return x && x.rating != null ? x.rating : null; },
+      shownOn: [{ page: 'tables', kind: 'kpi', label: 'Average rating', none: true }] },
+    { id: 'profit', label: 'Profit after everything (estimate)', unit: 'money', value: function (r) { return M.fig.profit(r); },
+      shownOn: [{ page: 'overview', kind: 'kpi', label: 'Profit after everything (estimate)', round: true, none: true }, { page: 'overview', kind: 'row', label: 'Profit after everything', none: true }] },
+    { id: 'emailSubscribers', label: 'People on the email list', unit: 'count', value: function () { return M.fig.emailSubscribers(); },
+      shownOn: [{ page: 'email', kind: 'kpi', label: 'People on the email list', none: true }, { page: 'gtm', kind: 'kpi', label: 'Email list and left checkouts', none: true }] }
+  ]);
+  /* columns that belong to ONE function: no other file adds them up. Read by scripts/dashboard_figures_check.js together with the list in dashboard_79_figures.js */
+  M.FIG_COLUMNS = M.FIG_COLUMNS.concat([
+    { col: 'published_reviews', owner: 'reviews', allow: ['dashboard_80_figures2.js', 'dashboard_66_growth_lines.js', 'dashboard_24_business.js'] },
+    { col: 'subscribers', owner: 'emailSubscribers', allow: ['dashboard_80_figures2.js'] }
+  ]);
+})();
+
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
    the one file build (docs/reports/dashboard/mazo-dashboard.html) never uses any of this. Plan and design: docs/guides/robust-data-and-hosting-plan.md, scripts/site_crypto.py.
 
@@ -18180,7 +18322,7 @@ M.unlock = function () {
     functions: [['function_summary_hist', 'all']],                                                            /* jobs on target, night by night */
     history:   [[function () { return M.state.hsrc; }, 'all'], [['visits_joined_daily'], 'all']],                                               /* any table, every day stored */
     quality:   [[['data_quality_daily', 'routine_runs_daily'], 7]],                                           /* the newest checks; the last 7 days of routine runs */
-    gtm:       [[['brand_search_daily', 'email_weekly', 'checkout_recovery'], 'all'], [['instagram_window'], 125]],         /* Google clicks by week and the date they start (all); Instagram people reached: the last 120 windows */
+    gtm:       [[['brand_search_daily', 'email_weekly', 'checkout_recovery', 'shipping_daily', 'shiprocket_parcels'], 'all'], [['instagram_window'], 125]],         /* Google clicks by week and the date they start (all); Instagram people reached: the last 120 windows */
     channels:  [[['shopify_visits_split_daily', 'visits_joined_daily'], 'all']],                                     /* the device and six biggest source charts join Shopify's split to the Google tables, and name the first visit of a source */
     social:    [[SOCIAL, 'all']],
     search:    [[['competitor_social', 'kpi_daily', 'shopify_visits_split_daily', 'visits_joined_daily'], 'all'], [['search_pages_weekly'], 'own']],      /* visits from AI assistants: Shopify's split before 5 Oct, and the date of the first one */
