@@ -2355,7 +2355,7 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
 .bell-pop[hidden]{display:none}
 .bell-pop:focus,.bell-pop:focus-visible{outline:none}
 .bell-caret{position:absolute;z-index:1;top:-7px;left:calc(var(--caret-x,calc(100% - 20px)) - 6px);width:12px;height:12px;background:#fff;border-top:1px solid var(--edge);border-left:1px solid var(--edge);border-top-left-radius:3px;transform:rotate(45deg);pointer-events:none}
-.bell-in{position:relative;display:flex;flex-direction:column;max-height:min(440px,60vh);overflow:hidden;border-radius:calc(var(--rad3) - 1px);background:#fff}
+.bell-in{position:relative;display:flex;flex-direction:column;max-height:min(680px,76vh);overflow:hidden;border-radius:calc(var(--rad3) - 1px);background:#fff}
 
 /* header: title and the muted "data to" line on the left, icon buttons on the right */
 .bell-head{flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp2);padding:14px 10px 6px 16px}
@@ -2370,25 +2370,16 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
 .bell-hb:focus:not(:focus-visible){outline:none}
 .bell-hb[hidden],.bell-close{display:none}
 
-/* the two tabs: a soft track with a white thumb that slides under the chosen one */
-.bell-tabs{position:relative;flex:0 0 auto;display:grid;grid-template-columns:1fr 1fr;margin:6px 16px 8px;padding:3px;background:var(--wash);border-radius:999px}
-.bell-tabs[hidden]{display:none}
-.bell-thumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(42,42,42,.14),0 0 0 1px var(--edge);transition:transform .18s var(--ease,ease-out)}
-.bell-tabs[data-tab="recent"] .bell-thumb{transform:translateX(100%)}
-.bell-tab{appearance:none;position:relative;z-index:1;border:0;background:transparent;margin:0;padding:0 var(--sp2);min-height:30px;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp2);border-radius:999px;font:600 var(--t13)/1 var(--sans);color:var(--ink2);cursor:pointer;transition:color .15s}
-.bell-tab[aria-selected="true"]{color:var(--ink)}
-.bell-tab:hover{color:var(--ink)}
-.bell-tab:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
-.bell-tab:focus:not(:focus-visible){outline:none}
-.bell-tab-n{min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#E9E2D8;color:var(--ink2);font:600 var(--t12)/1 var(--sans);font-variant-numeric:tabular-nums;transition:background-color .15s,color .15s}
-.bell-tab[aria-selected="true"] .bell-tab-n{background:var(--maroon);color:#fff}
-
-/* the list: four rows high, then it scrolls inside the card; a soft shadow at the top and bottom shows there is more */
-.bell-body{flex:1 1 auto;min-height:0;max-height:264px;overflow-y:auto;overscroll-behavior:contain;
+/* the list: every item is in it (T1128, no tabs, no Show more). It is as tall as its rows up to the card limit (60% of the screen, 440px at most), then it scrolls inside the card; a soft shadow at the top and bottom shows there is more */
+.bell-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
   background:linear-gradient(#fff 30%,rgba(255,255,255,0)) top/100% 24px no-repeat local,linear-gradient(rgba(255,255,255,0),#fff 70%) bottom/100% 24px no-repeat local,
              linear-gradient(rgba(60,40,20,.10),rgba(60,40,20,0)) top/100% 8px no-repeat scroll,linear-gradient(rgba(60,40,20,0),rgba(60,40,20,.10)) bottom/100% 8px no-repeat scroll,#fff}
-.bell-body.swap{animation:bell-swap .17s var(--ease,ease-out)}
-.bell-ul{list-style:none;margin:0;padding:4px 6px}
+.bell-ul{list-style:none;margin:0;padding:2px 6px 4px}
+/* one small heading per group, with its count: "Needs attention 4", "Recent 2" */
+.bell-grp+.bell-grp{margin-top:2px}
+.bell-grp-t{margin:0;padding:10px 16px 2px;display:flex;align-items:center;gap:8px;font:600 var(--t12)/1.3 var(--sans);letter-spacing:.02em;color:var(--ink2)}
+.bell-grp-n{min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#E9E2D8;color:var(--ink2);font:600 var(--t12)/1 var(--sans);font-variant-numeric:tabular-nums}
+.bell-grp[data-group="attention"] .bell-grp-n{background:var(--maroon);color:#fff}
 
 /* one notification */
 .bell-row{--rowbg:#fff;position:relative;margin:0;min-height:64px;display:flex;align-items:stretch;border-radius:12px;transition:background-color .15s}
@@ -2437,11 +2428,15 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
 .bell-empty-ic .bn{width:18px;height:18px}
 .bell-foot{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2);padding:8px 16px 12px;border-top:1px solid var(--edge);background:#fff}
 .bell-foot[hidden]{display:none}
+/* pill buttons (Show dismissed, Undo) */
 .bell-pill{appearance:none;margin:0;padding:0 14px;height:32px;display:inline-flex;align-items:center;border:1px solid var(--edge2);border-radius:999px;background:#fff;font:600 var(--t13)/1 var(--sans);color:var(--ink);cursor:pointer;transition:background-color .15s,border-color .15s}
 .bell-pill:hover{background:var(--wash);border-color:var(--maroon);color:var(--maroon)}
 .bell-pill:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
 .bell-pill:focus:not(:focus-visible){outline:none}
 .bell-pill[hidden]{display:none}
+/* the visible "N more below" button under a list that is longer than the card */
+.bell-below{flex:0 0 auto;align-self:center;margin:2px 0 8px;height:28px;padding:0 12px;font-size:var(--t12);color:var(--maroon);border-color:var(--edge2);box-shadow:0 1px 2px rgba(42,42,42,.10)}
+.bell-below::after{content:"";width:7px;height:7px;margin-left:8px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:translateY(-2px) rotate(45deg)}
 
 /* the Undo bar: a slim dark strip at the very bottom of the card */
 .bell-undo{flex:0 0 auto;margin:0 8px 8px;display:flex;align-items:center;justify-content:space-between;gap:var(--sp3);padding:6px 6px 6px 16px;border-radius:12px;background:#2A2A2A;color:var(--cream);font-size:var(--t13);line-height:1.3;animation:bell-toast .18s var(--ease,ease-out)}
@@ -2460,12 +2455,11 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
 .bell-pop:not([hidden]){animation:bell-in .17s var(--ease,ease-out)}
 @keyframes bell-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 @keyframes bell-sheet{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
-@keyframes bell-swap{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 @keyframes bell-toast{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes bell-fade{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){
-  .bell-pop:not([hidden]),.bell-body.swap,.bell-undo,.bell-tip{animation:none}
-  .bell-thumb,.bell-row,.bell-hb,.bell-tab,.bell-tab-n,.bell-x,.bell-pill,.bell-chev{transition:none}
+  .bell-pop:not([hidden]),.bell-undo,.bell-tip{animation:none}
+  .bell-row,.bell-hb,.bell-x,.bell-pill,.bell-chev{transition:none}
 }
 
 /* 10 Nov 2026: the toolbar blurs what is behind it (dashboard_38_soft.css). A blur makes the toolbar the anchor of every position:fixed child, so on a phone the Filters sheet and this one were
@@ -2475,7 +2469,7 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
   .bell-pop{width:auto}
   .bell-pop:not([hidden]){animation:bell-sheet .2s var(--ease,ease-out)}
   .bell-caret{display:none}
-  .bell-in{max-height:60vh}
+  .bell-in{max-height:76vh}
   .bell-head{position:relative;padding-top:22px}
   .bell-head::before{content:"";position:absolute;left:50%;top:8px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--edge2)}
   .bell-close{display:inline-flex}
@@ -2488,8 +2482,8 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
   .bell-btn{width:44px;min-width:44px}
   .bell-hb{width:44px;height:44px}
   .bell-acts{margin-top:-6px}
-  .bell-tab{min-height:44px}
   .bell-pill,.bell-undo-b{height:44px}
+  .bell-below{height:40px}
   .bell-undo{padding:4px 4px 4px 16px}
   .bell-open-link{padding-right:68px}
   .bell-chev{right:46px}
@@ -2500,8 +2494,7 @@ tr.mg-r-total.mg-r-pend .mg-step{font-style:normal}
 @media (forced-colors:active){
   .bell-badge,.bell-ic,.bell-tag,.bell-undo,.bell-tip,.bell-pill,.bell-restore{border:1px solid CanvasText}
   .bell-dot{background:CanvasText;box-shadow:none}
-  .bell-thumb{border:1px solid CanvasText;box-shadow:none}
-  .bell-tab[aria-selected="true"] .bell-tab-n{border:1px solid CanvasText}
+  .bell-grp-n{border:1px solid CanvasText}
 }
 @media print{.tp-bell{display:none!important}}
 
@@ -16496,13 +16489,14 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
    Everything is worked out in the browser from the tables already inside the page: nothing is written to the Sheet or the server, no new data. The bell shows what the last nightly publish knew.
    Design and the rules, with how often each would have fired over the stored history: docs/guides/dashboard-notifications.md.
 
-   Two kinds of item:
+   Two groups of item, shown in ONE list in this order (T1128, 14 Nov 2026: the old two tabs hid the extra weight alert behind "Recent" while the badge said 6 and the first tab showed 4):
      NEEDS ATTENTION  a condition that is still true now (a size almost out, a parcel stuck, data gone stale). It stays until it is fixed, then disappears by itself.
      RECENT           an event of the last 7 days (a payment refused, a cancelled order, a low review). It stays 7 days, nothing is older than 30.
-   Every item has a deterministic id built from the data, so "new" and "read" survive a reload. Kinds (the only ones): payment refused, dispute, parcel stuck, extra weight billed, size almost out, wallet low,
-   shop data stale, return or tax due in 7 days, dated item due in 7 days, low review, cancelled order, extra weight billed (T1128). */
+   Every item has a deterministic id built from the data, so "new" and "read" survive a reload. Kinds (the only ones, with the table that drives each, in docs/guides/dashboard-notifications.md):
+   payment refused, dispute, refund, payment not matched to an order, parcel stuck, failed delivery try, missed pickups, extra weight billed, size almost out, wallet low, shop data stale, a nightly job
+   or table gone quiet, return or tax due in 7 days, dated item due in 7 days, tax check open, low review, cancelled order, shop connection lost, Razorpay payout held. */
 (function () {
-  var STORE = 'mazo-bell-v1', MAX_SHOWN = 8, MAX_HELD = 30, RECENT_DAYS = 7, HOLD_DAYS = 30;
+  var STORE = 'mazo-bell-v1', MAX_HELD = 60, RECENT_DAYS = 7, HOLD_DAYS = 30;      /* MAX_HELD 60: nothing the rules produce is ever cut (the busiest day of the 30 day replay holds 9); the panel itself shows every item, no cap, no tab */
   var SEV = { act: { word: 'Needs action', rank: 0 }, check: { word: 'Check', rank: 1 }, info: { word: 'Info', rank: 2 } };
 
   /* ------------------------------------------------------------ the rules (pure: they take the day to judge from and the table reader, so a test can feed them fake data) */
@@ -16549,12 +16543,29 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
         why: 'Sent ' + M.fd(String(x.dispatched).slice(0, 10)) + (x.carrier ? ' with ' + x.carrier : '') + ', still ' + String(x.status || 'on the way').toLowerCase().replace(/_/g, ' ') + '.', page: 'shipping', card: /order|status|parcel/i });
     });
 
+    /* 3b. a courier could not deliver (a failed try) in the last 7 days. The reason is the courier's own words. A parcel that was later delivered is not an item. */
+    var deliveredBy = {}; rows('shiprocket_tracking').forEach(function (x) { if (x.delivered_at) deliveredBy[x.order] = 1; });
+    rows('shiprocket_attempts').forEach(function (x) {
+      var d = String(x.date || '').slice(0, 10); if (!M.isDate(d) || daysAgo(d, today) > RECENT_DAYS || daysAgo(d, today) < 0) return;
+      if (x.kind === 'delivery try failed' && !deliveredBy[x.order] && !/delivered later/i.test(String(x.outcome || ''))) {
+        push({ id: 'failtry|' + x.order + '|' + (x.attempt || d), kind: 'parcel', sev: 'act', group: 'recent', date: d, title: 'The courier could not deliver ' + x.order, why: (x.courier ? x.courier + ': ' : '') + (x.reason || 'a failed delivery try') + '. The buyer may need a call.', page: 'shipping', card: /could not be delivered|failed/i });
+      }
+    });
+
+    /* 3c. a parcel has been waiting for the courier to come: 2 or more missed pickups on the same parcel in the last 7 days, and it is not on its way yet. */
+    var pk = {};
+    rows('shiprocket_attempts').forEach(function (x) { if (x.kind === 'pickup missed' && M.isDate(String(x.date).slice(0, 10)) && daysAgo(String(x.date).slice(0, 10), today) <= RECENT_DAYS && daysAgo(String(x.date).slice(0, 10), today) >= 0) { var o = pk[x.order] || (pk[x.order] = { n: 0, last: '', courier: x.courier }); o.n++; if (String(x.date) > o.last) o.last = String(x.date).slice(0, 10); } });
+    Object.keys(pk).forEach(function (k) {
+      if (pk[k].n < 2) return;
+      push({ id: 'pickup|' + k, kind: 'parcel', sev: 'check', group: 'recent', date: pk[k].last, n: pk[k].n, title: 'The courier missed ' + pk[k].n + ' pickups for ' + k, why: (pk[k].courier ? pk[k].courier + ' did not collect the parcel. ' : '') + 'Each missed day is a day lost before the buyer gets it.', page: 'shipping', card: /pickup|waited/i });
+    });
+
     /* 4. a size almost out: under 14 days at the fast pace, or none left. One item per size, shown once while true. */
     rows('stockout_forecast').forEach(function (x) {
       var left = x.days_left_fast != null ? +x.days_left_fast : null, none = +x.stock === 0;
       if (!none && !(left != null && left < 14)) return;
       push({ id: 'stock|' + x.product + '|' + x.size + '|' + (none ? 'zero' : 'low'), kind: 'stock', sev: none ? 'act' : 'check', group: 'attention', date: today,
-        title: none ? x.product + ', size ' + x.size + ' is sold out' : x.product + ', size ' + x.size + ' is almost out',
+        title: none ? 'Size ' + x.size + ' sold out: ' + x.product : 'Size ' + x.size + ' almost out: ' + x.product,      /* the size comes FIRST so a phone, which cuts the title, still tells size S from size XS */
         why: none ? 'None left, and it sold ' + x.sold_28d + ' in the last 28 days.' : x.stock + ' left, and it sold ' + x.sold_28d + ' in the last 28 days: about ' + left + ' days at the fast pace.', page: 'forecast', card: /stock|size|run out|sold out/i });
     });
 
@@ -16579,6 +16590,40 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
           why: 'It was raised after ' + rup(extra) + ' extra weight was billed on ' + M.fd(d) + ' and the courier has not answered after ' + age + ' days. Look at Weight discrepancy in Shiprocket.', page: 'shipping', card: /extra weight/i });
       }
     });
+
+    /* 2b. a refund was made. The table razorpay_refunds has had no row so far; the daily payments table counts refunded payments too, so either one raises it. Money going back out is always worth seeing. */
+    rows('razorpay_refunds').forEach(function (x) {
+      var d = String(x.date || '').slice(0, 10); if (!M.isDate(d) || daysAgo(d, today) > RECENT_DAYS || daysAgo(d, today) < 0) return;
+      push({ id: 'refund|' + (x.id || d + '|' + x.amount), kind: 'refund', sev: 'check', group: 'recent', date: d, title: 'A refund of ' + rup(+x.amount) + ' was made', why: 'Razorpay sent the money back to the buyer' + (x.status ? ' (' + String(x.status).toLowerCase() + ')' : '') + '. Check the order is cancelled or credited in the shop.', page: 'payments', card: /refund|payout|money/i });
+    });
+    rows('razorpay_payments_daily').forEach(function (x) {
+      var d = String(x.date || '').slice(0, 10), n = +x.refunded || 0;
+      if (!n || !M.isDate(d) || daysAgo(d, today) > RECENT_DAYS || daysAgo(d, today) < 0 || rows('razorpay_refunds').length) return;
+      push({ id: 'refund|' + d, kind: 'refund', sev: 'check', group: 'recent', date: d, title: n === 1 ? 'A payment was refunded' : n + ' payments were refunded', why: 'Razorpay shows ' + (n === 1 ? 'one refunded payment' : n + ' refunded payments') + ' on ' + M.fd(d) + '. Check the order is cancelled or credited in the shop.', page: 'payments', card: /refund|payout|money/i });
+    });
+
+    /* 2c. Razorpay and the shop disagree about a day: a payment the shop has no order for, or an order marked paid with no payment, or an amount that differs. (A day before our Razorpay record starts is
+       never an item.) This is the check that would have caught a real order lost between the two systems. */
+    rows('razorpay_match').forEach(function (x) {
+      var d = String(x.date || '').slice(0, 10); if (!M.isDate(d) || +x.before_live || daysAgo(d, today) > RECENT_DAYS || daysAgo(d, today) < 0) return;
+      var bad = (+x.not_in_shop || 0) + (+x.no_payment || 0) + (+x.amount_differs || 0); if (!bad) return;
+      push({ id: 'unmatched|' + d, kind: 'match', sev: 'check', group: 'recent', date: d, n: bad, title: bad === 1 ? 'One payment does not match an order on ' + M.fds(d) : bad + ' payments do not match an order on ' + M.fds(d),
+        why: (+x.not_in_shop ? x.not_in_shop + ' paid at Razorpay with no order in the shop. ' : '') + (+x.no_payment ? x.no_payment + ' order' + (+x.no_payment === 1 ? '' : 's') + ' with no payment at Razorpay. ' : '') + (+x.amount_differs ? x.amount_differs + ' with a different amount. ' : '') + 'Open the match table.', page: 'payments', card: /agree|match|orders/i });
+    });
+
+    /* 2e. a Razorpay payout to the bank is not "processed" and is more than 2 days old: money the shop has earned is not in the bank. */
+    rows('razorpay_settlements').forEach(function (x) {
+      var d = String(x.date || '').slice(0, 10); if (!M.isDate(d) || /processed|settled/i.test(String(x.status || '')) || !x.status) return;
+      var n = daysAgo(d, today); if (n < 2 || n > HOLD_DAYS) return;
+      push({ id: 'payout|' + (x.id || d), kind: 'refund', sev: 'check', group: 'attention', date: d, title: 'A payout of ' + rup(+x.amount) + ' is ' + String(x.status).toLowerCase(), why: 'Razorpay made it on ' + M.fd(d) + ' and it is not marked processed after ' + n + ' days.', page: 'payments', card: /payout|bank/i });
+    });
+
+    /* 2d. money waiting at Razorpay does not equal what our own sums say. */
+    var bal = rows('razorpay_balance_daily'); bal = bal.length ? bal[bal.length - 1] : null;
+    if (bal && Math.abs(+bal.waiting_gap) >= 1 && M.isDate(String(bal.date).slice(0, 10)) && daysAgo(String(bal.date).slice(0, 10), today) <= 3) {
+      push({ id: 'balgap|' + String(bal.date).slice(0, 10), kind: 'match', sev: 'check', group: 'attention', date: String(bal.date).slice(0, 10), title: 'The money waiting at Razorpay is off by ' + rup(Math.abs(+bal.waiting_gap)),
+        why: 'Razorpay says ' + rup(+bal.waiting_at_razorpay) + ' is waiting, our own sums say ' + rup(+bal.waiting_by_our_sums) + '.', page: 'payments', card: /waiting|balance|money/i });
+    }
 
     /* 5. the Shiprocket wallet is low. It is the money that pays for parcels. */
     var w = rows('shiprocket_wallet'); w = w.length ? w[w.length - 1] : null;
@@ -16607,6 +16652,13 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
         why: qn === 1 ? 'The newest row is ' + M.fd(w0.last) + '. The nightly job may have failed for this one.' : 'The oldest is ' + (M.niceName ? M.niceName(w0.name) : w0.name) + ', newest row ' + M.fd(w0.last) + '. The nightly job may have failed for these.', page: 'quality', card: /fresh/i });
     }
 
+    /* 6c. a shop connection is lost: the nightly read of Razorpay or Shiprocket did not say "connected". Every number from that side stops until it is fixed. */
+    rows('connections').forEach(function (x) {
+      if (!x.source || /^connected$/i.test(String(x.state || ''))) return;
+      var d = String(x.checked || '').slice(0, 10);
+      push({ id: 'conn|' + x.source, kind: 'stale', sev: 'act', group: 'attention', date: M.isDate(d) ? d : today, title: cap(x.source) + ' is not connected', why: 'The nightly read said "' + (x.state || 'not connected') + '"' + (x.note ? ': ' + x.note : '') + '. Its numbers stop until it is fixed.', page: 'quality', card: /connect|fresh|check/i });
+    });
+
     /* 7. a tax return due within 7 days (the filing calendar) */
     rows('tax_calendar').forEach(function (x) {
       if (!x.due_date) return;
@@ -16624,6 +16676,44 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       push({ id: 'dated|' + x.due + '|' + String(x.item).slice(0, 40), kind: 'dated', sev: left === 0 ? 'act' : 'check', group: 'attention', date: x.due, title: String(x.item).replace(/\s*\([^)]*\)\s*$/, '') + ' ' + (left === 0 ? 'is today' : left === 1 ? 'is tomorrow' : 'is in ' + left + ' days'),
         why: 'Date: ' + M.fd(x.due) + '.', page: 'quality', card: /date|due/i });
     });
+
+    /* 8b. a tax check on an order is open (a missing HSN code, a sale with no GST, an odd rate). A cleared one is history. */
+    rows('tax_checks').forEach(function (x) {
+      if (!x.order || /cleared|done|closed|resolved/i.test(String(x.status || ''))) return;
+      push({ id: 'taxcheck|' + x.key, kind: 'tax', sev: 'check', group: 'attention', date: String(x.date || today).slice(0, 10), title: 'Order ' + x.order + ' needs a tax check', why: String(x.what_to_do || 'The register flags it.').slice(0, 140), page: 'tax', card: /check|register/i });
+    });
+
+    /* 8c. an exchange parcel is waiting to be booked (a typed row of exchange_parcels whose status is "to book"): money and a buyer waiting on us. */
+    rows('exchange_parcels').forEach(function (x) {
+      if (!/to book/i.test(String(x.status || ''))) return;
+      push({ id: 'tobook|' + x.key, kind: 'parcel', sev: 'act', group: 'attention', date: String(x.date || today).slice(0, 10), title: 'An exchange parcel for ' + x.order + ' is waiting to be booked', why: 'The ' + (x.leg === 'resend' ? 'replacement' : x.leg === 'return' ? 'return' : 'parcel') + (x.carrier ? ' with ' + x.carrier : '') + ' has not been booked yet.', page: 'shipping', card: /every parcel/i });
+    });
+
+    /* 8f. a high risk order: Shopify's own fraud flag, counted by week */
+    rows('returns_weekly').forEach(function (x) {
+      var d = String(x.week || '').slice(0, 10), n = +x.high_risk_orders || 0; if (!n || !M.isDate(d) || daysAgo(d, today) > RECENT_DAYS + 6 || daysAgo(d, today) < 0) return;
+      push({ id: 'risk|' + d, kind: 'payfail', sev: 'act', group: 'recent', date: today, n: n, title: n === 1 ? 'Shopify flagged an order as high risk' : 'Shopify flagged ' + n + ' orders as high risk', why: 'In the week of ' + M.fd(d) + '. Look at it before you pack it.', page: 'tables', card: /return|exchange/i });
+    });
+
+    /* 8g. Google Analytics and Shopify do not agree on the orders of a day: the tracking may be broken, and every marketing number would be wrong with nobody knowing */
+    rows('data_trust_daily').forEach(function (x) {
+      var d = String(x.date || '').slice(0, 10); if (!M.isDate(d) || /^yes$/i.test(String(x.match || '')) || daysAgo(d, today) > RECENT_DAYS || daysAgo(d, today) < 0) return;
+      push({ id: 'trust|' + d, kind: 'stale', sev: 'check', group: 'recent', date: d, title: 'Google Analytics and Shopify disagree on ' + M.fds(d), why: 'Shopify has ' + x.shopify_orders + ' order' + (+x.shopify_orders === 1 ? '' : 's') + ', Google Analytics ' + x.ga4_purchases + '. The tracking may be broken.' + (x.note ? ' ' + x.note : ''), page: 'health', card: /agree|trust|check/i });
+    });
+
+    /* 8h. a nightly data check FAILED on the newest night it ran (a plain CHECK or KNOWN is a known gap and stays out) */
+    var dq = rows('data_quality_daily'), dqLast = dq.reduce(function (a, x) { return String(x.date) > a ? String(x.date) : a; }, '');
+    if (dqLast && daysAgo(dqLast.slice(0, 10), today) <= 2) {
+      dq.filter(function (x) { return x.date === dqLast && /^fail/i.test(String(x.status || '')); }).forEach(function (x) {
+        push({ id: 'dqfail|' + x.check, kind: 'stale', sev: 'check', group: 'attention', date: dqLast.slice(0, 10), title: 'A nightly check failed: ' + String(x.check).replace(/^[a-z]+:/, '').replace(/_/g, ' '), why: String(x.detail || x.target || '').slice(0, 150), page: 'quality', card: /nightly checks/i });
+      });
+    }
+
+    /* 8j. Facebook comments are waiting for an answer */
+    var fb = rows('facebook_daily'); fb = fb.length ? fb[fb.length - 1] : null;
+    if (fb && +fb.comments_waiting > 0 && daysAgo(String(fb.date).slice(0, 10), today) <= 3) {
+      push({ id: 'fbcomments|' + String(fb.date).slice(0, 10), kind: 'review', sev: 'check', group: 'attention', date: String(fb.date).slice(0, 10), n: +fb.comments_waiting, title: fb.comments_waiting + ' Facebook comment' + (+fb.comments_waiting === 1 ? ' is' : 's are') + ' waiting for an answer', why: 'On the shop Page.', page: 'social', card: /facebook|comment/i });
+    }
 
     /* 9. a low review: 1 or 2 stars on any product. The ratings table has no per review row, so this fires when a product's count of 1 and 2 star reviews goes up. */
     rows('product_ratings').forEach(function (x) {
@@ -16653,7 +16743,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var by = function (a, b) { return SEV[a.sev].rank - SEV[b.sev].rank || (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) || (a.time < b.time ? 1 : a.time > b.time ? -1 : 0) || (a.idx - b.idx); };      /* worst first, then newest, then the order the rules produced (a tie never flips) */
     var att = keep.filter(function (o) { return o.group === 'attention'; }).sort(by);
     var rec = keep.filter(function (o) { return o.group === 'recent'; }).sort(function (a, b) { return (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) || SEV[a.sev].rank - SEV[b.sev].rank || (a.time < b.time ? 1 : a.time > b.time ? -1 : 0) || (a.idx - b.idx); });
-    return att.concat(rec).slice(0, MAX_HELD);
+    return att.concat(rec).slice(0, MAX_HELD);      /* ONE list, Needs attention first, then Recent; MAX_HELD is far above anything the rules produce, and the panel shows every item of it */
   };
 
   /* ------------------------------------------------------------ what the owner has seen and read (this browser only). Storage can be blocked: then it is kept in memory for this visit. */
@@ -16667,6 +16757,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
   /* today by the India clock (UTC + 5:30), whatever the clock of the computer says. An old saved copy of the dashboard (a dated file opened weeks later) judges from the day after its own newest
      data instead, so it is never told "the numbers are old" about a picture it was meant to be. The hosted site and a copy saved in the last 3 days use the real day. */
   M.bellToday = function () {
+    if (window.MAZO_BELL_DAY && M.isDate(window.MAZO_BELL_DAY)) return window.MAZO_BELL_DAY;      /* a test sets the day the bell judges from (dashboard_bell_firstopen_check.js); never set on the live site */
     var real = new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10), built = String(M.D.built || '').slice(0, 10);
     if (window.MAZO_HOSTED || !M.isDate(built) || M.diff(built, real) <= 3) return real;
     return M.add(M.D.anchor || built, 1);
@@ -16696,16 +16787,19 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
    - the badge counts items NEW since the panel was last opened (capped 9+, nothing at 0); opening the panel clears it; an item keeps its small maroon dot until it is clicked or "Mark all read"
    - the panel is the same popover as Filters (one open at a time, Escape and an outside click close it, focus returns to the bell). Laptop: a small card under the bell. Phone: a bottom sheet, at most 60% of the screen, with a close icon.
    - COMPACT (10 Nov 2026, second design, owner: "the UI looks shit, very generic with underline texts... we cant have notifications take up the entire page"): one row = one line of title, one line of reason, a round
-     icon for the kind, the time, a chevron. Two tabs, "Needs attention" and "Recent", instead of headings and day labels. Icon buttons and pill buttons, no underlined text anywhere.
+     icon for the kind, the time, a chevron. Icon buttons and pill buttons, no underlined text anywhere.
+   - ONE LIST (14 Nov 2026, T1128, owner: "i asked you to fix the notifications!! you confirmed yes yes and here we go another thing you missed"): the two tabs are gone. On the first open the panel shows EVERY
+     item at once: a small heading "Needs attention (n)", its rows, then a heading "Recent (n)" and its rows. The old tabs opened on "Needs attention" and kept the Recent items (an extra weight charge among them) behind a
+     second tap, while the badge said 6 and the list showed 4. Now the badge is the number of NEW items and the list holds all of them; nothing is behind a tab and nothing is cut. The list scrolls inside the card.
    - DISMISS: an X on every row (on hover or keyboard focus on a laptop, always there but quiet on a phone), "Dismiss all" in the header, an Undo bar for 6 seconds, "Show dismissed" at the foot with Restore.
      A dismissed item stays gone until it gets worse or changes.
-   - 8 shown per tab, "Show more" up to 30; every item has a kind icon, a plain title, one line of reason, when, and opens the right page and card. "Needs action" also has a text tag, so colour is never the only signal.
+   - every item is shown (no "Show more"); every item has a kind icon, a plain title, one line of reason, when, and opens the right page and card. "Needs action" also has a text tag, so colour is never the only signal.
    - nothing opens by itself, no sound, no pop up. It is computed in the browser after each draw (never during one, so the hosted site's month loader is not disturbed). */
 (function () {
-  var wrap, btn, panel, inner, badge, list, tabsEl, tipEl, built = false, expanded = false, tab = 'attention', picked = false, cur = { items: [], today: '' };
+  var wrap, btn, panel, inner, badge, list, tipEl, belowBtn, built = false, cur = { items: [], today: '' };
   var SEVWORD = { act: 'Needs action', check: 'Check', info: 'Info' };
-  var TABS = [['attention', 'Needs attention'], ['recent', 'Recent']];
-  var KINDIC = { payfail: 'pay', dispute: 'pay', wallet: 'pay', parcel: 'parcel', weight: 'parcel', stock: 'stock', tax: 'date', dated: 'date', review: 'review', cancel: 'order', stale: 'data' };
+  var GROUPS = [['attention', 'Needs attention'], ['recent', 'Recent']];
+  var KINDIC = { payfail: 'pay', dispute: 'pay', refund: 'pay', match: 'pay', wallet: 'pay', parcel: 'parcel', weight: 'parcel', stock: 'stock', tax: 'date', dated: 'date', review: 'review', cancel: 'order', order: 'order', stale: 'data' };
 
   var whenOf = function (o, today) {
     if (o.kind === 'tax' || o.kind === 'dated') return 'Due ' + M.fds(o.date);
@@ -16833,56 +16927,52 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     return M.h('p', { class: 'bell-empty' }, [M.h('span', { class: 'bell-empty-ic', 'aria-hidden': 'true' }, [ic('bn-ok')]), M.h('span', { text: text })]);
   };
 
-  var paintPanel = function (focusFirstNew) {
+  /* "N more below" (T1128): when the list is longer than the card, a visible button says how many rows are out of sight and scrolls to them, so nothing is ever hidden without a word. */
+  var markBelow = function () {
+    if (!belowBtn || !list) return;
+    var count = function () {      /* measured from the list's own box (offsetTop is relative to the card and includes the header) */
+      var lr = list.getBoundingClientRect(), rows = list.querySelectorAll('.bell-row'), n = 0;
+      if (lr.height > 0) for (var i = 0; i < rows.length; i++) if (rows[i].getBoundingClientRect().bottom > lr.bottom + 4) n++;
+      return n;
+    };
+    var n = count();
+    belowBtn.hidden = n === 0; if (n) belowBtn.textContent = n === 1 ? '1 more below' : n + ' more below';
+    if (n) { n = count(); belowBtn.hidden = n === 0; belowBtn.textContent = n === 1 ? '1 more below' : n + ' more below'; }      /* the button takes room from the list, so one more row can fall below once it shows: count again with it there */
+  };
+
+  /* ONE list (T1128). Every live item is drawn, in two groups with a small heading each: "Needs attention" first, then "Recent". The headings carry the counts, so the number in the badge,
+     the numbers in the headings and the rows on the screen are the same numbers. Dismissed items are listed only under "Show dismissed". */
+  var paintPanel = function () {
     var st = states(), all = cur.items, c = M.bellCounts(all, st);
     var items = all.filter(function (o) { return !M.bellDismissed(o, st); }), gone = all.filter(function (o) { return M.bellDismissed(o, st); });
-    var sets = { attention: items.filter(function (o) { return o.group === 'attention'; }), recent: items.filter(function (o) { return o.group === 'recent'; }) };
-    var other = tab === 'attention' ? 'recent' : 'attention';
-    if (!picked && !sets[tab].length && sets[other].length) tab = other;      /* the tab he did not pick himself follows the items */
     hideTip(); M.clear(list);
-    var arr = sets[tab], limit = expanded ? 30 : 8, firstExtra = null, total = arr.length;
     if (!items.length) list.appendChild(emptyLine(all.length ? 'All clear. You have dismissed everything.' : 'All clear. Nothing needs you right now.'));
-    else if (!arr.length) list.appendChild(emptyLine(tab === 'attention' ? 'Nothing needs attention right now.' : 'Nothing new in the last 7 days.'));
-    else {
-      var ul = M.h('ul', { class: 'bell-ul' });
-      arr.slice(0, limit).forEach(function (o, i) { var li = item(o, st, false); ul.appendChild(li); if (i === 8) firstExtra = li.querySelector('.bell-open-link'); });
-      list.appendChild(ul);
-    }
+    GROUPS.forEach(function (g) {
+      var arr = items.filter(function (o) { return o.group === g[0]; });
+      if (!arr.length) return;
+      var ul = M.h('ul', { class: 'bell-ul', role: 'list', 'aria-labelledby': 'bell-grp-' + g[0] });
+      arr.forEach(function (o) { ul.appendChild(item(o, st, false)); });
+      list.appendChild(M.h('section', { class: 'bell-grp', 'data-group': g[0] }, [
+        M.h('h4', { class: 'bell-grp-t', id: 'bell-grp-' + g[0] }, [M.h('span', { text: g[1] }), M.h('span', { class: 'bell-grp-n', text: String(arr.length) })]), ul]));
+    });
     if (showGone && gone.length) {
       var ulg = M.h('ul', { class: 'bell-ul' }); gone.forEach(function (o) { ulg.appendChild(item(o, st, true)); });
       list.appendChild(M.h('section', { class: 'bell-gone-sec', 'aria-label': 'Dismissed' }, [M.h('p', { class: 'bell-gone-t', text: 'Dismissed' }), ulg]));
     }
-    /* the tabs: counts in the name, a sliding thumb under the chosen one */
-    tabsEl.hidden = !items.length; tabsEl.setAttribute('data-tab', tab);
-    TABS.forEach(function (t) {
-      var b = tabsEl.querySelector('[data-tab="' + t[0] + '"]'), n = sets[t[0]].length, on = t[0] === tab;
-      b.querySelector('.bell-tab-n').textContent = String(n);
-      b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1; b.setAttribute('aria-label', t[1] + ', ' + n);
-    });
-    if (items.length) { list.setAttribute('role', 'tabpanel'); list.setAttribute('aria-labelledby', 'bell-tab-' + tab); } else { list.removeAttribute('role'); list.removeAttribute('aria-labelledby'); }
-    var more = panel.querySelector('.bell-more');
-    more.hidden = expanded || total <= 8;
-    more.textContent = 'Show ' + Math.max(0, total - 8) + ' more';
+    list.setAttribute('data-live', String(items.length));      /* the number of rows the panel must hold; the check compares it with the badge and the rows */
     var gb = panel.querySelector('.bell-goneb'); gb.hidden = !gone.length; gb.textContent = (showGone ? 'Hide dismissed (' : 'Show dismissed (') + gone.length + ')'; gb.setAttribute('aria-expanded', showGone ? 'true' : 'false');
-    panel.querySelector('.bell-foot').hidden = more.hidden && gb.hidden;
+    panel.querySelector('.bell-foot').hidden = gb.hidden;
     panel.querySelector('.bell-markall').hidden = c.unread === 0;
     panel.querySelector('.bell-dismissall').hidden = items.length === 0;
     panel.querySelector('.bell-asof').textContent = 'Data to ' + M.fds(M.D.anchor) + ', saved ' + M.builtText();
-    if (focusFirstNew && firstExtra) firstExtra.focus({ preventScroll: false });
-  };
-
-  var setTab = function (t, focus) {
-    if (t === tab) return;
-    tab = t; picked = true; expanded = false; paintPanel();
-    list.scrollTop = 0; list.classList.remove('swap'); void list.offsetWidth; list.classList.add('swap');      /* a short fade of the new list */
-    if (focus) tabsEl.querySelector('[data-tab="' + t + '"]').focus({ preventScroll: true });
+    markBelow();
   };
 
   var closePanel;
   var openedBy = function () {
     /* opening the panel is "seeing" every item: the badge clears, the dot stays until the item is clicked or Mark all read */
     var st = states(); cur.items.forEach(function (o) { st.seenAt[M.bellLevel(o)] = 1; }); prune(st, cur.items); M.bellState.save(st);
-    expanded = false; showGone = false; picked = false; tab = 'attention'; paintPanel(); paintBadge();
+    showGone = false; paintPanel(); paintBadge();
   };
 
   M.bellRefresh = function () {
@@ -16905,24 +16995,16 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var markAll = iconBtn('bell-markall', 'Mark all read', 'bn-readall'); markAll.hidden = true;
     var dismissAll = iconBtn('bell-dismissall', 'Dismiss all', 'bn-clear'); dismissAll.hidden = true;
     var closeBtn = iconBtn('bell-close', 'Close notifications', 'bn-x');
-    var moreBtn = M.h('button', { type: 'button', class: 'bell-pill bell-more', text: 'Show more', hidden: true });
+    belowBtn = M.h('button', { type: 'button', class: 'bell-pill bell-below', hidden: true });
+    belowBtn.addEventListener('click', function () { list.scrollTo ? list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' }) : (list.scrollTop = list.scrollHeight); });
+    list.addEventListener('scroll', function () { markBelow(); }, { passive: true });
     var goneBtn = M.h('button', { type: 'button', class: 'bell-pill bell-goneb', hidden: true, 'aria-expanded': 'false' });
-    tabsEl = M.h('div', { class: 'bell-tabs', role: 'tablist', 'aria-label': 'Notification groups' }, [M.h('span', { class: 'bell-thumb', 'aria-hidden': 'true' })].concat(TABS.map(function (t) {
-      var b = M.h('button', { type: 'button', class: 'bell-tab', role: 'tab', id: 'bell-tab-' + t[0], 'data-tab': t[0], 'aria-selected': 'false', 'aria-controls': 'bell-body', tabindex: '-1' },
-        [M.h('span', { class: 'bell-tab-t', text: t[1] }), M.h('span', { class: 'bell-tab-n', 'aria-hidden': 'true', text: '0' })]);
-      b.addEventListener('click', function () { setTab(t[0], false); });
-      b.addEventListener('keydown', function (e) {
-        var k = e.key; if (k !== 'ArrowLeft' && k !== 'ArrowRight' && k !== 'Home' && k !== 'End') return;
-        e.preventDefault(); setTab(k === 'ArrowLeft' || k === 'Home' ? 'attention' : 'recent', true);
-      });
-      return b;
-    })));
     tipEl = M.h('div', { class: 'bell-tip', role: 'presentation', 'aria-hidden': 'true', hidden: true });
     inner = M.h('div', { class: 'bell-in' }, [
       M.h('div', { class: 'bell-head' }, [M.h('div', { class: 'bell-head-t' }, [M.h('h3', { class: 'bell-title', text: 'Notifications' }), M.h('p', { class: 'bell-asof' })]), M.h('span', { class: 'bell-acts' }, [markAll, dismissAll, closeBtn])]),
-      tabsEl,
       list,
-      M.h('div', { class: 'bell-foot', hidden: true }, [moreBtn, goneBtn]),
+      belowBtn,
+      M.h('div', { class: 'bell-foot', hidden: true }, [goneBtn]),
       M.h('p', { class: 'bell-undo', hidden: true })
     ]);
     panel = M.h('div', { class: 'popover pop-right bell-pop', id: 'bell-panel', role: 'dialog', 'aria-label': 'Notifications', hidden: true }, [M.h('span', { class: 'bell-caret', 'aria-hidden': 'true' }), inner, tipEl]);
@@ -16951,7 +17033,6 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       panel.focus({ preventScroll: true });
     });
     goneBtn.addEventListener('click', function () { showGone = !showGone; paintPanel(); goneBtn.focus({ preventScroll: true }); });
-    moreBtn.addEventListener('click', function () { expanded = true; paintPanel(true); });
     /* the full text: after a short pause on hover, at once on keyboard focus; never on a touch screen */
     if (window.matchMedia && window.matchMedia('(hover:hover)').matches) {
       var rowOf = function (e) { return e.target.closest ? e.target.closest('.bell-row') : null; };
