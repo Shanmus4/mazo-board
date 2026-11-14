@@ -8642,12 +8642,16 @@ M.PAGES.shipping.render = function (r) {
     return root;
   }
   var tab = 'shiprocket_shipments_daily', days = M.daysCovered(tab, r.from, r.to);
-  if (!days) { root.appendChild(M.emptyWhy(tab, r)); return root; }
+  /* T1135 (14 Nov 2026): the courier's pickup table starts later than the first order, so for the first days there is no pickup day, but the shop DID pay for a parcel (19 May: #MZ1002, Rs. 128.36, on the Overview). The tiles are drawn
+     from the one list of parcels (M.shipLedger) whenever it holds a parcel or a tracking fee; only when it holds nothing either does the page say there is no data. */
+  var L0 = M.shipLedger ? M.shipLedger(r) : null;
+  if (!days && !(L0 && (L0.n || (M.waFee && M.waFee(r.from, r.to))))) { root.appendChild(M.emptyWhy(tab, r)); return root; }
   var S = function (c) { return M.sumCol(tab, c, r).v || 0; };
   var dl = S('delivered'), rto = S('rto');
   /* T1126 (14 Nov 2026, owner: "I see rs 107 a parcel in one place, and 115 in another"): the headline cost and count come from the ONE list of parcels the shop paid for (dashboard_77_exchange_parcels.js,
      M.shipLedger), dated like the Overview, so the tile, the cards below and the Overview's "Shipping and parcel" agree for any dates. The courier clock figures below (delivered, came back, days) stay Shiprocket's own. */
   var L = M.shipLedger ? M.shipLedger(r) : null, O = L ? M.shipOverview(r, L) : null;
+  var FC = L ? M.fig.shippingCost(r, L, O) : null;      /* T1135: the ONE figure of what shipping cost (every parcel plus Shiprocket's tracking messages), shared with the Overview and every card below */
   var n = L ? L.n : S('shipments'), fr = L ? L.total : S('freight'), rtoc = 0, oth = 0;
   /* 6 Nov 2026: Shiprocket's order list carries no freight and its statement endpoint returns one blank line, so until the freight is read the cost is NOT zero, it is unknown. The page says so instead of Rs. 0. */
   var costKnown = L ? true : (fr + rtoc + oth) > 0;      /* with the ledger a quiet day is a real Rs. 0, never 'not read'; without it the old rule stands */
@@ -8666,7 +8670,7 @@ M.PAGES.shipping.render = function (r) {
   var by = L ? L.by : null, part = function (k) { return by && by[k] ? by[k].n : 0; };
   var sentNote = L ? M.num(part('Shiprocket')) + ' through Shiprocket' + (part('By hand') ? ', ' + M.num(part('By hand')) + ' booked by hand' : '') + (part('Exchange') ? ', ' + M.num(part('Exchange')) + ' for exchanges and second parcels' : '') + (part('Guess') ? ', ' + M.num(part('Guess')) + ' not billed yet' : '') + '.' : M.num(dl) + ' delivered, ' + M.num(Math.max(0, n - dl - rto)) + ' on the way';
   kp.appendChild(M.kpi({ label: 'Parcels sent', value: M.num(n), hero: true, note: sentNote, drill: sentSpec }));
-  kp.appendChild(costKnown ? M.kpi({ label: 'What shipping cost', value: M.inr(O ? O.total : fr), note: L ? (n ? M.inr(L.avg) + ' a parcel (' + M.inr(L.total) + ' for ' + M.num(n) + ' parcels' + (O && O.wa ? ', plus ' + M.inr(O.wa) + ' of Shiprocket tracking messages' : '') + ')' : 'No parcel was paid for in these dates' + (O && O.wa ? ', only ' + M.inr(O.wa) + ' of Shiprocket tracking messages' : '')) : (n ? M.inr(fr / n) + ' a parcel' : ''), drill: costSpec })
+  kp.appendChild(costKnown ? M.kpi({ label: 'What shipping cost', value: M.inr(FC ? FC.total : fr), note: L ? (n ? M.inr(FC.perParcel) + ' a parcel (' + M.inr(FC.courier) + ' for ' + M.num(n) + ' parcels' + (FC.wa ? ', plus ' + M.inr(FC.wa) + ' of Shiprocket tracking messages' : '') + ')' : 'No parcel was paid for in these dates' + (O && O.wa ? ', only ' + M.inr(O.wa) + ' of Shiprocket tracking messages' : '')) : (n ? M.inr(fr / n) + ' a parcel' : ''), drill: costSpec })
     : M.kpi({ label: 'What shipping cost', na: 'Not read yet', note: 'No parcel in these dates carries a readable price.' }));
   kp.appendChild(M.kpi({ label: 'Days to deliver', value: avgDays == null ? 'not tracked' : M.num(avgDays, 1), note: 'courier time, from pickup to the door. It leaves out the days an order waited before the courier came.' }));
   kp.appendChild(M.kpi({ label: 'Came back', value: M.num(rto), note: n ? M.pct(rto / n * 100, 1) + ' of parcels' : '', drill: backSpec }));
@@ -8677,13 +8681,14 @@ M.PAGES.shipping.render = function (r) {
   var cnt = seriesFor('shipments'), frS = seriesFor('freight');
   /* T1126: the two charts are drawn from the same list as the tiles (parcels and what they cost, by the day of the order), so a column adds up to the figure above it */
   var inBk = function (b) { return L ? L.rows.filter(function (x) { return x.day >= b.from && x.day <= b.to; }) : []; };
-  if (L) { cnt = buckets.map(function (b) { return inBk(b).length; }); frS = buckets.map(function (b) { return rs2(inBk(b).reduce(function (a, x) { return a + Math.round(x.cost * 100); }, 0)); }); }
-  var colSpec = function (what) { return M.drill.cache(function (i, b, v) { var rows = inBk(b), sp = rows.length ? M.shipSpec(what + ', ' + M.drill.when(b), M.drill.countText(rows.length, 'parcel') + '.', rows) : null; return what === 'Parcels' ? M.drill.countIs(sp, v) : M.drill.same(sp, v); }); };
+  var SB = FC ? M.fig.shipByBucket(FC, buckets) : null;      /* T1135: each column = its parcels plus its share of Shiprocket's tracking messages (whole paise, so the columns add up to the tile) */
+  if (L) { cnt = buckets.map(function (b) { return inBk(b).length; }); frS = SB.map(function (x) { return x.cost; }); }
+  var colSpec = function (what) { return M.drill.cache(function (i, b, v) { var rows = inBk(b), extra = what === 'Parcels' || !M.waPieces ? [] : M.shipWhatsApp({ waPieces: M.waPieces(b.from, b.to) }), sp = rows.length || extra.length ? M.shipSpec(what + ', ' + M.drill.when(b), M.drill.countText(rows.length, 'parcel') + (extra.length ? ' and the WhatsApp tracking fee.' : '.'), rows, extra) : null; return what === 'Parcels' ? M.drill.countIs(sp, v) : M.drill.same(sp, v); }); };
   root.appendChild(M.grid([
     M.card('Parcels each ' + r.mode, 'Every parcel the shop paid for, however it was sent, on the day of its order. The line is the average of the last few ' + r.mode + 's.', [
       M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'Parcels', drill: L ? colSpec('Parcels') : M.drill.parcelChart('Parcels picked up'), series: [{ name: 'Parcels', values: cnt, color: M.COLORS.teal, fmt: M.num }] }); }),
       M.tableView([{ k: 'label', label: 'Period' }, { k: 'n', label: 'Parcels', num: true }], buckets.map(function (b, i) { return { label: b.label, n: cnt[i], _from: b.from, _to: b.to }; }))]),
-    !costKnown ? null : M.card('What the parcels cost each ' + r.mode, 'Rupees the shop paid for sending: Shiprocket parcels, parcels booked by hand and exchange parcels, on the day of the order. Shiprocket\'s WhatsApp tracking fee is not in the columns.', [
+    !costKnown ? null : M.card('What the parcels cost each ' + r.mode, 'Rupees the shop paid for sending: Shiprocket parcels, parcels booked by hand and exchange parcels, on the day of the order, plus Shiprocket\'s WhatsApp tracking messages in the days of the month they were sent. The columns add up to the tile at the top.', [
       M.chart('', function (h, w) { M.timeChart(h, w, { buckets: buckets, mode: r.mode, title: 'What shipping cost', yfmt: function (v) { return 'Rs. ' + M.short(v); }, drill: L ? colSpec('What shipping cost') : null, series: [{ name: 'What shipping cost', values: frS, color: M.COLORS.maroon, fmt: M.inr }] }); }),
       M.tableView([{ k: 'label', label: 'Period' }, { k: 'c', label: 'Cost', num: true, fmt: M.inr }], buckets.map(function (b, i) { return { label: b.label, c: frS[i], _from: b.from, _to: b.to }; }))])
   ].filter(Boolean), 'wide'));
@@ -8988,9 +8993,11 @@ M.PAGES.tables.render = function () {
     var out = {}, sumOf = function (tab, col) { return M.has(tab) ? M.rows(tab).reduce(function (a, x) { return a + (+x[col] || 0); }, 0) : null; };
     var amt = sumOf('razorpay_payments_daily', 'amount'), fee = sumOf('razorpay_payments_daily', 'fee');
     if (amt > 0 && fee != null) out.payment_fee_pct = { v: fee / amt * 100, t: M.num(fee / amt * 100, 2) + ' percent', n: 'Razorpay\'s own fee with GST on ' + M.inr(amt) + ' of payments' };
-    if (M.has('shiprocket_parcels')) {
-      var pc = M.rows('shiprocket_parcels').filter(function (x) { return x.courier !== 'Self fulfilled'; }).map(function (x) { return (+x.freight || 0) + (+x.rto_charges || 0) + (+x.other_charges || 0); }).filter(function (v) { return v > 0; });
-      if (pc.length) out.parcel_cost = { v: pc.reduce(function (a, v) { return a + v; }, 0) / pc.length, t: M.inr(pc.reduce(function (a, v) { return a + v; }, 0) / pc.length), n: 'Shiprocket\'s billed charge, average of ' + pc.length + ' parcels' };
+    /* T1135 (14 Nov 2026, owner: "we cannot have inconsistent data"): the real cost of a parcel is the ONE figure of the Shipping page, for every day the shop has: every parcel it paid for (Shiprocket, booked by hand, exchange parcels)
+       plus Shiprocket's WhatsApp tracking messages, GST inside (M.fig.shippingCost). It used to be a third average (Shiprocket parcels only, Rs. 117.53). A parcel with no known cost still counts at the typed guess in the Shipping figure. */
+    if (M.has('shiprocket_parcels') && M.fig && M.D.anchor) {
+      var FA = M.fig.shippingCost({ from: M.first ? M.first() : '2026-05-01', to: M.D.anchor }, null, false);
+      if (FA && FA.n) out.parcel_cost = { v: FA.perParcel, t: M.inr(FA.perParcel), n: 'every parcel the shop paid for plus Shiprocket\'s tracking messages, ' + M.inr(FA.total) + ' for ' + FA.n + ' parcels, all dates: the same figure as Cost of a parcel on the Shipping page' };
     }
     var ex = sumOf('returns_weekly', 'exchanges_logged'); if (ex != null) out.exchanges_so_far = { v: ex, t: M.num(ex), n: 'logged in Shopify Returns' };
     if (M.has('shopify_bills')) { var bl = M.rows('shopify_bills').filter(function (b) { return +b.plan_fee > 0; }).sort(function (a, b) { return a.bill_date < b.bill_date ? 1 : -1; })[0]; if (bl) out.shopify_monthly_fee = { v: +bl.plan_fee, t: M.inr(+bl.plan_fee), n: 'plan fee on the Shopify bill of ' + M.fd(bl.bill_date) }; }
@@ -10111,13 +10118,13 @@ M.glueMarks = function () {
     var bs = M.basis();
     if (bs.b !== 'all' || !root || !root.querySelector) return;      /* a product, channel or device filter narrows the sales: shipping and totals are only kept for the whole shop */
     var days = M.daysCovered('money_daily', r.from, r.to);
-    var sum = function (c) { return M.total({ tab: 'money_daily', col: c }, r.from, r.to).v; };
-    var net = sum('net_sales'), ship = sum('shipping_charged'), gst = sum('gst_included'), gstShip = sum('gst_on_shipping');
-    if (net == null || ship == null) return;
+    var P = M.fig.paid(r);      /* T1135: total paid and shipping charged come from the ONE function (dashboard_79_figures.js), never from a sum of their own */
+    if (!P) return;
+    var net = P.net, ship = P.ship, gst = P.gst, gstShip = P.gstShip;
     var covered = days < r.days ? days + ' of ' + r.days + ' days have data' : '';
     var box = M.h('div', { class: 'kpis rates paid-row' });      /* the same three column row as the rates above it; two tiles fill the first two columns */
     var paidRows = M.has('tax_orders') ? M.rowsIn('tax_orders', r.from, r.to) : [], paidOrders = paidRows.filter(function (x) { return x.kind === 'sale' && x.order; }).map(function (x) { return x.order; });      /* rowsIn reads only the chosen days, so the hosted site needs no other month */
-    var paid = M.kpi({ label: 'Total paid by customers', value: M.inr(net + ship), note: covered, drill: M.drill.same(M.drill.paidOrdersSpec(paidOrders, { rows: paidRows, title: 'The orders behind the total paid', lead: 'The amount is the total the buyer paid, GST and shipping included.' }), net + ship) });      /* T1036 (12 Nov 2026) */
+    var paid = M.kpi({ label: 'Total paid by customers', value: M.inr(P.total), note: covered, drill: M.drill.same(M.drill.paidOrdersSpec(paidOrders, { rows: paidRows, title: 'The orders behind the total paid', lead: 'The amount is the total the buyer paid, GST and shipping included.' }), P.total) });      /* T1036 (12 Nov 2026) */
     var sh = M.kpi({ label: 'Shipping charged', value: M.inr(ship), note: covered });
     paid.appendChild(M.h('div', { class: 'ctx ns-note', text: 'items plus shipping, GST inside: the figure Madhu files with' }));
     sh.appendChild(M.h('div', { class: 'ctx ns-note', text: 'part of the total paid, not in sales after discounts' }));
@@ -11361,6 +11368,23 @@ M.glueMarks = function () {
     var outside = [];
     if (M.has('exchange_parcels')) M.rows('exchange_parcels').forEach(function (x) { if (x.order && x.leg === 'delivery' && typeof x.date === 'string' && set[x.date.slice(0, 7)]) outside.push(x.order + (+x.paid_to_courier > 0 ? ' (' + (x.carrier || 'carrier not told') + ', ' + M.inr(+x.paid_to_courier) + ')' : ' (handed over, no cost)')); });
     var nExch = M.has('exchange_parcels') ? M.rows('exchange_parcels').filter(function (x) { return x.leg !== 'delivery' && typeof x.date === 'string' && set[x.date.slice(0, 7)]; }).length : 0;
+    /* T1129 (14 Nov 2026, owner: "the accountant does not know that, I think in Shopify we turned off taxes on shipping and later turned it on, our mistake but the accountant manually paid I think"): between the first order (19 May 2026)
+       and 3 Sep 2026 Shopify charged NO GST on the Rs. 120 shipping line, and has charged it from 5 Sep 2026 (the setting changed between those two orders; Shopify keeps no history of it). The orders and the amounts are
+       counted from tax_orders (a sale whose shipping line carries a price and no tax) and the GST inside is worked out at 5 percent, the rate Shopify itself applies to every shipping line since 5 Sep:
+       120 x 5 / 105 = Rs. 5.71 an order. The shop's earlier decision (6 Nov) stands: NO GST is added to those orders anywhere on the dashboard; this text only tells the Accountant. docs/work/T1129-shipping-tax.md. */
+    var noShipTax = '', nsList = [];
+    if (M.has('tax_orders')) M.rows('tax_orders').forEach(function (x) { if (x.kind === 'sale' && typeof x.date === 'string' && P2(x.shipping_taxable) > 0 && !(P2(x.ship_cgst) + P2(x.ship_sgst) + P2(x.ship_igst))) nsList.push(x); });
+    if (nsList.length) {
+      var nsMon = {}, nsT = 0, nsG = 0, rsr = function (v) { return 'Rs. ' + M.num(Math.round(v * 100) / 100, Math.round(v * 100) % 100 ? 2 : 0); };
+      nsList.forEach(function (x) { var t = P2(x.shipping_taxable) / 100, half = Math.round(t * 2.5 / 105 * 100) / 100, g = x.supply === 'intra' ? Math.round(half * 2 * 100) / 100 : Math.round(t * 5 / 105 * 100) / 100, k = x.date.slice(0, 7);      /* inside the state Shopify splits it in two halves, each rounded (2.86 + 2.86 = 5.72); to another state it is one IGST (5.71) */ (nsMon[k] = nsMon[k] || { n: 0, g: 0 }); nsMon[k].n++; nsMon[k].g = Math.round((nsMon[k].g + g) * 100) / 100; nsT += t; nsG = Math.round((nsG + g) * 100) / 100; });      /* P2 gives paise: t is rupees here */
+      var inPeriod = nsList.filter(function (x) { return set[x.date.slice(0, 7)]; });
+      var mnames = Object.keys(nsMon).sort().map(function (k) { return M.MON[+k.slice(5, 7) - 1] + ' ' + rsr(nsMon[k].g); }).join(', ');
+      noShipTax = ' SHIPPING TAX THAT WAS SWITCHED OFF: Shopify charged no GST on shipping from the first order (19 May 2026) up to 3 Sep 2026 and has charged it since 5 Sep 2026; the setting was changed between those two orders and Shopify keeps no history of it. '
+        + M.num(nsList.length) + ' orders paid ' + rsr(nsT) + ' of shipping with no GST on it: ' + nsList.map(function (x) { return x.order; }).join(', ') + '. At 5 percent inside the price (the rate Shopify has charged on shipping since 5 Sep) the GST inside them is ' + rsr(nsG) + ': ' + mnames + '. '
+        + 'It is in neither Shopify\'s report nor this page, so a GSTR-3B built from them is short by those amounts, month by month. '
+        + (inPeriod.length ? 'In THIS period ' + M.num(inPeriod.length) + ' of these orders fall (' + inPeriod.map(function (x) { return x.order; }).join(', ') + ').' : 'No order of THIS period is affected (October and November carry the tax on every shipping line).')
+        + ' We do NOT know whether the Accountant already paid it by hand: no return or challan for May to September has been given to us. Please confirm: was this GST included in those returns, and if not, how should it be corrected, and is 5 percent right for shipping billed with the goods? The dashboard adds nothing to these orders until you decide.';
+    }
     var check = [
       ['1. Sales register and its CSV for the month (every sale, refund and cancelled order, goods and shipping GST side by side)', true, 'On this page, above. Download the CSV and send it.'],
       ['2. Shiprocket tax invoices dated in the month, with the PDF of each (freight, extra weight, return to origin, failed delivery, re-attempt, WhatsApp fee)', nInv > 0, nInv ? M.num(nInv) + ' invoice' + (nInv === 1 ? '' : 's') + ' in the Sheet for this period. PDFs: Shiprocket, Bills, Invoices, View Invoice.' : 'None dated in this period (they come about every two weeks and lag the parcels by weeks). Download the PDFs from Shiprocket, Bills, Invoices.'],
@@ -11374,7 +11398,7 @@ M.glueMarks = function () {
       ['10. Tax already paid by challan for the month', has(/paid|challan/i), 'Only the Accountant can give this: it shows how much of the tax to pay is already paid.'],
       ['11. Filing choice and registration date (one time): the shop files GST returns monthly; registered on 14 May 2026', true, 'Both are on record. The calendar lists the monthly dates only. Credit counts from invoices dated 14 May 2026 or later.'],
       ['12. Income tax: scheme in use and advance tax paid', has(/advance|income/i), 'Only the Accountant can give this.'],
-      ['13. Shipping the buyers paid at checkout (output tax): the GST inside it is in the sales register, goods and shipping side by side', true, shipN ? M.num(shipN) + ' order' + (shipN === 1 ? '' : 's') + ' paid ' + rs2(shipT) + ' for shipping in this period, with ' + rs2(shipG) + ' of GST inside it (shown in the register as the shipping part).' + (shipNoGst ? ' ' + M.num(shipNoGst) + ' of them carry no GST on the shipping line in Shopify: ask the Accountant how to treat it, the shop has not decided.' : '') : 'No order paid for shipping in this period.'],
+      ['13. Shipping the buyers paid at checkout (output tax): the GST inside it is in the sales register, goods and shipping side by side', true, shipN ? M.num(shipN) + ' order' + (shipN === 1 ? '' : 's') + ' paid ' + rs2(shipT) + ' for shipping in this period, with ' + rs2(shipG) + ' of GST inside it (shown in the register as the shipping part).' + (shipNoGst ? ' ' + M.num(shipNoGst) + ' of them carry no GST on the shipping line in Shopify: ask the Accountant how to treat it, the shop has not decided.' : '') + noShipTax : 'No order paid for shipping in this period.' + noShipTax],
       ['14. GST credit on parcels Madhu paid by hand outside Shiprocket (DTDC, Delhivery, Porter, exchange parcels)', hl.length ? has(/hand|dtdc|delhivery|porter|exchange|courier/i) : true, hl.length ? M.num(hl.length) + ' parcel' + (hl.length === 1 ? '' : 's') + ' (' + carriers + '), ' + rs2(hPaid) + ' in all: credit ' + rs2(hClaim) + ' on DTDC, Delhivery and any carrier not in the list (18 percent inside the charge, taken as an assumption for a carrier not told), and ' + rs2(hRcm) + ' of Porter transport that the shop pays at 5 percent under reverse charge and claims back, so it adds nothing. An estimate until each invoice is on file.' : 'No parcel paid by hand in this period.'],
       ['15. The carrier\'s tax invoice in the shop\'s name for EVERY hand paid courier charge: DTDC, Delhivery, Porter and each exchange parcel (the shop\'s GSTIN 29GSUPM4389G1ZO on it)', hl.length === 0 || has(/hand|dtdc|delhivery|porter|exchange/i), hl.length ? 'Needed for the ' + M.num(hl.length) + ' parcel' + (hl.length === 1 ? '' : 's') + ' above before the credit can be claimed. Without the invoice there is no credit. Madhu asks each carrier; type its number in tax_inputs and this ticks.' : 'None needed in this period.'],
       ['16. The list of orders sent outside Shiprocket, with the courier, what Madhu paid and who paid it', true, outside.length ? M.num(outside.length) + ' order' + (outside.length === 1 ? '' : 's') + ' in this period: ' + outside.join('; ') + '.' + (nExch ? ' Plus ' + M.num(nExch) + ' exchange or second parcel' + (nExch === 1 ? '' : 's') + ' (what Madhu paid the courier minus what the buyer paid back).' : '') + ' The list is on the Shipping page, card Every parcel and what it cost.' : (nExch ? M.num(nExch) + ' exchange or second parcel' + (nExch === 1 ? '' : 's') + ' in this period. The list is on the Shipping page, card Every parcel and what it cost.' : 'No order was sent outside Shiprocket in this period.')]
@@ -12617,14 +12641,15 @@ M.evenHeaders = function (root) {
     var bs = M.basis(); if (bs.b !== 'all') return;
     var sumC = function (c) { var t = M.total({ tab: 'money_daily', col: c }, r.from, r.to); return t.v || 0; };
     if (M.total({ tab: 'money_daily', col: 'orders' }, r.from, r.to).v == null) return;
-    var gross = sumC('gross_sales'), disc = sumC('discounts'), net = sumC('net_sales'), ship = sumC('shipping_charged'), gst = sumC('gst_included'), refund = sumC('refunds');
+    var P = M.fig.paid(r); if (!P) return;      /* T1135: sales after discounts, shipping charged and the total paid come from the ONE function (dashboard_79_figures.js) */
+    var gross = sumC('gross_sales'), disc = sumC('discounts'), net = P.net, ship = P.ship, gst = sumC('gst_included'), refund = sumC('refunds');
     var gstShip = M.total({ tab: 'money_daily', col: 'gst_on_shipping' }, r.from, r.to).v;      /* the GST inside the shipping: stored from 4 Nov 2026 */
     var rows = [
       { step: 'Gross sales', amount: gross, plain: 'The list price of every piece sold, before any discount.' },
       { step: 'Discounts', amount: -disc, plain: 'Money taken off by discount codes and sale prices.' },
       { step: 'Sales after discounts', amount: net, plain: 'What the pieces sold for after discounts, GST inside, shipping not included. This is the headline number on this page.' },
       { step: 'Shipping charged', amount: ship, plain: 'What customers paid for delivery. It is not part of sales after discounts.' },
-      { step: 'Total paid by customers', amount: net + ship, plain: 'Everything customers paid. This is the figure Madhu files GST from and the money Razorpay collects.', isTotal: true },
+      { step: 'Total paid by customers', amount: P.total, plain: 'Everything customers paid. This is the figure Madhu files GST from and the money Razorpay collects.', isTotal: true },
       { step: 'of which GST', amount: gst, plain: 'The GST that is already inside the total paid (it belongs to the government).', note: true },
       { step: 'Sales without GST', amount: gstShip == null ? null : net - (gst - gstShip), plain: 'Sales after discounts minus the GST on the pieces. Shopify\'s own report calls this "net sales" (October 2026: Rs. 16,652.37).', note: true },
       { step: 'Refunded', amount: -refund, plain: 'Money given back for refunds in these dates.', note: true }
@@ -13852,11 +13877,15 @@ M.annot = (function () {
       if (!x.invoice || !/service/i.test(x.kind || '') || typeof x.date !== 'string') return;
       var um = M.add(x.date.slice(0, 7) + '-01', -1).slice(0, 7), a = um + '-01', b = monthEnd(um), lo = a > from ? a : from, hi = b < to ? b : to;
       if (hi < lo) return;
-      out.push({ inv: x.invoice, date: x.date, month: um, p: Math.round(pc(x.total) * (M.diff(lo, hi) + 1) / (M.diff(a, b) + 1)), days: M.diff(lo, hi) + 1, of: M.diff(a, b) + 1 });
+      /* T1135 (14 Nov 2026): the invoice is cut into WHOLE PAISE per day by a running floor (day k of D gets floor(T*(k+1)/D) - floor(T*k/D)), so ANY set of days takes an exact share, any two sets of days
+         that follow each other add up to the sets together, and the whole month is exactly the invoice. A week of a chart, a month and the range of the tile can therefore never differ by a paisa. */
+      var T = pc(x.total), D = M.diff(a, b) + 1, k0 = M.diff(a, lo), k1 = M.diff(a, hi) + 1;
+      out.push({ inv: x.invoice, date: x.date, month: um, p: Math.floor(T * k1 / D) - Math.floor(T * k0 / D), days: M.diff(lo, hi) + 1, of: D });
     });
     return out;
   };
   var whatsApp = function (from, to) { return waPieces(from, to).reduce(function (a, x) { return a + x.p; }, 0); };
+  M.waPieces = waPieces; M.waFee = whatsApp;      /* T1135: the ONE place the tracking fee of any set of days is worked out (paise); the registry M.fig (dashboard_79_figures.js) and every shipping card read it */
 
   /* ---------------------------------------------------------------- the numbers of one set of dates (everything in paise inside; rupees out) */
   M.moneyCalc = function (r) {
@@ -15357,7 +15386,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     if (!M0.length) return R.card(title, why, [M.emptyWhy(R.T.mat, c.r)]);
     var S = function (col) { return R.sum(M0, col); };
     var rz = S('shop_amount'), hand = S('manual_amount'), nR = S('shop_orders'), nH = S('manual_orders'), nB = S('before_live');
-    var tot = M.sumCol('money_daily', 'net_sales', c.r).v + M.sumCol('money_daily', 'shipping_charged', c.r).v, nAll = M.sumCol('money_daily', 'orders', c.r).v;
+    var PF = M.fig.paid(c.r), tot = PF ? PF.total : NaN, nAll = PF ? PF.orders : 0;      /* T1135: the ONE function of dashboard_79_figures.js */
     var early = Math.round((tot - rz - hand) * 100) / 100;      /* the rest: orders paid before Razorpay's live account, which Razorpay has no record of */
     if (!(tot > 0)) return R.card(title, why, [R.nodata(c, 'No order was paid in these dates.')]);
     /* T1036: each part opens the orders or payments it is made of. A list is attached only when its money equals the part to the paisa (D.same), so a list never disagrees with the chart. */
@@ -15374,7 +15403,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var a = G.map(function (g) { return R.sum(g, 'shop_amount'); }), h = G.map(function (g) { return R.sum(g, 'manual_amount'); });
     /* the rest of each period is the money paid before our Razorpay record starts: what the shop took in the period, minus the two routes above */
     var P2 = R.spread(M.has('money_daily') ? M.rowsIn('money_daily', c.r.from, c.r.to) : [], sp.B, 'date');
-    var e = P2.map(function (g, i) { var t = R.sum(g, 'net_sales') + R.sum(g, 'shipping_charged'); return Math.max(0, Math.round((t - a[i] - h[i]) * 100) / 100); });
+    var e = P2.map(function (g, i) { var t = M.fig.paidOf(g).p / 100; return Math.max(0, Math.round((t - a[i] - h[i]) * 100) / 100); });
     if (hand > 0 || early > 0) {
       kids.push(R.sub('Week by week'));
       kids.push(R.tc(sp.B, sp.mode, 'Where the money came from', [{ name: 'Through Razorpay', values: a, color: COL.maroon, fmt: R.inr }, { name: 'Marked paid by hand', values: h, color: COL.mustard, fmt: R.inr }, { name: 'Before our Razorpay record starts', values: e, color: COL.terra, fmt: R.inr }], { yfmt: R.yRs, h: 170 }));
@@ -16291,27 +16320,28 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
        T1126 (14 Nov 2026, owner: "I see rs 107 a parcel in one place and 115 in another"): this card is the same list as the headline tile, so the average is the same number: every parcel the shop paid for
        (Shiprocket, booked by hand, exchange parcels), dated by the day of its order. An order can have two parcels, so the card says "parcel" and "order" apart. */
     (function () {
+      /* T1135 (14 Nov 2026, owner: "we cannot have inconsistent data, the WhatsApp charge: add that to shipping also wherever necessary"): this card reads the ONE figure of what shipping cost (M.fig.shippingCost):
+         every parcel the shop paid for PLUS Shiprocket's WhatsApp tracking messages. A parcel costs the all in total divided by the parcels; the courier charges alone are named "freight" where they are shown. */
       var L = M.shipLedger ? M.shipLedger(r) : null;
       if (!L || !L.n) return none(cards, 'What a parcel costs, and what share of the order that is', 'The average cost of a parcel in each period, and that cost as a share of what the orders were worth.');
-      var b = bk(r), in2 = function (x) { return L.rows.filter(function (y) { return y.day >= x.from && y.day <= x.to; }); };
-      var cnt = b.map(function (x) { return in2(x).length; }), tot = b.map(function (x) { return in2(x).reduce(function (a, v) { return a + v.cost; }, 0); });
+      var FC = M.fig.shippingCost(r, L), b = bk(r), SB = M.fig.shipByBucket(FC, b);
+      var cnt = SB.map(function (x) { return x.n; }), tot = SB.map(function (x) { return x.cost; });
       var avg = tot.map(function (v, i) { return cnt[i] ? v / cnt[i] : null; });
-      var val = b.map(function (x) { return in2(x).reduce(function (a, v) { return a + v.value; }, 0); });
+      var val = SB.map(function (x) { return x.value; });
       var pctVal = tot.map(function (v, i) { return val[i] ? v / val[i] * 100 : null; });
-      var sumT = L.total, sumV = L.orderValue;
-      var sales = M.has('money_daily') ? M.total({ tab: 'money_daily', col: 'net_sales' }, r.from, r.to).v : null;
-      var tileSpec = M.shipSpec('What these parcels cost', M.drill.countText(L.n, 'parcel') + ', ' + M.inr(sumT) + ' in all, before the WhatsApp tracking fee.', L.rows);
-      var kids = [M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Cost of a parcel', value: inr2(L.avg), note: M.num(L.n) + ' parcels, ' + inr2(sumT) + ' in all (Shiprocket, booked by hand and exchange parcels), GST inside. The same as the tile at the top.', drill: M.drill.same(tileSpec, sumT) }),
-        M.kpi({ label: 'Share of the order value', value: sumV ? M.pct(sumT / sumV * 100, 1) : 'n/a', note: 'The parcels\' cost against what the orders were worth to the buyer (' + inr(sumV) + '). An exchange parcel adds cost and no order value.' }),
-        M.kpi({ label: 'Share of sales', value: sales ? M.pct(sumT / sales * 100, 1) : 'n/a', note: 'The same cost against all sales after discounts in these dates (' + inr(sales) + '). Standard shipping is free for the buyer, so this comes out of the margin.' })])];
-      if (L.perOrder != null && L.nOrders !== L.n) kids[0].appendChild(M.h('p', { class: 'small', text: 'An order can have two parcels (a second delivery, an exchange): ' + M.num(L.n) + ' parcels for ' + M.num(L.nOrders) + ' orders, so a parcel costs ' + inr2(L.avg) + ' and an order ' + inr2(L.perOrder) + ' on average.' }));
+      var sumT = FC.total, sumV = FC.orderValue, sales = FC.sales;
+      var tileSpec = M.shipSpec('What these parcels cost', M.drill.countText(L.n, 'parcel') + ' and the WhatsApp tracking fee, ' + M.inr(sumT) + ' in all.', L.rows, M.shipWhatsApp(FC.O || { waPieces: M.waPieces ? M.waPieces(r.from, r.to) : [] }));
+      var kids = [M.h('div', { class: 'kpis' }, [M.kpi({ label: 'Cost of a parcel', value: inr2(FC.perParcel), note: M.num(L.n) + ' parcels, ' + inr2(sumT) + ' in all: ' + inr2(FC.courier) + ' of courier charges (Shiprocket, booked by hand and exchange parcels) plus ' + inr2(FC.wa) + ' of Shiprocket tracking messages, GST inside. The courier charges alone are ' + inr2(FC.freightPerParcel) + ' a parcel. The same as the tile at the top.', drill: M.drill.same(tileSpec, sumT) }),
+        M.kpi({ label: 'Share of the order value', value: sumV ? M.pct(FC.shareOfValue, 1) : 'n/a', note: 'What shipping cost against what the orders were worth to the buyer (' + inr(sumV) + '), tracking messages included. An exchange parcel adds cost and no order value.' }),
+        M.kpi({ label: 'Share of sales', value: sales ? M.pct(FC.shareOfSales, 1) : 'n/a', note: 'The same cost against all sales after discounts in these dates (' + inr(sales) + '). Standard shipping is free for the buyer, so this comes out of the margin.' })])];
+      if (FC.perOrder != null && L.nOrders !== L.n) kids[0].appendChild(M.h('p', { class: 'small', text: 'An order can have two parcels (a second delivery, an exchange): ' + M.num(L.n) + ' parcels for ' + M.num(L.nOrders) + ' orders, so a parcel costs ' + inr2(FC.perParcel) + ' and an order ' + inr2(FC.perOrder) + ' on average.' }));
       var gm = b.length && b[0].from === b[0].to ? 'day' : 'week';
       kids.push(chart(function (h, w) { M.timeChart(h, w, { buckets: b, mode: gm, title: 'Average cost of a parcel', yfmt: yRs, h: 200, series: [{ name: 'Average cost of a parcel', values: avg, color: COL.maroon, fmt: inr2 }] }); }));
       kids.push(M.h('h4', { class: 'sub-h ship-sub', text: 'The same cost as a share of what the orders were worth' }));
       kids.push(chart(function (h, w) { M.timeChart(h, w, { buckets: b, mode: gm, title: 'Share of the order value', h: 170, yfmt: function (v) { return M.num(v, 0) + '%'; }, series: [{ name: 'Share of the order value', values: pctVal, color: COL.mustard, type: 'line', fmt: function (v) { return M.pct(v, 1); } }] }); }));
       kids.push(M.tableView([{ k: 'label', label: 'Period' }, { k: 'n', label: 'Parcels', num: true }, { k: 'avg', label: 'Average cost', num: true, fmt: inr2 }, { k: 'tot', label: 'Total cost', num: true, fmt: inr2 }, { k: 'p', label: 'Share of order value', num: true, fmt: function (v) { return v == null ? 'n/a' : M.pct(v, 1); } }],
         b.map(function (x, i) { return { label: x.label, n: cnt[i], avg: avg[i], tot: tot[i], p: pctVal[i], _from: x.from, _to: x.to }; }), 'Show the numbers as a table', { name: 'Cost of a parcel' }));
-      cards.push(card('What a parcel costs, and what share of the order that is', 'Each point is a week (a day when the dates are under 15 days) with at least one parcel. A week with no parcel has no bar and no point. A parcel is dated the day of its order, as on the Overview.', kids));
+      cards.push(card('What a parcel costs, and what share of the order that is', 'Each point is a week (a day when the dates are under 15 days) with at least one parcel. A week with no parcel has no bar and no point. A parcel is dated the day of its order, as on the Overview. The cost holds Shiprocket\'s WhatsApp tracking messages, spread over the days of the month they were sent.', kids));
     })();
 
     /* ============================================================ 4. extra weight, with the plain reason */
@@ -17586,7 +17616,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var out = { rows: rows, free: free.sort(function (a, b) { return orderNum(b) - orderNum(a); }), n: rows.length, p: 0, orders: {}, by: {}, from: r.from, to: r.to };
     WAYS.forEach(function (w) { out.by[w[0]] = { n: 0, p: 0, rows: [], title: w[1] }; });
     rows.forEach(function (x) { var p = pc(x.cost); out.p += p; out.orders[x.order] = 1; var b = out.by[x.way]; b.n++; b.p += p; b.rows.push(x); });
-    out.total = rs(out.p); out.nOrders = Object.keys(out.orders).length; out.avg = out.n ? out.total / out.n : null; out.perOrder = out.nOrders ? out.total / out.nOrders : null;
+    out.total = rs(out.p); out.nOrders = Object.keys(out.orders).length; out.freightAvg = out.n ? out.total / out.n : null; out.freightPerOrder = out.nOrders ? out.total / out.nOrders : null;      /* T1135: COURIER CHARGES ONLY. A card that says "cost of a parcel" reads M.fig.shippingCost (tracking messages included), never these two */
     var sumV = 0; rows.forEach(function (x) { sumV += x.value; }); out.orderValue = sumV;
     return out;
   };
@@ -17662,7 +17692,8 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     kids.push(M.table([{ k: 'way', label: 'How it was sent', wrap: true, dim: false }, { k: 'n', label: 'Parcels', num: true, fmt: function (v) { return v == null ? '' : M.num(v); } }, { k: 'cost', label: 'What it cost the shop', num: true, fmt: M.inr }, { k: 'sub', label: 'What this is', wrap: true, dim: false }],
       { rows: wrows, sortKey: null, name: 'what-shipping-cost', detail: false, empty: 'None.', noTools: true }));
     var more = [];
-    more.push((L.nOrders === L.n ? '' : M.num(L.n) + ' parcels for ' + M.num(L.nOrders) + ' orders: an order can have a second parcel. ') + 'A parcel costs ' + (L.avg == null ? 'nothing yet' : M.inr(L.avg) + ' on average') + (L.perOrder == null || L.nOrders === L.n ? '' : ', an order ' + M.inr(L.perOrder) + ' on average') + ' (courier charges only, the WhatsApp fee is not in it).');
+    var FC = M.fig.shippingCost(r, L, O);      /* T1135: the all in figure, the same as the tile and the card Cost of a parcel */
+    more.push((L.nOrders === L.n ? '' : M.num(L.n) + ' parcels for ' + M.num(L.nOrders) + ' orders: an order can have a second parcel. ') + 'A parcel costs ' + (FC.perParcel == null ? 'nothing yet' : M.inr(FC.perParcel) + ' on average') + (FC.perOrder == null || L.nOrders === L.n ? '' : ', an order ' + M.inr(FC.perOrder) + ' on average') + ' (courier charges and Shiprocket\'s tracking messages together' + (FC.freightPerParcel == null ? '' : '; the courier charges alone are ' + M.inr(FC.freightPerParcel) + ' a parcel') + ').');
     if (L.free.length) more.push(M.num(L.free.length) + (L.free.length === 1 ? ' order was' : ' orders were') + ' handed over by hand at no cost (' + L.free.slice(0, 8).join(', ') + '), so they are not parcels.');
     if (!O.same) more.push('The parcel list adds up to ' + M.inr(L.total) + ' and the Overview holds ' + M.inr(O.courier) + ' for the same dates: the Overview figure is shown above.');
     kids.push(M.h('p', { class: 'small', text: more.join(' ') }));
@@ -17714,8 +17745,8 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
      Razorpay but with no payment in the Razorpay history we hold, which starts on 26 May: #MZ1002 on 19 May, Rs. 1,619). The three come from razorpay_match, the same table "Where the money came from" reads.
      Returns {total, rz, hand, early, orders: {all, direct, early, rz}} (rupees). The payments and fees of the page below stay Razorpay's own, dated by the day of the payment. */
   M.payAll = function (r) {
-    var sum = function (col) { return M.has('money_daily') ? M.sumCol('money_daily', col, r).v || 0 : 0; };
-    var total = Math.round((sum('net_sales') + sum('shipping_charged')) * 100) / 100, rz = 0, hand = 0, nR = 0, nH = 0, nB = 0, dayB = {};
+    var PF = M.fig.paid(r);      /* T1135: the total paid is the ONE function of dashboard_79_figures.js, the same figure as the Overview */
+    var total = PF ? PF.total : 0, rz = 0, hand = 0, nR = 0, nH = 0, nB = 0, dayB = {};
     if (M.has('razorpay_match')) M.rowsIn('razorpay_match', r.from, r.to).forEach(function (x) { rz += num(x.shop_amount); hand += num(x.manual_amount); nR += num(x.shop_orders); nH += num(x.manual_orders); nB += num(x.before_live); if (num(x.before_live)) dayB[String(x.date).slice(0, 10)] = 1; });
     rz = Math.round(rz * 100) / 100; hand = Math.round(hand * 100) / 100;
     var early = Math.round((total - rz - hand) * 100) / 100;
@@ -17756,6 +17787,103 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       { rows: list, sortKey: 'date', sortDir: -1, name: 'direct-payments', detail: false, empty: 'None.' }));
     return R.card(title, why, kids);
   });
+})();
+
+/* mazo dashboard: ONE DEFINITION PER SHARED FIGURE (T1131 and T1135, 14 Nov 2026).
+   Owner, 14 Nov 2026: "since everything is fetched from the Sheet, why does this error occur? I asked you for a proper scalable system. How can there be two values for the same item?"
+   and "we cannot have inconsistent data. The WhatsApp VAS charge: add that to shipping also wherever necessary."
+   The Sheet is one source; the dashboard was not one calculation. Every card added up the daily rows for itself, so Payments and the Overview could say two different totals. The rule now:
+
+     A figure that is shown on more than one card is worked out by ONE function here, M.fig.<name>(range). A card never adds up a column for such a figure. It calls the function and formats the answer.
+     M.FIGS lists every registered figure and every card that shows it. scripts/dashboard_figures_check.js opens every page for nine date ranges and fails the publish if a card shows a number that
+     differs from the function, or if a registered column is added up in any other file (the list M.FIG_COLUMNS). A new card that retypes a sum fails before the owner sees it.
+
+   Registered so far (step 1 and 2 of docs/work/T1131-figure-map.md):
+     paid            total paid by customers = sales after discounts + shipping charged, GST inside        (Overview, its bridge table, Payments, the Razorpay cards)
+     shippingCharged what buyers paid for delivery                                                         (Overview, its bridge table, the money card)
+     shippingCost    EVERY parcel the shop paid for + Shiprocket's WhatsApp tracking messages              (Overview money card, Shipping page, the cost of a parcel, the shares, the charts, the Business page)
+     trackingFee     Shiprocket's WhatsApp tracking messages (Rs. 5 + 18 percent GST each, billed on its own invoice the 3rd of the next month for the month before)
+   Not moved yet (listed in docs/work/T1131-figure-map.md, steps 3 to 8): profit, orders, visits, Instagram orders, on time counts, GST, refunds, email, reviews, stock.
+   Money is worked out in whole paise and handed out in rupees, so a total, a month, a week and a day always add up to the paisa. */
+(function () {
+  var pc = function (v) { return Math.round((+v || 0) * 100); };
+  var rs = function (p) { return Math.round(p) / 100; };
+  M.fig = M.fig || {};
+
+  /* ---------------------------------------------------------------- paid and shipping charged (money_daily, one row per day, dated by the day of the ORDER) */
+  /* the figures of a list of money_daily rows, in paise */
+  M.fig.paidOf = function (rows) {
+    var o = { net: 0, ship: 0, gst: 0, gstShip: 0, orders: 0 };
+    (rows || []).forEach(function (x) { o.net += pc(x.net_sales); o.ship += pc(x.shipping_charged); o.gst += pc(x.gst_included); o.gstShip += pc(x.gst_on_shipping); o.orders += +x.orders || 0; });
+    o.p = o.net + o.ship;
+    return o;
+  };
+  /* the dates r = {from, to}. null when the table holds no day of them (a card then says there is no data, never Rs. 0). */
+  M.fig.paid = function (r) {
+    if (!M.has('money_daily')) return null;
+    var days = M.daysCovered('money_daily', r.from, r.to); if (!days) return null;
+    var rows = []; M.idx('money_daily').forEach(function (a, d) { if (d >= r.from && d <= r.to) for (var i = 0; i < a.length; i++) rows.push(a[i]); });
+    var o = M.fig.paidOf(rows);
+    return { days: days, net: rs(o.net), ship: rs(o.ship), gst: rs(o.gst), gstShip: rs(o.gstShip), orders: o.orders, total: rs(o.p), p: o.p };
+  };
+
+  /* ---------------------------------------------------------------- shipping cost: the ledger of every parcel + the WhatsApp tracking messages */
+  /* L = M.shipLedger(r) and O = M.shipOverview(r, L) may be handed in by a page that has them already. Returns null when the ledger cannot be built. */
+  M.fig.shippingCost = function (r, L, O) {
+    L = L || (M.shipLedger ? M.shipLedger(r) : null); if (!L) return null;
+    if (O === false) O = null; else O = O || M.shipOverview(r, L);      /* O === false: a caller that wants no Overview comparison (the all time figure of the Business page) */
+    var waP = M.waFee ? M.waFee(r.from, r.to) : 0;
+    var totalP = O && O.known ? Math.round(O.total * 100) : L.p + waP;      /* the Overview's own figure when it holds one (the shipping check proves it equals the ledger plus the fee) */
+    var total = rs(totalP), courier = rs(L.p), wa = O && O.known ? O.wa : rs(waP), n = L.n, nOrders = L.nOrders;
+    var P = M.fig.paid(r), sales = P ? P.net : null, value = L.orderValue;
+    return { r: r, L: L, O: O, p: totalP, total: total, courier: courier, wa: wa, n: n, nOrders: nOrders,
+      perParcel: n ? total / n : null,                 /* ALL IN: courier charges plus tracking messages, the figure called "cost of a parcel" everywhere */
+      freightPerParcel: n ? courier / n : null,        /* the courier charges alone, always named so */
+      waPerParcel: n ? wa / n : null,
+      perOrder: nOrders ? total / nOrders : null,
+      orderValue: value, shareOfValue: value && n ? total / value * 100 : null,
+      sales: sales, shareOfSales: sales && n ? total / sales * 100 : null,      /* the shares are worked out only for dates that hold a parcel (a day with only a tracking fee has a cost, but no 'cost of a parcel' and no share to read) */
+      same: !O || !O.known || O.courier === courier };
+  };
+  /* the same sum for each bucket of a chart (a day or a week): parcels by the day of the order, the tracking fee by the days of the month it belongs to. The buckets add up to M.fig.shippingCost to the paisa. */
+  M.fig.shipByBucket = function (F, buckets) {
+    return buckets.map(function (b) {
+      var rows = F.L.rows.filter(function (y) { return y.day >= b.from && y.day <= b.to; }), cp = 0, val = 0;
+      rows.forEach(function (y) { cp += pc(y.cost); val += y.value; });
+      var wa = M.waFee ? M.waFee(b.from, b.to) : 0;
+      return { rows: rows, n: rows.length, courier: rs(cp), wa: rs(wa), cost: rs(cp + wa), value: val, from: b.from, to: b.to };
+    });
+  };
+  /* Shiprocket's tracking messages inside the dates (rupees) */
+  M.fig.trackingFee = function (r) { return rs(M.waFee ? M.waFee(r.from, r.to) : 0); };
+
+  /* ---------------------------------------------------------------- the registry, read by scripts/dashboard_figures_check.js */
+  /* shownOn: where a card shows the figure. kind: kpi (a tile, field v = its value or note + re = a number in its note), row (a line of a table, by the words of its first column), cell (a column of such a line, by its heading).
+     unit: money (rupees, to the paisa), count (exactly), pct (percent, one decimal). `none` = the figure is allowed to be missing when the function says there is nothing. */
+  var F = function (r) { return M.fig.shippingCost(r); };
+  M.FIGS = [
+    { id: 'paid', label: 'Total paid by customers', unit: 'money', value: function (r) { var p = M.fig.paid(r); return p ? p.total : null; },
+      shownOn: [{ page: 'overview', kind: 'kpi', label: 'Total paid by customers' }, { page: 'overview', kind: 'row', label: 'Total paid by customers' }, { page: 'payments', kind: 'kpi', label: 'Paid by buyers' }] },
+    { id: 'shippingCharged', label: 'Shipping charged to buyers', unit: 'money', value: function (r) { var p = M.fig.paid(r); return p ? p.ship : null; },
+      shownOn: [{ page: 'overview', kind: 'kpi', label: 'Shipping charged' }, { page: 'overview', kind: 'row', label: 'Shipping charged' }, { page: 'overview', kind: 'row', label: 'Shipping charged to buyers', none: true }] },
+    { id: 'shippingCost', label: 'What shipping cost (every parcel plus Shiprocket tracking messages)', unit: 'money', value: function (r) { var f = F(r); return f ? f.total : null; },
+      shownOn: [{ page: 'overview', kind: 'row', label: 'Shipping and parcel', abs: true, none: true }, { page: 'shipping', kind: 'kpi', label: 'What shipping cost' }, { page: 'shipping', kind: 'row', label: 'What shipping cost', none: true }] },
+    { id: 'perParcel', label: 'Cost of a parcel (all in)', unit: 'money', value: function (r) { var f = F(r); return f ? f.perParcel : null; },
+      shownOn: [{ page: 'shipping', kind: 'kpi', label: 'Cost of a parcel', none: true }, { page: 'shipping', kind: 'kpi', label: 'What shipping cost', re: 'Rs\\.?\\s*([\\d,]+(?:\\.\\d+)?) a parcel', none: true }] },
+    { id: 'shareOfValue', label: 'Shipping as a share of the order value', unit: 'pct', value: function (r) { var f = F(r); return f ? f.shareOfValue : null; },
+      shownOn: [{ page: 'shipping', kind: 'kpi', label: 'Share of the order value', none: true }] },
+    { id: 'shareOfSales', label: 'Shipping as a share of sales', unit: 'pct', value: function (r) { var f = F(r); return f ? f.shareOfSales : null; },
+      shownOn: [{ page: 'shipping', kind: 'kpi', label: 'Share of sales', none: true }] },
+    { id: 'trackingFee', label: 'Shiprocket WhatsApp tracking messages', unit: 'money', value: function (r) { return M.fig.trackingFee(r); },
+      shownOn: [{ page: 'overview', kind: 'row', label: 'of which Shiprocket\'s WhatsApp tracking fee', abs: true, none: true }, { page: 'shipping', kind: 'row', label: 'Shiprocket\'s WhatsApp tracking messages', none: true }] },
+    { id: 'parcels', label: 'Parcels the shop paid for', unit: 'count', value: function (r) { var f = F(r); return f ? f.n : null; },
+      shownOn: [{ page: 'shipping', kind: 'kpi', label: 'Parcels sent', none: true }] }
+  ];
+  /* the columns that belong to ONE function: no other file may add them up (the figures check reads every file of the folder). allow = the files that own the figure. */
+  M.FIG_COLUMNS = [
+    { col: 'shipping_charged', owner: 'paid, shippingCharged', allow: ['dashboard_79_figures.js', 'dashboard_56_money.js', 'dashboard_56_money_specs.js'] },
+    { col: 'est_parcel_cost', owner: 'shippingCost', allow: ['dashboard_79_figures.js', 'dashboard_56_money.js', 'dashboard_56_money_specs.js'] }
+  ];
 })();
 
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
@@ -18059,7 +18187,7 @@ M.unlock = function () {
     email:     [['email_weekly', 'all']],
     payments:  [[['razorpay_payments_daily', 'razorpay_payments', 'razorpay_orders', 'razorpay_recon', 'razorpay_match', 'razorpay_balance_daily', 'money_daily', 'manual_payments', 'order_sources', 'tax_orders'], 'all']],      /* T707: money waiting, success by method, left checkouts and the match with the shop look at every day since the first payment */
     shipping:  [[['money_daily', 'shiprocket_rate_check', 'shipping_daily', 'shiprocket_parcels', 'exchange_parcels', 'tax_orders', 'order_sources', 'human_inputs', 'shipping_invoices', 'shiprocket_discrepancy'], 'all']],      /* T1126: the one shipping cost list reads every order's day, the stated parcel guess and the WhatsApp invoices */      /* 7 Nov 2026 night: the promise card, the status card and the 'Every order' table all read the one list of orders (shipping_daily) and the hand-delivered parcels */      /* 7 Nov 2026: the line 'N of 24 sales days use real costs' counts every sales day, and 'Could a cheaper courier have carried it?' reads every parcel's check */
-    tables:    [[['finance_monthly', 'judgeme_daily', 'order_sources', 'queries_weekly', 'returns_weekly', 'review_weekly'], 'all']],
+    tables:    [[['finance_monthly', 'judgeme_daily', 'order_sources', 'queries_weekly', 'returns_weekly', 'review_weekly', 'shiprocket_parcels', 'exchange_parcels', 'tax_orders', 'shipping_invoices', 'money_daily'], 'all']],      /* T1135: the real cost of a parcel here is M.fig.shippingCost for all dates */
     health:    [[['vitals_daily', 'ux_daily', 'data_trust_daily', 'clarity_weekly', 'speed_weekly'], 'all']],
     tax:       [[['tax_orders', 'razorpay_payments_daily'], 'own']]                                                                      /* dashboard_98_taxload.js opens the months of the chosen period */
   };
