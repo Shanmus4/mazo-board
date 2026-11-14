@@ -8747,8 +8747,8 @@ M.PAGES.shipping.render = function (r) {
     var waiting = openAll.slice().sort(function (p, q) { return q.days - p.days; });
     if (waiting.length) promiseKids.push(M.h('p', { class: 'small', text: 'Not delivered yet: ' + waiting.map(function (x) { return x.order + ' (' + M.num(x.days, 0) + ' days since the order, ' + x.status + (x.days > promOf(x) ? ', PAST the ' + promOf(x) + ' day promise' : ', promise ' + promOf(x) + ' days') + ')'; }).join('; ') + '.' }));
     if (byHand.length) promiseKids.push(M.h('p', { class: 'small', text: 'Handed over by hand, so no courier clock: ' + byHand.map(function (x) { return x.order + ' (' + M.num(x.days, 0) + ' days since the order)'; }).join('; ') + '. Mark it delivered in Shopify once it is handed over, and it joins the count.' }));
-    var doorAvg = door.length ? door.reduce(function (a, x) { return a + x.days; }, 0) / door.length : null;      /* T1130 S3: one stated basis; the Order to the door clock below counts exact hours for the Shiprocket parcels only */
-    promiseKids.push(M.h('p', { class: 'small', text: (doorAvg == null ? '' : 'Delivered orders took ' + M.num(doorAvg, 1) + ' days on average, counted in whole calendar days from the order day to the delivery day, for all ' + M.num(door.length) + ' delivered orders (the ones handed over or sent outside Shiprocket too). The Order to the door clock further down counts exact hours for the Shiprocket parcels only, so the two differ. ') + 'Days are counted from the order to the door. ' + M.num(rowsAll.length) + ' orders in these dates: ' + M.num(door.length) + ' delivered, ' + M.num(openAll.length) + ' on the way or not sent yet, ' + M.num(byHand.length) + ' handed over by hand. The courier alone takes ' + (avgDays == null ? 'about 2 to 3' : M.num(avgDays, 1)) + ' days; the rest is the wait before the pickup.' }));
+    var DD = M.doorDays ? M.doorDays(r) : null, dd1 = function (v) { return v == null ? 'not tracked' : M.num(v, 1) + ' days'; };      /* T1130 S3: three figures with three different bases, named together, all read from M.doorDays (dashboard_77_exchange_parcels.js), the same function the ring and the tile use */
+    promiseKids.push(M.h('p', { class: 'small', id: 'door-days-note', text: (DD ? 'Three figures on this page say how long an order takes to reach the door, and they count different things. The ring above: Shiprocket parcels, exact hours, a parcel still on the way counting its days so far, ' + dd1(DD.ring.avg) + ' (' + M.num(DD.ring.n) + ' parcels, ' + M.num(DD.ring.open) + ' still on the way). The tile Order to the door: delivered Shiprocket parcels only, exact hours, ' + dd1(DD.tile.avg) + ' (' + M.num(DD.tile.n) + ' parcels). This card: every delivered order, the ones handed over or sent outside Shiprocket too, whole calendar days from the order day to the delivery day, ' + dd1(DD.cal.avg) + ' (' + M.num(DD.cal.n) + ' orders). ' : '') + 'Days are counted from the order to the door. ' + M.num(rowsAll.length) + ' orders in these dates: ' + M.num(door.length) + ' delivered, ' + M.num(openAll.length) + ' on the way or not sent yet, ' + M.num(byHand.length) + ' handed over by hand. The courier alone takes ' + (avgDays == null ? 'about 2 to 3' : M.num(avgDays, 1)) + ' days; the rest is the wait before the pickup.' }));
   }
   /* every order, one line each, from the same list: the owner can check any delivery against Shopify and Shiprocket */
   var awbOf = {}; if (M.has('shiprocket_parcels')) M.rows('shiprocket_parcels').forEach(function (x) { if (x.order && (x.awb_last6 || x.awb_tail)) awbOf[x.order] = x.awb_last6 || x.awb_tail; });      /* T1036: the courier's tracking number end, from Shiprocket's own parcel list */
@@ -9010,8 +9010,16 @@ M.PAGES.tables.render = function () {
   if (k3.length) root.appendChild(M.grid(k3, 'one'));
   /* 3. what the business owes in dates, and the seasons coming */
   var cd = M.rows('compliance_dates'), rc = M.rows('range_calendar');
+  /* T1130 B3 (14 Nov 2026): a sentence typed in the Sheet that names a day that has passed ("reply due 10 Nov") reads as if the reply were still due. The dashboard puts "(10 Nov has passed)" after such a date in the "Where it stands" cell, never changes the Sheet, and says nothing about whether the thing was done: that is the owner's own list. */
+  M.passedNote = function (text) {
+    var MONS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 }, a = (M.D && M.D.anchor) || '', y = +String(a).slice(0, 4);
+    return String(text == null ? '' : text).replace(/\b(due|by|until|on) (\d{1,2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b(?! \d{4})(?! has passed)/g, function (m, w, d, mo) {
+      var iso = y + '-' + String(MONS[mo] + 1).padStart(2, '0') + '-' + String(+d).padStart(2, '0');
+      return a && iso < a ? m + ' (' + d + ' ' + mo + ' has passed)' : m;
+    });
+  };
   var k4 = [];
-  if (cd.length) k4.push(M.card('Dates the business owes', 'Renewals, tokens and filings with a due date, soonest first.', [M.table([{ k: 'item', label: 'What', wrap: true }, { k: 'due', label: 'Due', fmt: function (v) { return v ? M.fd(v) : 'no date'; }, sort: function (x) { return x.due || '9999'; } }, { k: 'left', label: 'Days left', num: true, fmt: function (v) { return v == null ? '' : v < 0 ? Math.abs(v) + ' late' : M.num(v); } }, { k: 'owner', label: 'Who' }, { k: 'status', label: 'Where it stands', wrap: true }, { k: 'note', label: 'Note', wrap: true, hidden: true }], { rows: cd.map(function (x) { var d = x.due && /^\d{4}-\d{2}-\d{2}/.test(x.due) ? M.diff(M.D.anchor, x.due.slice(0, 10)) : null; return Object.assign({}, x, { left: d }); }), sortKey: 'due', sortDir: 1, empty: 'None.', name: 'dates-owed' })]));
+  if (cd.length) k4.push(M.card('Dates the business owes', 'Renewals, tokens and filings with a due date, soonest first.', [M.table([{ k: 'item', label: 'What', wrap: true }, { k: 'due', label: 'Due', fmt: function (v) { return v ? M.fd(v) : 'no date'; }, sort: function (x) { return x.due || '9999'; } }, { k: 'left', label: 'Days left', num: true, fmt: function (v) { return v == null ? '' : v < 0 ? Math.abs(v) + ' late' : M.num(v); } }, { k: 'owner', label: 'Who' }, { k: 'status', label: 'Where it stands', wrap: true }, { k: 'note', label: 'Note', wrap: true, hidden: true }], { rows: cd.map(function (x) { var d = x.due && /^\d{4}-\d{2}-\d{2}/.test(x.due) ? M.diff(M.D.anchor, x.due.slice(0, 10)) : null; return Object.assign({}, x, { left: d, status: M.passedNote(x.status) }); }), sortKey: 'due', sortDir: 1, empty: 'None.', name: 'dates-owed' })]));
   if (rc.length) k4.push(M.card('Seasons coming up', 'Festivals and seasons ahead, with the dates to shoot and start posting, and the search phrase to watch. A season whose date has passed is not listed. Stock is not planned by season.', [M.table([{ k: 'event', label: 'Season', wrap: true }, { k: 'date', label: 'Date', fmt: M.fd }, { k: 'weeks_away', label: 'Weeks away', num: true, fmt: function (v) { return v == null ? '' : M.num(v, 1); } }, { k: 'shoot_by', label: 'Shoot by', fmt: M.fd }, { k: 'post_from', label: 'Start posting', fmt: M.fd }, { k: 'trend_phrase', label: 'Search phrase to watch' }, { k: 'note', label: 'What it says', wrap: true }], { rows: rc.filter(function (x) { return !(x.weeks_away !== '' && x.weeks_away != null && +x.weeks_away < 0); }), sortKey: 'date', sortDir: 1, empty: 'None.', name: 'seasons', dateKey: false })]));      /* T1130 B2 (14 Nov 2026): the card says "coming up", so a season whose date has passed (Diwali weekend, -0.9 weeks) is not listed; it stays in the table range_calendar */
   if (k4.length) root.appendChild(M.grid(k4, 'one'));
   /* 4. growth, ad cost, listings, assistants, makers, questions */
@@ -10957,7 +10965,8 @@ M.glueMarks = function () {
     var avg = door.reduce(function (a, v) { return a + v; }, 0) / door.length, P = M.PROMISE.ready;
     Array.prototype.forEach.call(root.children, function (c) {
       if (c.nodeName !== 'SECTION' || !/Is the promise kept/.test(M.vizTitle(c)) || c.querySelector('.ring-box')) return;
-      var box = M.vizRing(avg, P[1], { name: 'Days from the order to the door against the promise (parcels not yet delivered count their days so far)', sub: 'days, order to door', centre: M.num(avg, 1), color: avg <= P[1] ? COL.green : avg <= P[1] + 2 ? COL.mustard : COL.terra, valueLabel: 'Average days, order to the door', maxLabel: 'Promise for ready to ship pieces (most days)', fmt: function (v) { return M.num(v, 1) + ' days'; } });
+      M.shipRingDays = avg;      /* T1130 S3 (14 Nov 2026): the ring's own figure, handed to the sentence under it (dashboard_17_money_ship.js) so the two can never differ */
+      var box = M.vizRing(avg, P[1], { name: 'Shiprocket parcels, exact hours; parcels still on the way count their days so far: days from the order to the door against the promise', sub: 'days, Shiprocket parcels', centre: M.num(avg, 1), color: avg <= P[1] ? COL.green : avg <= P[1] + 2 ? COL.mustard : COL.terra, valueLabel: 'Average days, order to the door', maxLabel: 'Promise for ready to ship pieces (most days)', fmt: function (v) { return M.num(v, 1) + ' days'; } });
       var h3 = c.querySelector(':scope > h3');
       c.insertBefore(box, h3 ? h3.nextSibling : c.firstChild);
     });
@@ -16243,7 +16252,7 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var tiles = M.h('div', { class: 'kpis' });
       tiles.appendChild(M.kpi({ label: 'Waited before the courier came', value: d1(mean(waited)) + ' days', note: M.num(waited.length) + ' parcels; half waited under ' + d1(median(waited)) + ' days. From the order to the pickup: making the piece, a wallet that was empty, a pickup that was missed.' }));
       tiles.appendChild(M.kpi({ label: 'Courier days', value: d1(mean(courierDays)) + ' days', note: M.num(timed.length) + ' parcels. From the pickup scan to the delivered scan.' }));
-      tiles.appendChild(M.kpi({ label: 'Order to the door', value: d1(mean(door)) + ' days', note: 'What the buyer lives through: the two clocks above added up, ' + M.num(door.length) + ' Shiprocket parcels, in exact hours. The card Is the promise kept counts whole calendar days for every delivered order, hand delivered ones too, so its average is lower.' }));
+      tiles.appendChild(M.kpi({ label: 'Order to the door', value: d1(mean(door)) + ' days', note: 'What the buyer lives through: the two clocks above added up, ' + M.num(door.length) + ' delivered Shiprocket parcels, in exact hours. The ring and the card Is the promise kept count other sets of orders; the sentence under the ring names all three.' }));
       var lo = items.length ? items.reduce(function (a, x) { return a + (+x.promised_mid || 0) * (+x.items || 0); }, 0) / Math.max(1, items.reduce(function (a, x) { return a + (+x.items || 0); }, 0)) : null;
       var hiSum = items.reduce(function (a, x) { return a + (+x.promised_max || 0) * (+x.items || 0); }, 0) / Math.max(1, items.reduce(function (a, x) { return a + (+x.items || 0); }, 0));
       tiles.appendChild(items.length ? M.kpi({ label: 'Days promised on Google', value: M.num(lo, 1) + ' to ' + M.num(hiSum, 1), note: 'A blend of the promises in the shipping settings, weighted by items: the middle of each promise to the longest.' })
@@ -17507,6 +17516,33 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     if (!C || !C.t) return { known: false, total: L.total, courier: L.total, wa: 0, same: true, C: null, waPieces: [] };
     var wa = C.t.whatsapp || 0, courierP = C.t.parcel - wa;
     return { known: true, total: rs(C.t.parcel), courier: rs(courierP), wa: rs(wa), same: courierP === L.p, C: C, waPieces: C.waPieces || [] };
+  };
+
+  /* T1130 S3 (14 Nov 2026): the three "order to the door" figures of the Shipping page, from ONE place so the ring, the tile and the sentence under the ring can never differ.
+       ring   every Shiprocket parcel of the dates (a parcel still on the way counts its days so far), exact hours
+       tile   the delivered Shiprocket parcels only, exact hours (dashboard_72_shiprocket.js, "Order to the door")
+       calendar   every delivered order, hand delivered ones too, whole calendar days (shipping_daily, the card "Is the promise kept")
+     Returns { ring: {avg, n, open}, tile: {avg, n}, cal: {avg, n} }, each avg null when there is nothing. */
+  M.doorDays = function (r) {
+    var mean = function (a) { return a.length ? a.reduce(function (s, v) { return s + v; }, 0) / a.length : null; };
+    var nowD = (M.D && M.D.anchor) || r.to, out = { ring: { avg: null, n: 0, open: 0 }, tile: { avg: null, n: 0 }, cal: { avg: null, n: 0 } };
+    if (M.has('shiprocket_parcels') && M.hoursBetween) {
+      var rows = M.rows('shiprocket_parcels').filter(function (x) { return x.ordered_at && x.courier !== 'Self fulfilled' && !/cancel/i.test(x.status || ''); });
+      var ring = rows.filter(function (x) { return x.status === 'delivered' && x.delivered_at ? (x.delivered_at.slice(0, 10) >= r.from && x.delivered_at.slice(0, 10) <= r.to) : x.ordered_at.slice(0, 10) <= r.to; })
+        .map(function (x) { return { v: M.hoursBetween(x.ordered_at, x.status === 'delivered' && x.delivered_at ? x.delivered_at : nowD + ' 23:59') / 24, open: !(x.status === 'delivered' && x.delivered_at) }; }).filter(function (o) { return !isNaN(o.v); });
+      out.ring = { avg: mean(ring.map(function (o) { return o.v; })), n: ring.length, open: ring.filter(function (o) { return o.open; }).length };
+      var tile = M.rows('shiprocket_parcels').filter(function (x) { return x.courier !== 'Self fulfilled' && !/cancel/i.test(x.status || '') && x.picked_up_at && x.delivered_at && x.status === 'delivered' && x.ordered_at; })
+        .filter(function (x) { var d = (x.picked_up_at || x.dispatch_date || x.order_date || '').slice(0, 10); return d >= r.from && d <= r.to; })
+        .map(function (x) { return M.hoursBetween(x.ordered_at, x.delivered_at) / 24; }).filter(function (v) { return !isNaN(v); });
+      out.tile = { avg: mean(tile), n: tile.length };
+    }
+    if (M.has('shipping_daily')) {
+      var day = function (s) { return Date.UTC.apply(null, String(s).slice(0, 10).split('-').map(function (v, i) { return i === 1 ? +v - 1 : +v; })); };
+      var cal = M.rows('shipping_daily').filter(function (x) { return x.ordered_at && x.delivered && !/test order/i.test(x.note || '') && String(x.ordered_at).slice(0, 10) >= r.from && String(x.ordered_at).slice(0, 10) <= r.to; })
+        .map(function (x) { return (day(x.delivered) - day(x.ordered_at)) / 864e5; }).filter(function (v) { return !isNaN(v); });
+      out.cal = { avg: mean(cal), n: cal.length };
+    }
+    return out;
   };
 
   var itemOf = function (x) {
