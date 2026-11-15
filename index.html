@@ -11382,9 +11382,9 @@ M.glueMarks = function () {
       var mnames = Object.keys(nsMon).sort().map(function (k) { return M.MON[+k.slice(5, 7) - 1] + ' ' + rsr(nsMon[k].g); }).join(', ');
       noShipTax = ' SHIPPING TAX THAT WAS SWITCHED OFF: Shopify charged no GST on shipping from the first order (19 May 2026) up to 3 Sep 2026 and has charged it since 5 Sep 2026; the setting was changed between those two orders and Shopify keeps no history of it. '
         + M.num(nsList.length) + ' orders paid ' + rsr(nsT) + ' of shipping with no GST on it: ' + nsList.map(function (x) { return x.order; }).join(', ') + '. At 5 percent inside the price (the rate Shopify has charged on shipping since 5 Sep) the GST inside them is ' + rsr(nsG) + ': ' + mnames + '. '
-        + 'It is in neither Shopify\'s report nor this page, so a GSTR-3B built from them is short by those amounts, month by month. '
+        + 'It is in neither Shopify\'s report nor this page, so a return built from them alone would be short by those amounts, month by month. '
         + (inPeriod.length ? 'In THIS period ' + M.num(inPeriod.length) + ' of these orders fall (' + inPeriod.map(function (x) { return x.order; }).join(', ') + ').' : 'No order of THIS period is affected (October and November carry the tax on every shipping line).')
-        + ' We do NOT know whether the Accountant already paid it by hand: no return or challan for May to September has been given to us. Please confirm: was this GST included in those returns, and if not, how should it be corrected, and is 5 percent right for shipping billed with the goods? The dashboard adds nothing to these orders until you decide.';
+        + ' CONFIRMED by the owner on 15 Nov 2026: this GST was already included in the May to September returns, so nothing needs correcting. The list stays here as a record; the dashboard adds nothing to these orders.';
     }
     var check = [
       ['1. Sales register and its CSV for the month (every sale, refund and cancelled order, goods and shipping GST side by side)', true, 'On this page, above. Download the CSV and send it.'],
