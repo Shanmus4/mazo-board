@@ -5701,6 +5701,7 @@ M.SEARCH_INDEX = [
 ["channels","card","Visits over time, biggest six sources","visits over time, biggest six sources"],
 ["channels","table","First page people saw","first page people saw"],
 ["channels","table","Links we tagged (campaigns)","links we tagged (campaigns)"],
+["channels","card","Which word or reel sold","which word or reel sold"],
 ["channels","table","New people and people who came back","new people and people who came back"],
 ["channels","table","Phone, laptop or tablet","phone, laptop or tablet"],
 ["channels","kpi","Visits with a source","visits with a source, # of # days"],
@@ -7434,7 +7435,7 @@ M.PAGES.quality.render = function () {
   var today0 = M.D.built.slice(0, 10), fr = M.D.meta.filter(function (m) { return m.last && /_daily$/.test(m.name) && m.name !== 'data_quality_daily'; }).map(function (m) { return { name: m.name, last: m.last, age: M.diff(m.last, today0), rows: m.rows }; });
   /* T878 (3 Nov 2026, owner: "Data page, needs a look"): a table that writes a row ONLY when something happened (a day with an order, a parcel that moved) looks old on a quiet week although nothing is wrong. It is shown calmly with its reason; a table that writes every day and is old is the real warning. Google reports a day 1 to 3 days late. */
   var QUIET = { data_trust_daily: 'one row per day that had an order; no order since', shipping_daily: 'one row per parcel; no new parcel since' };
-  var LATE = { bing_daily: 1, merchant_daily: 1, youtube_analytics_daily: 1, brand_search_daily: 1, ga4_funnel_daily: 1, source_daily: 1, landing_daily: 1, campaign_daily: 1, visitor_type_daily: 1, funnel_device_daily: 1, product_daily: 1, place_device_daily: 1,
+  var LATE = { bing_daily: 1, merchant_daily: 1, youtube_analytics_daily: 1, brand_search_daily: 1, ga4_funnel_daily: 1, source_daily: 1, landing_daily: 1, campaign_daily: 1, visitor_type_daily: 1, link_content_daily: 1, funnel_device_daily: 1, product_daily: 1, place_device_daily: 1,
              pinterest_daily: 1, pinterest_split_daily: 1, youtube_more_daily: 1, youtube_split_daily: 1, linkedin_daily: 1, linkedin_more_daily: 1, ux_daily: 1, vitals_daily: 1, ga4_users_daily: 1, ga4_device_daily: 1, ga4_source_daily: 1, ga4_country_daily: 1, ga4_wide_daily: 1, ga4_events_daily: 1, ga4_city_daily: 1, ga4_region_daily: 1, ga4_pages_daily: 1, ga4_screen_daily: 1 };      /* 12 Nov 2026 (owner: "some data said 5 days old, pinterest etc."): these sources publish a day 2 to 4 days late (Pinterest marks the newest 2 days "processing", Bing and Google Analytics 2 to 3 days), so 2 to 4 is normal for them and the card now says so for every one of them */
   var freshText = function (x) {
     var base = x.age + ' day' + (x.age === 1 ? '' : 's') + ' old (' + M.fd(x.last) + ')';
@@ -8007,6 +8008,7 @@ M.channelExtras = function (r, buckets) {
     { k: 'campaign', label: 'Link name', wrap: true, render: function (x) { return M.h('span', { class: 'src-cell' }, [M.h('span', { class: 'src-name', title: 'The tag in the link: ' + x.campaign, text: M.campPlain(x.campaign) }), M.infoMark(M.campMeaning(x.campaign) + ' The tag in the link is: ' + x.campaign + '.', M.campPlain(x.campaign), 'src-info')]); }, sort: function (x) { return x.campaign; } },
     { k: 'source', label: 'Source', wrap: true, render: function (x) { return M.srcCell(x.source, false); }, sort: function (x) { return x.source; } },
     { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'orders', label: 'Orders Google saw', num: true, fmt: M.num }], { rows: crows, sortKey: 'visits', limit: 15, name: 'campaigns' }) : M.emptyWhy('campaign_daily', r)]));
+  box.appendChild(M.linkContentCard(r, M.rowsIn('link_content_daily', r.from, r.to)));      /* T1140 (15 Nov 2026): which word or reel sold */
   var vt = M.rowsIn('visitor_type_daily', r.from, r.to), vb = {};
   vt.forEach(function (x) { var o = vb[x.visitor_type] || (vb[x.visitor_type] = { type: x.visitor_type, visits: 0, carts: 0, orders: 0 }); o.visits += +x.sessions || 0; o.carts += +x.carts || 0; o.orders += +x.purchases || 0; });
   var vrows = ['new', 'returning', '(not set)'].filter(function (k) { return vb[k]; }).map(function (k) { var o = vb[k]; o.name = k === 'new' ? 'New visitors' : k === 'returning' ? 'People who came before' : 'Kind of visitor not known'; o.conv = o.visits ? o.orders / o.visits * 100 : 0; return o; });
@@ -8026,11 +8028,12 @@ M.CAMP = {
   'shorts': 'The name on the shop link in the description of a YouTube Short.', 'page_post': 'The name on the shop link in a post on the LinkedIn company page.',
   '(direct)': 'No name: the visit had no link at all (someone typed the address).', '(not set)': 'No name: the link was not tagged, or Google Analytics could not read the tag.',
   '(organic)': 'Free search results, no tag needed.', '(referral)': 'A link on another website that we did not tag.',
+  'comment-to-dm': 'The link Instagram sends by itself, as a private message, when someone comments a word on a reel (for example the word mirchi). The word is in the link, see the card "Which word or reel sold".',
   'sag_organic': 'Not a name of ours: Google puts this on a visit that came from the free product listings it builds from our product feed (the Google and YouTube app).'
 };
 /* T884 (3 Nov 2026): a campaign name in words for a table cell that has room for text only (the raw name stays in the hover) */
 M.campPlain = function (c) {
-  var w = { 'always-on': 'Profile link (always on)', 'shorts': 'YouTube Short link', 'page_post': 'LinkedIn page post link', 'sag_organic': 'Google free product listing', '(direct)': 'No link (typed address)', '(not set)': 'Link not tagged', '(organic)': 'Free search result', '(referral)': 'Another website, not tagged by us' };
+  var w = { 'always-on': 'Profile link (always on)', 'shorts': 'YouTube Short link', 'page_post': 'LinkedIn page post link', 'sag_organic': 'Google free product listing', '(direct)': 'No link (typed address)', '(not set)': 'Link not tagged', '(organic)': 'Free search result', '(referral)': 'Another website, not tagged by us', 'comment-to-dm': 'Comment to DM link' };
   return w[c] || c;
 };
 M.campMeaning = function (c) { return M.CAMP[c] || 'A name we put inside one of our links. It lets us see which post or profile a visit came from.'; };
@@ -8870,6 +8873,7 @@ M.TABLE_WORDS = {
   range_gaps: ['Gaps in our range', 'Kinds of clothes people search for that we do not make.', 'Search and market'],
   landing_daily: ['First page visitors land on', 'Which page visitors arrive on, with visits and orders.', 'Channels'],
   campaign_daily: ['Campaign links', 'Visits and orders from tagged links in bios and posts.', 'Channels'],
+  link_content_daily: ['Which word or reel sold', 'Visits and orders for each word inside our tagged links, for example the word a shopper commented for the Instagram comment to DM link.', 'Channels'],
   visitor_type_daily: ['New and returning visitors', 'Visits and orders from first-time and returning visitors.', 'Channels'],
   channel_groups: ['Channels grouped', 'Visits, carts and orders for each group of sources (Instagram, search, direct and so on).', 'Growth'],
   channel_scorecard: ['Channels, last 28 days', 'Each source with visits, orders, revenue and a plain verdict.', 'Channels'],
@@ -18027,6 +18031,31 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     { col: 'subscribers', owner: 'emailSubscribers', allow: ['dashboard_80_figures2.js'] }
   ]);
 })();
+
+/* dashboard_81_link_words.js (T1140, 15 Nov 2026): the card that says WHICH WORD sold, for the comment to DM links. Its own file because dashboard_16_marketing.js is near the 800 line limit.
+   Called from M.channelExtras in dashboard_16_marketing.js. Reads the Sheet tab link_content_daily. */
+/* T1140 (15 Nov 2026, owner: the comment to DM links must show on the dashboard, with WHICH word sold). The Sheet tab link_content_daily holds, per day, source, campaign and the name inside a
+   tagged link (utm_content). For a comment to DM link that name is the word the shopper commented (mirchi, mazo ...). A post code (ig<number>) is the tag our post links carry; those are read by
+   the content scorecard on the Social page, so this card shows them as "an Instagram post" and does not count them a second time as words. Takes the ROWS as an argument so a check can feed made up rows. */
+M.LINK_WORDS = { mazo: 'mazo, the home page', sundown: 'Sundown Stripe Green Top', bluebell: 'Bluebell Breeze Tie-Top', rose: 'Rosé Stripe Tie-Back Top', summerjam: 'Summer Jam Midi Dress', mirchi: 'Mirchi Red Embroidered Top', tamasha: 'Tamasha Embroidered Mini Skirt', ivy: 'Ivy Green Embroidered Dress', burinazar: 'Buri Nazar Black Embroidered Dress', pataka: 'Pataka Rust Embroidered Peplum Top', madras: 'Madras Theory collection', jigjig: 'Jig Jig collection', tops: 'Tops collection', dresses: 'Dresses collection', skirts: 'Skirts collection', bestsellers: 'Bestsellers collection' };
+M.linkContentCard = function (r, rows) {
+  var s = M.state, by = {}, isPost = /^ig\d+$/;
+  (rows || []).forEach(function (x) {
+    var w = String(x.content || '').trim();
+    if (!w || /^\((not set|none|direct)\)$/i.test(w) || isPost.test(w)) return;      /* no word, "(not set)" and a post code are not words (the collector leaves the first two out too; a post code is the Social page's business) */
+    if (s.channel && x.source !== String(s.channel).split(' / ')[0]) return;
+    var k = x.content + '|' + x.source + '|' + x.campaign, o = by[k] || (by[k] = { content: x.content, source: x.source, campaign: x.campaign, visits: 0, orders: 0 });
+    o.visits += +x.sessions || 0; o.orders += +x.purchases || 0;
+  });
+  var out = Object.keys(by).map(function (k) { return by[k]; });
+  var body = out.length ? M.table([
+    { k: 'content', label: 'Word or reel', wrap: true, render: function (x) { return M.h('span', { class: 'src-cell' }, [M.h('span', { class: 'src-name', title: 'The name inside the link: ' + x.content, text: x.content }), M.LINK_WORDS[x.content] ? M.infoMark('The word ' + x.content + ' sends the link to: ' + M.LINK_WORDS[x.content] + '. The name inside the link is: ' + x.content + '.', M.LINK_WORDS[x.content], 'src-info') : M.h('span')]); }, sort: function (x) { return x.content; } },
+    { k: 'campaign', label: 'Link name', wrap: true, render: function (x) { return document.createTextNode(M.campPlain(x.campaign)); }, sort: function (x) { return x.campaign; } },
+    { k: 'source', label: 'Source', wrap: true },
+    { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.maroon } }, { k: 'orders', label: 'Orders Google saw', num: true, fmt: M.num }], { rows: out, sortKey: 'visits', limit: 15, name: 'link words' })
+    : M.h('div', { class: 'empty', role: 'status' }, ['No visits with a word in the link in these dates yet. The words start to show here after someone taps a comment to DM link (the first night after that).']);
+  return M.card('Which word or reel sold', 'When Instagram sends a link after someone comments a word on a reel, the word is inside the link. Visits and orders Google saw, per word. A link tagged only with its campaign name has no word and is in the card above.', [body]);
+};
 
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
    the one file build (docs/reports/dashboard/mazo-dashboard.html) never uses any of this. Plan and design: docs/guides/robust-data-and-hosting-plan.md, scripts/site_crypto.py.
