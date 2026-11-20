@@ -1928,6 +1928,11 @@ html.still .cb svg path.ln-draw,html.still .kpi .sp-line,html.still .viz-chart .
 @media (hover: hover) and (pointer: fine) { .tax-register thead tr:not(.band-row) th > .mk-row { margin-bottom: calc((1lh - var(--mkh)) / 2); } }
 @media (pointer: coarse) { .tax-register thead tr:not(.band-row) th > .mk-row { margin-bottom: 8px; } }   /* touch: the 44 px button row ends 8 px lower than a plain heading's 60 px button */
 
+/* T1180 (20 Nov 2026): the two nested lines under an order that paid for shipping (Products, Shipping). Smaller and quieter than the order line, indented in the first column, never clickable. */
+.tax-register tr.nest-row td { font-size: var(--t13, 13px); color: var(--ink2, #6b625a); background: #FBF8F4; padding-top: 5px; padding-bottom: 5px; border-top: 0; }
+.tax-register tr.nest-row td:first-child { padding-left: 30px; background: #FBF8F4; }
+.tax-register tr.nest-row.nest-ship td { border-bottom: 1px solid var(--line, #e9dfd3); }
+
 /* mazo dashboard DATE RANGE PICKER styles (T883, 3 Nov 2026). See dashboard_47_datepicker.js. Uses only the dashboard's own scales: 6px controls, 12px panel, maroon for the chosen range, a tint
    (not a rule) for the days between, 44px days on touch. No divider lines: the groups are separated by space and a tinted side column. */
 
@@ -11168,7 +11173,10 @@ M.glueMarks = function () {
       'What customers paid, minus the GST inside it. This is the figure the GST returns call the taxable value. The shop keeps GST inside the price, so taxable value = total paid minus GST.', 'Taxable value'));
     kp.appendChild(lab(M.kpi({ label: 'Total paid by customers', value: paise(paid), note: 'items after discounts + shipping ' + paise(ship), drill: M.drill.same(M.drill.countIs(taxSpec, orders), paid) }),
       'Everything customers paid for the sales of this period, after refunds: the pieces after discounts plus shipping. The GST is inside it.', 'Total paid'));
-    kp.appendChild(lab(M.kpi({ label: 'CGST + SGST + IGST', value: paise(cgst + sgst + igst), note: 'CGST ' + paise(cgst) + ', SGST ' + paise(sgst) + ', IGST ' + paise(igst) }),
+    /* T1180 (20 Nov 2026, owner: "cgst and sgst split should be there, for product and shipping also, everywhere applicable"): the tile also says how the total divides between the PRODUCTS and the SHIPPING, each with its own CGST, SGST and IGST (tax_summary carries goods_* and ship_* beside the totals) */
+    var gC = T('goods_cgst'), gS = T('goods_sgst'), gI = T('goods_igst'), sC = T('ship_cgst'), sS = T('ship_sgst'), sI = T('ship_igst');
+    var splitNote = 'CGST ' + paise(cgst) + ', SGST ' + paise(sgst) + ', IGST ' + paise(igst) + '. Products: CGST ' + paise(gC) + ', SGST ' + paise(gS) + ', IGST ' + paise(gI) + '. Shipping: CGST ' + paise(sC) + ', SGST ' + paise(sS) + ', IGST ' + paise(sI) + '.';
+    kp.appendChild(lab(M.kpi({ label: 'CGST + SGST + IGST', value: paise(cgst + sgst + igst), note: splitNote }),
       'CGST and SGST are the two halves of the tax on a sale delivered inside Karnataka. IGST is the whole tax on a sale delivered to another state.', 'Central, state and integrated tax'));
     return { node: kp, gst: gst, taxable: taxable, paid: paid, cgst: cgst, sgst: sgst, igst: igst };
   };
@@ -11465,6 +11473,11 @@ M.glueMarks = function () {
    Tech Guy, 6 Nov 2026: "the CSV that Madhu will provide her accountant must have GST separately for shipping and for product ... find the best way to represent this table and format the CSV
    correctly" and "I don't want GST specific for shipping in separate sections": the split lives INSIDE each row, in grouped column bands (Goods, Shipping, Total).
 
+   T1180 (20 Nov 2026, owner, looking at the register: "still cgst sgst igst split is not showing! i want it there also.. reconfigure table by having nested rows for shipping, since the table may expand quite a bit"):
+   the screen now shows CGST, SGST and IGST of the WHOLE ORDER as ordinary columns (they were switched off by default), and an order that paid for shipping has two small nested lines under it, "Products" and
+   "Shipping", each with its own taxable value, CGST, SGST, IGST and GST. The goods and shipping band columns stay one tick away in the Columns menu. THE FILE FOR EXCEL IS NOT CHANGED: one line per order, the same
+   23 columns, goods and shipping side by side (the three whole order columns are `screenOnly` and left out of the file; scripts/scheck_tax.py check 12 proves the file to the paisa).
+
    Two cards, both for the period chosen at the top of the Taxes page (financial year, quarter or month):
      "Sales register for the Accountant"   ONE LINE PER ORDER (and one line per refund, with minus amounts), in the order of a GSTR-1 sheet:
                                            order no, date, type, place of supply, state code, type of tax, HSN, GST rate, then GOODS (items after discounts, taxable value, CGST, SGST, IGST, GST),
@@ -11482,7 +11495,8 @@ M.glueMarks = function () {
 (function () {
   var SKU_SRC = 'same SKU on the current product';
   var GKEYS = ['g_tax', 'g_cgst', 'g_sgst', 'g_igst', 'g_gst'], SKEYS = ['sh_charged', 'sh_tax', 'sh_cgst', 'sh_sgst', 'sh_igst', 'sh_gst'];
-  var MONEY = ['items'].concat(GKEYS, SKEYS, ['taxable', 'gst', 'paid']);
+  var SCREEN = ['o_cgst', 'o_sgst', 'o_igst'];      /* T1180: CGST, SGST and IGST of the whole order, for the screen only (the file already has them as goods + shipping) */
+  var MONEY = ['items'].concat(GKEYS, SKEYS, ['taxable'], SCREEN, ['gst', 'paid']);
   var P = function (v) { return Math.round((+v || 0) * 100 + (v >= 0 ? 1e-7 : -1e-7)); };                  /* rupees -> whole paise */
   var pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
   var n2 = function (p) { var a = Math.abs(p); return (p < 0 && a ? '-' : '') + Math.floor(a / 100) + '.' + pad2(a % 100); };      /* whole paise -> "2050.00" for the file */
@@ -11515,7 +11529,7 @@ M.glueMarks = function () {
         rate: x.rate_pct == null || x.rate_pct === '' ? null : num(x.rate_pct), hsn: x.hsn == null ? '' : String(x.hsn), hsn_source: x.hsn_source || '',
         items: (gtax + gg) / 100, g_tax: gtax / 100, g_cgst: gc / 100, g_sgst: gs / 100, g_igst: gi / 100, g_gst: gg / 100,
         sh_charged: ship / 100, sh_tax: stax / 100, sh_cgst: sc / 100, sh_sgst: ss / 100, sh_igst: si / 100, sh_gst: sg / 100,
-        taxable: taxable / 100, gst: gst / 100, paid: paid / 100, orders: refund || folded || cancelled ? 0 : 1, folded: folded, cancelled: cancelled, remark: x.remark || '', _ok: ok });
+        taxable: taxable / 100, o_cgst: P(x.cgst) / 100, o_sgst: P(x.sgst) / 100, o_igst: P(x.igst) / 100, gst: gst / 100, paid: paid / 100, orders: refund || folded || cancelled ? 0 : 1, folded: folded, cancelled: cancelled, remark: x.remark || '', _ok: ok });
     });
     out.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : String(a.order).localeCompare(String(b.order), undefined, { numeric: true }); });
     return out;
@@ -11547,6 +11561,7 @@ M.glueMarks = function () {
   var q = function (t) { var s = String(t == null ? '' : t); if (/^[=+@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };      /* text is always quoted; text that looks like a formula is kept as text */
   /* cols: the table's columns (all of them, also the ones switched off in the Columns menu); rows: the table's rows as shown; kinds: {key: 'money' | 'plain' | 'date'} (anything else is text) */
   var csvText = function (cols, rows, keys, kinds, extra) {
+    cols = cols.filter(function (c) { return !c.screenOnly; });      /* T1180: the three whole order columns are for the screen; the file keeps its 23 columns */
     extra = rows.some(function (r) { return r._g; }) ? [] : (extra || []);      /* the extra text columns belong to single orders, not to a month or quarter row */
     var cell = function (c, r) {
       var k = kinds[c.k], v = r[c.k];
@@ -11611,6 +11626,42 @@ M.glueMarks = function () {
     return box;
   };
 
+  /* ---------------------------------------------------------------- nested lines: an order that paid for shipping shows "Products" and "Shipping" under it (T1180)
+     Added after every draw (a sort, a filter, a page of 50 more redraws the table). Each nested line takes its figures from the same row object as the order line (g_* for the products, sh_* for the shipping),
+     so the two nested lines always add up to the order line above them. A grouped row (By month) and an older month folded into one line have none. They sit in the table body but are not rows of the data:
+     the count, the Total row, the filter and the file never see them. */
+  var withNested = function (box, cols) {
+    var byLabel = {}; cols.forEach(function (c) { byLabel[c.label] = c.k; });
+    var map = { taxable: ['g_tax', 'sh_tax'], o_cgst: ['g_cgst', 'sh_cgst'], o_sgst: ['g_sgst', 'sh_sgst'], o_igst: ['g_igst', 'sh_igst'], gst: ['g_gst', 'sh_gst'], paid: ['items', 'sh_charged'] };
+    var run = function () {
+      Array.prototype.forEach.call(box.querySelectorAll('table'), function (tbl) {
+        var head = tbl.tHead, body = tbl.tBodies && tbl.tBodies[0]; if (!head || !body || !box.view) return;
+        var hr = head.querySelector('tr:not(.band-row)'); if (!hr) return;
+        var keys = Array.prototype.map.call(hr.cells, function (th) { var b = th.querySelector('button'), t = b && b.childNodes[0] ? b.childNodes[0].nodeValue : th.textContent; return byLabel[String(t).replace(/[▲▼]/g, '').trim()] || null; });
+        var rows = box.view() || [], trs = Array.prototype.filter.call(body.rows, function (tr) { return !tr.classList.contains('nest-row'); });
+        trs.forEach(function (tr, i) {
+          var r = rows[i], nx = tr.nextElementSibling;
+          if (!r || r._g || r.folded || !(r.sh_charged > 0) || (nx && nx.classList.contains('nest-row'))) return;
+          var line = function (label, at, cls) {
+            var n = M.h('tr', { class: 'nest-row ' + cls });
+            keys.forEach(function (k, j) {
+              var td = M.h('td', { class: k && map[k] ? 'n' : '' });
+              if (j === 0) td.textContent = label; else if (k && map[k]) td.textContent = rs2(r[map[k][at]]);
+              n.appendChild(td);
+            });
+            return n;
+          };
+          var after = tr.nextSibling;
+          body.insertBefore(line('Products', 0, 'nest-goods'), after);
+          body.insertBefore(line('Shipping', 1, 'nest-ship'), after);
+        });
+      });
+    };
+    run();
+    if (window.MutationObserver) new MutationObserver(run).observe(box, { childList: true, subtree: true });
+    return box;
+  };
+
   /* ---------------------------------------------------------------- the two cards */
   var money = function (k, label, band, csvLabel) { return { k: k, label: label, csvLabel: csvLabel, band: band, num: true, fmt: rs2, agg: 'sum' }; };
   var splitCols = function (withItems) {
@@ -11620,6 +11671,7 @@ M.glueMarks = function () {
       money('sh_charged', 'Ship charged', 'Shipping', 'Shipping charged (incl. GST)'), money('sh_tax', 'Shipping taxable value', 'Shipping'), money('sh_cgst', 'Shipping CGST', 'Shipping'), money('sh_sgst', 'Shipping SGST', 'Shipping'),
       money('sh_igst', 'Shipping IGST', 'Shipping'), money('sh_gst', 'Ship GST', 'Shipping', 'Shipping GST total')]);
   };
+  var screen = function (k, label) { var c = money(k, label, 'Total'); c.screenOnly = true; return c; };      /* T1180: shown on screen, never written to the file */
   var bandMap = function (cols) { var m = {}; cols.forEach(function (c) { if (c.band) m[c.label] = c.band; }); return m; };
   var kindsOf = function () { var k = { rate: 'plain', orders: 'plain', date: 'date' }; MONEY.forEach(function (m) { k[m] = 'money'; }); return k; };
 
@@ -11636,7 +11688,7 @@ M.glueMarks = function () {
       { k: 'hsn', label: 'HSN code', groupHide: true, sort: function (r) { return r.hsn; }, render: function (r) {
         return r.hsn_source === SKU_SRC ? M.h('span', { title: 'The product was rebuilt after this sale, so the code is taken from the same product as it is today.', text: r.hsn + ' *' }) : (r.hsn || ''); } },
       { k: 'rate', label: 'GST rate', csvLabel: 'GST rate (%)', num: true, groupHide: true, fmt: function (v) { return v == null || v === '' ? '' : M.pct(v); } }
-    ].concat(splitCols(true), [money('taxable', 'Taxable total', 'Total', 'Total taxable value'), money('gst', 'Total GST', 'Total'), money('paid', 'Invoice value', 'Total', 'Invoice value (total paid by the customer)'),
+    ].concat(splitCols(true), [money('taxable', 'Taxable value', 'Total', 'Total taxable value'), screen('o_cgst', 'CGST'), screen('o_sgst', 'SGST'), screen('o_igst', 'IGST'), money('gst', 'Total GST', 'Total'), money('paid', 'Invoice value', 'Total', 'Invoice value (total paid by the customer)'),
       { k: 'orders', label: 'Orders', num: true, groupOnly: true, fmt: M.num, agg: 'sum' },
       { k: 'remark', label: 'Remark', csvLabel: 'Remark', groupHide: true, sort: function (r) { return r.remark ? 0 : 1; }, render: function (r) {
         return r.remark ? M.h('span', { class: 'mk-row' }, [M.h('span', { class: 'mk-text', text: 'Note' }), M.infoMark(r.remark, 'Remark for the Accountant')]) : M.h('span', { class: 'muted', text: '' }); } }]);      /* on screen a small note mark opens the text (no width); the CSV holds the full words */      /* 8 Nov 2026 (owner: add a remark in the table and the CSV that #MZ1031 and #MZ1038 are one sale): the Accountant's note on a line, empty for most */
@@ -11644,13 +11696,15 @@ M.glueMarks = function () {
     /* 8 Nov 2026 (owner: "the horizontal scroll is too much"): 22 columns were 2,036 px wide, so a laptop scrolled 956 px sideways. The screen now opens on the columns a person reads first and the rest are one tick away
        in the Columns menu: the three tax-type columns that are empty for most orders (Goods CGST, Goods SGST, Goods IGST, Shipping CGST, SGST, IGST: an order has CGST + SGST or IGST, never both, and 15 of 35 orders have
        no CGST at all) and the two columns that repeat what the band says (HSN code source is already in the file). THE FILE ALWAYS HOLDS EVERY COLUMN: this changes only what is open on screen. */
-    var QUIET = ['hsn', 'g_cgst', 'g_sgst', 'g_igst', 'sh_cgst', 'sh_sgst', 'sh_igst', 'sh_tax'];
+    /* T1180 (20 Nov 2026): the goods and shipping columns are one tick away; the screen reads the whole order (taxable value, CGST, SGST, IGST, GST, invoice value) and an order with shipping opens two nested lines */
+    var QUIET = ['hsn', 'g_tax', 'g_cgst', 'g_sgst', 'g_igst', 'g_gst', 'sh_charged', 'sh_tax', 'sh_cgst', 'sh_sgst', 'sh_igst', 'sh_gst'];
     cols.forEach(function (c) { if (QUIET.indexOf(c.k) >= 0 && !c.keepOpen) c.hidden = true; });
     var kinds = kindsOf();
     /* a phone shows the four columns that matter at a glance (order, date, total GST, invoice value); the Columns menu brings the rest back and the CSV always holds every column */
     if (window.innerWidth <= 640) cols.forEach(function (c) { if (['order', 'date', 'gst', 'paid', 'orders'].indexOf(c.k) < 0) c.hidden = true; });
     var table = M.table(cols, { rows: list, sortKey: 'date', sortDir: 1, empty: 'None.', detail: false, name: 'sales-register', keepEmpty: true, totals: totalsFn(MONEY), limit: 50, fiscal: true });
     withBands(table, bandMap(cols));
+    withNested(table, cols);
     var kids = [table];
     if (list.some(function (r) { return r.hsn_source === SKU_SRC; })) kids.push(M.h('p', { class: 'small muted', text: '* The product was rebuilt after this sale, so the HSN code is taken from the same product as it is today.' }));
     /* the checks, in whole paise: every line, then the register total against the monthly figures above */
@@ -11664,7 +11718,7 @@ M.glueMarks = function () {
     else if (off.length) kids.push(M.note('This register differs from the monthly figures above: ' + off.join('; ') + '. Some order lines are missing from this copy of the dashboard.', true));
     else if (list.length && !list.some(function (r) { return r.folded; })) kids.push(M.h('p', { class: 'small muted tax-check', text: 'Every line adds up to the paisa (goods taxable value + goods GST + shipping taxable value + shipping GST = invoice value), and the register total equals the monthly figures above.' }));
     if (list.some(function (r) { return r.folded; })) kids.push(M.note('Orders older than 13 months are added up by month in this offline copy. The hosted dashboard keeps every order.', false));
-    var card = M.card('Sales register for the Accountant', 'One line for every order of the period you chose, with goods and shipping side by side: the goods (taxable value, CGST, SGST, IGST), the shipping (charged, taxable value, CGST, SGST, IGST) and the total of the line. The tax comes from the tax Shopify stored on the order; every amount is in rupees with paise. A refund is a line of its own with minus amounts, on the day it was made. Orders that were cancelled and never paid, and test orders, are left out. The icon at the top saves the table as an Excel file (CSV): it holds the rows shown, with a total row. ' + K().CHECK, kids, 'tax-register');
+    var card = M.card('Sales register for the Accountant', 'One line for every order of the period you chose: taxable value, CGST, SGST, IGST, total GST and invoice value. An order that paid for shipping has two small lines under it, Products and Shipping, each with its own CGST, SGST and IGST (the columns for goods and shipping are in the Columns menu). The file for Excel keeps one line per order with goods and shipping side by side. The tax comes from the tax Shopify stored on the order; every amount is in rupees with paise. A refund is a line of its own with minus amounts, on the day it was made. Orders that were cancelled and never paid, and test orders, are left out. The icon at the top saves the table as an Excel file (CSV): it holds the rows shown, with a total row. ' + K().CHECK, kids, 'tax-register');
     /* 8 Nov 2026 (owner: 'when I download the CSV the HSN says shopify source code'): the file named the system the code came from, which means nothing to an Accountant. It now says, in plain words, whether the code was on the product when it was sold or had to be taken from the same product as it is today. */
     var extra = [{ label: 'HSN code note', get: function (r) { return r.hsn_source === SKU_SRC ? 'Code taken from the same product as it is today (the product was rebuilt after this sale)' : r.hsn_source === 'variant' ? 'Code was on the product when it was sold' : r.hsn_source === 'missing' ? 'No code found' : r.hsn_source || ''; } }];
     var file = 'mazo-sales-register-' + tagOf(p) + '.csv';
@@ -11673,7 +11727,7 @@ M.glueMarks = function () {
   };
 
   var stateCard = function (summary, p) {
-    var by = {}, order = [], keys = MONEY.filter(function (k) { return k !== 'items'; });
+    var by = {}, order = [], keys = MONEY.filter(function (k) { return k !== 'items' && SCREEN.indexOf(k) < 0; });
     var from = { g_tax: 'goods_taxable', g_cgst: 'goods_cgst', g_sgst: 'goods_sgst', g_igst: 'goods_igst', g_gst: 'goods_gst', sh_charged: 'shipping_taxable', sh_tax: 'ship_taxable', sh_cgst: 'ship_cgst', sh_sgst: 'ship_sgst', sh_igst: 'ship_igst',
       sh_gst: 'ship_gst', taxable: 'taxable_value', gst: 'total_gst', paid: 'total_paid' };
     summary.forEach(function (x) {
@@ -13867,7 +13921,7 @@ M.annot = (function () {
 (function () {
   var pc = function (x) { return Math.round((+x || 0) * 100); };
   var rs = function (p) { return Math.round(p) / 100; };
-  var COLS = ['orders', 'gross_sales', 'discounts', 'net_sales', 'gst_included', 'shipping_charged', 'refunds', 'product_cost', 'est_payment_fee', 'est_parcel_cost', 'est_packaging', 'est_shopify_fee', 'gst_on_shipping', 'hand_parcel_cost', 'hand_gst_credit'];
+  var COLS = ['orders', 'gross_sales', 'discounts', 'net_sales', 'gst_included', 'shipping_charged', 'refunds', 'product_cost', 'est_payment_fee', 'est_parcel_cost', 'est_packaging', 'est_shopify_fee', 'gst_on_shipping', 'hand_parcel_cost', 'hand_gst_credit', 'subscription_fee'];      /* T1168 (20 Nov 2026): the Shiprocket subscription, a cost of its own */
   var zero = function () { var o = {}; COLS.forEach(function (c) { o[c] = 0; }); return o; };
   var inputs = function () { var hi = {}; M.rows('human_inputs').forEach(function (x) { if (x.key && x.value !== '' && x.value != null && !isNaN(+x.value)) hi[x.key] = +x.value; }); return hi; };
 
@@ -13891,7 +13945,46 @@ M.annot = (function () {
     return out;
   };
   var whatsApp = function (from, to) { return waPieces(from, to).reduce(function (a, x) { return a + x.p; }, 0); };
+  /* T1168 (20 Nov 2026): the Shiprocket subscription, cut over the days of its plan like the tracking fee is cut over its month. An invoice whose kind starts with "Subscription" and names its period "(19 Nov to 19 Dec 2026)"
+     covers the first day up to the day BEFORE the end day (19 Nov to 18 Dec, 30 days). Its total in paise is cut by a running floor: day k of D gets floor(T*(k+1)/D) - floor(T*k/D), so any set of days takes an exact
+     share and the plan is exactly the invoice. Same rule as kpi_collectors.subscription_fee_by_day, checked against it by scheck_shipcost. Returns [{inv, date, p (paise), days, of}] for the days inside from..to. */
+  var MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+  var subPieces = function (from, to) {
+    var out = [];
+    if (!M.has('shipping_invoices')) return out;
+    M.rows('shipping_invoices').forEach(function (x) {
+      if (!x.invoice || !/^subscription/i.test(String(x.kind || '').trim()) || typeof x.date !== 'string') return;
+      var a = x.date, b = M.add(x.date, 30), m = String(x.kind).match(/\((\d{1,2}) ([A-Za-z]{3}) to (\d{1,2}) ([A-Za-z]{3}) (\d{4})\)/);
+      if (m && MON[m[2].toLowerCase()] && MON[m[4].toLowerCase()]) {
+        var m1 = MON[m[2].toLowerCase()], m2 = MON[m[4].toLowerCase()], y = +m[5], two = function (n) { return String(n).padStart(2, '0'); };
+        b = y + '-' + two(m2) + '-' + two(+m[3]); a = (m1 <= m2 ? y : y - 1) + '-' + two(m1) + '-' + two(+m[1]);
+      }
+      var D = M.diff(a, b); if (D <= 0) return;
+      var last = M.add(b, -1), lo = a > from ? a : from, hi = last < to ? last : to;
+      if (hi < lo) return;
+      var T = pc(x.total), k0 = M.diff(a, lo), k1 = M.diff(a, hi) + 1;
+      out.push({ inv: x.invoice, date: x.date, p: Math.floor(T * k1 / D) - Math.floor(T * k0 / D), days: M.diff(lo, hi) + 1, of: D });
+    });
+    return out;
+  };
+  M.subPieces = subPieces;
   M.waPieces = waPieces; M.waFee = whatsApp;      /* T1135: the ONE place the tracking fee of any set of days is worked out (paise); the registry M.fig (dashboard_79_figures.js) and every shipping card read it */
+
+  /* T1180 (20 Nov 2026, owner: "cgst and sgst split should be there, for product and shipping also, everywhere applicable"): the GST in the orders, divided into CGST, SGST and IGST for the PRODUCTS
+     and for the SHIPPING. It comes from the order tax lines (Sheet tab tax_orders: cgst, sgst, igst are the order's whole tax, ship_cgst, ship_sgst, ship_igst the part inside the shipping, so the products
+     are the difference). Only the sale rows of the chosen dates are read, the same orders money_daily counts (proved day by day on 20 Nov: the two agree to the paisa on all 185 days). The split is kept
+     ONLY when its six parts add up to the card's own GST in whole paise; otherwise it is left out, never shown wrong. Returns null when it does not add up. */
+  var gstSplitOf = function (from, to, gstP) {
+    if (!M.has('tax_orders')) return null;
+    var o = { gC: 0, gS: 0, gI: 0, sC: 0, sS: 0, sI: 0 };
+    M.rowsIn('tax_orders', from, to).forEach(function (x) {
+      if (x.kind !== 'sale') return;
+      var sc = pc(x.ship_cgst), ss = pc(x.ship_sgst), si = pc(x.ship_igst);
+      o.gC += pc(x.cgst) - sc; o.gS += pc(x.sgst) - ss; o.gI += pc(x.igst) - si; o.sC += sc; o.sS += ss; o.sI += si;
+    });
+    var sum = o.gC + o.gS + o.gI + o.sC + o.sS + o.sI;
+    return sum === gstP && sum > 0 ? o : null;
+  };
 
   /* ---------------------------------------------------------------- the numbers of one set of dates (everything in paise inside; rupees out) */
   M.moneyCalc = function (r) {
@@ -13907,28 +14000,31 @@ M.annot = (function () {
       var gross = s.gross_sales, net = s.net_sales, disc = gross - net;      /* discounts = gross - net, so the rows always add up even if a day was rounded a paisa apart */
       var left = net + s.shipping_charged - s.gst_included - s.refunds;      /* T1116c (14 Nov 2026, owner: the buyer paid Rs 120 for Express and the shop paid Porter Rs 160, 'so 40 extra paid out of hand'): the shipping a buyer pays at checkout is income, counted ONCE here and in money_daily.contribution_profit; the GST on it is already inside gst_included, so it is taken off in the same line */
       var bill = pc(bm.total), raz = s.est_payment_fee;
-      var mk = s.product_cost, pk = s.est_packaging, pa = s.est_parcel_cost + wa, ot = om;
+      var mk = s.product_cost, pk = s.est_packaging, pa = s.est_parcel_cost + wa, ot = om, sb = s.subscription_fee || 0;      /* T1168: Shiprocket's subscription (Business plan), whole paise, GST inside */
       /* 9 Nov 2026 (T1016, owner: "these charges should be applied for profit calculation too, in the Overview"): the Razorpay fee and the courier charge both have 18 percent GST INSIDE them (a fee or a
          freight of Rs. 118 is Rs. 100 plus Rs. 18). That GST is input credit the shop takes off the GST it owes, so it is not a lasting cost. The Shopify bill is paid under reverse charge and claimed in the
          same month, so it adds nothing. The credit = the GST inside the Razorpay fee and the parcel cost = 18/118 of each, in whole paise, and it is an ESTIMATE until the invoices show in GSTR-2B. */
       var hd = s.hand_parcel_cost || 0;      /* T1116 (13 Nov 2026): the part of the parcel cost that Madhu paid BY HAND outside Shiprocket (a first parcel booked herself, exchange parcels net of what buyers paid back). No GST invoice in the shop's name is on file for it, so no credit is taken on it (a positive part only) */
       var hg = s.hand_gst_credit || 0;      /* T1116b (14 Nov 2026, owner: 'yes all charges have gst, even exchanges and stuff will have'): the GST credit on the parcels paid by hand is worked out when the day is stored (scripts/kpi_collectors.py hand_gst_credit): 18 percent inside a DTDC or Delhivery charge, nothing for Porter (5 percent paid under reverse charge and claimed back, so it cancels). Exchange parcels count only what the shop bears. An estimate until each carrier's tax invoice in the shop's name is on file. */
-      var cR = Math.round(raz * 18 / 118), cP = Math.round((pa - Math.max(0, hd)) * 18 / 118), cH = hg, credit = cR + cP + cH;      /* pa already holds the WhatsApp tracking fee, which also carries 18 percent GST */
-      var conf = left - bill - raz - pa;      /* 7 Nov 2026: the parcel cost is Shiprocket's own billed charge for the parcels it knows, so it sits with the confirmed costs */
+      var cR = Math.round(raz * 18 / 118), cP = Math.round((pa - Math.max(0, hd)) * 18 / 118), cH = hg, cS = Math.round(sb * 18 / 118), credit = cR + cP + cH + cS;      /* T1168: the subscription has 18 percent GST inside (IGST on Shiprocket's invoice), claimable like the rest */      /* pa already holds the WhatsApp tracking fee, which also carries 18 percent GST */
+      var conf = left - bill - raz - pa - sb;      /* T1168: the subscription is a paid tax invoice, so it sits with the confirmed costs */      /* 7 Nov 2026: the parcel cost is Shiprocket's own billed charge for the parcels it knows, so it sits with the confirmed costs */
       return { gross: gross, disc: disc, gst: s.gst_included, refunds: s.refunds, left: left, bill: bill, billReal: pc(bm.real), billEst: pc(bm.est), razor: raz, confirmed: conf, making: mk, pack: pk, parcel: pa, other: ot,
-        credit: credit, creditRazor: cR, creditParcel: cP, creditHand: cH, whatsapp: wa, hand: hd,
+        credit: credit, creditRazor: cR, creditParcel: cP, creditHand: cH, creditSub: cS, subscription: sb, whatsapp: wa, hand: hd,
         pending: mk + pk + ot, profit: conf - mk - pk - ot + credit, charges: s.est_shopify_fee, orders: s.orders, net: net, ship: s.shipping_charged, gstShip: s.gst_on_shipping };
     };
     var otherOf = function (d) { return Math.round(pc(other) * d / B.cycle); };
     var waMonths = B.months.map(function (bm) { return whatsApp(bm.from, bm.to); }), waAll = waMonths.reduce(function (a, b) { return a + b; }, 0);      /* the range takes the sum of its months, so they add up to it */
+    var subAll = subPieces(from, to).reduce(function (a, x) { return a + x.p; }, 0);      /* T1168: the subscription of the range in paise, the same sum for the range and for each of its months */
+    tot.subscription_fee = subAll;
     var all = line(tot, { total: B.total, real: B.real, est: B.est }, otherOf(days), waAll);
-    var months = B.months.map(function (bm, i) { var s = mo[bm.ym] || zero(), l = line(s, bm, otherOf(M.diff(bm.from, bm.to) + 1), waMonths[i]); l.ym = bm.ym; l.from = bm.from; l.to = bm.to; l.days = M.diff(bm.from, bm.to) + 1; l.basis = bm.basis; l.estDays = bm.estDays; l.gap = bm.gap; return l; });
+    all.gstSplit = gstSplitOf(from, to, all.gst);      /* T1180 */
+    var months = B.months.map(function (bm, i) { var s = mo[bm.ym] || zero(); s.subscription_fee = subPieces(bm.from, bm.to).reduce(function (a, x) { return a + x.p; }, 0); var l = line(s, bm, otherOf(M.diff(bm.from, bm.to) + 1), waMonths[i]); l.ym = bm.ym; l.from = bm.from; l.to = bm.to; l.days = M.diff(bm.from, bm.to) + 1; l.basis = bm.basis; l.estDays = bm.estDays; l.gap = bm.gap; return l; });
     /* the months add up to the range, to the paisa (a month's share of "other" is rounded, so the last month takes the remainder) */
     var cs = months.reduce(function (t, m) { return t + m.credit; }, 0);
     if (months.length && cs !== all.credit) { var lm = months[months.length - 1], dc = all.credit - cs; lm.credit += dc; lm.profit += dc; }      /* the credit is rounded per month: the last month takes the paisa that is left */
     var o2 = months.reduce(function (t, m) { return t + m.other; }, 0);
     if (months.length && o2 !== all.other) { var last = months[months.length - 1]; last.other += all.other - o2; last.pending += all.other - o2; last.profit -= all.other - o2; }
-    return { r: r, days: days, B: B, t: all, months: months, byDay: byDay, waPieces: B.months.reduce(function (a, bm) { return a.concat(waPieces(bm.from, bm.to)); }, []), hasSales: tot.orders > 0 || tot.gross_sales > 0, otherMonthly: other, razorPct: hi.payment_fee_pct, packFee: hi.packaging_cost, parcelFee: hi.parcel_cost,
+    return { r: r, days: days, B: B, t: all, months: months, byDay: byDay, waPieces: B.months.reduce(function (a, bm) { return a.concat(waPieces(bm.from, bm.to)); }, []), subPieces: subPieces(from, to), hasSales: tot.orders > 0 || tot.gross_sales > 0, otherMonthly: other, razorPct: hi.payment_fee_pct, packFee: hi.packaging_cost, parcelFee: hi.parcel_cost,
       covered: M.daysCovered('money_daily', from, to) };
   };
 
@@ -13959,6 +14055,10 @@ M.annot = (function () {
     add({ step: 'Discounts', amount: -R(t.disc), group: 'Sales', how: 'Money taken off by discount codes and sale prices.' });
     if (t.ship) add({ step: 'Shipping charged to buyers', amount: R(t.ship), group: 'Sales', plus: true, how: 'What buyers paid for delivery at checkout (Express Rs. 120). It is money the shop received, so it is added; the GST inside it is taken off in the next line.' });
     add({ step: 'GST in the orders', amount: -R(t.gst), group: 'Sales', how: 'The GST already inside what customers paid, on the pieces and on the shipping. It belongs to the government, so it is taken off.' });
+    if (t.gstSplit) [['of which CGST on the products', t.gstSplit.gC], ['of which SGST on the products', t.gstSplit.gS], ['of which IGST on the products', t.gstSplit.gI],
+      ['of which CGST on the shipping', t.gstSplit.sC], ['of which SGST on the shipping', t.gstSplit.sS], ['of which IGST on the shipping', t.gstSplit.sI]].forEach(function (g) {
+      if (g[1]) add({ step: g[0], amount: R(g[1]), group: 'Sales', part: true, how: 'Part of the GST in the orders above. Not taken off again. CGST and SGST are the two halves of the tax on an order delivered inside Karnataka, IGST is the whole tax on an order delivered to another state.' });
+    });
     if (t.refunds) add({ step: 'Refunds', amount: -R(t.refunds), group: 'Sales', how: 'Money given back to customers.' });
     add({ step: 'Money left before costs', amount: R(t.left), group: 'Sales', how: 'Gross sales minus discounts, plus the shipping buyers paid, minus GST and refunds.', isTotal: true });
     add({ step: 'Shopify bill', amount: B.known ? -R(t.bill) : null, group: 'Confirmed', how: B.known ? 'The plan plus Shopify\'s 2.0 percent charge on Razorpay orders. Real bills where Shopify has billed, an estimate for the days not billed yet. Now: ' + billWord + '.' : 'Not known yet: no bill is on record.', real: !B.est, est: !!B.est });
@@ -13971,11 +14071,12 @@ M.annot = (function () {
     add({ step: 'Razorpay charges', amount: -R(t.razor), group: 'Confirmed', how: 'For every day Razorpay has paid for, its own charge with the GST inside it. For a day it has not, ' + (C.razorPct > 0 ? M.num(C.razorPct, C.razorPct % 1 ? 1 : 0) + ' percent' : 'a set percent') + ' of what went through Razorpay (an order marked paid by hand pays Razorpay nothing).' });
     add({ step: 'Shipping and parcel', amount: -R(t.parcel), group: 'Confirmed', how: parcelText(C) });
     if (t.whatsapp) add({ step: 'of which Shiprocket\'s WhatsApp tracking fee', amount: R(t.whatsapp), group: 'Confirmed', part: true, how: 'Rs. 5 plus GST for each tracking message, billed on Shiprocket\'s own invoice on the 3rd of the next month for the month before. Part of the line above. Not taken off again.' });
-    add({ step: 'Left after confirmed costs', amount: R(t.confirmed), group: 'Confirmed', how: 'Money left before costs, minus the Shopify bill, the Razorpay charges and the parcel cost. This is not the profit: the making cost is not taken off yet.', isTotal: true });
+    if (t.subscription) add({ step: 'Shiprocket subscription', amount: -R(t.subscription), group: 'Confirmed', how: 'Madhu\'s Shiprocket Business plan, Rs. 199 a month with 18 percent GST inside (invoice SRSI27HR00114840, 19 Nov to 19 Dec 2026). The invoice is shared evenly over the days of the plan, so a range takes only the days inside it. It is a cost of its own, not part of the parcel cost.' });
+    add({ step: 'Left after confirmed costs', amount: R(t.confirmed), group: 'Confirmed', how: 'Money left before costs, minus the Shopify bill, the Razorpay charges, the parcel cost and the Shiprocket subscription. This is not the profit: the making cost is not taken off yet.', isTotal: true });
     add({ step: 'Manufacturing and material', amount: -R(t.making), group: 'Not confirmed yet', pending: true, how: 'The cost price typed in Shopify for each piece sold (cloth, tailoring and labour together). Madhu has not confirmed the real figures.' });
     add({ step: 'Packaging', amount: -R(t.pack), group: 'Not confirmed yet', pending: true, how: packText(C) });
     add({ step: 'Other costs', amount: t.other ? -R(t.other) : 0, none: !t.other, group: 'Not confirmed yet', pending: true, how: t.other ? 'Another monthly cost typed in the data sheet, shared by days.' : 'None recorded. Anything else Madhu pays is not in these figures.' });
-    add({ step: 'GST credit on these costs', amount: R(t.credit), group: 'Not confirmed yet', pending: true, plus: true, how: 'Razorpay\'s fee, Shiprocket\'s charge and the parcels paid by hand each have GST inside (18 percent for DTDC and Delhivery). The shop pays it, then takes the same amount off the GST it owes, so it comes back. An estimate: it counts once the invoice shows in the GST portal. The Shopify bill adds nothing: its GST is paid and claimed in the same month.' });
+    add({ step: 'GST credit on these costs', amount: R(t.credit), group: 'Not confirmed yet', pending: true, plus: true, how: 'Razorpay\'s fee, Shiprocket\'s charge, its subscription and the parcels paid by hand each have GST inside (18 percent for DTDC and Delhivery). The shop pays it, then takes the same amount off the GST it owes, so it comes back. An estimate: it counts once the invoice shows in the GST portal. The Shopify bill adds nothing: its GST is paid and claimed in the same month.' });
     add({ step: 'Profit after everything', amount: R(t.profit), group: 'Not confirmed yet', pending: true, how: 'Left after confirmed costs, minus the costs not confirmed yet, plus the GST credit. Some of these are not confirmed, so read it as a good guide.', isTotal: true });
     return rows;
   };
@@ -13984,19 +14085,22 @@ M.annot = (function () {
     it.push({ label: 'Gross sales', value: R(t.gross), kind: 'start', tone: 'sales', tip: [{ k: 'What it is', v: 'List price of every piece sold' }] });
     it.push({ label: 'Discounts', value: R(t.disc), kind: 'minus', tone: 'sales' });
     if (t.ship) it.push({ label: 'Shipping charged to buyers', value: R(t.ship), kind: 'plus', plusWord: 'added ', tone: 'sales', tip: [{ k: 'What it is', v: 'What buyers paid for delivery at checkout. The GST inside it comes off in the next step.' }] });
-    it.push({ label: 'GST in the orders', value: R(t.gst), kind: 'minus', tone: 'sales', tip: [{ k: 'What it is', v: 'GST already inside the price, on the pieces and on the shipping. It goes to the government.' }] });
+    var gsp = t.gstSplit, gtip = [{ k: 'What it is', v: 'GST already inside the price, on the pieces and on the shipping. It goes to the government.' }];
+    if (gsp) { gtip.push({ k: 'On the products', v: 'CGST ' + M.inr(R(gsp.gC)) + ', SGST ' + M.inr(R(gsp.gS)) + ', IGST ' + M.inr(R(gsp.gI)) }); gtip.push({ k: 'On the shipping', v: 'CGST ' + M.inr(R(gsp.sC)) + ', SGST ' + M.inr(R(gsp.sS)) + ', IGST ' + M.inr(R(gsp.sI)) }); }
+    it.push({ label: 'GST in the orders', value: R(t.gst), kind: 'minus', tone: 'sales', tip: gtip });
     if (t.refunds) it.push({ label: 'Refunds', value: R(t.refunds), kind: 'minus', tone: 'sales' });
     /* 7 Nov 2026 night (Tech Guy: 'remove the confirmed label, let the not confirmed label be there; why a separate confirmed label when discounts and GST are also confirmed'): only the NOT CONFIRMED YET heading is drawn. */
     it.push({ label: 'Shopify bill', value: R(t.bill), kind: 'minus', tone: 'confirmed', status: B.known ? 'Confirmed (' + billWord + ')' : 'Confirmed (not known yet)', none: B.known ? null : 'no bill on record',
       tip: B.known && B.planPart != null ? [{ k: 'The plan', v: M.inr(B.planPart) }, { k: 'Shopify\'s charges', v: M.inr(B.chargePart) }] : [] });
     it.push({ label: 'Razorpay charges', value: R(t.razor), kind: 'minus', tone: 'confirmed', status: 'Confirmed' });
     it.push({ label: 'Shipping and parcel', value: R(t.parcel), kind: 'minus', tone: 'confirmed', status: 'Confirmed', tip: (t.whatsapp ? [{ k: 'Courier charges', v: M.inr(R(t.parcel - t.whatsapp)) }, { k: 'WhatsApp tracking fee', v: M.inr(R(t.whatsapp)) }] : []).concat(t.hand ? [{ k: 'Of this, paid by hand outside Shiprocket', v: M.inr(R(t.hand)) }] : []) });
+    if (t.subscription) it.push({ label: 'Shiprocket subscription', value: R(t.subscription), kind: 'minus', tone: 'confirmed', status: 'Confirmed', tip: [{ k: 'What it is', v: 'Madhu\'s Shiprocket Business plan, Rs. 199 a month, GST inside' }] });
     it.push({ label: 'Left after confirmed costs', value: R(t.confirmed), kind: 'total', tone: 'result', tip: [{ k: 'Note', v: 'Not the profit: the making cost is not taken off yet' }] });
     it.push({ head: 'NOT CONFIRMED YET' });
     it.push({ label: 'Manufacturing and material', value: R(t.making), kind: 'minus', tone: 'pending' });
     it.push({ label: 'Packaging', value: R(t.pack), kind: 'minus', tone: 'pending' });
     it.push({ label: 'Other costs', value: R(t.other), kind: 'minus', tone: 'pending', none: t.other ? null : 'none recorded' });
-    it.push({ label: 'GST credit on these costs', value: R(t.credit), kind: 'plus', tone: 'pending', tip: [{ k: 'On the Razorpay fee', v: M.inr(R(t.creditRazor)) }, { k: 'On the courier charges', v: M.inr(R(t.creditParcel)) }, { k: 'On the parcels paid by hand', v: M.inr(R(t.creditHand)) }, { k: 'Why', v: 'GST paid inside these costs is taken off the GST owed' }] });
+    it.push({ label: 'GST credit on these costs', value: R(t.credit), kind: 'plus', tone: 'pending', tip: [{ k: 'On the Razorpay fee', v: M.inr(R(t.creditRazor)) }, { k: 'On the courier charges', v: M.inr(R(t.creditParcel)) }, { k: 'On the parcels paid by hand', v: M.inr(R(t.creditHand)) }, { k: 'On the Shiprocket subscription', v: M.inr(R(t.creditSub)) }, { k: 'Why', v: 'GST paid inside these costs is taken off the GST owed' }] });
     it.push({ label: 'Profit after everything', value: R(t.profit), kind: 'total', tone: 'final' });
     return it;
   };
@@ -14143,7 +14247,7 @@ M.annot = (function () {
   var pc = function (x) { return Math.round((+x || 0) * 100); }, rs = function (p) { return Math.round(p) / 100; };
   var KEY = { 'Gross sales': 'gross', 'Discounts': 'disc', 'Shipping charged to buyers': 'ship', 'GST in the orders': 'gst', 'Refunds': 'refunds', 'Money left before costs': 'left', 'Shopify bill': 'bill', 'of which the Shopify plan': 'plan',
     'of which Shopify\'s charges': 'charges', 'Razorpay charges': 'razor', 'Shipping and parcel': 'parcel', 'of which Shiprocket\'s WhatsApp tracking fee': 'wa', 'Left after confirmed costs': 'confirmed',
-    'Manufacturing and material': 'making', 'Packaging': 'pack', 'Other costs': 'other', 'GST credit on these costs': 'credit', 'Profit after everything': 'profit' };
+    'Manufacturing and material': 'making', 'Packaging': 'pack', 'Shiprocket subscription': 'subscription', 'Other costs': 'other', 'GST credit on these costs': 'credit', 'Profit after everything': 'profit' };
   M.moneyKey = function (label) { return KEY[label] || ''; };
   var rup = function (v) { return M.inr(v); };
   var span = function (r) { return M.billSpan ? M.billSpan(r.from, r.to) : M.fd(r.from) + ' to ' + M.fd(r.to); };
@@ -14274,6 +14378,9 @@ M.annot = (function () {
     if (t.whatsapp) give('wa', mk(C, { title: 'Shiprocket\'s WhatsApp tracking fee', sentence: 'Rs. 5 plus GST for each tracking message, billed on Shiprocket\'s own invoice on the 3rd of the next month and shared over the days of the month it is for.' },
       wp.map(function (x) { return { ref: { kind: 'bill', value: x.inv, copy: x.inv }, date: x.date, amount: rs(x.p), note: x.days === x.of ? 'The invoice for ' + x.month : x.days + ' of the ' + x.of + ' days of ' + x.month + ' are inside the dates' }; })), rs(t.whatsapp));
 
+    if (t.subscription) give('subscription', mk(C, { title: 'Shiprocket subscription', sentence: 'Madhu\'s Shiprocket Business plan: Rs. 199 a month with 18 percent GST inside, shared evenly over the days of the plan (19 Nov to 18 Dec). A range takes only the days inside it.' },
+      (C.subPieces || []).map(function (x) { return { ref: { kind: 'bill', value: x.inv, copy: x.inv }, title: 'Subscription invoice', date: x.date, amount: rs(x.p), note: x.days === x.of ? 'The whole plan' : x.days + ' of the ' + x.of + ' days of the plan are inside the dates' }; })), rs(t.subscription));
+
     /* the costs not confirmed yet */
     give('making', mk(C, { title: 'Manufacturing and material', sentence: 'The cost price typed in Shopify for each piece sold (cloth, tailoring and labour together), day by day. Madhu has not confirmed it yet.' },
       dayLines(C, { pick: function (b) { return b.product_cost; } }, orders)), rs(t.making));
@@ -14281,7 +14388,7 @@ M.annot = (function () {
       dayLines(C, { pick: function (b) { return b.est_packaging; }, note: function (d, b, os) { return os.length + (os.length === 1 ? ' order' : ' orders'); } }, orders)), rs(t.pack));
     if (t.other) give('other', mk(C, { title: 'Other costs', sentence: 'Another monthly cost typed in the data sheet, shared by days. The month lines add up to it.' },
       C.months.map(function (m) { return m.other ? { title: m.ym, date: m.to, amount: rs(m.other), note: m.days + (m.days === 1 ? ' day' : ' days') + ' of this month are inside the dates' } : null; })), rs(t.other));
-    give('credit', mk(C, { title: 'GST credit on these costs', sentence: 'The Razorpay fee and the courier charge each have 18 percent GST inside. The shop pays it and takes it off the GST it owes, so it comes back. Worked out for each month. An estimate until the invoices show in GSTR-2B. The parcels paid by hand count too: 18 percent inside a DTDC or Delhivery charge; the Porter 5 percent is paid under reverse charge and claimed back, so it adds nothing.' },
+    give('credit', mk(C, { title: 'GST credit on these costs', sentence: 'The Razorpay fee, the courier charge and the Shiprocket subscription each have 18 percent GST inside. The shop pays it and takes it off the GST it owes, so it comes back. Worked out for each month. An estimate until the invoices show in GSTR-2B. The parcels paid by hand count too: 18 percent inside a DTDC or Delhivery charge; the Porter 5 percent is paid under reverse charge and claimed back, so it adds nothing.' },
       C.months.map(function (m) { return m.credit ? { title: m.ym, date: m.to, amount: rs(m.credit), note: 'On the Razorpay fee ' + rup(rs(m.creditRazor)) + ', on the courier charges ' + rup(rs(m.creditParcel)) + (m.creditHand ? ', on the parcels paid by hand ' + rup(rs(m.creditHand)) : '') } : null; })), rs(t.credit));
 
     /* the totals: the lines that make them. Each line opens its own list. */
@@ -14291,6 +14398,7 @@ M.annot = (function () {
     var cl = [part('Money left before costs', t.left, 'left', 'Gross sales minus discounts, plus shipping, minus GST and refunds')];
     if (B.known) cl.push(part('Shopify bill', -(t.bill), 'bill'));
     cl.push(part('Razorpay charges', -(t.razor), 'razor'), part('Shipping and parcel', -(t.parcel), 'parcel'));
+    if (t.subscription) cl.push(part('Shiprocket subscription', -(t.subscription), 'subscription'));
     give('confirmed', mk(C, { title: 'Left after confirmed costs', signed: true, keepOrder: true, sentence: 'Money left before costs, minus the Shopify bill, the Razorpay charges and the parcel cost. This is not the profit: the making cost is not taken off yet. Each line opens what is behind it.' }, cl), rs(t.confirmed));
     give('profit', mk(C, { title: 'Profit after everything', signed: true, keepOrder: true, sentence: 'Left after confirmed costs, minus the costs not confirmed yet, plus the GST credit. Some of these costs are placeholders, so this is an estimate. Each line opens what is behind it.' },
       [part('Left after confirmed costs', t.confirmed, 'confirmed'), part('Manufacturing and material', -(t.making), 'making', 'Not confirmed yet'), part('Packaging', -(t.pack), 'pack', 'Not confirmed yet'),
@@ -14920,10 +15028,14 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var gShip = tot(ship, 'gst'), gRzp = tot(rzp, 'gst'), gRcm = tot(shp.filter(function (x) { return x.how === 'reverse'; }), 'gst'), gOn = tot(shp.filter(function (x) { return x.how === 'claim'; }), 'gst');
     var gHand = tot(hnd.filter(function (x) { return x.how === 'claim'; }), 'gst'), gHandRcm = tot(hnd.filter(function (x) { return x.how === 'reverse'; }), 'gst');
     var credit = gShip + gRzp + gRcm + gOn + gHand + gHandRcm;
-    kp.appendChild(M.kpi({ label: 'GST paid to Shiprocket', value: rs2(gShip), hero: true, note: ship.length ? 'on ' + rs2(tot(ship, 'taxable')) + ' of bills, ' + M.num(ship.length) + ' invoice' + (ship.length === 1 ? '' : 's') : 'no Shiprocket invoice dated in this period' }));
-    kp.appendChild(M.kpi({ label: 'GST paid on Razorpay fees', value: rs2(gRzp), note: rzp.length ? 'inside ' + rs2(tot(rzp, 'total')) + ' of fees Razorpay took' : 'no Razorpay fee in this period' }));
-    kp.appendChild(M.kpi({ label: 'GST on Shopify bills (reverse charge)', value: rs2(gRcm), note: shp.length ? 'pay it first, claim the same amount back' : 'no Shopify bill paid in this period' }));
-    kp.appendChild(M.kpi({ label: 'GST on parcels paid by hand', value: rs2(gHand + gHandRcm), note: hnd.length ? M.num(hnd.length) + ' parcel' + (hnd.length === 1 ? '' : 's') + ' Madhu paid outside Shiprocket' + (gHandRcm ? ' (Porter is paid under reverse charge)' : '') : 'no parcel paid by hand in this period' }));
+    /* T1180 (20 Nov 2026, owner: "cgst and sgst split should be there ... everywhere applicable"): every tile says how its GST divides. A line already carries cgst, sgst and igst (Shiprocket bills IGST from Haryana,
+       Razorpay bills from Karnataka so it is two equal halves, Shopify and Porter are IGST under reverse charge); parcels paid by hand carry only the total, so those are told as "not split on the paper" */
+    var halves = function (rows) { var c = tot(rows, 'cgst'), s = tot(rows, 'sgst'), i = tot(rows, 'igst'); return 'CGST ' + rs2(c) + ', SGST ' + rs2(s) + ', IGST ' + rs2(i) + '.'; };
+    var handSplit = function (rows) { var g = tot(rows, 'gst'); return g ? 'The split into CGST, SGST and IGST is on the carrier\'s invoice and is not typed in yet.' : ''; };
+    kp.appendChild(M.kpi({ label: 'GST paid to Shiprocket', value: rs2(gShip), hero: true, note: ship.length ? 'on ' + rs2(tot(ship, 'taxable')) + ' of bills, ' + M.num(ship.length) + ' invoice' + (ship.length === 1 ? '' : 's') + '. ' + halves(ship) : 'no Shiprocket invoice dated in this period' }));
+    kp.appendChild(M.kpi({ label: 'GST paid on Razorpay fees', value: rs2(gRzp), note: rzp.length ? 'inside ' + rs2(tot(rzp, 'total')) + ' of fees Razorpay took. ' + halves(rzp) : 'no Razorpay fee in this period' }));
+    kp.appendChild(M.kpi({ label: 'GST on Shopify bills (reverse charge)', value: rs2(gRcm), note: shp.length ? 'pay it first, claim the same amount back. ' + halves(shp.filter(function (x) { return x.how === 'reverse'; })) : 'no Shopify bill paid in this period' }));
+    kp.appendChild(M.kpi({ label: 'GST on parcels paid by hand', value: rs2(gHand + gHandRcm), note: hnd.length ? M.num(hnd.length) + ' parcel' + (hnd.length === 1 ? '' : 's') + ' Madhu paid outside Shiprocket' + (gHandRcm ? ' (Porter is paid under reverse charge)' : '') + '. ' + handSplit(hnd) : 'no parcel paid by hand in this period' }));
     kp.appendChild(M.kpi({ label: 'Credit to claim', value: rs2(credit), note: 'when each invoice shows in GSTR-2B' }));
     var gstSales = salesGst(p), net = gstSales - (gShip + gRzp + gOn + gHand);      /* the reverse charge is paid and claimed in the same month: it cancels */
     kids.push(M.h('p', { class: 'small', text: 'Tax on sales ' + rs2(gstSales) + ' minus credit on Shiprocket, Razorpay and the parcels paid by hand ' + rs2(gShip + gRzp + gOn + gHand) + ' = ' + (net < 0 ? 'credit left over ' + rs2(-net) : 'tax to pay ' + rs2(net)) + '. The Shopify amount, and the Porter 5 percent, are paid and claimed in the same month, so they add nothing. This is an estimate: credit counts only for invoices that show in GSTR-2B, and the Accountant files the real figure.' }));
@@ -15366,7 +15478,9 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     var why = 'Razorpay\'s fee carries 18 percent GST (Razorpay bills from Karnataka, so it is CGST and SGST in two halves, with mazo\'s GSTIN on the invoice). This is the GST the shop pays on the fee, not GST collected from buyers. The shop takes it off the GST it owes, so the Overview adds it back when it works out profit, and the Taxes page lists it under input credit. The proof is the monthly tax invoice Razorpay emails at the end of the month (Razorpay, Reports, Monthly Invoice Report lists every payment against it). It is shown by the month of the payment and by the month Razorpay took the fee from a payout.';
     if (!c.C.length && !M.has(R.T.mon)) return R.card(title, why, [R.nodata(c, 'No payment went through in these dates, so no fee was charged.')]);
     var fee = R.sum(c.C, 'fee'), tax = R.sum(c.C, 'gst_on_fee'), amt = R.sum(c.C, 'amount');
-    var kids = [M.h('div', { class: 'kpis rz' }, [M.kpi({ label: 'GST paid on Razorpay fees', value: R.inr(tax), note: 'Inside ' + R.inr(fee) + ' of fees on payments made in these dates.' }),
+    /* T1180 (20 Nov 2026, owner: "cgst and sgst split should be there ... everywhere applicable"): Razorpay bills from Karnataka to a Karnataka GSTIN, so its tax is two equal halves (the same rule as the Taxes page input credit card, dashboard_67_tax_shipping.js) */
+    var hc = Math.round(R.num(tax) * 100 / 2) / 100, hs = Math.round((R.num(tax) - hc) * 100) / 100;
+    var kids = [M.h('div', { class: 'kpis rz' }, [M.kpi({ label: 'GST paid on Razorpay fees', value: R.inr(tax), note: 'Inside ' + R.inr(fee) + ' of fees on payments made in these dates. CGST ' + R.inr(hc) + ', SGST ' + R.inr(hs) + '.' }),
       M.kpi({ label: 'Fees before GST', value: R.inr(fee - tax), note: R.pct(fee - tax, amt, 2) + ' of the money paid.' }),
       M.kpi({ label: 'Fees with GST', value: R.inr(fee), note: R.pct(fee, amt, 2) + ' of the money paid.' })])];
     var m0 = r.from.slice(0, 7), m1 = r.to.slice(0, 7), mon = M.has(R.T.mon) ? M.rows(R.T.mon).filter(function (x) { return x.month >= m0 && x.month <= m1; }).sort(function (a, b) { return a.month < b.month ? -1 : 1; }) : [];
@@ -16505,10 +16619,10 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       var fr = inv.filter(function (x) { return !isSvc(x); }), sv = inv.filter(isSvc);
       var gstInv = sum(inv, 'igst') + sum(inv, 'cgst') + sum(inv, 'sgst');
       var kids = [M.h('div', { class: 'kpis lead' }, [
-        M.kpi({ label: 'GST on the tax invoices of these dates', value: inr2(gstInv), hero: true, note: inv.length ? M.num(inv.length) + ' invoice' + (inv.length === 1 ? '' : 's') + ': ' + inr2(sum(inv, 'total')) + ' with GST. Credit the Accountant can claim.' : 'No tax invoice is dated in these dates.' }),
-        M.kpi({ label: 'Freight and extra charges billed', value: inr2(sum(fr, 'total')), note: M.num(fr.length) + ' invoice' + (fr.length === 1 ? '' : 's') + ', GST ' + inr2(sum(fr, 'igst')) }),
-        M.kpi({ label: 'WhatsApp tracking fees billed', value: inr2(sum(sv, 'total')), note: M.num(sv.length) + ' invoice' + (sv.length === 1 ? '' : 's') + ', GST ' + inr2(sum(sv, 'igst')) + '. Rs. 5 + GST a message, billed on the 3rd for the month before.' }),
-        M.kpi({ label: 'GST inside the parcel charges', value: inr2(inside), note: 'Of ' + inr2(paid) + ' paid to Shiprocket in these dates (' + inr2(paid - inside) + ' before tax), worked out as 18/118. Parcels booked by hand carry their own GST: see the Overview and the Taxes page.' })])];
+        M.kpi({ label: 'GST on the tax invoices of these dates', value: inr2(gstInv), hero: true, note: inv.length ? M.num(inv.length) + ' invoice' + (inv.length === 1 ? '' : 's') + ': ' + inr2(sum(inv, 'total')) + ' with GST. CGST ' + inr2(sum(inv, 'cgst')) + ', SGST ' + inr2(sum(inv, 'sgst')) + ', IGST ' + inr2(sum(inv, 'igst')) + '. Credit the Accountant can claim.' : 'No tax invoice is dated in these dates.' }),
+        M.kpi({ label: 'Freight and extra charges billed', value: inr2(sum(fr, 'total')), note: M.num(fr.length) + ' invoice' + (fr.length === 1 ? '' : 's') + ', GST ' + inr2(sum(fr, 'cgst') + sum(fr, 'sgst') + sum(fr, 'igst')) + ' (CGST ' + inr2(sum(fr, 'cgst')) + ', SGST ' + inr2(sum(fr, 'sgst')) + ', IGST ' + inr2(sum(fr, 'igst')) + ')' }),
+        M.kpi({ label: 'WhatsApp tracking fees billed', value: inr2(sum(sv, 'total')), note: M.num(sv.length) + ' invoice' + (sv.length === 1 ? '' : 's') + ', GST ' + inr2(sum(sv, 'cgst') + sum(sv, 'sgst') + sum(sv, 'igst')) + ' (CGST ' + inr2(sum(sv, 'cgst')) + ', SGST ' + inr2(sum(sv, 'sgst')) + ', IGST ' + inr2(sum(sv, 'igst')) + '). Rs. 5 + GST a message, billed on the 3rd for the month before.' }),
+        M.kpi({ label: 'GST inside the parcel charges', value: inr2(inside), note: 'Of ' + inr2(paid) + ' paid to Shiprocket in these dates (' + inr2(paid - inside) + ' before tax), worked out as 18/118. Shiprocket bills from Haryana, so on these invoices it is all IGST (no CGST or SGST, see the tiles above). Parcels booked by hand carry their own GST: see the Overview and the Taxes page.' })])];
       /* freight booked on parcels (all of them) against freight invoiced so far (all of them): what is still to be billed */
       var booked = allP.reduce(function (a, x) { return a + money(x); }, 0), billed = sum(all.filter(function (x) { return !isSvc(x); }), 'total'), left = booked - billed;
       if (left > 0.5) kids.push(M.note('Shiprocket has booked ' + inr2(booked) + ' of freight and extra charges on parcels so far and billed ' + inr2(billed) + '. The ' + inr2(left) + ' not yet billed carries about ' + inr2(left * IGST / (100 + IGST)) + ' of GST that arrives on the next invoices.', false));
