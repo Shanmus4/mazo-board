@@ -5220,6 +5220,7 @@ M.ALIAS = {
   functions: 'team scorecard business functions on target close needs work rag green amber red targets jobs',
   history: 'history any measure daily monthly totals weekly totals years table chart over time',
   quality: 'data quality freshness checks trust privacy build tables sheet',
+  influencers: 'influencer influencers creators creator collab collaboration paid post fee cost per order campaign link utm tracked link who we work with deal reel sponsored',
   email: 'email list subscribers unsubscribed welcome series abandoned checkout cart browse recovery win back thank you upsell vip birthday consent agreed buyers flows messaging',
   health: 'website health page speed load lcp clarity dead clicks rage quick back scroll ux size guide gallery cart exit search box shopify google match',
   tables: 'business tables reviews rating returns exchanges refunds disputes finance bank fees compliance dates renewals calendar seasons festival listings backlinks questions makers typed in human inputs growth board ad cost every set of numbers',
@@ -8047,9 +8048,14 @@ M.campMeaning = function (c) { return M.CAMP[c] || 'A name we put inside one of 
 /* T822 (1 Nov 2026): which post is this row? The Sheet tab post_links holds, for every row of content_scorecard (same key), the address of the post, the first words of its
    caption and link_tracking (counted / counted on the Instagram post / not tracked). Only addresses on our own channels are opened (https and a host from the list below). */
 M.POSTHOSTS = /(^|\.)(instagram\.com|threads\.(com|net)|youtube\.com|youtu\.be|pinterest\.[a-z.]+|facebook\.com|linkedin\.com|mastodon\.social)$/;
+var postUrlSeen = {};      /* T1203 (25 Nov 2026): 370,240 posts at 20 years each made a URL object (0.4 s). An address is checked once and the answer kept; the same address always gives the same answer. */
 M.safePostUrl = function (u) {
   if (typeof u !== 'string' || u.slice(0, 8) !== 'https://') return '';
-  try { var x = new URL(u); return x.protocol === 'https:' && !x.username && !x.password && M.POSTHOSTS.test(x.hostname) ? x.href : ''; } catch (e) { return ''; }
+  if (Object.prototype.hasOwnProperty.call(postUrlSeen, u)) return postUrlSeen[u];
+  var out = '';
+  try { var x = new URL(u); out = x.protocol === 'https:' && !x.username && !x.password && M.POSTHOSTS.test(x.hostname) ? x.href : ''; } catch (e) { out = ''; }
+  if (u.length < 600) postUrlSeen[u] = out;
+  return out;
 };
 M.postRows = function () {
   var by = {};
@@ -9972,11 +9978,12 @@ M.glueMarks = function () {
 
     /* email list: subscribers by week */
     var ew = M.rows('email_weekly').filter(function (x) { return M.isDate(x.week); }).sort(function (a, b) { return a.week < b.week ? -1 : 1; });
+    var ewShow = lastN(ew, 52);      /* T1203 (25 Nov 2026): this chart was the only one with no limit (180 marks at 20 years); like the others it draws the latest stretch, here one year of weeks */
     var emailNode = ew.length >= 3 ? M.chart('', function (h, w) {
-      M.timeChart(h, w, { noEvents: true, buckets: weekBuckets(ew.map(function (x) { return x.week; })), mode: 'week', title: 'People on the email list', h: 150, series: [
-        { name: 'People on the list', values: ew.map(function (x) { return +x.subscribers || 0; }), color: M.COLORS.teal }, { name: 'New that week', values: ew.map(function (x) { return +x.new_subscribers || 0; }), color: M.COLORS.mustard }], empty: 'No list numbers yet.' });
+      M.timeChart(h, w, { noEvents: true, buckets: weekBuckets(ewShow.map(function (x) { return x.week; })), mode: 'week', title: 'People on the email list', h: 150, series: [
+        { name: 'People on the list', values: ewShow.map(function (x) { return +x.subscribers || 0; }), color: M.COLORS.teal }, { name: 'New that week', values: ewShow.map(function (x) { return +x.new_subscribers || 0; }), color: M.COLORS.mustard }], empty: 'No list numbers yet.' });
     }) : few(ew.length ? 'Only ' + ew.length + ' week of list numbers saved so far (' + M.fd(ew[0].week) + '): ' + M.num(+ew[0].subscribers) + ' people, ' + M.num(+ew[0].new_subscribers) + ' new, ' + M.num(+ew[0].unsubscribed_total) + ' have left in all. The chart starts when 3 weeks are saved.' : 'No list numbers saved yet.');
-    cards.push(mini('Email list', 'People on the email list at the start of each week, and how many joined that week. The list is saved once a week.', emailNode));
+    cards.push(mini('Email list', 'People on the email list at the start of each week, and how many joined that week. The list is saved once a week.', emailNode, ew.length > ewShow.length ? 'The chart draws the last ' + ewShow.length + ' weeks of ' + ew.length + '.' : ''));
 
     /* left checkouts: people by month and how many later bought */
     var cr = M.stateRows('checkout_recovery').filter(function (x) { return /^\d{4}-\d{2}$/.test(String(x.month)); }).sort(function (a, b) { return a.month < b.month ? -1 : 1; });
@@ -10754,6 +10761,7 @@ M.glueMarks = function () {
     var all = []; o.series.forEach(function (s) { all = all.concat(s.values); }); if (o.prev) all = all.concat(o.prev.values);
     var raw = Math.max.apply(null, all.concat([0]));
     if (!n || raw <= 0) { host.appendChild(M.empty(o.empty || 'No activity in this range yet.')); return; }
+    host._csvSpec = { buckets: o.buckets, series: o.series.map(function (s) { return { name: s.name, values: s.values }; }) };      /* T1203 (25 Nov 2026): the CSV icon (dashboard_56_csv_cards.js) saves what a chart plots; vizCombo did this since 7 Nov, vizArea never did, so the Email page card 'The email list over the weeks' had a chart and no icon */
     var ymax = M.nice(raw), X = function (i) { return n === 1 ? L + pw / 2 : L + i / (n - 1) * pw; }, Y = function (v) { return T + ph - v / ymax * ph; };
     var svg = M.s('svg', { viewBox: '0 0 ' + w + ' ' + H, role: 'img', 'aria-label': (o.title || 'Running total') + ': ' + o.series.map(function (s) { return s.name + ' ends at ' + (s.fmt || M.num)(s.values[n - 1]); }).join('; ') + '. Use the left and right arrow keys to read each day. The numbers are in the table below.' });
     for (var g = 0; g <= 4; g++) { var gy = Y(ymax * g / 4); svg.appendChild(M.s('line', { x1: L, x2: w - R, y1: gy, y2: gy, class: g === 0 ? 'ax' : 'gl' })); svg.appendChild(M.s('text', { x: L - 6, y: gy + 4, 'text-anchor': 'end' }, (o.yfmt || M.short)(ymax * g / 4))); }
@@ -17525,7 +17533,15 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
       });
   };
   /* orders by number, with what the buyer paid (shipping included) from the tax register: for the money that did not come through Razorpay */
-  var taxMap = function (rows) { var by = {}; if (rows || M.has('tax_orders')) (rows || M.rows('tax_orders')).forEach(function (x) { if (x.order && (x.kind === 'sale' || !by[x.order])) by[x.order] = x; }); return by; };      /* rows: only the order lines of the chosen days (12 Nov 2026), so the hosted site never reads a month it has not opened */
+  var taxAll = null, taxAllFrom = null;      /* T1203 (25 Nov 2026): the map of the WHOLE tax table was rebuilt on every call (641 calls x 50,000 orders at 20 years = 5.8 s on the Tables page). It is kept for as long as the rows are the same list; new rows (the hosted site) or M.dropCaches() make a new one. */
+  var taxMap = function (rows) {
+    var src = rows || (M.has('tax_orders') ? M.rows('tax_orders') : null);
+    if (!rows && src && taxAll && taxAllFrom === src && taxAllLen === src.length) return taxAll;
+    var by = {}; if (src) src.forEach(function (x) { if (x.order && (x.kind === 'sale' || !by[x.order])) by[x.order] = x; });
+    if (!rows) { taxAll = by; taxAllFrom = src; taxAllLen = src ? src.length : 0; }
+    return by;
+  };
+  var taxAllLen = 0;      /* rows: only the order lines of the chosen days (12 Nov 2026), so the hosted site never reads a month it has not opened */
   /* T1100 (13 Nov 2026, owner note on a list line: "please represent the number as item value + shipping cost - discount or whatever applies").
      What the dashboard holds for ONE order: tax_orders.items_value (the pieces AFTER discounts, GST inside), tax_orders.shipping_taxable (the shipping charged, GST inside) and tax_orders.total_paid (what the
      buyer paid); items + shipping equals total_paid for every order (scripts/order_breakdown_check.py proves it against Shopify for all orders). The discount of one order is not stored on its own. It is
@@ -17633,9 +17649,17 @@ M.inr0 = function (n) { return n == null || isNaN(n) ? M.inr(n) : M.inr(Math.rou
     });
   };
   /* orders by number: the rows of order_sources that carry them, so a list of order numbers becomes the same list as any other count of orders */
+  var osSrc = null, osLen = 0, osBy = null;      /* T1203 (25 Nov 2026): 1,361 calls each walked all 50,000 order lines at 20 years (4.1 s on the Customers page). The lines are indexed by order number once and reused while the list is the same. */
+  var ordersByNumber = function () {
+    var src = M.has('order_sources') ? M.rows('order_sources') : [];
+    if (osBy && osSrc === src && osLen === src.length) return osBy;
+    var by = {}; src.forEach(function (x) { if (x.order) (by[x.order] || (by[x.order] = [])).push(x); });
+    osSrc = src; osLen = src.length; osBy = by; return by;
+  };
   D.ordersNamed = function (names, o) {
-    var want = {}; names.forEach(function (n) { want[n] = 1; });
-    return D.orderSpec(M.has('order_sources') ? M.rows('order_sources').filter(function (x) { return want[x.order]; }) : [], o);
+    var by = ordersByNumber(), seen = {}, rows = [];
+    names.forEach(function (n) { if (seen[n]) return; seen[n] = 1; var g = by[n]; if (g) for (var i = 0; i < g.length; i++) rows.push(g[i]); });
+    return D.orderSpec(rows, o);
   };
   /* parcels of the Shipping page: the rows of shiprocket_parcels by the day they were picked up (or sent) */
   D.parcelsBetween = function (from, to, withSelf) {
@@ -18171,6 +18195,69 @@ M.linkContentCard = function (r, rows) {
   return M.card('Which word or reel sold', 'When Instagram sends a link after someone comments a word on a reel, the word is inside the link. Visits and orders Google saw, per word. A link tagged only with its campaign name has no word and is in the card above.', [body]);
 };
 
+/* mazo dashboard: the INFLUENCERS page, a tab of the Marketing group (T1259, 25 Nov 2026).
+   Owner: "set up the influencer marketing framework wherever necessary (campaign link, dashboard, everywhere applicable), ready for the update Madhu will give; create a new tab in marketing in the dashboard".
+   Madhu will send the influencer names, deals, fees, dates and codes later. This page is the empty frame: it reads two Sheet tabs and shows nothing until a row is typed.
+     influencers          typed by a person with scripts/influencer_add.py: handle, platform, what was agreed, fee, start and post dates, tracked link, status, note
+     influencer_results   built every night by scripts/kpi_collectors27.py from the typed tab and Google Analytics (visits and orders by the tag of the link): visits, orders, revenue, cost per order
+   Nothing is typed in this file. A deal with no fee typed shows no cost figure (never 0); a deal with no tracked link or no visit says so in one plain line (the `read` column). Counts and rupees only:
+   a handle is a public account name, never a real name, phone or address. Guide: docs/guides/influencer-marketing.md. The sidebar item is added from here so the shared shell file stays untouched. */
+(function () {
+  var marketing = M.GROUPS.filter(function (g) { return g[0] === 'Marketing'; })[0];
+  if (marketing && marketing[1].indexOf('influencers') < 0) {
+    var at = marketing[1].indexOf('social');      /* after Channels and Social and content, before Search and Email: the person-led channel sits beside the other channel pages */
+    marketing[1].splice(at >= 0 ? at + 1 : marketing[1].length, 0, 'influencers');
+  }
+  M.sp('influencers', 'Influencers', 'Influencers', 'Which influencers we work with, what each was promised, and the visits and orders their links brought.', [], { dates: false });
+  M.ORDER.push('influencers');
+
+  var STATUS = { planned: 'Planned', agreed: 'Agreed', posted: 'Posted', done: 'Done', cancelled: 'Cancelled' };
+  var num = function (v) { return v === '' || v == null || isNaN(+v) ? 0 : +v; };
+  var blank = function (v) { return v === '' || v == null; };
+
+  M.PAGES.influencers.render = function () {
+    var root = M.h('div', { class: 'inf-page' });
+    var rows = M.has('influencer_results') ? M.stateRows('influencer_results').filter(function (x) { return x.handle; }) : [];
+    var typed = M.has('influencers') ? M.rows('influencers').filter(function (x) { return x.handle; }) : [];
+    if (!rows.length && !typed.length) {
+      root.appendChild(M.card('Our influencers', '', [M.empty('No influencer yet. Madhu\'s list will fill this page.')]));
+      return root;
+    }
+    var live = rows.filter(function (x) { return x.status !== 'cancelled'; });
+    var visits = live.reduce(function (a, x) { return a + num(x.visits); }, 0), orders = live.reduce(function (a, x) { return a + num(x.orders); }, 0);
+    var fee = live.reduce(function (a, x) { return a + num(x.fee_rs); }, 0), revenue = live.reduce(function (a, x) { return a + num(x.revenue); }, 0);
+    var kp = M.h('div', { class: 'kpis' });
+    kp.appendChild(M.kpi({ label: 'Influencers', value: M.num(live.length), note: rows.length > live.length ? M.num(rows.length - live.length) + ' cancelled' : '' }));
+    kp.appendChild(M.kpi({ label: 'Paid to them', value: fee ? M.inr(fee) : 'nothing typed yet', note: 'the fees typed for these deals' }));
+    kp.appendChild(M.kpi({ label: 'Visits from their links', value: M.num(visits), note: 'own test visits left out' }));
+    kp.appendChild(M.kpi({ label: 'Orders from their links', value: M.num(orders), note: orders && fee ? M.inr(Math.round(fee / orders)) + ' paid for each order' : '' }));
+    root.appendChild(kp);
+
+    /* nine columns fit a laptop card; the platform, the start date and the plain reading sit in the row's own detail (the arrow at the end of a row), where every other column of a table with more than it can show goes */
+    var cols = [
+      { k: 'handle', label: 'Influencer', wrap: true, dim: false },
+      { k: 'campaign', label: 'Deal', wrap: true, dim: false },
+      { k: 'status', label: 'Status', fmt: function (v) { return STATUS[v] || v; }, dim: false },
+      { k: 'fee_rs', label: 'Fee', num: true, fmt: function (v) { return blank(v) || +v === 0 ? 'none typed' : M.inr(+v); } },
+      { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.teal } },
+      { k: 'orders', label: 'Orders', num: true, fmt: M.num },
+      { k: 'revenue', label: 'Sales', num: true, fmt: function (v) { return blank(v) ? '' : M.inr(+v); } },
+      { k: 'cost_per_order', label: 'Paid per order', num: true, fmt: function (v) { return blank(v) ? '' : M.inr(+v); } },
+      { k: 'platform', label: 'Where', dim: false, hidden: true },
+      { k: 'post_date', label: 'Posted', hidden: true, fmt: function (v) { return v ? M.fd(v) : 'not yet'; } },
+      { k: 'read', label: 'What this tells us', wrap: true, dim: false, hidden: true }
+    ];
+    root.appendChild(M.card('Each influencer', 'One line for every deal typed in the Sheet. Visits and orders are counted from the start date of the deal, from the tag in its link. A blank cost means no fee was typed, or no order has come yet. The Columns button shows where, the post date and what each line tells us.', [M.table(cols, {
+      rows: rows.map(function (x) { return Object.assign({}, x, { visits: num(x.visits), orders: num(x.orders) }); }), sortKey: 'visits', sortDir: -1, name: 'influencers', detail: false, empty: 'No influencer yet.' })]));
+
+    var linked = typed.filter(function (x) { return x.tracked_link; });
+    if (linked.length) root.appendChild(M.card('The link of each influencer', 'The link to give each person. It carries the tags that let the Channels page sort the visits under Influencers and partners.', [M.table([
+      { k: 'handle', label: 'Influencer', wrap: true, dim: false }, { k: 'tracked_link', label: 'Link', wrap: true, dim: false },
+      { k: 'what_agreed', label: 'What was agreed', wrap: true, dim: false }], { rows: linked, sortKey: 'handle', sortDir: 1, name: 'influencer links', detail: false })]));
+    return root;
+  };
+})();
+
 /* mazo dashboard, hosted mode (T807, 1 Nov 2026): the unlock screen and the loader that fetches data by month. Only runs when the page was built for the web (window.MAZO_HOSTED);
    the one file build (docs/reports/dashboard/mazo-dashboard.html) never uses any of this. Plan and design: docs/guides/robust-data-and-hosting-plan.md, scripts/site_crypto.py.
 
@@ -18462,6 +18549,7 @@ M.unlock = function () {
     sizes:     [[['product_sales_daily', 'size_daily'], 89]],                                                 /* units sold by size and the radar: the last 90 days whatever dates are picked */
     customers: [[['shopify_daily', 'order_sources', 'place_device_daily', 'customers_weekly'], 'all']],       /* buyers week by week, cities, size of an order: all history */
     forecast:  [],
+    influencers: [],      /* T1259 (25 Nov 2026): both tabs it reads are whole on the hosted site (influencers is in site_build.STATIC_OTHER, influencer_results is a state tab), so it needs no month file */
     functions: [['function_summary_hist', 'all']],                                                            /* jobs on target, night by night */
     history:   [[function () { return M.state.hsrc; }, 'all'], [['visits_joined_daily'], 'all']],                                               /* any table, every day stored */
     quality:   [[['data_quality_daily', 'routine_runs_daily'], 7]],                                           /* the newest checks; the last 7 days of routine runs */
