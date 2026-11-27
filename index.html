@@ -2637,6 +2637,32 @@ tr.drill-row td:first-child .drill-go { position: absolute; right: 6px; top: 50%
 .mg-table tr.drill-row td.mg-name .drill-go { position: absolute; right: 6px; top: 50%; margin: -8px 0 0; }
 .mg-table tr.drill-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
 
+/* mazo dashboard, the Influencers page (T1280, 27 Nov 2026). Small on purpose: cards, tables, tiles, buttons and focus come from the shared files. */
+.inf-bar{margin:0 0 var(--sp4)}
+.inf-ins{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp3)}
+.inf-ins li{display:flex;gap:var(--sp2);align-items:flex-start;font-size:var(--t14);line-height:1.5;color:var(--ink)}
+.inf-ins li .ic{flex:none;width:18px;height:18px;margin-top:2px;color:var(--teal-t)}
+.inf-ins li.warn .ic{color:var(--terra-t)}
+.inf-ins li.warn span{color:var(--terra-t)}
+.inf-lb{font-size:var(--t13);font-weight:600;fill:var(--ink)}
+.inf-v{font-size:var(--t12);fill:var(--ink2)}
+.inf-head{margin:0 0 var(--sp3)}
+.inf-who{font:600 var(--t20)/1.25 var(--sans);color:var(--maroon);overflow-wrap:anywhere}
+.inf-sub{font-size:var(--t13);color:var(--ink2);margin-top:2px}
+.inf-pieces{font-size:var(--t14);color:var(--ink);margin-top:var(--sp2);overflow-wrap:anywhere}
+.inf-facts{display:grid;grid-template-columns:max-content 1fr;gap:var(--sp2) var(--sp5);margin:0;font-size:var(--t14)}
+.inf-facts dt{color:var(--ink2)}
+.inf-facts dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.inf-link{display:flex;align-items:center;gap:var(--sp3);flex-wrap:wrap}
+.inf-url{flex:1 1 280px;min-width:0;overflow-wrap:anywhere;font-size:var(--t13);background:var(--sand,#F3EEE6);border-radius:var(--rad1);padding:var(--sp2) var(--sp3)}
+.inf-back{margin:var(--sp4) 0}
+@media (max-width:640px){
+  .inf-bar{overflow-x:auto;scrollbar-width:none}
+  .inf-bar::-webkit-scrollbar{display:none}
+  .inf-facts{grid-template-columns:1fr;gap:2px}
+  .inf-facts dd{margin-bottom:var(--sp3)}
+}
+
 /* the unlock screen of the hosted dashboard (T807); the file build never includes it */
 #lock{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:#FDFDFD}
 #lock[hidden]{display:none}
@@ -13929,7 +13955,7 @@ M.annot = (function () {
 (function () {
   var pc = function (x) { return Math.round((+x || 0) * 100); };
   var rs = function (p) { return Math.round(p) / 100; };
-  var COLS = ['orders', 'gross_sales', 'discounts', 'net_sales', 'gst_included', 'shipping_charged', 'refunds', 'product_cost', 'est_payment_fee', 'est_parcel_cost', 'est_packaging', 'est_shopify_fee', 'gst_on_shipping', 'hand_parcel_cost', 'hand_gst_credit', 'subscription_fee'];      /* T1168 (20 Nov 2026): the Shiprocket subscription, a cost of its own */
+  var COLS = ['orders', 'gross_sales', 'discounts', 'net_sales', 'gst_included', 'shipping_charged', 'refunds', 'product_cost', 'est_payment_fee', 'est_parcel_cost', 'est_packaging', 'est_shopify_fee', 'gst_on_shipping', 'hand_parcel_cost', 'hand_gst_credit', 'subscription_fee', 'hand_refund'];      /* T1168 (20 Nov 2026): the Shiprocket subscription, a cost of its own */
   var zero = function () { var o = {}; COLS.forEach(function (c) { o[c] = 0; }); return o; };
   var inputs = function () { var hi = {}; M.rows('human_inputs').forEach(function (x) { if (x.key && x.value !== '' && x.value != null && !isNaN(+x.value)) hi[x.key] = +x.value; }); return hi; };
 
@@ -14001,6 +14027,8 @@ M.annot = (function () {
       if (d < from || d > to) return;
       var m = mo[d.slice(0, 7)] || (mo[d.slice(0, 7)] = zero()), bd = byDay[d] = zero();      /* T1115: every day's own paise, so the side panel of a line lists the days that add up to it */
       rows.forEach(function (x) { COLS.forEach(function (c) { var p = pc(x[c]); m[c] += p; tot[c] += p; bd[c] += p; }); });
+      /* T1279 (27 Nov 2026, owner: 'madhu had to refund 120 rs' on #MZ1050): money Madhu paid back to a buyer OUTSIDE Shopify (Sheet tab hand_refunds) is a refund too. money_daily keeps it in its own column hand_refund; here it is added to the refunds, so every line below that takes refunds off sees it, and profit equals the Sheet. */
+      rows.forEach(function (x) { var h = pc(x.hand_refund); m.refunds += h; tot.refunds += h; bd.refunds += h; });      /* once per stored row, never from a running total */
     });
     var other = hi.monthly_fixed_cost > 0 ? hi.monthly_fixed_cost : 0;      /* another monthly cost, only if one is ever typed in the data sheet */
     var days = M.diff(from, to) + 1;
@@ -14339,7 +14367,7 @@ M.annot = (function () {
       dayLines(C, { pick: function (b) { return b.shipping_charged; }, note: function (d, b, os) { var n = shipOrdersOf[d] ? shipOrdersOf[d].length : 0; return n === 1 ? '1 order paid for shipping' : n + ' orders paid for shipping'; } }, shipOrdersOf)), rs(t.ship));
     give('gst', mk(C, { title: 'GST in the orders', sentence: 'The GST already inside what customers paid, on the pieces and on the shipping, day by day. It belongs to the government, so it is taken off.' },
       dayLines(C, { pick: function (b) { return b.gst_included; }, note: function (d, b, os) { return os.length === 1 ? '1 order' : os.length + ' orders'; } }, orders)), rs(t.gst));
-    if (t.refunds) give('refunds', mk(C, { title: 'Refunds', sentence: 'Money given back to customers, on the day of the order it belongs to.' },
+    if (t.refunds) give('refunds', mk(C, { title: 'Refunds', sentence: 'Money given back to customers, on the day of the order it belongs to. It includes money Madhu paid back by hand outside Shopify (for example the Rs 120 Express charge of #MZ1050).' },
       dayLines(C, { pick: function (b) { return b.refunds; } }, orders)), rs(t.refunds));
 
     /* the Shopify bill and its two parts */
@@ -18195,66 +18223,302 @@ M.linkContentCard = function (r, rows) {
   return M.card('Which word or reel sold', 'When Instagram sends a link after someone comments a word on a reel, the word is inside the link. Visits and orders Google saw, per word. A link tagged only with its campaign name has no word and is in the card above.', [body]);
 };
 
-/* mazo dashboard: the INFLUENCERS page, a tab of the Marketing group (T1259, 25 Nov 2026).
-   Owner: "set up the influencer marketing framework wherever necessary (campaign link, dashboard, everywhere applicable), ready for the update Madhu will give; create a new tab in marketing in the dashboard".
-   Madhu will send the influencer names, deals, fees, dates and codes later. This page is the empty frame: it reads two Sheet tabs and shows nothing until a row is typed.
-     influencers          typed by a person with scripts/influencer_add.py: handle, platform, what was agreed, fee, start and post dates, tracked link, status, note
-     influencer_results   built every night by scripts/kpi_collectors27.py from the typed tab and Google Analytics (visits and orders by the tag of the link): visits, orders, revenue, cost per order
-   Nothing is typed in this file. A deal with no fee typed shows no cost figure (never 0); a deal with no tracked link or no visit says so in one plain line (the `read` column). Counts and rupees only:
-   a handle is a public account name, never a real name, phone or address. Guide: docs/guides/influencer-marketing.md. The sidebar item is added from here so the shared shell file stays untouched. */
+/* mazo dashboard: the INFLUENCERS page, data and words (T1259 and T1280, 25 and 27 Nov 2026).
+   Owner, 25 Nov: "set up the influencer marketing framework ... create a new tab in marketing in the dashboard".
+   Owner, 27 Nov: "the fee is clearly mentioned as the cost madhu spent (the 5225 is what she would have made, the fee is what she spent overall for the 3 products, it is not money sent to the influencer),
+   rename fee to something else"; "come up with some dataviz and more insights for this influencers screen, I need individual collab tracking and all together also".
+   Two Sheet tabs feed it:
+     influencers          typed with scripts/influencer_add.py: handle, platform, what was agreed, cost to mazo (what the pieces cost to make), shop price of the pieces, dates, tracked link, status, note
+     influencer_results   built every night by scripts/kpi_collectors27.py: visits, orders, sales from the link, whether the deal is tracked, the last day a visit came
+   This file holds the page frame, the numbers and the plain words. The drawing (cards, charts, the one collab view) is in dashboard_83_influencers_view.js. Nothing is typed here.
+   RULES: a deal made before tracked links existed shows "not tracked", never a 0 that looks like a result. A cost that was not typed is blank, never 0. Counts and rupees only: a handle is a public account name,
+   never a real name, phone or address. Guide: docs/guides/influencer-marketing.md. The sidebar item is added from here so the shared shell file stays untouched. */
 (function () {
   var marketing = M.GROUPS.filter(function (g) { return g[0] === 'Marketing'; })[0];
   if (marketing && marketing[1].indexOf('influencers') < 0) {
     var at = marketing[1].indexOf('social');      /* after Channels and Social and content, before Search and Email: the person-led channel sits beside the other channel pages */
     marketing[1].splice(at >= 0 ? at + 1 : marketing[1].length, 0, 'influencers');
   }
-  M.sp('influencers', 'Influencers', 'Influencers', 'Which influencers we work with, what each was promised, and the visits and orders their links brought.', [], { dates: false });
+  M.sp('influencers', 'Influencers', 'Influencers', 'Every collaboration: what the pieces cost us, what they sell for, and what the links brought.', [], { dates: false });
   M.ORDER.push('influencers');
 
-  var STATUS = { planned: 'Planned', agreed: 'Agreed', posted: 'Posted', done: 'Done', cancelled: 'Cancelled' };
-  var num = function (v) { return v === '' || v == null || isNaN(+v) ? 0 : +v; };
-  var blank = function (v) { return v === '' || v == null; };
+  var I = M.INF = M.INF || {};
+  I.STATUS = { planned: 'Planned', agreed: 'Agreed', posted: 'Posted', done: 'Done', cancelled: 'Cancelled' };
+  var blank = I.blank = function (v) { return v === '' || v == null; };
+  var num = I.num = function (v) { return blank(v) || isNaN(+v) ? 0 : +v; };
+  var has = I.has = function (v) { return !blank(v) && !isNaN(+v); };
+
+  /* the deals: one object each, the typed row joined to its nightly result by key. A cancelled deal is kept in the list but never counted in the totals. */
+  I.deals = function () {
+    var typed = M.has('influencers') ? M.rows('influencers').filter(function (x) { return x.handle; }) : [];
+    var res = {};
+    (M.has('influencer_results') ? M.stateRows('influencer_results') : []).forEach(function (x) { if (x.handle) res[x.key] = x; });
+    var seen = {}, out = [];
+    typed.forEach(function (t) {
+      var r = res[t.key] || {};
+      seen[t.key] = 1;
+      out.push(I.make(t, r));
+    });
+    Object.keys(res).forEach(function (k) { if (!seen[k]) out.push(I.make({}, res[k])); });      /* a result with no typed row (an old night): still shown */
+    out.sort(function (a, b) { return String(b.post || b.start || '0').localeCompare(String(a.post || a.start || '0')); });
+    return out;
+  };
+  I.make = function (t, r) {
+    var link = t.tracked_link || '';
+    var tracked = r.tracked ? r.tracked === 'yes' : !!link;
+    return {
+      key: t.key || r.key, handle: t.handle || r.handle, platform: t.platform || r.platform || '', agreed: t.what_agreed || r.what_agreed || '', status: String(t.status || r.status || 'planned').toLowerCase(),
+      cost: has(t.cost_to_mazo_rs) ? +t.cost_to_mazo_rs : (has(r.cost_to_mazo_rs) ? +r.cost_to_mazo_rs : null),
+      value: has(t.shop_value_rs) ? +t.shop_value_rs : (has(r.shop_value_rs) ? +r.shop_value_rs : null),
+      start: t.start_date || r.start_date || '', post: t.post_date || r.post_date || '', link: link, note: t.note || '', campaign: r.campaign || '', sm: r.source_medium || '',
+      tracked: tracked, visits: num(r.visits), orders: num(r.orders), sales: has(r.revenue) ? +r.revenue : null, last: r.last_visit_date || '', read: r.read || ''
+    };
+  };
+  I.live = function (ds) { return ds.filter(function (d) { return d.status !== 'cancelled'; }); };
+
+  /* the name shown for a deal: the handle, and for a post whose account name is not known yet the plain words */
+  I.who = function (d) { return /^@?ig-post-/.test(d.handle) ? 'Instagram post, ' + (d.post ? M.fd(d.post) : 'date not known') : d.handle; };
+  I.title = function (d) { return d.who || I.who(d); };
+  I.pieces = function (d) { return String(d.agreed || '').replace(/^Barter:\s*/i, '').replace(/\s*(for a reel and (a )?stor(y|ies)|for a reel and story)\.?.*$/i, '').replace(/\.$/, '') || 'not written yet'; };
+  I.share = function (d) { return d.cost != null && d.value ? d.cost / d.value : null; };
+
+  /* days between two ISO dates, counted from the day the pointer says "today" (the newest day the dashboard holds) */
+  I.days = function (from, to) { return Math.round((new Date(to + 'T00:00:00Z') - new Date(from + 'T00:00:00Z')) / 86400000); };
+  I.today = function () { return M.D.anchor || new Date().toISOString().slice(0, 10); };
+
+  /* totals over the live deals */
+  I.totals = function (ds) {
+    var live = I.live(ds), t = { deals: live.length, cancelled: ds.length - live.length, cost: 0, value: 0, costKnown: 0, valueKnown: 0, tracked: 0, untracked: 0, visits: 0, orders: 0, sales: 0, salesKnown: false, lastPost: '' };
+    live.forEach(function (d) {
+      if (d.cost != null) { t.cost += d.cost; t.costKnown++; }
+      if (d.value != null) { t.value += d.value; t.valueKnown++; }
+      if (d.tracked) { t.tracked++; t.visits += d.visits; t.orders += d.orders; if (d.sales != null) { t.sales += d.sales; t.salesKnown = true; } } else t.untracked++;
+      if (d.post && d.post > t.lastPost) t.lastPost = d.post;
+    });
+    return t;
+  };
+
+  /* the insight lines: each is worked out from the deals and says what it is based on. Plain words, no jargon. Returns [{text, tone}]; tone 'warn' draws the line in the warm colour. */
+  I.insights = function (ds) {
+    var live = I.live(ds), t = I.totals(ds), out = [], inr = M.inr;
+    if (!live.length) return out;
+    if (t.valueKnown && t.costKnown) out.push({ text: 'Madhu gave pieces that sell for ' + inr(t.value) + ' in the shop. Making them cost ' + inr(t.cost) + ', which is ' + M.pct(t.cost / t.value * 100, 0) + ' of that. The rest, ' + inr(t.value - t.cost) + ', is the profit she gave up.' });
+    var top = live.filter(function (d) { return I.share(d) != null; }).sort(function (a, b) { return I.share(b) - I.share(a); })[0];
+    var low = live.filter(function (d) { return I.share(d) != null; }).sort(function (a, b) { return I.share(a) - I.share(b); })[0];
+    if (top && low && top !== low && Math.abs(I.share(top) - I.share(low)) >= 0.03) out.push({ text: 'Against its shop price, the lowest cost to make was ' + I.who(low) + ' (' + inr(low.cost) + ' for pieces worth ' + inr(low.value) + ', ' + M.pct(I.share(low) * 100, 0) + '). The highest was ' + I.who(top) + ' (' + inr(top.cost) + ' for ' + inr(top.value) + ', ' + M.pct(I.share(top) * 100, 0) + ').' });
+    if (t.untracked) out.push({ text: t.untracked === 1 ? 'One collaboration went up before tracked links existed, so its visits and orders were never counted. It shows cost and shop price only.' : M.num(t.untracked) + ' collaborations went up before tracked links existed, so their visits and orders were never counted. They show cost and shop price only.' });
+    if (t.tracked) {
+      var run = live.filter(function (d) { return d.tracked; });
+      if (!t.visits && !t.orders) {
+        var notPosted = run.filter(function (d) { return !d.post; });
+        out.push({ text: (notPosted.length === run.length ? 'No visit has come through a tracked link yet, and ' + (run.length === 1 ? 'its post is' : 'their posts are') + ' not up yet.' : 'No visit has come through a tracked link yet.'), tone: 'warn' });
+      } else if (!t.orders) out.push({ text: M.num(t.visits) + ' visits came through tracked links, no order yet.' });
+      else out.push({ text: M.num(t.orders) + (t.orders === 1 ? ' order' : ' orders') + ' from tracked links, with ' + (t.salesKnown ? inr(t.sales) + ' of sales' : 'sales not known') + '. That is ' + inr(Math.round(t.cost / t.orders)) + ' of cost to mazo for each order, counting every deal.' });
+    }
+    if (t.lastPost) { var ago = I.days(t.lastPost, I.today()); out.push({ text: 'The last post went up ' + (ago <= 0 ? 'today' : ago === 1 ? 'yesterday' : ago + ' days ago') + ' (' + M.fd(t.lastPost) + ').' }); }
+    var wait = live.filter(function (d) { return !d.post && (d.status === 'agreed' || d.status === 'planned'); });
+    if (wait.length) out.push({ text: wait.map(I.who).join(', ') + (wait.length === 1 ? ' has no post date yet. Madhu tells us when it goes up.' : ' have no post date yet.'), tone: 'warn' });
+    var nocost = live.filter(function (d) { return d.cost == null; });
+    if (nocost.length) out.push({ text: 'No cost typed for ' + nocost.map(I.who).join(', ') + '.', tone: 'warn' });
+    return out;
+  };
 
   M.PAGES.influencers.render = function () {
     var root = M.h('div', { class: 'inf-page' });
-    var rows = M.has('influencer_results') ? M.stateRows('influencer_results').filter(function (x) { return x.handle; }) : [];
-    var typed = M.has('influencers') ? M.rows('influencers').filter(function (x) { return x.handle; }) : [];
-    if (!rows.length && !typed.length) {
+    var ds = I.deals();
+    if (!ds.length) {
       root.appendChild(M.card('Our influencers', '', [M.empty('No influencer yet. Madhu\'s list will fill this page.')]));
       return root;
     }
-    var live = rows.filter(function (x) { return x.status !== 'cancelled'; });
-    var visits = live.reduce(function (a, x) { return a + num(x.visits); }, 0), orders = live.reduce(function (a, x) { return a + num(x.orders); }, 0);
-    var fee = live.reduce(function (a, x) { return a + num(x.fee_rs); }, 0), revenue = live.reduce(function (a, x) { return a + num(x.revenue); }, 0);
-    var kp = M.h('div', { class: 'kpis' });
-    kp.appendChild(M.kpi({ label: 'Influencers', value: M.num(live.length), note: rows.length > live.length ? M.num(rows.length - live.length) + ' cancelled' : '' }));
-    kp.appendChild(M.kpi({ label: 'Paid to them', value: fee ? M.inr(fee) : 'nothing typed yet', note: 'the fees typed for these deals' }));
-    kp.appendChild(M.kpi({ label: 'Visits from their links', value: M.num(visits), note: 'own test visits left out' }));
-    kp.appendChild(M.kpi({ label: 'Orders from their links', value: M.num(orders), note: orders && fee ? M.inr(Math.round(fee / orders)) + ' paid for each order' : '' }));
-    root.appendChild(kp);
-
-    /* nine columns fit a laptop card; the platform, the start date and the plain reading sit in the row's own detail (the arrow at the end of a row), where every other column of a table with more than it can show goes */
-    var cols = [
-      { k: 'handle', label: 'Influencer', wrap: true, dim: false },
-      { k: 'campaign', label: 'Deal', wrap: true, dim: false },
-      { k: 'status', label: 'Status', fmt: function (v) { return STATUS[v] || v; }, dim: false },
-      { k: 'fee_rs', label: 'Fee', num: true, fmt: function (v) { return blank(v) || +v === 0 ? 'none typed' : M.inr(+v); } },
-      { k: 'visits', label: 'Visits', num: true, fmt: M.num, bar: { color: M.COLORS.teal } },
-      { k: 'orders', label: 'Orders', num: true, fmt: M.num },
-      { k: 'revenue', label: 'Sales', num: true, fmt: function (v) { return blank(v) ? '' : M.inr(+v); } },
-      { k: 'cost_per_order', label: 'Paid per order', num: true, fmt: function (v) { return blank(v) ? '' : M.inr(+v); } },
-      { k: 'platform', label: 'Where', dim: false, hidden: true },
-      { k: 'post_date', label: 'Posted', hidden: true, fmt: function (v) { return v ? M.fd(v) : 'not yet'; } },
-      { k: 'read', label: 'What this tells us', wrap: true, dim: false, hidden: true }
-    ];
-    root.appendChild(M.card('Each influencer', 'One line for every deal typed in the Sheet. Visits and orders are counted from the start date of the deal, from the tag in its link. A blank cost means no fee was typed, or no order has come yet. The Columns button shows where, the post date and what each line tells us.', [M.table(cols, {
-      rows: rows.map(function (x) { return Object.assign({}, x, { visits: num(x.visits), orders: num(x.orders) }); }), sortKey: 'visits', sortDir: -1, name: 'influencers', detail: false, empty: 'No influencer yet.' })]));
-
-    var linked = typed.filter(function (x) { return x.tracked_link; });
-    if (linked.length) root.appendChild(M.card('The link of each influencer', 'The link to give each person. It carries the tags that let the Channels page sort the visits under Influencers and partners.', [M.table([
-      { k: 'handle', label: 'Influencer', wrap: true, dim: false }, { k: 'tracked_link', label: 'Link', wrap: true, dim: false },
-      { k: 'what_agreed', label: 'What was agreed', wrap: true, dim: false }], { rows: linked, sortKey: 'handle', sortDir: 1, name: 'influencer links', detail: false })]));
+    I.draw(root, ds);      /* dashboard_83_influencers_view.js */
     return root;
+  };
+})();
+
+/* mazo dashboard: the INFLUENCERS page, the drawing (T1280, 27 Nov 2026). Data and words are in dashboard_82_influencers.js (M.INF).
+   Owner, 27 Nov: "come up with some dataviz and more insights things for this influencers screen, I need individual collab tracking and all together also".
+   TWO VIEWS on one page, chosen with the buttons at the top (the choice is kept in the address, so a link opens the same view):
+     All together   totals, the deals side by side (cost to make against shop price), a timeline of the posts, the plain insight lines, the table of every deal
+     One collaboration   one deal on its own: the pieces, the dates, cost against shop price, visits and orders by day since the post, its link with a copy button
+   HONEST SMALL DATA. A deal made before tracked links existed is "not tracked": no visit bar, no 0. A tracked deal with no post yet draws nothing and says why. Only real numbers are drawn.
+   Charts are small inline SVG in the colours of the other pages; tooltips, keys and touch work the same as the other charts (M.vizHover). Nothing here is typed or invented. */
+(function () {
+  var I = M.INF, C = M.COLORS, inr = M.inr, svgNS = 'svg';
+  /* the choice lives in its own address key, `inf` (the deal key, or empty for the all together view), so a link opens the same view. It is added to the shared defaults here, before the page address is read. */
+  if (!('inf' in M.DEFAULTS)) { M.DEFAULTS.inf = ''; M.state.inf = ''; }
+  var pickKey = function () { return M.state.inf || ''; };
+
+  /* ---------------------------------------------------------------- the choice: all together, or one deal */
+  var chooser = function (ds, cur) {
+    var live = ds, opts = [['', 'All together']].concat(live.map(function (d) { return [d.key, I.who(d)]; }));
+    return M.h('div', { class: 'ch-bar inf-bar' }, [M.h('div', { class: 'seg ch-pick', role: 'group', 'aria-label': 'Look at all collaborations together, or one by one' }, opts.map(function (o) {
+      return M.h('button', { type: 'button', 'aria-pressed': o[0] === cur ? 'true' : 'false', text: o[1], onclick: function () { M.go({ inf: o[0] }); } });
+    }))]);
+  };
+
+  /* ---------------------------------------------------------------- tiles */
+  var tiles = function (ds) {
+    var t = I.totals(ds), kp = M.h('div', { class: 'kpis' });
+    kp.appendChild(M.kpi({ label: 'Collaborations', value: M.num(t.deals), note: [t.tracked ? t.tracked + ' tracked' : '', t.untracked ? t.untracked + ' before tracking' : '', t.cancelled ? t.cancelled + ' cancelled' : ''].filter(Boolean).join(', ') }));
+    kp.appendChild(M.kpi({ label: 'What the pieces cost us', value: t.costKnown ? inr(t.cost) : 'not typed yet', note: t.costKnown && t.costKnown < t.deals ? 'cost typed for ' + t.costKnown + ' of ' + t.deals : 'cloth, stitching and the rest, to make them' }));
+    kp.appendChild(M.kpi({ label: 'Their price in the shop', value: t.valueKnown ? inr(t.value) : 'not typed yet', note: t.valueKnown ? 'what they would have sold for' : '' }));
+    kp.appendChild(M.kpi({ label: 'Visits from their links', value: t.tracked ? M.num(t.visits) : 'none tracked', note: t.tracked ? 'own test visits left out; ' + t.tracked + ' of ' + t.deals + ' have a link' : 'older posts had no link' }));
+    kp.appendChild(M.kpi({ label: 'Orders from their links', value: t.tracked ? M.num(t.orders) : 'none tracked', note: t.orders && t.costKnown ? inr(Math.round(t.cost / t.orders)) + ' of cost for each order' : (t.tracked && !t.orders ? 'none yet' : '') }));
+    return kp;
+  };
+
+  /* ---------------------------------------------------------------- chart 1: for each deal, what it cost to make against its price in the shop (two bars on one scale) */
+  var costChart = function (ds) {
+    return M.vizChart(function (host, w) {
+      var rows = I.live(ds).filter(function (d) { return d.cost != null || d.value != null; });
+      if (!rows.length) { host.appendChild(M.empty('No cost or shop price typed yet.')); return; }
+      var max = Math.max.apply(null, rows.map(function (d) { return Math.max(d.cost || 0, d.value || 0); }).concat([1]));
+      var narrow = w < 560, L = narrow ? 8 : 196, R = narrow ? 64 : 84, rowH = narrow ? 64 : 46, H = rows.length * rowH + 30, pw = w - L - R;
+      var svg = M.s(svgNS, { viewBox: '0 0 ' + w + ' ' + H, role: 'img', 'aria-label': 'For each collaboration, what the pieces cost us against their price in the shop. ' + rows.map(function (d) { return I.who(d) + ': cost ' + (d.cost != null ? inr(d.cost) : 'not typed') + ', shop price ' + (d.value != null ? inr(d.value) : 'not typed'); }).join('; ') + '.' });
+      var items = [];
+      max = M.niceTop(max); var ticks = [0, max / 4, max / 2, max * 3 / 4, max];
+      ticks.forEach(function (tv) { var x = L + tv / max * pw; svg.appendChild(M.s('line', { x1: x, x2: x, y1: 4, y2: H - 22, class: tv === 0 ? 'ax' : 'gl' })); svg.appendChild(M.s('text', { x: x, y: H - 6, 'text-anchor': 'middle' }, tv === 0 ? '0' : M.num(tv))); });
+      rows.forEach(function (d, i) {
+        var y0 = 10 + i * rowH, bh = narrow ? 14 : 13, els = [], mark = [];
+        if (narrow) svg.appendChild(M.s('text', { x: L, y: y0 + 11, class: 'inf-lb' }, I.who(d))); else svg.appendChild(M.s('text', { x: L - 10, y: y0 + 22, 'text-anchor': 'end', class: 'inf-lb' }, I.who(d)));
+        var by = narrow ? y0 + 20 : y0 + 4;
+        if (d.value != null) { var vr = M.s('rect', { x: L, y: by, width: Math.max(2, d.value / max * pw), height: bh, rx: 3, fill: C.grid, stroke: C.grey, 'stroke-width': 1 }); svg.appendChild(vr); els.push(vr); svg.appendChild(M.s('text', { x: L + Math.max(2, d.value / max * pw) + 6, y: by + 11, class: 'inf-v' }, inr(d.value))); }
+        if (d.cost != null) { var cr = M.s('rect', { x: L, y: by + bh + 4, width: Math.max(2, d.cost / max * pw), height: bh, rx: 3, fill: C.maroon }); svg.appendChild(cr); els.push(cr); svg.appendChild(M.s('text', { x: L + Math.max(2, d.cost / max * pw) + 6, y: by + bh + 15, class: 'inf-v' }, inr(d.cost))); }
+        items.push({ els: els, mark: mark, tip: function () { return { title: I.who(d), rows: [{ k: 'Pieces', v: I.pieces(d) }, { k: 'Cost to make', v: d.cost != null ? inr(d.cost) : 'not typed' }, { k: 'Price in the shop', v: d.value != null ? inr(d.value) : 'not typed' }].concat(I.share(d) != null ? [{ k: 'Cost as a share of the shop price', v: M.pct(I.share(d) * 100, 0) }] : []) }; } });
+      });
+      M.vizHover(svg, items);
+      host.appendChild(svg);
+      host.appendChild(M.legend([{ name: 'Price in the shop', color: C.grid }, { name: 'Cost to make', color: C.maroon }]));
+    });
+  };
+
+  /* ---------------------------------------------------------------- chart 2: the timeline of the posts (a dot a post, the size is the shop price, hollow = not tracked) */
+  var timeline = function (ds) {
+    return M.vizChart(function (host, w) {
+      var dated = I.live(ds).filter(function (d) { return d.post; }), waiting = I.live(ds).filter(function (d) { return !d.post; });
+      if (!dated.length) { host.appendChild(M.empty('No post has a date yet.')); return; }
+      var lo = dated.map(function (d) { return d.post; }).sort()[0], hi = I.today(), span = Math.max(1, I.days(lo, hi)), H = 170, L = 24, R = 24, pw = w - L - R, ay = 116;
+      var X = function (iso) { return L + Math.max(0, Math.min(1, I.days(lo, iso) / span)) * pw; };
+      var svg = M.s(svgNS, { viewBox: '0 0 ' + w + ' ' + H, role: 'img', 'aria-label': 'Timeline of the posts from ' + M.fd(lo) + ' to ' + M.fd(hi) + '. ' + dated.map(function (d) { return M.fd(d.post) + ': ' + I.who(d); }).join('; ') + '.' });
+      svg.appendChild(M.s('line', { x1: L, x2: w - R, y1: ay, y2: ay, class: 'ax' }));
+      var step = Math.max(1, Math.ceil(span / Math.max(2, Math.floor(pw / 110))));
+      for (var k = 0; k <= span; k += step) { var iso = M.add(lo, k), x = X(iso); svg.appendChild(M.s('line', { x1: x, x2: x, y1: ay, y2: ay + 5, class: 'ax' })); svg.appendChild(M.s('text', { x: x, y: ay + 20, 'text-anchor': k === 0 ? 'start' : 'middle' }, M.fds(iso))); }
+      svg.appendChild(M.s('line', { x1: X(hi), x2: X(hi), y1: 18, y2: ay, stroke: C.mustard, 'stroke-width': 1.5, 'stroke-dasharray': '3 3' })); svg.appendChild(M.s('text', { x: X(hi) - 4, y: 14, 'text-anchor': 'end', fill: C.mustard, class: 'inf-v' }, 'newest data ' + M.fds(hi)));
+      var maxV = Math.max.apply(null, dated.map(function (d) { return d.value || 0; }).concat([1])), items = [], placed = [], big = w < 520 ? 5 : 9, base = w < 520 ? 5 : 7;
+      dated.slice().sort(function (a, b) { return a.post < b.post ? -1 : 1; }).forEach(function (d) {
+        var r = base + (d.value || 0) / maxV * big, x = X(d.post), lift = 0, moved = true;
+        while (moved) { moved = false; placed.forEach(function (p) { if (Math.hypot(p.x - x, p.y - (ay - 26 - lift)) < p.r + r + 3) { lift += p.r + r + 4; moved = true; } }); }
+        var y = ay - 26 - lift; placed.push({ x: x, y: y, r: r });
+        var dot = M.s('circle', { cx: x, cy: y, r: r, fill: d.tracked ? C.maroon : '#fff', stroke: C.maroon, 'stroke-width': 2, 'fill-opacity': d.tracked ? .85 : 1 });
+        svg.appendChild(M.s('line', { x1: x, x2: x, y1: y + r, y2: ay, stroke: C.grid, 'stroke-width': 1 }));
+        svg.appendChild(dot);
+        items.push({ els: [dot], tip: function () { return { title: I.who(d), rows: [{ k: 'Posted', v: M.fd(d.post) }, { k: 'Pieces', v: I.pieces(d) }, { k: 'Price in the shop', v: d.value != null ? inr(d.value) : 'not typed' }, { k: 'Visits counted', v: d.tracked ? M.num(d.visits) + ' visits, ' + M.num(d.orders) + ' orders' : 'not tracked (no link)' }] }; } });
+      });
+      M.vizHover(svg, items);
+      host.appendChild(svg);
+      host.appendChild(M.note('Filled dot: has a tracked link. Hollow dot: went up before tracked links existed. A bigger dot means a higher shop price.'));
+      if (waiting.length) host.appendChild(M.note(waiting.map(I.who).join(', ') + (waiting.length === 1 ? ' is not on the line: no post date yet.' : ' are not on the line: no post date yet.')));
+    });
+  };
+
+  /* ---------------------------------------------------------------- the table of every deal */
+  var table = function (ds) {
+    var cols = [
+      { k: 'who', label: 'Collaboration', wrap: true, dim: false },
+      { k: 'status', label: 'Status', fmt: function (v) { return I.STATUS[v] || v; }, dim: false },
+      { k: 'cost', label: 'Cost to make', num: true, fmt: function (v) { return v == null ? 'not typed' : inr(v); } },
+      { k: 'value', label: 'Shop price', num: true, fmt: function (v) { return v == null ? 'not typed' : inr(v); } },
+      { k: 'visits', label: 'Visits', num: true, fmt: function (v, r) { return r.tracked ? M.num(v) : 'not tracked'; }, sort: function (r) { return r.tracked ? r.visits : -1; } },
+      { k: 'orders', label: 'Orders', num: true, fmt: function (v, r) { return r.tracked ? M.num(v) : 'not tracked'; }, sort: function (r) { return r.tracked ? r.orders : -1; } },
+      I.live(ds).some(function (d) { return d.sales != null; }) ? { k: 'sales', label: 'Sales', num: true, fmt: function (v) { return v == null ? '' : inr(v); } } : null,
+      { k: 'pieces', label: 'Pieces', wrap: true, dim: false, hidden: true },
+      { k: 'post', label: 'Posted', hidden: true, fmt: function (v) { return v ? M.fd(v) : 'not yet'; } },
+      { k: 'platform', label: 'Where', dim: false, hidden: true },
+      { k: 'read', label: 'What this tells us', wrap: true, dim: false, hidden: true }
+    ].filter(Boolean);
+    var rows = ds.map(function (d) { return Object.assign({}, d, { who: I.who(d), pieces: I.pieces(d) }); });
+    return M.table(cols, { rows: rows, sortKey: 'post', sortDir: -1, name: 'influencers', detail: false, empty: 'No collaboration yet.',
+      onRow: function (r) { M.go({ inf: r.key }, true); } });
+  };
+
+  var insightList = function (ds) {
+    var list = I.insights(ds);
+    if (!list.length) return M.empty('Not enough typed yet to say anything.');
+    return M.h('ul', { class: 'inf-ins' }, list.map(function (x) { return M.h('li', { class: x.tone === 'warn' ? 'warn' : '' }, [M.s(svgNS, { class: 'ic', 'aria-hidden': 'true' }, [M.s('use', { href: '#' + (x.tone === 'warn' ? 'i-alert' : 'i-info') })]), M.h('span', { text: x.text })]); }));
+  };
+
+  /* ---------------------------------------------------------------- ONE COLLABORATION */
+  var perDay = function (d) {
+    /* visits and orders for each day since the start, from campaign_daily (the same tab the nightly job counts). Only a tracked deal with a start date and at least one settled day has any. */
+    if (!d.tracked || !d.start || !d.campaign || !M.has('campaign_daily')) return [];
+    var src = d.sm ? d.sm.split(' / ')[0] : '', from = d.start, to = I.today(), out = {};
+    M.rowsIn('campaign_daily', from, to).forEach(function (r) {
+      if (String(r.campaign || '').toLowerCase() !== d.campaign) return;
+      if (src && String(r.source_medium || '').toLowerCase().indexOf(src) !== 0) return;
+      var o = out[r.date] || (out[r.date] = { date: r.date, visits: 0, orders: 0 }); o.visits += +r.sessions || 0; o.orders += +r.purchases || 0;
+    });
+    return Object.keys(out).sort().map(function (k) { return out[k]; });
+  };
+
+  var dayChart = function (d) {
+    return M.vizChart(function (host, w) {
+      var days = perDay(d);
+      var from = d.start, last = M.add(M.D.anchor, -1);      /* the nightly count (kpi_collectors27.py) stops two days before the real today; the dashboard's newest day is already yesterday, so one day less */
+      if (!d.tracked) { host.appendChild(M.empty('This one went up before tracked links existed, so no visit was counted for it.')); return; }
+      if (!from) { host.appendChild(M.empty('No start date yet, so nothing is counted.')); return; }
+      if (from > last) { host.appendChild(M.empty('Counting starts on ' + M.fd(from) + ' and Google finishes each day two days later, so there is nothing to draw yet. It fills in from ' + M.fd(M.add(from, 2)) + '.')); return; }
+      var buckets = M.buckets(from, last, 'day');
+      if (buckets.length > 120) buckets = buckets.slice(-120);
+      var m = {}; days.forEach(function (r) { m[r.date] = r; });
+      var vis = buckets.map(function (b) { return m[b.from] ? m[b.from].visits : 0; }), ord = buckets.map(function (b) { return m[b.from] ? m[b.from].orders : 0; });
+      if (!vis.some(function (v) { return v > 0; })) { host.appendChild(M.empty('No visit came through the link between ' + M.fd(from) + ' and ' + M.fd(last) + '.')); return; }
+      M.vizCombo(host, w, { buckets: buckets, mode: 'day', title: 'Visits and orders by day', h: 210, bars: { name: 'Visits', values: vis, color: C.teal, fmt: M.num }, line: { name: 'Orders', values: ord, color: C.maroon, fmt: M.num, int: true } });
+    });
+  };
+
+  var oneCard = function (d) {
+    var box = M.h('div', { class: 'inf-one' }), t = d.tracked;
+    box.appendChild(M.h('div', { class: 'inf-head' }, [M.h('div', { class: 'inf-who', text: I.who(d) }), M.h('div', { class: 'inf-sub', text: [d.platform, I.STATUS[d.status] || d.status].filter(Boolean).join(', ') }),
+      M.h('div', { class: 'inf-pieces', text: 'Pieces given: ' + I.pieces(d) })]));
+    var kp = M.h('div', { class: 'kpis' });
+    kp.appendChild(M.kpi({ label: 'Cost to make', value: d.cost != null ? inr(d.cost) : 'not typed', note: d.cost != null && d.value ? M.pct(d.cost / d.value * 100, 0) + ' of the shop price' : '' }));
+    kp.appendChild(M.kpi({ label: 'Price in the shop', value: d.value != null ? inr(d.value) : 'not typed', note: d.cost != null && d.value != null ? inr(d.value - d.cost) + ' of profit given up' : '' }));
+    kp.appendChild(M.kpi({ label: 'Visits from the link', value: t ? M.num(d.visits) : 'not tracked', note: t ? (d.last ? 'newest ' + M.fd(d.last) : 'none yet') : 'no link before this post' }));
+    kp.appendChild(M.kpi({ label: 'Orders from the link', value: t ? M.num(d.orders) : 'not tracked', note: t && d.orders && d.cost != null ? inr(Math.round(d.cost / d.orders)) + ' of cost for each order' : '' }));
+    box.appendChild(kp);
+    return box;
+  };
+
+  var facts = function (d) {
+    var rows = [['Where', d.platform], ['Status', I.STATUS[d.status] || d.status], ['Posted', d.post ? M.fd(d.post) : 'not yet'], ['Counting from', d.tracked ? (d.start ? M.fd(d.start) : 'no start date') : 'not tracked'],
+      ['What was agreed', d.agreed || 'not written'], ['Tag in Google Analytics', d.sm || 'none'], ['What this tells us', d.read || '']].filter(function (r) { return r[1]; });
+    return M.h('dl', { class: 'inf-facts' }, rows.reduce(function (a, r) { return a.concat([M.h('dt', { text: r[0] }), M.h('dd', { text: r[1] })]); }, []));
+  };
+
+  var linkBox = function (d) {
+    if (!d.link) return M.empty('No tracked link: this post went up before links existed.');
+    var say = M.h('span', { class: 'small muted', role: 'status', 'aria-live': 'polite' });
+    return M.h('div', { class: 'inf-link' }, [M.h('code', { class: 'inf-url', text: d.link }),
+      M.h('button', { type: 'button', class: 'btn sm', onclick: function () { M.copyText(d.link, function () { say.textContent = 'Copied.'; }, function () { say.textContent = 'Could not copy. Select the link and copy it.'; }); } }, [M.icon ? M.icon('i-link') : '', M.h('span', { text: 'Copy link' })]), say]);
+  };
+
+  /* ---------------------------------------------------------------- the page */
+  I.draw = function (root, ds) {
+    var cur = pickKey(), one = cur ? ds.filter(function (d) { return d.key === cur; })[0] : null;
+    root.appendChild(chooser(ds, one ? one.key : ''));
+    if (one) {
+      root.appendChild(oneCard(one));
+      root.appendChild(M.vizCard('Visits and orders each day', 'Counted from the day the deal starts, from the tag in its link. The newest two days are left out because Google has not finished them.', [dayChart(one)]));
+      root.appendChild(M.card('The details', '', [facts(one)]));
+      root.appendChild(M.card('Its link', 'The link given to the influencer. It carries the tags that let the Channels page sort the visits under Influencers and partners.', [linkBox(one)]));
+      root.appendChild(M.h('div', { class: 'inf-back' }, [M.h('button', { type: 'button', class: 'link', text: 'Back to all collaborations', onclick: function () { M.go({ inf: '' }); } })]));
+      return;
+    }
+    root.appendChild(tiles(ds));
+    root.appendChild(M.card('What we can say', 'Each line is worked out from what is typed in the Sheet and from the visits Google counted. Nothing is guessed.', [insightList(ds)]));
+    root.appendChild(M.vizCard('Cost to make against price in the shop', 'For each collaboration: the dark bar is what the pieces cost to make, the light bar is what they sell for in the shop. The cost is not money sent to anyone.', [costChart(ds)]));
+    root.appendChild(M.vizCard('When each one went up', 'One dot for each post, on the day it was posted. A bigger dot is a bigger shop price. A filled dot has a tracked link, a hollow one went up before tracked links existed.', [timeline(ds)]));
+    root.appendChild(M.card('Every collaboration', 'Tap a line to open that collaboration on its own. The Columns button shows the pieces, the post date, where it was posted and what each line tells us.', [table(ds)]));
   };
 })();
 
