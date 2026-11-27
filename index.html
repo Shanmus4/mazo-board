@@ -5988,6 +5988,7 @@ M.SEARCH_INDEX = [
 ["growth","card","Sales each week","sales each p"],
 ["growth","card","Orders each week","orders each p"],
 ["growth","card","Visits each week","visits each p"],
+["influencers","card","Cost against price in the shop","cost against price in the shop"],
 ["influencers","card","From a visit to an order","from a visit to an order"],
 ["influencers","card","What each one brought","what each one brought"],
 ["influencers","card","Collaborations and cost by month","collaborations and cost by p"],
@@ -18350,6 +18351,7 @@ M.linkContentCard = function (r, rows) {
    Owner, 27 Nov 22:14: "where are the others" (the cost chart showed 2 of 4 deals), "i dont want this" (What we can say), "dont want this" (Where they stand), "need a section for the UTM link, the reel link, also
    user link", "influencer marketing is huge and you have not even included links, UTM, reel links, purchases made from link, conversions, all that ... you are not thinking like a business".
    THE SHAPE IS THE SAME AS EVERY OTHER PAGE: headline tiles, then cards (the shared M.card, M.vizCard, M.table, M.bars, M.funnel, M.vizCombo). No buttons of its own, no second screen.
+     Cost against price         the shop price each deal's pieces cost to make: EVERY deal up to 12, then the highest and lowest 6
      tiles                      what the pieces cost us, what the links brought (visits, orders, sales), what one order cost us, return on cost
      From a visit to an order   the shared funnel: visits, engaged visits, orders, with the share that carries on at each step (only deals with a tracked link)
      What each one brought      the best and worst few by orders for each rupee spent (M.SCALE.bars): never more than that, so it reads the same with 5 or 5,000 deals
@@ -18388,6 +18390,27 @@ M.linkContentCard = function (r, rows) {
     if (t.engagedKnown) steps.push({ name: 'Visits that stayed and looked around', value: t.engaged });
     steps.push({ name: 'Orders', value: t.orders });
     return M.funnel(steps, { color: C.maroon, empty: 'No visit yet.' });
+  };
+
+  /* ---------------------------------------------------------------- cost against the shop price: EVERY deal while there are 12 or fewer (27 Nov 2026, owner: "where are the others": the first version cut the list in half, so 4 deals showed 2);
+     with more, the highest and the lowest few (M.SCALE.bars in all), so it reads the same with 5 or 5,000 deals */
+  var shareBars = function (list) {
+    return M.bars(list.map(function (d) {
+      return { label: d.who, value: d.share * 100, text: M.pct(d.share * 100, 0) + ' (' + inr(d.cost) + ' of ' + inr(d.value) + ')', sub: d.pieces, color: C.maroon,
+        tip: { title: d.who, rows: [{ k: 'Pieces', v: d.pieces }, { k: 'Cost to make', v: inr(d.cost) }, { k: 'Price in the shop', v: inr(d.value) }, { k: 'Cost as a share of the price', v: M.pct(d.share * 100, 0) }] } };
+    }), { max: 100, empty: 'Needs a cost and a shop price on at least one collaboration.' });
+  };
+  var costVsPrice = function (ds) {
+    var rows = I.live(ds).filter(function (d) { return d.share != null; }), left = I.live(ds).length - rows.length;
+    if (!rows.length) return M.empty('No collaboration has both a cost and a shop price typed yet.');
+    var box = M.h('div', null);
+    if (rows.length <= N()) box.appendChild(shareBars(I.top(rows, 'share', rows.length, true)));      /* all of them, the biggest share first */
+    else {
+      var half = Math.floor(N() / 2);
+      box.appendChild(M.grid([M.h('div', null, [M.h('h4', { class: 'sub', text: 'Cost the most for what they sell for' }), shareBars(I.top(rows, 'share', half, true))]), M.h('div', null, [M.h('h4', { class: 'sub', text: 'Cost the least for what they sell for' }), shareBars(I.top(rows, 'share', half, false))])], 'two'));
+    }
+    if (left) box.appendChild(M.h('p', { class: 'small muted', text: many(left, 'collaboration is', 'collaborations are') + ' not drawn: no cost or no shop price typed.' }));
+    return box;
   };
 
   /* ---------------------------------------------------------------- what each one brought: the best few, never every deal */
@@ -18466,6 +18489,7 @@ M.linkContentCard = function (r, rows) {
   /* ---------------------------------------------------------------- the page */
   I.draw = function (root, ds) {
     root.appendChild(tiles(ds));
+    root.appendChild(M.vizCard('Cost against price in the shop', 'The share of the shop price that the pieces cost to make, for every collaboration' + (I.live(ds).length > N() ? ' (the highest and the lowest ' + Math.floor(N() / 2) + ' each, so it reads the same with 5 or 5,000)' : '') + '. The rest of each collaboration is in the tables below.', [costVsPrice(ds)]));
     root.appendChild(M.vizCard('From a visit to an order', 'Everyone who came through a tracked link, and how many carried on at each step. Only collaborations with a link are counted: older posts had none.', [path(ds)]));
     root.appendChild(M.vizCard('What each one brought', 'The ' + N() + ' collaborations whose links brought the most orders, so it reads the same with 5 collaborations or 5,000. Every one is in the tables below.', [brought(ds)]));
     root.appendChild(M.vizCard('Collaborations and cost by month', 'Columns are how many collaborations went up in the month (left scale). The line is what the pieces cost us (right scale). One bar is a month.', [byMonth(ds)]));
