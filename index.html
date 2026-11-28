@@ -2268,7 +2268,9 @@ table tr.is-total td:first-child::after, table tr[data-total="1"]:not(.is-total-
 .mg-table td,.mg-table th{vertical-align:top}
 .mg-table th.n,.mg-table td.n{text-align:right;white-space:nowrap;width:1%;padding-left:var(--sp5)}
 .mg-cell{display:flex;flex-direction:column;gap:2px}
-.card .mg-tw,.card:not(.fs) .mg-tw{max-height:none;overflow:visible}      /* at most 17 rows: it never needs its own scroll box */
+.card .mg-tw:not(.tall),.card:not(.fs) .mg-tw:not(.tall){max-height:none;overflow:visible}      /* a short ledger has no scroll box of its own */
+.card .mg-tw.tall{max-height:min(70vh,680px);overflow:auto}      /* 28 Nov 2026 (T1299, owner: 'the 20 year scale audit still flags the Overview money card as tall, fix'): the ledger has 27 lines since the GST split lines came, so it scrolls inside the card like every other table of more than 14 rows (the shared rule is .tw.tall in dashboard.css); the card was 1,961 px tall. Full screen shows every line (dashboard.css .card.fs .tw.tall). */
+.card .mg-tw.tall tr.mg-ghead th{position:static}      /* a group heading scrolls with its rows; only the column headings stay at the top */
 .mg-step{font-size:var(--t14);color:var(--ink)}
 .mg-sub-l{font-size:var(--t13);line-height:1.45;color:var(--ink2);max-width:72ch}
 .mg-amt{font-variant-numeric:tabular-nums}
@@ -14171,7 +14173,7 @@ M.annot = (function () {
       }
     });
     var tbl = M.h('table', { class: 'mg-table', 'aria-label': 'Where the money goes, step by step' }, [M.h('thead', null, M.h('tr', null, [M.h('th', { scope: 'col', text: 'Step' }), M.h('th', { scope: 'col', class: 'n', text: 'Rs.' })])), tb]);
-    var box = M.h('div', { class: 'tw mg-tw' }, tbl);
+    var box = M.h('div', { class: 'tw mg-tw' + (rows.length > 14 ? ' tall' : '') }, tbl);      /* T1299: more than 14 lines scroll inside the card, like every shared table (dashboard.css .tw.tall) */
     box.cols = csvCols; box.csvName = 'where-the-money-goes';
     box.view = function () { return rows.map(function (x) { return { step: x.step, group: x.group, amount: x.amount == null || x.none ? '' : x.amount, how: x.how }; }); };
     box.csv = function () { M.tableCsv(csvCols, box.view(), 'where-the-money-goes'); };
